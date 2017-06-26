@@ -1,4 +1,6 @@
 CHANGES
 =======
 
+* DECKHAND-11: Add oslo.config integration to Deckhand
+* Add ChangeLog
 * Initial commit

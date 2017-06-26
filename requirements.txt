@@ -1,0 +1,5 @@
+# API
+falcon==1.1.0
+
+# Oslo
+oslo.config>=3.22.0 # Apache-2.0
