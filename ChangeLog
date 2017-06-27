@@ -1,6 +1,8 @@
 CHANGES
 =======
 
-* DECKHAND-11: Add oslo.config integration to Deckhand
+* pep8
+* Cookie-butter falcon logic
+* Oslo config integration (#1)
 * Add ChangeLog
 * Initial commit
