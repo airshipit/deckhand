@@ -1,8 +1,7 @@
 CHANGES
 =======
 
-* pep8
-* Cookie-butter falcon logic
+* Implement core Deckhand API framework
 * Oslo config integration (#1)
 * Add ChangeLog
 * Initial commit
