@@ -16,6 +16,7 @@ import falcon
 
 from oslo_serialization import jsonutils as json
 
+from deckhand.barbican import driver
 from deckhand.control import base as api_base
 
 
@@ -29,8 +30,10 @@ class SecretsResource(api_base.BaseResource):
     def __init__(self, **kwargs):
         super(SecretsResource, self).__init__(**kwargs)
         self.authorized_roles = ['user']
+        self.barbican_driver = driver.BarbicanDriver()
 
     def on_get(self, req, resp):
         # TODO(felipemonteiro): Implement this API endpoint.
-        resp.body = json.dumps({'secrets': 'test_secrets'})
+        ca_list = self.barbican_driver.ca_list()  # Random endpoint to test.
+        resp.body = json.dumps({'secrets': [c.to_dict() for c in ca_list]})
         resp.status = falcon.HTTP_200

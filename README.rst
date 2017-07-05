@@ -9,5 +9,4 @@ To run::
 	$ virtualenv -p python3 /var/tmp/deckhand
 	$ . /var/tmp/deckhand/bin/activate
 	$ sudo pip install .
-	$ python setup.py install
 	$ uwsgi --http :9000 -w deckhand.deckhand --callable deckhand --enable-threads -L
