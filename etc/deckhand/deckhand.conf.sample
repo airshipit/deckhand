@@ -1,0 +1,47 @@
+[DEFAULT]
+
+
+[barbican]
+#
+# Barbican options for allowing Deckhand to communicate with Barbican.
+
+#
+# From deckhand.conf
+#
+
+# URL override for the Barbican API endpoint. (string value)
+#api_endpoint = http://barbican.example.org:9311/
+
+
+[keystone_authtoken]
+
+#
+# From deckhand.conf
+#
+
+# (string value)
+#signing_dir = <None>
+
+# (string value)
+#cafile = <None>
+
+# (string value)
+#project_domain_name = Default
+
+# (string value)
+#project_name = admin
+
+# (string value)
+#user_domain_name = Default
+
+# (string value)
+#password = devstack
+
+# (string value)
+#username = admin
+
+# (string value)
+#auth_url = http://127.0.0.1/identity
+
+# (string value)
+#auth_type = password

@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .control import api
+from deckhand.barbican import client_wrapper
 
 
-def start_deckhand():
-    return api.start_api()
+class BarbicanDriver(object):
 
+    def __init__(self):
+        self.barbicanclient = client_wrapper.BarbicanClientWrapper()
 
-# Callable to be used by uwsgi.
-deckhand_callable = start_deckhand()
+    def ca_list(self, **kwargs):
+        # FIXME(felipemonteiro): Testing cas.list endpoint.
+        ca_list = self.barbicanclient.call("cas.list", **kwargs)
+        return ca_list

@@ -2,6 +2,7 @@ CHANGES
 =======
 
 * Add oslo.log integration to Deckhand.
+* DECKHAND-10: Barbican initial integration
 * DECKHAND-2: Design core Deckhand API framework
 * Oslo config integration (#1)
 * Add ChangeLog
