@@ -20,7 +20,6 @@ class BarbicanDriver(object):
     def __init__(self):
         self.barbicanclient = client_wrapper.BarbicanClientWrapper()
 
-    def ca_list(self, **kwargs):
-        # FIXME(felipemonteiro): Testing cas.list endpoint.
-        ca_list = self.barbicanclient.call("cas.list", **kwargs)
-        return ca_list
+    def create_secret(self, **kwargs):
+        """Create a secret."""
+        return self.barbicanclient.call("secrets.create", **kwargs)

@@ -12,26 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+import mock
 
-import falcon
+import testtools
 
+from deckhand.control import api
 from deckhand.control import base as api_base
-from deckhand.control import secrets
 
 
-def start_api(state_manager=None):
-    """Start the Deckhand API service.
+class TestApi(testtools.TestCase):
 
-    Create routes for the v1.0 API.
-    """
-    control_api = falcon.API(request_type=api_base.DeckhandRequest)
+    @mock.patch.object(api, 'secrets', autospec=True)
+    @mock.patch.object(api, 'falcon', autospec=True)
+    def test_start_api(self, mock_falcon, mock_secrets):
+        mock_falcon_api = mock_falcon.API.return_value
 
-    v1_0_routes = [
-        ('secrets', secrets.SecretsResource())
-    ]
+        result = api.start_api()
+        self.assertEqual(mock_falcon_api, result)
 
-    for path, res in v1_0_routes:
-        control_api.add_route(os.path.join('/api/v1.0', path), res)
-
-    return control_api
+        mock_falcon.API.assert_called_once_with(
+            request_type=api_base.DeckhandRequest)
+        mock_falcon_api.add_route.assert_called_once_with(
+            '/api/v1.0/secrets', mock_secrets.SecretsResource())
