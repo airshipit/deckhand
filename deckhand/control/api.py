@@ -58,7 +58,7 @@ def start_api(state_manager=None):
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 
     v1_0_routes = [
-        ('/secrets', secrets.SecretsResource())
+        ('secrets', secrets.SecretsResource())
     ]
 
     for path, res in v1_0_routes:

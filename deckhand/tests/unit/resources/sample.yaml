@@ -1,0 +1,23 @@
+# Sample YAML file for testing forward replacement.
+---
+apiVersion: service/v1
+kind: ConsumerOfCertificateData
+metadata:
+  name: asdf-1234
+  storage: cleartext
+  substitutions:
+    - dest: .tls_endpoint.certificate
+      src:
+        apiVersion: deckhand/v1
+        kind: Certificate
+        name: some-certificate-asdf-1234
+    - dest: .tls_endpoint.certificateKey
+      src:
+        apiVersion: deckhand/v1
+        kind: CertificateKey
+        name: some-certificate-key-asdf-1234
+data:
+  tls_endpoint:
+      uri: http://localhost:443
+      certificate: null
+      certificateKey: null
