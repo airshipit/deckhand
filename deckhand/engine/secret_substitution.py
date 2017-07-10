@@ -14,7 +14,10 @@
 
 import yaml
 
+import jsonschema
+
 from deckhand import errors
+from deckhand.engine.schema.v1_0 import default_schema
 
 
 class SecretSubstitution(object):
@@ -64,32 +67,17 @@ class SecretSubstitution(object):
                   certificate: null  # Data to be substituted.
                   certificateKey: null  # Data to be substituted.
         """
-        # Validate that data section exists.
         try:
-            self.data['data']
-        except (KeyError, TypeError) as e:
-            raise errors.InvalidFormat(
-                'The provided YAML file has no data section: %s' % e)
-        # Validate that substitutions section exists.
-        try:
-            substitutions = self.data['metadata']['substitutions']
-        except (KeyError, TypeError) as e:
-            raise errors.InvalidFormat(
-                'The provided YAML file has no metadata/substitutions '
-                'section: %s' % e)
-
-        # Validate that "src" and "dest" fields exist per substitution entry.
-        error_message = ('The provided YAML file is missing the "%s" field '
-                         'for the %s substition.')
-        for s in substitutions:
-            if 'src' not in s:
-                raise errors.InvalidFormat(error_message % ('src', s))
-            elif 'dest' not in s:
-                raise errors.InvalidFormat(error_message % ('dest', s))
+            jsonschema.validate(self.data, default_schema.schema)
+        except jsonschema.exceptions.ValidationError as e:
+            raise errors.InvalidFormat('The provided YAML file is invalid. '
+                                       'Exception: %s.' % e.message)
 
         # Validate that each "dest" field exists in the YAML data.
+        substitutions = self.data['metadata']['substitutions']
         destinations = [s['dest'] for s in substitutions]
         sub_data = self.data['data']
+
         for dest in destinations:
             result, missing_attr = self._multi_getattr(dest, sub_data)
             if not result:
