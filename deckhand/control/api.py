@@ -15,16 +15,46 @@
 import os
 
 import falcon
+from oslo_config import cfg
+from oslo_log import log as logging
 
+from deckhand.conf import config
 from deckhand.control import base as api_base
 from deckhand.control import secrets
 
+CONF = cfg.CONF
+
+
+def __setup_logging():
+    LOGGER_NAME = CONF.logging.global_logger_name
+    LOG = logging.getLogger(__name__, LOGGER_NAME)
+
+    logging.register_options(CONF)
+
+    current_path = os.path.dirname(os.path.realpath(__file__))
+    root_path = os.path.abspath(os.path.join(current_path, os.pardir,
+                                             os.pardir))
+    logging_cfg_path = "%s/etc/deckhand/logging.conf" % root_path
+
+    # If logging conf is in place we need to set log_config_append. Only do so
+    # if the log path already exists.
+    if ((not hasattr(CONF, 'log_config_append') or
+        CONF.log_config_append is None) and
+        os.path.isfile(logging_cfg_path)):
+        CONF.log_config_append = logging_cfg_path
+
+    logging.setup(CONF, LOGGER_NAME)
+    LOG.debug('Initiated Deckhand logging.')
+
 
 def start_api(state_manager=None):
-    """Start the Deckhand API service.
+    """Main entry point for initializing the Deckhand API service.
 
-    Create routes for the v1.0 API.
+    Create routes for the v1.0 API and sets up logging.
     """
+    config.register_opts(CONF)
+    __setup_logging()
+
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 
     v1_0_routes = [
