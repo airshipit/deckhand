@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import os
 import testtools
+import yaml
 
 from oslo_serialization import jsonutils as json
 import six
@@ -30,83 +32,76 @@ class TestSecretSubtitution(testtools.TestCase):
         test_yaml_path = os.path.abspath(os.path.join(
             dir_path, os.pardir, 'resources', 'sample.yaml'))
 
-        with open(test_yaml_path, 'r') as yaml_data:
-            self.yaml_data = yaml_data.read()
+        with open(test_yaml_path, 'r') as yaml_file:
+            yaml_data = yaml_file.read()
+        self.data = yaml.safe_load(yaml_data)
 
-    def test_initialization_missing_substitutions_section(self):
-        expected_err = (
-            "The provided YAML file has no metadata/substitutions section")
+    def _corrupt_data(self, key):
+        corrupted_data = copy.deepcopy(self.data)
+
+        if '.' in key:
+            _corrupted_data = corrupted_data
+            nested_keys = key.split('.')
+            for nested_key in nested_keys:
+                if nested_key == nested_keys[-1]:
+                    break
+                if nested_key.isdigit():
+                    _corrupted_data = _corrupted_data[int(nested_key)]
+                else:
+                    _corrupted_data = _corrupted_data[nested_key]
+            _corrupted_data.pop(nested_keys[-1])
+        else:
+            corrupted_data.pop(key)
+
+        return yaml.safe_dump(corrupted_data)
+
+    def _format_data(self, data=None):
+        if data is None:
+            data = self.data
+        return yaml.safe_dump(data)
+
+    def test_initialization(self):
+        sub = secret_substitution.SecretSubstitution(self._format_data())
+        self.assertIsInstance(sub, secret_substitution.SecretSubstitution)
+
+    def test_initialization_missing_sections(self):
+        expected_err = ("The provided YAML file is invalid. Exception: '%s' "
+                        "is a required property.")
         invalid_data = [
-            {"data": []},
-            {"data": [], "metadata": None},
-            {"data": [], "metadata": {"missing_substitutions": None}}
+            (self._corrupt_data('data'), 'data'),
+            (self._corrupt_data('metadata'), 'metadata'),
+            (self._corrupt_data('metadata.name'), 'name'),
+            (self._corrupt_data('metadata.storage'), 'storage'),
+            (self._corrupt_data('metadata.substitutions'), 'substitutions'),
+            (self._corrupt_data('metadata.substitutions.0.dest'), 'dest'),
+            (self._corrupt_data('metadata.substitutions.0.src'), 'src')
         ]
 
-        for invalid_entry in invalid_data:
-            invalid_entry = json.dumps(invalid_entry)
+        for invalid_entry, missing_key in invalid_data:
             with six.assertRaisesRegex(self, errors.InvalidFormat,
-                                       expected_err):
+                                       expected_err % missing_key):
                 secret_substitution.SecretSubstitution(invalid_entry)
-
-        expected_err = (
-            "The provided YAML file has no metadata/substitutions section")
-        invalid_data = [
-            {"data": [], "metadata": None},
-        ]
-
-    def test_initialization_missing_data_section(self):
-        expected_err = (
-            "The provided YAML file has no data section")
-        invalid_data = '{"metadata": {"substitutions": []}}'
-
-        with six.assertRaisesRegex(self, errors.InvalidFormat, expected_err):
-            secret_substitution.SecretSubstitution(invalid_data)
-        
-    def test_initialization_missing_src_dest_sections(self):
-        expected_err = ('The provided YAML file is missing the "%s" field for '
-                        'the %s substition.')
-        invalid_data = [
-            {"data": [], "metadata": {"substitutions": [{"dest": "foo"}]}},
-            {"data": [], "metadata": {"substitutions": [{"src": "bar"}]}},
-        ]
-
-        def _test(invalid_entry, field, substitution):
-            invalid_entry = json.dumps(invalid_entry)
-            _expected_err = expected_err % (field, substitution)
-
-            with six.assertRaisesRegex(self, errors.InvalidFormat,
-                                       _expected_err):
-                secret_substitution.SecretSubstitution(invalid_entry)
-
-        _test(invalid_data[0], "src", {"dest": "foo"})
-        _test(invalid_data[1], "dest", {"src": "bar"})
 
     def test_initialization_bad_substitutions(self):
         expected_err = ('The attribute "%s" included in the "dest" field "%s" '
-                        'is missing from the YAML data: "%s".')
-        invalid_data = [
-            # Missing attribute.
-            {"data": {}, "metadata": {"substitutions": [
-                {"src": "", "dest": "foo"}
-            ]}},
-            # Missing attribute.
-            {"data": {"foo": None}, "metadata": {"substitutions": [
-                {"src": "", "dest": "bar"}
-            ]}},
-            # Missing nested attribute.
-            {"data": {"foo": {"baz": None}}, "metadata": {"substitutions": [
-                {"src": "", "dest": "foo.bar"}
-            ]}},
-        ]
+                        'is missing from the YAML data')
+        invalid_data = []
 
-        def _test(invalid_entry, field, dest, substitution):
-            invalid_entry = json.dumps(invalid_entry)
-            _expected_err = expected_err % (field, dest, substitution)
+        data = copy.deepcopy(self.data)
+        data['metadata']['substitutions'][0]['dest'] = 'foo'
+        invalid_data.append(self._format_data(data))
 
+        data = copy.deepcopy(self.data)
+        data['metadata']['substitutions'][0]['dest'] = 'tls_endpoint.bar'
+        invalid_data.append(self._format_data(data))
+
+        def _test(invalid_entry, field, dest):
+            _expected_err = expected_err % (field, dest)
             with six.assertRaisesRegex(self, errors.InvalidFormat,
                                        _expected_err):
                 secret_substitution.SecretSubstitution(invalid_entry)
 
-        _test(invalid_data[0], "foo", "foo", {})
-        _test(invalid_data[1], "bar", "bar", {"foo": None})
-        _test(invalid_data[2], "bar", "foo.bar", {'foo': {'baz': None}})
+        # Verify that invalid body dest reference is invalid.
+        _test(invalid_data[0], "foo", "foo")
+        # Verify that nested invalid body dest reference is invalid.
+        _test(invalid_data[1], "bar", "tls_endpoint.bar")
