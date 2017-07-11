@@ -39,13 +39,11 @@ schema = {
     'properties': {
         'apiVersion': {
             'type': 'string',
-            # TODO(fm577c): These should be enumerated.
-            'choices': ['service/v1']
+            'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
         },
         'kind': {
             'type': 'string',
-            # TODO(fm577c): These should be enumerated.
-            'choices': ['ConsumerOfCertificateData']
+            'pattern': '^([A-Za-z]+$'
         },
         'metadata': {
             'type': 'object',

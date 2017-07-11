@@ -16,12 +16,12 @@ import yaml
 
 import jsonschema
 
-from deckhand import errors
 from deckhand.engine.schema.v1_0 import default_schema
+from deckhand import errors
 
 
 class SecretSubstitution(object):
-    """Initialization of class for secret substitution logic for YAML files.
+    """Class for secret substitution logic for YAML files.
 
     This class is responsible for parsing, validating and retrieving secret
     values for values stored in the YAML file. Afterward, secret values will be
@@ -42,8 +42,26 @@ class SecretSubstitution(object):
 
         self.validate_data()
 
+    class SchemaVersion(object):
+        """Class for retrieving correct schema for pre-validation on YAML.
+
+        Retrieves the schema that corresponds to "apiVersion" in the YAML
+        data. This schema is responsible for performing pre-validation on
+        YAML data.
+        """
+
+        schema_versions_info = [{'version': 'v1', 'schema': default_schema}]
+
+        def __init__(self, schema_version):
+            self.schema_version = schema_version
+
+        @property
+        def schema(self):
+            return [v['schema'] for v in self.schema_versions_info
+                    if v['version'] == self.schema_version][0].schema
+
     def validate_data(self):
-        """Validate that the YAML file is correctly formatted.
+        """Pre-validate that the YAML file is correctly formatted.
 
         The YAML file must adhere to the following bare minimum format:
 
@@ -70,11 +88,7 @@ class SecretSubstitution(object):
                   certificate: null  # Data to be substituted.
                   certificateKey: null  # Data to be substituted.
         """
-        try:
-            jsonschema.validate(self.data, default_schema.schema)
-        except jsonschema.exceptions.ValidationError as e:
-            raise errors.InvalidFormat('The provided YAML file is invalid. '
-                                       'Exception: %s.' % e.message)
+        self._validate_with_schema()
 
         # Validate that each "dest" field exists in the YAML data.
         substitutions = self.data['metadata']['substitutions']
@@ -90,6 +104,22 @@ class SecretSubstitution(object):
                         missing_attr, dest, sub_data))
 
         # TODO(fm577c): Query Deckhand API to validate "src" values.
+
+    def _validate_with_schema(self):
+        # Validate that a schema with "apiVersion" version number exists, then
+        # use that schema to validate the YAML data.
+        try:
+            schema_version = self.data['apiVersion'].split('/')[-1]
+            data_schema_version = self.SchemaVersion(schema_version)
+        except (AttributeError, IndexError, KeyError) as e:
+            raise errors.InvalidFormat(
+                'The provided apiVersion is invalid or missing. Exception: %s.'
+                % e)
+        try:
+            jsonschema.validate(self.data, data_schema_version.schema)
+        except jsonschema.exceptions.ValidationError as e:
+            raise errors.InvalidFormat('The provided YAML file is invalid. '
+                                       'Exception: %s.' % e.message)
 
     def _multi_getattr(self, multi_key, substitutable_data):
         """Iteratively check for nested attributes in the YAML data.
