@@ -63,8 +63,7 @@ class BaseResource(object):
                 return None
 
             try:
-                json_body = json.loads(raw_body.decode('utf-8'))
-                return json_body
+                return json.loads(raw_body.decode('utf-8'))
             except json.JSONDecodeError as jex:
                 raise errors.InvalidFormat("%s: Invalid JSON in body: %s" % (
                     req.path, jex))
