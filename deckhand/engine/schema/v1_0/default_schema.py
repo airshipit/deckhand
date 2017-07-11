@@ -43,7 +43,7 @@ schema = {
         },
         'kind': {
             'type': 'string',
-            'pattern': '^([A-Za-z]+$'
+            'pattern': '^([A-Za-z]+)$'
         },
         'metadata': {
             'type': 'object',
