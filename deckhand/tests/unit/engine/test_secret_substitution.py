@@ -17,7 +17,6 @@ import os
 import testtools
 import yaml
 
-from oslo_serialization import jsonutils as json
 import six
 
 from deckhand.engine import secret_substitution
@@ -36,7 +35,7 @@ class TestSecretSubtitution(testtools.TestCase):
             yaml_data = yaml_file.read()
         self.data = yaml.safe_load(yaml_data)
 
-    def _corrupt_data(self, key):
+    def _corrupt_data(self, key, data=None):
         """Corrupt test data to check that pre-validation works.
 
         Corrupt data by removing a key from the document. Each key must
@@ -50,7 +49,9 @@ class TestSecretSubtitution(testtools.TestCase):
                    document['metadata']['substitutions'][0].pop('dest')
         :returns: Corrupted YAML data.
         """
-        corrupted_data = copy.deepcopy(self.data)
+        if data is None:
+            data = self.data
+        corrupted_data = copy.deepcopy(data)
 
         if '.' in key:
             _corrupted_data = corrupted_data
