@@ -37,6 +37,19 @@ class TestSecretSubtitution(testtools.TestCase):
         self.data = yaml.safe_load(yaml_data)
 
     def _corrupt_data(self, key):
+        """Corrupt test data to check that pre-validation works.
+
+        Corrupt data by removing a key from the document. Each key must
+        correspond to a value that is a dictionary.
+
+        :param key: The document key to be removed. The key can have the
+            following formats:
+                * 'data' => document.pop('data')
+                * 'metadata.name' => document['metadata'].pop('name')
+                * 'metadata.substitutions.0.dest' =>
+                   document['metadata']['substitutions'][0].pop('dest')
+        :returns: Corrupted YAML data.
+        """
         corrupted_data = copy.deepcopy(self.data)
 
         if '.' in key:
@@ -53,9 +66,10 @@ class TestSecretSubtitution(testtools.TestCase):
         else:
             corrupted_data.pop(key)
 
-        return yaml.safe_dump(corrupted_data)
+        return self._format_data(corrupted_data)
 
     def _format_data(self, data=None):
+        """Re-formats dict data as YAML to pass to ``SecretSubstitution``."""
         if data is None:
             data = self.data
         return yaml.safe_dump(data)

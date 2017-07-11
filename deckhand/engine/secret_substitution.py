@@ -28,6 +28,9 @@ class SecretSubstitution(object):
     substituted or "forward-repalced" into the YAML file. The end result is a
     YAML file containing all necessary secrets to be handed off to other
     services.
+
+    :param data: YAML data that requires secrets to be validated, merged and
+        consolidated.
     """
 
     def __init__(self, data):
@@ -85,6 +88,8 @@ class SecretSubstitution(object):
                     'The attribute "%s" included in the "dest" field "%s" is '
                     'missing from the YAML data: "%s".' % (
                         missing_attr, dest, sub_data))
+
+        # TODO(fm577c): Query Deckhand API to validate "src" values.
 
     def _multi_getattr(self, multi_key, substitutable_data):
         """Iteratively check for nested attributes in the YAML data.
