@@ -28,16 +28,12 @@ substitution_schema = {
         'src': {
             'type': 'object',
             'properties': {
-                'apiVersion': {
-                    'type': 'string',
-                    'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
-                },
                 'kind': {'type': 'string'},
                 'name': {'type': 'string'},
                 'path': {'type': 'string'}
             },
             'additionalProperties': False,
-            'required': ['apiVersion', 'kind', 'name', 'path']
+            'required': ['kind', 'name', 'path']
         }
     },
     'additionalProperties': False,

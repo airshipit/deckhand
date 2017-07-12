@@ -18,14 +18,12 @@ metadata:
         path: .tls_endpoint.certificate
         replacePattern: 'test.pattern'
       src:
-        apiVersion: deckhand/v1
         kind: Certificate
         name: some-certificate-asdf-1234
         path: .cert
     - dest:
         path: .tls_endpoint.key
       src:
-        apiVersion: deckhand/v1
         kind: CertificateKey
         name: some-certificate-asdf-1234
         path: .key
