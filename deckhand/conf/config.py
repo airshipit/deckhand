@@ -51,18 +51,31 @@ barbican_opts = [
         help='URL override for the Barbican API endpoint.'),
 ]
 
+logging_group = cfg.OptGroup(
+    name='logging',
+    title='Logging Options',
+    help='Logging options for Deckhand.')
+
+logging_opts = [
+    cfg.StrOpt('global_logger_name',
+                default='deckhand',
+                help='Logger name for the top-level logger.')
+]
+
 
 def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
-
     conf.register_group(keystone_auth_group)
     conf.register_opts(keystone_auth_opts, group=keystone_auth_group)
+    conf.register_group(logging_group)
+    conf.register_opts(logging_opts, group=logging_group)
 
 
 def list_opts():
-    return {keystone_auth_group: keystone_auth_opts,
-            barbican_group: barbican_opts}
+    return {barbican_group: barbican_opts,
+            keystone_auth_group: keystone_auth_opts,
+            logging_group: logging_opts}
 
 
 register_opts(CONF)
