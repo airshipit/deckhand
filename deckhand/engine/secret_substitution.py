@@ -61,33 +61,7 @@ class SecretSubstitution(object):
                     if v['version'] == self.schema_version][0].schema
 
     def validate_data(self):
-        """Pre-validate that the YAML file is correctly formatted.
-
-        The YAML file must adhere to the following bare minimum format:
-
-        .. code-block:: yaml
-
-            ---
-            apiVersion: service/v1
-            kind: ConsumerOfCertificateData
-            metadata:
-              substitutions:
-                - dest: .tls_endpoint.certificate
-                  src:
-                    apiVersion: deckhand/v1
-                    kind: Certificate
-                    name: some-certificate-asdf-1234
-                # Forward-reference to specific section under "data" below.
-                - dest: .tls_endpoint.certificateKey
-                  src:
-                    apiVersion: deckhand/v1
-                    kind: CertificateKey
-                    name: some-certificate-key-asdf-1234
-            data:
-              tls_endpoint:
-                  certificate: null  # Data to be substituted.
-                  certificateKey: null  # Data to be substituted.
-        """
+        """Pre-validate that the YAML file is correctly formatted."""
         self._validate_with_schema()
 
         # Validate that each "dest" field exists in the YAML data.
@@ -96,7 +70,7 @@ class SecretSubstitution(object):
         sub_data = self.data['data']
 
         for dest in destinations:
-            result, missing_attr = self._multi_getattr(dest, sub_data)
+            result, missing_attr = self._multi_getattr(dest['path'], sub_data)
             if not result:
                 raise errors.InvalidFormat(
                     'The attribute "%s" included in the "dest" field "%s" is '
@@ -109,7 +83,7 @@ class SecretSubstitution(object):
         # Validate that a schema with "apiVersion" version number exists, then
         # use that schema to validate the YAML data.
         try:
-            schema_version = self.data['apiVersion'].split('/')[-1]
+            schema_version = self.data['schemaVersion'].split('/')[-1]
             data_schema_version = self.SchemaVersion(schema_version)
         except (AttributeError, IndexError, KeyError) as e:
             raise errors.InvalidFormat(
