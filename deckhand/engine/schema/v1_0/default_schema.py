@@ -15,19 +15,29 @@
 substitution_schema = {
     'type': 'object',
     'properties': {
-        'dest': {'type': 'string'},
+        'dest': {
+            'type': 'object',
+            'properties': {
+                'path': {'type': 'string'},
+                'replacePattern': {'type': 'string'}
+            },
+            'additionalProperties': False,
+            # 'replacePattern' is not required.
+            'required': ['path']
+        },
         'src': {
             'type': 'object',
             'properties': {
                 'apiVersion': {
                     'type': 'string',
-                    'choices': ['deckhand/v1']
+                    'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
                 },
                 'kind': {'type': 'string'},
-                'name': {'type': 'string'}
+                'name': {'type': 'string'},
+                'path': {'type': 'string'}
             },
             'additionalProperties': False,
-            'required': ['apiVersion', 'kind', 'name']
+            'required': ['apiVersion', 'kind', 'name', 'path']
         }
     },
     'additionalProperties': False,
@@ -37,31 +47,58 @@ substitution_schema = {
 schema = {
     'type': 'object',
     'properties': {
-        'apiVersion': {
+        'schemaVersion': {
             'type': 'string',
             'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
         },
-        'kind': {
-            'type': 'string',
-            'pattern': '^([A-Za-z]+)$'
-        },
+        'kind': {'type': 'string'},
         'metadata': {
             'type': 'object',
             'properties': {
+                'metadataVersion': {
+                    'type': 'string',
+                    'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
+                },
                 'name': {'type': 'string'},
-                'storage': {'type': 'string'},
+                'labels': {
+                    'type': 'object',
+                    'properties': {
+                        'component': {'type': 'string'},
+                        'hostname': {'type': 'string'}
+                    },
+                    'additionalProperties': False,
+                    'required': ['component', 'hostname']
+                },
+                'layerDefinition': {
+                    'type': 'object',
+                    'properties': {
+                        'layer': {'enum': ['global', 'region', 'local']},
+                        'abstract': {'type': 'boolean'},
+                        'childSelector': {
+                            'type': 'object',
+                            'properties': {
+                                'label': {'type': 'string'}
+                            },
+                            'additionalProperties': False,
+                            'required': ['label']
+                        }
+                    },
+                    'additionalProperties': False,
+                    'required': ['layer', 'abstract', 'childSelector']
+                },
                 'substitutions': {
                     'type': 'array',
                     'items': substitution_schema
                 }
             },
             'additionalProperties': False,
-            'required': ['name', 'storage', 'substitutions']
+            'required': ['metadataVersion', 'name', 'labels',
+                         'layerDefinition', 'substitutions']
         },
         'data': {
             'type': 'object'
         }
     },
     'additionalProperties': False,
-    'required': ['apiVersion', 'kind', 'metadata', 'data']
+    'required': ['schemaVersion', 'kind', 'metadata', 'data']
 }

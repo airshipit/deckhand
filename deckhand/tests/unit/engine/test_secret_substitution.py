@@ -85,8 +85,8 @@ class TestSecretSubtitution(testtools.TestCase):
         invalid_data = [
             (self._corrupt_data('data'), 'data'),
             (self._corrupt_data('metadata'), 'metadata'),
+            (self._corrupt_data('metadata.metadataVersion'), 'metadataVersion'),
             (self._corrupt_data('metadata.name'), 'name'),
-            (self._corrupt_data('metadata.storage'), 'storage'),
             (self._corrupt_data('metadata.substitutions'), 'substitutions'),
             (self._corrupt_data('metadata.substitutions.0.dest'), 'dest'),
             (self._corrupt_data('metadata.substitutions.0.src'), 'src')
@@ -103,11 +103,12 @@ class TestSecretSubtitution(testtools.TestCase):
         invalid_data = []
 
         data = copy.deepcopy(self.data)
-        data['metadata']['substitutions'][0]['dest'] = 'foo'
+        data['metadata']['substitutions'][0]['dest'] = {'path': 'foo'}
         invalid_data.append(self._format_data(data))
 
         data = copy.deepcopy(self.data)
-        data['metadata']['substitutions'][0]['dest'] = 'tls_endpoint.bar'
+        data['metadata']['substitutions'][0]['dest'] = {
+            'path': 'tls_endpoint.bar'}
         invalid_data.append(self._format_data(data))
 
         def _test(invalid_entry, field, dest):
@@ -117,6 +118,6 @@ class TestSecretSubtitution(testtools.TestCase):
                 secret_substitution.SecretSubstitution(invalid_entry)
 
         # Verify that invalid body dest reference is invalid.
-        _test(invalid_data[0], "foo", "foo")
+        _test(invalid_data[0], "foo", {'path': 'foo'})
         # Verify that nested invalid body dest reference is invalid.
-        _test(invalid_data[1], "bar", "tls_endpoint.bar")
+        _test(invalid_data[1], "bar", {'path': 'tls_endpoint.bar'})
