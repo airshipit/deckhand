@@ -65,6 +65,8 @@ class SecretSubstitution(object):
         self._validate_with_schema()
 
         # Validate that each "dest" field exists in the YAML data.
+        # FIXME(fm577c): Dest fields will be injected if not present - the
+        # validation below needs to be updated or removed.
         substitutions = self.data['metadata']['substitutions']
         destinations = [s['dest'] for s in substitutions]
         sub_data = self.data['data']
@@ -80,15 +82,15 @@ class SecretSubstitution(object):
         # TODO(fm577c): Query Deckhand API to validate "src" values.
 
     def _validate_with_schema(self):
-        # Validate that a schema with "apiVersion" version number exists, then
-        # use that schema to validate the YAML data.
+        # Validate that a schema with "schemaVersion" version number exists,
+        # then use that schema to validate the YAML data.
         try:
             schema_version = self.data['schemaVersion'].split('/')[-1]
             data_schema_version = self.SchemaVersion(schema_version)
         except (AttributeError, IndexError, KeyError) as e:
             raise errors.InvalidFormat(
-                'The provided apiVersion is invalid or missing. Exception: %s.'
-                % e)
+                'The provided schemaVersion is invalid or missing. Exception: '
+                '%s.' % e)
         try:
             jsonschema.validate(self.data, data_schema_version.schema)
         except jsonschema.exceptions.ValidationError as e:
