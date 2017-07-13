@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 #
-# Models for drydock_provisioner
+# Models for deckhand
 #
 
 import oslo_versionedobjects.fields as ovo_fields
