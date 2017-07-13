@@ -20,6 +20,7 @@ from oslo_log import log as logging
 
 from deckhand.conf import config
 from deckhand.control import base as api_base
+from deckhand.control import documents
 from deckhand.control import secrets
 
 CONF = cfg.CONF
@@ -58,6 +59,7 @@ def start_api(state_manager=None):
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 
     v1_0_routes = [
+        ('documents', documents.DocumentsResource()),
         ('secrets', secrets.SecretsResource())
     ]
 

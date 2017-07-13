@@ -19,14 +19,14 @@ import yaml
 
 import six
 
-from deckhand.engine import secret_substitution
+from deckhand.engine import document_validation
 from deckhand import errors
 
 
-class TestSecretSubtitution(testtools.TestCase):
+class TestDocumentValidation(testtools.TestCase):
 
     def setUp(self):
-        super(TestSecretSubtitution, self).setUp()
+        super(TestDocumentValidation, self).setUp()
         dir_path = os.path.dirname(os.path.realpath(__file__))
         test_yaml_path = os.path.abspath(os.path.join(
             dir_path, os.pardir, 'resources', 'sample.yaml'))
@@ -47,7 +47,7 @@ class TestSecretSubtitution(testtools.TestCase):
                 * 'metadata.name' => document['metadata'].pop('name')
                 * 'metadata.substitutions.0.dest' =>
                    document['metadata']['substitutions'][0].pop('dest')
-        :returns: Corrupted YAML data.
+        :returns: Corrupted data.
         """
         if data is None:
             data = self.data
@@ -67,17 +67,13 @@ class TestSecretSubtitution(testtools.TestCase):
         else:
             corrupted_data.pop(key)
 
-        return self._format_data(corrupted_data)
-
-    def _format_data(self, data=None):
-        """Re-formats dict data as YAML to pass to ``SecretSubstitution``."""
-        if data is None:
-            data = self.data
-        return yaml.safe_dump(data)
+        return corrupted_data
 
     def test_initialization(self):
-        sub = secret_substitution.SecretSubstitution(self._format_data())
-        self.assertIsInstance(sub, secret_substitution.SecretSubstitution)
+        doc_validation = document_validation.DocumentValidation(
+            self.data)
+        self.assertIsInstance(doc_validation,
+                              document_validation.DocumentValidation)
 
     def test_initialization_missing_sections(self):
         expected_err = ("The provided YAML file is invalid. Exception: '%s' "
@@ -85,7 +81,8 @@ class TestSecretSubtitution(testtools.TestCase):
         invalid_data = [
             (self._corrupt_data('data'), 'data'),
             (self._corrupt_data('metadata'), 'metadata'),
-            (self._corrupt_data('metadata.metadataVersion'), 'metadataVersion'),
+            (self._corrupt_data('metadata.metadataVersion'),
+                                'metadataVersion'),
             (self._corrupt_data('metadata.name'), 'name'),
             (self._corrupt_data('metadata.substitutions'), 'substitutions'),
             (self._corrupt_data('metadata.substitutions.0.dest'), 'dest'),
@@ -95,29 +92,4 @@ class TestSecretSubtitution(testtools.TestCase):
         for invalid_entry, missing_key in invalid_data:
             with six.assertRaisesRegex(self, errors.InvalidFormat,
                                        expected_err % missing_key):
-                secret_substitution.SecretSubstitution(invalid_entry)
-
-    def test_initialization_bad_substitutions(self):
-        expected_err = ('The attribute "%s" included in the "dest" field "%s" '
-                        'is missing from the YAML data')
-        invalid_data = []
-
-        data = copy.deepcopy(self.data)
-        data['metadata']['substitutions'][0]['dest'] = {'path': 'foo'}
-        invalid_data.append(self._format_data(data))
-
-        data = copy.deepcopy(self.data)
-        data['metadata']['substitutions'][0]['dest'] = {
-            'path': 'tls_endpoint.bar'}
-        invalid_data.append(self._format_data(data))
-
-        def _test(invalid_entry, field, dest):
-            _expected_err = expected_err % (field, dest)
-            with six.assertRaisesRegex(self, errors.InvalidFormat,
-                                       _expected_err):
-                secret_substitution.SecretSubstitution(invalid_entry)
-
-        # Verify that invalid body dest reference is invalid.
-        _test(invalid_data[0], "foo", {'path': 'foo'})
-        # Verify that nested invalid body dest reference is invalid.
-        _test(invalid_data[1], "bar", {'path': 'tls_endpoint.bar'})
+                document_validation.DocumentValidation(invalid_entry)

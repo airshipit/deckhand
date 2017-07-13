@@ -68,7 +68,7 @@ class BaseResource(object):
                 raise errors.InvalidFormat("%s: Invalid JSON in body: %s" % (
                     req.path, jex))
         else:
-            raise errors.InvalidFormat("Requires application/json payload")
+            raise errors.InvalidFormat("Requires application/json payload.")
 
     def return_error(self, resp, status_code, message="", retry=False):
         resp.body = json.dumps(

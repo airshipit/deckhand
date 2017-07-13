@@ -12,34 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import yaml
-
 import jsonschema
 
 from deckhand.engine.schema.v1_0 import default_schema
 from deckhand import errors
 
 
-class SecretSubstitution(object):
-    """Class for secret substitution logic for YAML files.
+class DocumentValidation(object):
+    """Class for document validation logic for YAML files.
 
     This class is responsible for parsing, validating and retrieving secret
-    values for values stored in the YAML file. Afterward, secret values will be
-    substituted or "forward-repalced" into the YAML file. The end result is a
-    YAML file containing all necessary secrets to be handed off to other
-    services.
+    values for values stored in the YAML file.
 
     :param data: YAML data that requires secrets to be validated, merged and
         consolidated.
     """
 
     def __init__(self, data):
-        try:
-            self.data = yaml.safe_load(data)
-        except yaml.YAMLError:
-            raise errors.InvalidFormat(
-                'The provided YAML file cannot be parsed.')
-
+        self.data = data
         self.pre_validate_data()
 
     class SchemaVersion(object):
@@ -68,22 +58,12 @@ class SecretSubstitution(object):
         """Pre-validate that the YAML file is correctly formatted."""
         self._validate_with_schema()
 
-        # Validate that each "dest" field exists in the YAML data.
-        # FIXME(fm577c): Dest fields will be injected if not present - the
-        # validation below needs to be updated or removed.
-        substitutions = self.data['metadata']['substitutions']
-        destinations = [s['dest'] for s in substitutions]
-        sub_data = self.data['data']
-
-        for dest in destinations:
-            result, missing_attr = self._multi_getattr(dest['path'], sub_data)
-            if not result:
-                raise errors.InvalidFormat(
-                    'The attribute "%s" included in the "dest" field "%s" is '
-                    'missing from the YAML data: "%s".' % (
-                        missing_attr, dest, sub_data))
-
         # TODO(fm577c): Query Deckhand API to validate "src" values.
+
+    @property
+    def doc_name(self):
+        return (self.data['schemaVersion'] + self.data['kind'] +
+                self.data['metadata']['name'])
 
     def _validate_with_schema(self):
         # Validate the document using the schema defined by the document's
