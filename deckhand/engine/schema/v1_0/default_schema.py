@@ -47,6 +47,7 @@ schema = {
             'type': 'string',
             'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
         },
+        # TODO: The kind should be an enum.
         'kind': {'type': 'string'},
         'metadata': {
             'type': 'object',

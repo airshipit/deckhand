@@ -40,7 +40,7 @@ class SecretSubstitution(object):
             raise errors.InvalidFormat(
                 'The provided YAML file cannot be parsed.')
 
-        self.validate_data()
+        self.pre_validate_data()
 
     class SchemaVersion(object):
         """Class for retrieving correct schema for pre-validation on YAML.
@@ -50,17 +50,21 @@ class SecretSubstitution(object):
         YAML data.
         """
 
-        schema_versions_info = [{'version': 'v1', 'schema': default_schema}]
+        # TODO: Update kind according to requirements.
+        schema_versions_info = [{'version': 'v1', 'kind': 'default',
+                                 'schema': default_schema}]
 
-        def __init__(self, schema_version):
+        def __init__(self, schema_version, kind):
             self.schema_version = schema_version
+            self.kind = kind
 
         @property
         def schema(self):
+            # TODO: return schema based on version and kind.
             return [v['schema'] for v in self.schema_versions_info
                     if v['version'] == self.schema_version][0].schema
 
-    def validate_data(self):
+    def pre_validate_data(self):
         """Pre-validate that the YAML file is correctly formatted."""
         self._validate_with_schema()
 
@@ -82,17 +86,18 @@ class SecretSubstitution(object):
         # TODO(fm577c): Query Deckhand API to validate "src" values.
 
     def _validate_with_schema(self):
-        # Validate that a schema with "schemaVersion" version number exists,
-        # then use that schema to validate the YAML data.
+        # Validate the document using the schema defined by the document's
+        # `schemaVersion` and `kind`.
         try:
             schema_version = self.data['schemaVersion'].split('/')[-1]
-            data_schema_version = self.SchemaVersion(schema_version)
+            doc_kind = self.data['kind']
+            doc_schema_version = self.SchemaVersion(schema_version, doc_kind)
         except (AttributeError, IndexError, KeyError) as e:
             raise errors.InvalidFormat(
                 'The provided schemaVersion is invalid or missing. Exception: '
                 '%s.' % e)
         try:
-            jsonschema.validate(self.data, data_schema_version.schema)
+            jsonschema.validate(self.data, doc_schema_version.schema)
         except jsonschema.exceptions.ValidationError as e:
             raise errors.InvalidFormat('The provided YAML file is invalid. '
                                        'Exception: %s.' % e.message)
