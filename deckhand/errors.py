@@ -18,4 +18,4 @@ class ApiError(Exception):
 
 
 class InvalidFormat(ApiError):
-    pass
+    """The YAML file is incorrectly formatted and cannot be read."""

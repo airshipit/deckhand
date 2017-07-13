@@ -1,0 +1,33 @@
+# Sample YAML file for testing forward replacement.
+---
+schemaVersion: promenade/v1
+kind: SomeConfigType
+metadata:
+  metadataVersion: deckhand/v1
+  name: a-unique-config-name-12345
+  labels:
+    component: apiserver
+    hostname: server0
+  layerDefinition:
+      layer: global
+      abstract: True
+      childSelector:
+        label: value
+  substitutions:
+    - dest:
+        path: .tls_endpoint.certificate
+        replacePattern: 'test.pattern'
+      src:
+        kind: Certificate
+        name: some-certificate-asdf-1234
+        path: .cert
+    - dest:
+        path: .tls_endpoint.key
+      src:
+        kind: CertificateKey
+        name: some-certificate-asdf-1234
+        path: .key
+data:
+  tls_endpoint:
+    certificate: '.cert'
+    key: deckhand/v1:some-certificate-asdf-1234

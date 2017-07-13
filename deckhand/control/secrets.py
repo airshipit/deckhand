@@ -23,8 +23,7 @@ from deckhand.control import base as api_base
 class SecretsResource(api_base.BaseResource):
     """API resource for interacting with Barbican.
 
-    TODO(felipemonteiro): Once Barbican integration is fully implemented,
-    implement API endpoints below.
+    NOTE: Currently only supports Barbican.
     """
 
     def __init__(self, **kwargs):
@@ -32,8 +31,25 @@ class SecretsResource(api_base.BaseResource):
         self.authorized_roles = ['user']
         self.barbican_driver = driver.BarbicanDriver()
 
-    def on_get(self, req, resp):
-        # TODO(felipemonteiro): Implement this API endpoint.
-        ca_list = self.barbican_driver.ca_list()  # Random endpoint to test.
-        resp.body = json.dumps({'secrets': [c.to_dict() for c in ca_list]})
+    def on_post(self, req, resp):
+        """Create a secret.
+
+        :param name: The name of the secret. Required.
+        :param type: The type of the secret. Optional.
+
+        For a list of types, please refer to the following API documentation:
+        https://docs.openstack.org/barbican/latest/api/reference/secret_types.html
+        """
+        secret_name = req.params.get('name', None)
+        secret_type = req.params.get('type', None)
+
+        if not secret_name:
+            resp.status = falcon.HTTP_400
+
+        # Do not allow users to call Barbican with all permitted kwargs.
+        # Selectively include only what we allow.
+        kwargs = {'name': secret_name, 'secret_type': secret_type}
+        secret = self.barbican_driver.create_secret(**kwargs)
+
+        resp.body = json.dumps(secret)
         resp.status = falcon.HTTP_200
