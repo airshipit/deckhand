@@ -1,0 +1,7 @@
+---
+schema: deckhand/Passphrase/v1.0
+metadata:
+  schema: metadata/Document/v1.0
+  name: application-admin-password
+  storagePolicy: encrypted
+data: some-password

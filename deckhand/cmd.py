@@ -11,3 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+from deckhand.control import api
+
+
+def start_deckhand():
+    return api.start_api()
+
+
+# Callable to be used by uwsgi.
+deckhand_callable = start_deckhand()

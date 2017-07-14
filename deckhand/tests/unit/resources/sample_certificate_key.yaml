@@ -1,0 +1,12 @@
+---
+schema: deckhand/CertificateKey/v1.0
+metadata:
+  schema: metadata/Document/v1.0
+  name: application-api
+  storagePolicy: encrypted
+data: |-
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEpQIBAAKCAQEAx+m1+ao7uTVEs+I/Sie9YsXL0B9mOXFlzEdHX8P8x4nx78/T
+  ...snip...
+  Zf3ykIG8l71pIs4TGsPlnyeO6LzCWP5WRSh+BHnyXXjzx/uxMOpQ/6I=
+  -----END RSA PRIVATE KEY-----

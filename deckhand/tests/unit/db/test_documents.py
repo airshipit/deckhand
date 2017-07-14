@@ -24,9 +24,8 @@ class TestDocuments(base.TestDbBase):
         self.assertIsInstance(documents, list)
         self.assertEqual(1, len(documents))
 
-        for document in documents:
-            retrieved_document = self._get_document(id=document['id'])
-            self.assertEqual(document, retrieved_document)
+        retrieved_document = self._get_document(id=documents[0]['id'])
+        self.assertEqual(documents[0], retrieved_document)
 
     def test_create_document_again_with_no_changes(self):
         payload = base.DocumentFixture.get_minimal_fixture()

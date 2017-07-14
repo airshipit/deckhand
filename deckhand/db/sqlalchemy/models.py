@@ -39,7 +39,7 @@ BASE = declarative.declarative_base()
 class DeckhandBase(models.ModelBase, models.TimestampMixin):
     """Base class for Deckhand Models."""
 
-    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
+    __table_args__ = {'mysql_engine': 'Postgre', 'mysql_charset': 'utf8'}
     __table_initialized__ = False
     __protected_attributes__ = set([
         "created_at", "updated_at", "deleted_at", "deleted"])
@@ -70,7 +70,12 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
     def items(self):
         return self.__dict__.items()
 
-    def to_dict(self):
+    def to_dict(self, raw_dict=False):
+        """Conver the object into dictionary format.
+
+        :param raw_dict: if True, returns unmodified data; else returns data
+            expected by users.
+        """
         d = self.__dict__.copy()
         # Remove private state instance, as it is not serializable and causes
         # CircularReference.
@@ -83,11 +88,16 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
             if k in d and d[k]:
                 d[k] = d[k].isoformat()
 
+        # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``_metadata``
+        # must be used to store document metadata information in the DB.
+        if not raw_dict and '_metadata' in self.keys():
+            d['metadata'] = d['_metadata']
+
         return d
 
     @staticmethod
-    def gen_unqiue_contraint(self, *fields):
-        constraint_name = 'ix_' + self.__class__.__name__.lower() + '_'
+    def gen_unqiue_contraint(*fields):
+        constraint_name = 'ix_' + DeckhandBase.__name__.lower() + '_'
         for field in fields:
             constraint_name = constraint_name + '_%s' % field
         return schema.UniqueConstraint(*fields, name=constraint_name)
@@ -98,56 +108,74 @@ class Revision(BASE, DeckhandBase):
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
-    parent_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
-    child_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
-    results = Column(oslo_types.JsonEncodedList(), nullable=True)
-
     documents = relationship("Document")
+    validation_policies = relationship("ValidationPolicy")
 
     def to_dict(self):
         d = super(Revision, self).to_dict()
         d['documents'] = [doc.to_dict() for doc in self.documents]
+        d['validation_policies'] = [
+            vp.to_dict() for vp in self.validation_policies]
         return d
 
 
-class Document(BASE, DeckhandBase):
+class DocumentMixin(object):
+    """Mixin class for sharing common columns across all document resources
+    such as documents themselves, layering policies and validation policies."""
+
+    name = Column(String(64), nullable=False)
+    schema = Column(String(64), nullable=False)
+    # NOTE: Do not define a maximum length for these JSON data below. However,
+    # this approach is not compatible with all database types.
+    # "metadata" is reserved, so use "_metadata" instead.
+    _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
+    data = Column(oslo_types.JsonEncodedDict(), nullable=False)
+
+    @declarative.declared_attr
+    def revision_id(cls):
+        return Column(Integer, ForeignKey('revisions.id'), nullable=False)
+
+
+class Document(BASE, DeckhandBase, DocumentMixin):
     UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
     __tablename__ = 'documents'
     __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
-    schema = Column(String(64), nullable=False)
-    name = Column(String(64), nullable=False)
-    # NOTE: Do not define a maximum length for these JSON data below. However,
-    # this approach is not compatible with all database types.
-    # "metadata" is reserved, so use "_metadata" instead.
-    _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
-    data = Column(oslo_types.JsonEncodedDict(), nullable=False)
-    revision_id = Column(Integer, ForeignKey('revisions.id'), nullable=False)
 
-    def to_dict(self, raw_dict=False):
-        """Convert the ``Document`` object into a dictionary format.
 
-        :param raw_dict: if True, returns unmodified data; else returns data
-            expected by users.
-        :returns: dictionary format of ``Document`` object.
-        """
-        d = super(Document, self).to_dict()
-        # ``_metadata`` is used in the DB schema as ``metadata`` is reserved.
-        if not raw_dict:
-            d['metadata'] = d.pop('_metadata')
-        return d
+class LayeringPolicy(BASE, DeckhandBase, DocumentMixin):
+
+    # NOTE(fmontei): Only one layering policy can exist per revision, so
+    # enforce this constraint at the DB level.
+    UNIQUE_CONSTRAINTS = ('revision_id',)
+    __tablename__ = 'layering_policies'
+    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
+
+    id = Column(String(36), primary_key=True,
+                default=lambda: str(uuid.uuid4()))
+
+
+class ValidationPolicy(BASE, DeckhandBase, DocumentMixin):
+
+    UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
+    __tablename__ = 'validation_policies'
+    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
+
+    id = Column(String(36), primary_key=True,
+                default=lambda: str(uuid.uuid4()))
+
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""
-    models = [Document]
+    models = [Document, Revision, LayeringPolicy, ValidationPolicy]
     for model in models:
         model.metadata.create_all(engine)
 
 
 def unregister_models(engine):
     """Drop database tables for all models with the given engine."""
-    models = [Document]
+    models = [Document, Revision, LayeringPolicy, ValidationPolicy]
     for model in models:
         model.metadata.drop_all(engine)

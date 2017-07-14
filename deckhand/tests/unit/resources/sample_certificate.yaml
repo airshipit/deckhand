@@ -1,0 +1,13 @@
+---
+schema: deckhand/Certificate/v1.0
+metadata:
+  schema: metadata/Document/v1.0
+  name: application-api
+  storagePolicy: cleartext
+data: |-
+  -----BEGIN CERTIFICATE-----
+  MIIDYDCCAkigAwIBAgIUKG41PW4VtiphzASAMY4/3hL8OtAwDQYJKoZIhvcNAQEL
+  ...snip...
+  P3WT9CfFARnsw2nKjnglQcwKkKLYip0WY2wh3FE7nrQZP6xKNaSRlh6p2pCGwwwH
+  HkvVwA==
+  -----END CERTIFICATE-----

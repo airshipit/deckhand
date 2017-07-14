@@ -35,4 +35,4 @@ To run locally in a development environment::
 	$ . /var/tmp/deckhand/bin/activate
 	$ sudo pip install .
 	$ sudo python setup.py install
-	$ uwsgi --http :9000 -w deckhand.deckhand --callable deckhand_callable --enable-threads -L
+	$ uwsgi --http :9000 -w deckhand.cmd --callable deckhand_callable --enable-threads -L

@@ -18,10 +18,10 @@ substitution_schema = {
         'dest': {
             'type': 'object',
             'properties': {
-                'path': {'type': 'string'}
+                'path': {'type': 'string'},
+                'pattern': {'type': 'string'}
             },
             'additionalProperties': False,
-            # 'replacePattern' is not required.
             'required': ['path']
         },
         'src': {
@@ -44,35 +44,32 @@ schema = {
     'properties': {
         'schema': {
             'type': 'string',
-            'pattern': '^(.*\/v[0-9]{1})$'
+            'pattern': '^([A-Za-z]+/[A-Za-z]+/v[1]{1}\.[0]{1})$'
         },
         'metadata': {
             'type': 'object',
             'properties': {
                 'schema': {
                     'type': 'string',
-                    'pattern': '^(.*/v[0-9]{1})$'
+                    'pattern': '^(metadata/Document/v[1]{1}\.[0]{1})$'
                 },
                 'name': {'type': 'string'},
-                'storagePolicy': {'type': 'string'},
-                'labels': {
-                    'type': 'object'
-                },
+                'labels': {'type': 'object'},
                 'layeringDefinition': {
                     'type': 'object',
                     'properties': {
                         'layer': {'type': 'string'},
                         'abstract': {'type': 'boolean'},
-                        'parentSelector': {
-                            'type': 'object'
-                        },
+                        # "parentSelector" is optional.
+                        'parentSelector': {'type': 'object'},
+                        # "actions" is optional.
                         'actions': {
                             'type': 'array',
                             'items': {
                                 'type': 'object',
                                 'properties': {
-                                    'method': {'enum': ['merge', 'delete',
-                                                        'replace']},
+                                    'method': {'enum': ['replace', 'delete',
+                                                        'merge']},
                                     'path': {'type': 'string'}
                                 },
                                 'additionalProperties': False,
@@ -81,16 +78,16 @@ schema = {
                         }
                     },
                     'additionalProperties': False,
-                    'required': ['layer', 'abstract', 'parentSelector']
+                    'required': ['layer', 'abstract']
                 },
+                # "substitutions" is optional.
                 'substitutions': {
                     'type': 'array',
                     'items': substitution_schema
                 }
             },
             'additionalProperties': False,
-            'required': ['schema', 'name', 'storagePolicy', 'labels',
-                         'layeringDefinition', 'substitutions']
+            'required': ['schema', 'name', 'layeringDefinition']
         },
         'data': {
             'type': 'object'

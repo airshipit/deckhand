@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .control import api
+DOCUMENT_SCHEMA_TYPES = (
+    LAYERING_POLICY_SCHEMA,
+    VALIDATION_POLICY_SCHEMA,
+) = (
+    'deckhand/LayeringPolicy/v1',
+    'deckhand/ValidationPolicy/v1',
+)
 
-
-def start_deckhand():
-    return api.start_api()
-
-
-# Callable to be used by uwsgi.
-deckhand_callable = start_deckhand()
+DECKHAND_VALIDATION_TYPES = (
+    DECKHAND_SCHEMA_VALIDATION,
+) = (
+    'deckhand-schema-validation',
+)

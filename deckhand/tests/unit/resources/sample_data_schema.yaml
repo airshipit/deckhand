@@ -1,0 +1,9 @@
+---
+schema: deckhand/DataSchema/v1.0  # This specifies the official JSON schema meta-schema.
+metadata:
+  schema: metadata/Control/v1.0
+  name: promenade/Node/v1.0  # Specifies the documents to be used for validation.
+  labels:
+    application: promenade
+data:  # Valid JSON Schema is expected here.
+  $schema: http://blah

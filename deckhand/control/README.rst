@@ -161,7 +161,7 @@ Document creation can be tested locally using (from root deckhand directory):
 
     $ curl -i -X POST localhost:9000/api/v1.0/documents \
          -H "Content-Type: application/x-yaml" \
-         --data-binary "@deckhand/tests/unit/resources/sample.yaml"
+         --data-binary "@deckhand/tests/unit/resources/sample_document.yaml"
 
     # revision_id copy/pasted from previous response.
     $ curl -i -X GET localhost:9000/api/v1.0/revisions/0e99c8b9-bab4-4fc7-8405-7dbd22c33a30/documents

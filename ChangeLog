@@ -1,6 +1,53 @@
 CHANGES
 =======
 
+* Some integration with views/database
+* Add validations to document db model
+* Fix up \_is\_abstract in document\_validation
+* Updated document schema
+* Resolved merge conflicts
+* Clean up
+* Refactor some code
+* Fixed failing tests.g
+* WIP: more changes, debugging, tests
+* Fix unit tests
+* Remove deprecated code, update deprecated schemas and add new schemas
+* Add schema validation for validation policy
+* Changed layers to type string in schemas
+* f
+* Add layering policy pre-validation schema
+* Add layering policy pre-validation schema
+* Refactor some code
+* Add endpoint/tests for GET /revisions/{revision\_id}
+* Fix naming conflict error
+* Add view abstraction layer for modifying DB data into view data
+* Raise exception instead of return
+* Updated /GET revisions response body
+* Remove old docstring
+* Update control README (with current response bodies, even though they're a WIP
+* Return YAML response body
+* Add endpoint for GET /revisions
+* Use built-in oslo\_db types for Columns serialized as dicts
+* Finish retrieving documents by revision\_id, including with filters
+* Clean up
+* Test and DB API changes
+* Add Revision resource
+* More tests for revisions-api. Fix minor bugs
+* Clarify layering actions start from full parent data
+* Add DELETE endpoint
+* Skip validation for abstract documents & add unit tests
+* Update schema validation to be internal validation
+* Update schema/db model/db api to align with design document
+* Add basic RBAC details to design document
+* Update documents/revisions relationship/tables
+* Update revision and document tables and add more unit tests
+* temp
+* Revisions database and API implementation
+* Update API paths for consistency
+* Add clarifications based on review
+* Use safe\_load\_all instead of safe\_load
+* Add unit tests for db documents api
+* Remove oslo\_versionedobjects
 * Change application/yaml to application/x-yaml
 * Cleaned up some logic, added exception handling to document creation
 * Add currently necessary oslo namespaces to oslo-config-generator conf file
@@ -10,8 +57,11 @@ CHANGES
 * Added oslo\_context-based context for oslo\_db compatibility
 * Update database documents schema
 * Helper for generating versioned object automatically from dictionary payload
+* Add description of substitution
 * Update README
 * Temporary change - do not commit
+* Reference Layering section in layeringDefinition description
+* Add overall layering description
 * Initial DB API models implementation
 * Added control (API) readme
 * [WIP] Implement documents API
@@ -25,9 +75,25 @@ CHANGES
 * Add additional documentation
 * Add jsonschema validation to Deckhand
 * Initial engine framework
+* fix typo
+* Provide a separate rendered-documents endpoint
+* Move reporting of validation status
+* Add samples for remaining endpoints
+* Address some initial review comments
+* WIP: Add initial design document
 * Fix incorrect comment
 * Deckhand initial ORM implementation
 * Deckhand initial ORM implementation
+* Add kind param to SchemaVersion class
+* Change apiVersion references to schemaVersion
+* Remove apiVersion attribute from substitutions.src attributes
+* Remove apiVersion attribute from substitutions.src attributes
+* Update default\_schema with our updated schema definition
+* Trivial fix to default\_schema
+* Use regexes for jsonschema pre-validation
+* Add additional documentation
+* Add jsonschema validation to Deckhand
+* Initial engine framework
 * Add oslo.log integration
 * DECKHAND-10: Add Barbican integration to Deckhand
 * Update ChangeLog

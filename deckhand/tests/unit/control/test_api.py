@@ -14,21 +14,20 @@
 
 import mock
 
-import testtools
-
 from deckhand.control import api
 from deckhand.control import base as api_base
 from deckhand.control import documents
 from deckhand.control import revision_documents
 from deckhand.control import revisions
 from deckhand.control import secrets
+from deckhand.tests.unit import base as test_base
 
 
-class TestApi(testtools.TestCase):
+class TestApi(test_base.DeckhandTestCase):
 
     def setUp(self):
         super(TestApi, self).setUp()
-        for resource in (documents, revisions, revision_documents, secrets):
+        for resource in (documents, revision_documents, revisions, secrets):
             resource_name = resource.__name__.split('.')[-1]
             resource_obj = mock.patch.object(
                 resource, '%sResource' % resource_name.title().replace(

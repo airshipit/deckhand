@@ -14,11 +14,12 @@
 
 import jsonschema
 from oslo_log import log as logging
-import six
 
-from deckhand.engine.schema.v1_0 import default_policy_validation
-from deckhand.engine.schema.v1_0 import default_schema_validation
+from deckhand.engine.schema import base_schema
+from deckhand.engine.schema import v1_0
 from deckhand import errors
+from deckhand import factories
+from deckhand import types
 
 LOG = logging.getLogger(__name__)
 
@@ -26,74 +27,146 @@ LOG = logging.getLogger(__name__)
 class DocumentValidation(object):
     """Class for document validation logic for YAML files.
 
-    This class is responsible for performing built-in validations on Documents.
+    This class is responsible for validating YAML files according to their
+    schema.
 
-    :param data: YAML data that requires secrets to be validated, merged and
-        consolidated.
+    :param documents: Documents to be validated.
+    :type documents: List of dictionaries or dictionary.
     """
 
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, documents):
+        if not isinstance(documents, (list, tuple)):
+            documents = [documents]
 
-    class SchemaVersion(object):
+        self.documents = documents
+
+    class SchemaType(object):
         """Class for retrieving correct schema for pre-validation on YAML.
 
         Retrieves the schema that corresponds to "apiVersion" in the YAML
         data. This schema is responsible for performing pre-validation on
         YAML data.
-
-        The built-in validation schemas that are always executed include:
-
-          - `deckhand-document-schema-validation`
-          - `deckhand-policy-validation`
         """
 
-        # TODO: Use the correct validation based on the Document's schema.
-        internal_validations = [
-            {'version': 'v1', 'fqn': 'deckhand-document-schema-validation',
-             'schema': default_schema_validation},
-            {'version': 'v1', 'fqn': 'deckhand-policy-validation',
-             'schema': default_policy_validation}]
+        # TODO(fmontei): Support dynamically registered schemas.
+        schema_versions_info = [
+            {'id': 'deckhand/CertificateKey',
+             'schema': v1_0.certificate_key_schema},
+            {'id': 'deckhand/Certificate',
+             'schema': v1_0.certificate_schema},
+            {'id': 'deckhand/DataSchema',
+             'schema': v1_0.data_schema},
+            # NOTE(fmontei): Fall back to the metadata's schema for validating
+            # generic documents.
+            {'id': 'metadata/Document',
+             'schema': v1_0.document_schema},
+            {'id': 'deckhand/LayeringPolicy',
+             'schema': v1_0.layering_schema},
+            {'id': 'deckhand/Passphrase',
+             'schema': v1_0.passphrase_schema},
+            {'id': 'deckhand/ValidationPolicy',
+             'schema': v1_0.validation_schema}]
 
-        def __init__(self, schema_version):
-            self.schema_version = schema_version
+        def __init__(self, data):
+            """Constructor for ``SchemaType``.
 
-        @property
-        def schema(self):
-            # TODO: return schema based on Document's schema.
-            return [v['schema'] for v in self.internal_validations
-                    if v['version'] == self.schema_version][0].schema
+            Retrieve the relevant schema based on the API version and schema
+            name contained in `document.schema` where `document` constitutes a
+            single document in a YAML payload.
 
-    def pre_validate(self):
-        """Pre-validate that the YAML file is correctly formatted."""
-        self._validate_with_schema()
+            :param api_version: The API version used for schema validation.
+            :param schema: The schema property in `document.schema`.
+            """
+            self.schema = self.get_schema(data)
 
-    def _validate_with_schema(self):
-        # Validate the document using the document's ``schema``. Only validate
-        # concrete documents.
+        def get_schema(self, data):
+            # Fall back to `document.metadata.schema` if the schema cannot be
+            # determined from `data.schema`.
+            for doc_property in [data['schema'], data['metadata']['schema']]:
+                schema = self._get_schema_by_property(doc_property)
+                if schema:
+                    return schema
+            return None
+
+        def _get_schema_by_property(self, doc_property):
+            schema_parts = doc_property.split('/')
+            doc_schema_identifier = '/'.join(schema_parts[:-1])
+
+            for schema in self.schema_versions_info:
+                if doc_schema_identifier == schema['id']:
+                    return schema['schema'].schema
+            return None
+
+    def validate_all(self):
+        """Pre-validate that the YAML file is correctly formatted.
+
+        All concrete documents in the revision successfully pass their JSON
+        schema validations. The result of the validation is stored under
+        the "deckhand-document-schema-validation" validation namespace for
+        a document revision.
+
+        Validation is broken up into 2 stages:
+
+            1) Validate that each document contains the basic bulding blocks
+               needed: "schema", "metadata" and "data" using a "base" schema.
+            2) Validate each specific document type (e.g. validation policy)
+               using a more detailed schema.
+
+        :returns: Dictionary mapping with keys being the unique name for each
+            document and values being the validations executed for that
+            document, including failed and succeeded validations.
+        """
+        internal_validation_docs = []
+        validation_policy_factory = factories.ValidationPolicyFactory()
+
+        for document in self.documents:
+            document_validations = self._validate_one(document)
+
+        deckhand_schema_validation = validation_policy_factory.gen(
+            types.DECKHAND_SCHEMA_VALIDATION, status='success')
+        internal_validation_docs.append(deckhand_schema_validation)
+
+        return internal_validation_docs
+
+    def _validate_one(self, document):
+        # Subject every document to basic validation to verify that each
+        # main section is present (schema, metadata, data).
         try:
-            abstract = self.data['metadata']['layeringDefinition'][
-                'abstract']
-            is_abstract = six.text_type(abstract).lower() == 'true'
-        except KeyError as e:
-            raise errors.InvalidFormat(
-                "Could not find 'abstract' property from document.")
-
-        # TODO: This should be done inside a different module.
-        if is_abstract:
-            LOG.info(
-                "Skipping validation for the document because it is abstract")
-            return
-
-        try:
-            schema_version = self.data['schema'].split('/')[-1]
-            doc_schema_version = self.SchemaVersion(schema_version)
-        except (AttributeError, IndexError, KeyError) as e:
-            raise errors.InvalidFormat(
-                'The provided schema is invalid or missing. Exception: '
-                '%s.' % e)
-        try:
-            jsonschema.validate(self.data, doc_schema_version.schema)
+            jsonschema.validate(document, base_schema.schema)
         except jsonschema.exceptions.ValidationError as e:
-            raise errors.InvalidFormat('The provided YAML file is invalid. '
-                                       'Exception: %s.' % e.message)
+            raise errors.InvalidDocumentFormat(
+                detail=e.message, schema=e.schema)
+
+        doc_schema_type = self.SchemaType(document)
+        if doc_schema_type.schema is None:
+            raise errors.UknownDocumentFormat(
+                document_type=document['schema'])
+
+        # Perform more detailed validation on each document depending on
+        # its schema. If the document is abstract, validation errors are
+        # ignored.
+        try:
+            jsonschema.validate(document, doc_schema_type.schema)
+        except jsonschema.exceptions.ValidationError as e:
+            # TODO(fmontei): Use the `Document` object wrapper instead
+            # once other PR is merged.
+            if not self._is_abstract(document):
+                raise errors.InvalidDocumentFormat(
+                    detail=e.message, schema=e.schema,
+                    document_type=document['schema'])
+            else:
+                LOG.info('Skipping schema validation for abstract '
+                         'document: %s.' % document)
+
+    def _is_abstract(self, document):
+        try:
+            is_abstract = document['metadata']['layeringDefinition'][
+                'abstract'] == True
+            return is_abstract
+        # NOTE(fmontei): If the document is of ``document_schema`` type and
+        # no "layeringDefinition" or "abstract" property is found, then treat
+        # this as a validation error.
+        except KeyError:
+            doc_schema_type = self.SchemaType(document)
+            return doc_schema_type is v1_0.document_schema
+        return False

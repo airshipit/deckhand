@@ -45,17 +45,23 @@ class DeckhandException(Exception):
         return self.args[0]
 
 
-class ApiError(Exception):
-    pass
+class InvalidDocumentFormat(DeckhandException):
+    msg_fmt = ("The provided YAML failed schema validation. Details: "
+               "%(detail)s. Schema: %(schema)s.")
+    alt_msg_fmt = ("The provided %(document_type)s YAML failed schema "
+                   "validation. Details: %(detail)s. Schema: %(schema)s.")
+
+    def __init__(self, document_type=None, **kwargs):
+        if document_type:
+            self.msg_fmt = self.alt_msg_fmt
+            kwargs.update({'document_type': document_type})
+        super(InvalidDocumentFormat, self).__init__(**kwargs)
 
 
-class InvalidFormat(ApiError):
-    """The YAML file is incorrectly formatted and cannot be read."""
-
-
-class DocumentExists(DeckhandException):
-    msg_fmt = ("Document with kind %(kind)s and schemaVersion "
-               "%(schema_version)s already exists.")
+class UnknownDocumentFormat(DeckhandException):
+    msg_fmt = ("Could not determine the validation schema to validate the "
+                "document type: %(document_type)s.")
+    code = 400
 
 
 class RevisionNotFound(DeckhandException):

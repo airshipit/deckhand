@@ -1,0 +1,14 @@
+# Sample post-validation policy document.
+---
+schema: deckhand/ValidationPolicy/v1.0
+metadata:
+  schema: metadata/Control/v1.0
+  name: later-validation
+data:
+  validations:
+    - name: deckhand-schema-validation
+    - name: drydock-site-validation
+      expiresAfter: P1W
+    - name: promenade-site-validation
+      expiresAfter: P1W
+    - name: armada-deployability-validation

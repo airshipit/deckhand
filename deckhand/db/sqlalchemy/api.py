@@ -38,6 +38,7 @@ import sqlalchemy.sql as sa_sql
 
 from deckhand.db.sqlalchemy import models
 from deckhand import errors
+from deckhand import types
 from deckhand import utils
 
 sa_logger = None
@@ -111,18 +112,31 @@ def drop_db():
     models.unregister_models(get_engine())
 
 
-def documents_create(documents, session=None):
-    """Create a set of documents."""
-    created_docs = [document_create(doc, session) for doc in documents]
-    return created_docs
+def documents_create(documents, validation_policies, session=None):
+    session = session or get_session()
+
+    documents_created = _documents_create(documents, session)
+    val_policies_created = _documents_create(validation_policies, session)
+    all_docs_created = documents_created + val_policies_created
+
+    if all_docs_created:
+        revision = revision_create()
+        for doc in all_docs_created:
+            with session.begin():
+                doc['revision_id'] = revision['id']
+                doc.save(session=session)
+
+    return [d.to_dict() for d in documents_created]
 
 
-def documents_create(values_list, session=None):
+def _documents_create(values_list, session=None):
     """Create a set of documents and associated schema.
 
     If no changes are detected, a new revision will not be created. This
     allows services to periodically re-register their schemas without
     creating unnecessary revisions.
+
+    :param values_list: List of documents to be saved.
     """
     values_list = copy.deepcopy(values_list)
     session = session or get_session()
@@ -138,17 +152,24 @@ def documents_create(values_list, session=None):
                 return True
         return False
 
+    def _get_model(schema):
+        if schema == types.LAYERING_POLICY_SCHEMA:
+            return models.LayeringPolicy()
+        elif schema == types.VALIDATION_POLICY_SCHEMA:
+            return models.ValidationPolicy()
+        else:
+            return models.Document()
+
     def _document_create(values):
-        document = models.Document()
+        document = _get_model(values['schema'])
         with session.begin():
             document.update(values)
-            document.save(session=session)
-        return document.to_dict()
+        return document
 
     for values in values_list:
         values['_metadata'] = values.pop('metadata')
         values['name'] = values['_metadata']['name']
-    
+
         try:
             existing_document = document_get(
                 raw_dict=True,
@@ -164,10 +185,7 @@ def documents_create(values_list, session=None):
             do_create = True
 
     if do_create:
-        revision = revision_create()
-
         for values in values_list:
-            values['revision_id'] = revision['id']
             doc = _document_create(values)
             documents_created.append(doc)
 
@@ -198,11 +216,13 @@ def revision_get(revision_id, session=None):
     :raises: RevisionNotFound if the revision was not found.
     """
     session = session or get_session()
+
     try:
         revision = session.query(models.Revision).filter_by(
             id=revision_id).one().to_dict()
     except sa_orm.exc.NoResultFound:
         raise errors.RevisionNotFound(revision=revision_id)
+
     return revision
 
 

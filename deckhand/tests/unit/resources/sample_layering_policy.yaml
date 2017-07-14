@@ -1,0 +1,13 @@
+# Sample layering policy.
+---
+schema: deckhand/LayeringPolicy/v1.0
+metadata:
+  schema: metadata/Control/v1
+  name: a-unique-config-name-12345
+data:
+  layerOrder:
+    - global
+    - global-network
+    - global-storage
+    - region
+    - site
