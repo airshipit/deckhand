@@ -60,7 +60,10 @@ documents with either `Document` or `Control` metadata.
 This type of metadata allows the following metadata hierarchy:
 
 * `name` - string, required - Unique within a revision for a given `schema`.
-* `storagePolicy` - string, required - Either `cleartext` or `encrypted`.
+* `storagePolicy` - string, required - Either `cleartext` or `encrypted`. If
+  `encyrpted` is specified, then the `data` section of the document will be
+  stored in an secure backend (likely via OpenStack Barbican). `metadata` and
+  `schema` fields are always stored in cleartext.
 * `layeringDefinition` - dict, required - Specifies
   * `abstract` - boolean, required - An abstract document is not expected to
     pass schema validation after layering and substitution are applied.
@@ -79,6 +82,8 @@ This type of metadata allows the following metadata hierarchy:
   * `dest` - dict, required - A description of the inserted content destination.
     * `path` - string, required - The JSON path where the data will be placed
       into the `data` section of this document.
+    * `pattern` - string, optional - A regex to search for in the string
+      specified at `path` in this document and replace with the source data.
   * `src` - dict, required - A description of the inserted content source.
     * `schema` - string, required - The `schema` of the source document.
     * `name` - string, required - The `metadata.name` of the source document.
@@ -102,8 +107,8 @@ metadata:
     abstract: true
     layer: region
     parentSelector:
-      labels: parents
-      must: have
+      required_key_a: required_label_a
+      required_key_b: required_label_b
     actions:
       - method: merge
         path: .path.to.merge.into.parent
@@ -127,6 +132,7 @@ data:
             data: here
   substitution:
     target: null  # Paths do not need to exist to be specified as substitutiond destinations.
+...
 ```
 
 
@@ -196,6 +202,7 @@ metadata:
     application: promenade
 data:  # Valid JSON Schema is expected here.
   $schema: http://blah
+...
 ```
 
 #### LayeringPolicy
@@ -222,6 +229,7 @@ data:
     - region
     - site
     - force
+...
 ```
 
 #### ValidationPolicy
@@ -252,6 +260,7 @@ data:
     - name: promenade-site-validation
       expiresAfter: P1W
     - name: armada-deployability-validation
+...
 ```
 
 ### Provided Utility Document Kinds
@@ -275,6 +284,7 @@ data: |-
   P3WT9CfFARnsw2nKjnglQcwKkKLYip0WY2wh3FE7nrQZP6xKNaSRlh6p2pCGwwwH
   HkvVwA==
   -----END CERTIFICATE-----
+...
 ```
 
 #### CertificateKey
@@ -292,6 +302,7 @@ data: |-
   ...snip...
   Zf3ykIG8l71pIs4TGsPlnyeO6LzCWP5WRSh+BHnyXXjzx/uxMOpQ/6I=
   -----END RSA PRIVATE KEY-----
+...
 ```
 
 #### Passphrase
@@ -304,6 +315,7 @@ metadata:
   name: application-admin-password
   storagePolicy: encrypted
 data: some-password
+...
 ```
 
 ## Revision History
@@ -333,10 +345,12 @@ document of `schema` + `metadata.name`. Documents are "deleted" by including
 documents with the tombstone metadata schema, such as:
 
 ```yaml
+---
 schema: any-namespace/AnyKind/v1
 metadata:
   schema: metadata/Tombstone/v1
   name: name-to-delete
+...
 ```
 
 This endpoint is the only way to add, update, and delete documents. This
