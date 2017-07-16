@@ -182,7 +182,7 @@ configuration documents, but works for unencrypted source documents as well.
 
 Control documents (documents which have `metadata.schema=metadata/Control/v1`),
 are special, and are used to control the behavior of Deckhand at runtime.  Only
-the following types control documents are allowed.
+the following types of control documents are allowed.
 
 #### DataSchema
 
@@ -364,7 +364,7 @@ unnecessary revisions.
 
 Returns a multi-document YAML response containing all the documents matching
 the filters specified via query string parameters. Returned documents will be
-fully merged and substituted.
+as originally posted with no substitutions or layering applied.
 
 Supported query string parameters:
 
@@ -377,10 +377,22 @@ Supported query string parameters:
   `promenade` documents.
 * `metadata.name` - string, optional
 * `metadata.layeringDefinition.abstract` - string, optional - Valid values are
-  the empty string, "true" and "false".  Defaults to "false". Specifying the empty string removes this filter.
+  the "true" and "false".
+* `metadata.layeringDefinition.layer` - string, optional - Only return documents from
+  the specified layer.
 * `metadata.label` - string, optional, repeatable - Uses the format
   `metadata.label=key=value`. Repeating this parameter indicates all
   requested labels must apply (AND not OR).
+
+### GET `/revisions/{revision_id}/rendered-documents`
+
+Returns a multi-document YAML of fully layered and substituted documents. No
+abstract documents will be returned. This is the primary endpoint that
+consumers will interact with for their configuration.
+
+Valid query parameters are the same as for
+`/revisions/{revision_id}/documents`, minus the paremters in
+`metadata.layeringDetinition`, which are not supported.
 
 ### GET `/revisions`
 
