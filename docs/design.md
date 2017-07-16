@@ -131,7 +131,7 @@ data:
           ignored:  # Will not be part of the resultant document after layering.
             data: here
   substitution:
-    target: null  # Paths do not need to exist to be specified as substitutiond destinations.
+    target: null  # Paths do not need to exist to be specified as substitution destinations.
 ...
 ```
 
@@ -194,7 +194,7 @@ beginning with `deckhand/` or `metadata/` are allowed.
 
 ```yaml
 ---
-schema: deckhand/DataSchema/v1
+schema: deckhand/DataSchema/v1  # This specifies the official JSON schema meta-schema.
 metadata:
   schema: metadata/Control/v1
   name: promenade/Node/v1  # Specifies the documents to be used for validation.
@@ -356,13 +356,25 @@ metadata:
 This endpoint is the only way to add, update, and delete documents. This
 triggers Deckhand's internal schema validations for all documents.
 
+If no changes are detected, a new revision should not be created. This allows
+services to periodically re-register their schemas without creating
+unnecessary revisions.
+
 ### GET `/revisions/{revision_id}/documents`
 
 Returns a multi-document YAML response containing all the documents matching
 the filters specified via query string parameters. Returned documents will be
 fully merged and substituted.
 
-* `schema` - string, optional - The top-level `schema` field to select.
+Supported query string parameters:
+
+* `schema` - string, optional - The top-level `schema` field to select. This
+  may be partially specified by section, e.g., `schema=promenade` would select all
+  `kind` and `version` schemas owned by promenade, or `schema=promenade/Node`
+  which would select all versions of `promenade/Node` documents. One may not
+  partially specify the namespace or kind, so `schema=promenade/No` would not
+  select `promenade/Node/v1` documents, and `schema=prom` would not select
+  `promenade` documents.
 * `metadata.name` - string, optional
 * `metadata.layeringDefinition.abstract` - string, optional - Valid values are
   the empty string, "true" and "false".  Defaults to "false". Specifying the empty string removes this filter.
@@ -376,18 +388,26 @@ Lists existing revisions and reports basic details including a summary of
 validation status for each `deckhand/ValidationPolicy` that is part of that
 revision.
 
-<!-- NOTE: probably need to paginate this -->
-
 Sample response:
 
 ```yaml
 ---
-- id: 0
-  url: https://deckhand/revisions/0
-  createdAt: 2017-07-14T021:23Z
-  validationPolicies:
-    site-deploy-validation:
-      status: failed
+count: 7
+next: https://deckhand/revisions?limit=2&offset=2
+prev: null
+results:
+  - id: 0
+    url: https://deckhand/revisions/0
+    createdAt: 2017-07-14T21:23Z
+    validationPolicies:
+      site-deploy-validation:
+        status: failed
+  - id: 1
+    url: https://deckhand/revisions/1
+    createdAt: 2017-07-16T01:15Z
+    validationPolicies:
+      site-deploy-validation:
+        status: succeeded
 ...
 ```
 
@@ -395,10 +415,12 @@ Sample response:
 
 Get a detailed description of a particular revision.
 
+Sample response:
+
 ```yaml
 ---
 id: 0
-href: https://deckhand/revisions/0
+url: https://deckhand/revisions/0
 createdAt: 2017-07-14T021:23Z
 validationPolicies:
   site-deploy-validation:
@@ -428,18 +450,98 @@ validations:
 
 Add the results of a validation for a particular revision.
 
-<!-- TODO: success example -->
-<!-- TODO: fail example -->
+An example `POST` request body indicating validation success:
+
+```yaml
+---
+status: succeeded
+validator:
+  name: promenade
+  version: 1.1.2
+...
+```
+
+An example `POST` request indicating validation failure:
+
+```http
+POST /revisions/3/validations/promenade-site-validation
+Content-Type: application/x-yaml
+
+---
+status: failed
+errors:
+  - documents:
+      - schema: promenade/Node/v1
+        name: node-document-name
+      - schema: promenade/Masters/v1
+        name: kubernetes-masters
+    message: Node has master role, but not included in cluster masters list.
+validator:
+  name: promenade
+  version: 1.1.2
+...
+```
+
+### GET `/revisions/{{revision_id}}/validations`
+
+Gets the list of validations which have reported for this revision.
+
+Sample response:
+
+```yaml
+---
+count: 2
+next: null
+prev: null
+results:
+  - name: deckhand-schema-validation
+    url: https://deckhand/revisions/4/validations/deckhand-schema-validation
+    status: success
+  - name: promenade-site-validation
+    url: https://deckhand/revisions/4/validations/promenade-site-validation
+    status: failure
+...
+```
 
 ### GET `/revisions/{{revision_id}}/validations/{{name}}`
 
 Gets the list of validation entry summaries that have been posted.
 
-<!-- TODO: expand -->
+Sample response:
+
+```yaml
+---
+count: 1
+next: null
+prev: null
+results:
+  - id: 0
+    url: https://deckhand/revisions/4/validations/promenade-site-validation/0/entries/0
+    status: failure
+...
+```
 
 ### GET `/revisions/{{revision_id}}/validations/{{name}}/entries/{{entry_id}}`
 
 Gets the full details of a particular validation entry, including all posted
 error details.
 
-<!-- TODO: expand -->
+Sample response:
+
+```yaml
+---
+name: promenade-site-validation
+url: https://deckhand/revisions/4/validations/promenade-site-validation/entries/0
+status: failure
+createdAt: 2017-07-16T02:03Z
+expiresAfter: null
+expiresAt: null
+errors:
+  - documents:
+      - schema: promenade/Node/v1
+        name: node-document-name
+      - schema: promenade/Masters/v1
+        name: kubernetes-masters
+    message: Node has master role, but not included in cluster masters list.
+...
+```
