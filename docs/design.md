@@ -426,25 +426,25 @@ validationPolicies:
   site-deploy-validation:
     url: https://deckhand/revisions/0/documents?schema=deckhand/ValidationPolicy/v1&name=site-deploy-validation
     status: failed
-    validationNames:
-      - deckhand-schema-validation
-      - drydock-site-validation
-      - promenade-site-validation
-      - armada-deployability-validation
-validations:
-  deckhand-schema-validation:
-    url: https://deckhand/revisions/0/validations/deckhand-schema-validation/0
-    status: success
-  drydock-site-validation:
-    status: missing
-  promenade-site-validation:
-    url: https://deckhand/revisions/0/validations/promenade-site-validation/0
-    status: expired
-  armada-deployability-validation:
-    url: https://deckhand/revisions/0/validations/armada-deployability-validation/0
-    status: failed
+    validations:
+      - name: deckhand-schema-validation
+        url: https://deckhand/revisions/0/validations/deckhand-schema-validation/0
+        status: success
+      - name: drydock-site-validation
+        status: missing
+      - name: promenade-site-validation
+        url: https://deckhand/revisions/0/validations/promenade-site-validation/0
+        status: expired
+      - name: armada-deployability-validation
+        url: https://deckhand/revisions/0/validations/armada-deployability-validation/0
+        status: failed
 ...
 ```
+
+Validation status is always for the most recent entry for a given validation.
+A status of `missing` indicates that no entries have been created. A status
+of `expired` indicates that the validation had succeeded, but the
+`expiresAfter` limit specified in the `ValidationPolicy` has been exceeded.
 
 ### POST `/revisions/{{revision_id}}/validations/{{name}}`
 
