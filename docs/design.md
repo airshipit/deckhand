@@ -64,14 +64,15 @@ This type of metadata allows the following metadata hierarchy:
   `encyrpted` is specified, then the `data` section of the document will be
   stored in an secure backend (likely via OpenStack Barbican). `metadata` and
   `schema` fields are always stored in cleartext.
-* `layeringDefinition` - dict, required - Specifies
+* `layeringDefinition` - dict, required - Specifies layering details. See the
+  Layering section below for details.
   * `abstract` - boolean, required - An abstract document is not expected to
     pass schema validation after layering and substitution are applied.
     Non-abstract (concrete) documents are.
   * `layer` - string, required - References a layer in the `LayeringPolicy`
     control document.
   * `parentSelector` - labels, optional - Used to construct document chains for
-    executing merges.  See the Layering section below for details.
+    executing merges.
   * `actions` - list, optional - A sequence of actions to apply this documents
     data during the merge process.
     * `method` - string, required - How to layer this content.
