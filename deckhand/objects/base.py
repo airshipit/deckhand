@@ -17,7 +17,7 @@ import datetime
 from oslo_versionedobjects import base
 from oslo_versionedobjects import fields as obj_fields
 
-import Deckhand_provisioner.objects as objects
+from deckhand import objects
 
 
 class DeckhandObjectRegistry(base.VersionedObjectRegistry):

@@ -21,6 +21,7 @@ from oslo_log import log as logging
 from deckhand.control import base as api_base
 from deckhand.engine import document_validation
 from deckhand import errors as deckhand_errors
+from deckhand.objects import documents
 
 LOG = logging.getLogger(__name__)
 
@@ -58,6 +59,11 @@ class DocumentsResource(api_base.BaseResource):
             doc_validation = document_validation.DocumentValidation(document)
         except deckhand_errors.InvalidFormat as e:
             return self.return_error(resp, falcon.HTTP_400, message=e)
+
+        try:
+            migration = documents.Document.create()
+        except Exception:
+            pass
 
         # Check if a document with the specified name already exists. If so,
         # treat this request as an update.

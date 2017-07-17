@@ -18,16 +18,16 @@
 
 import oslo_versionedobjects.fields as ovo_fields
 
-import deckhand.objects as objects
-import deckhand.objects.base as base
-import deckhand.objects.fields as fields
+from deckhand.db import api_models
+from deckhand import objects
+from deckhand.objects import base
+from deckhand.objects import fields as deckhand_fields
 
 
 class DocumentPayload(ovo_fields.ObjectField):
 
     SCHEMA = {
-        'schemaVersion': ('document', 'schemaVersion'),
-        'kind': ('document', 'uuid'),
+        'instance_key': ('document', 'uuid'),
         'metadata': ('document', 'name'),
         'data': ('document', 'hosts')
     }
@@ -36,10 +36,9 @@ class DocumentPayload(ovo_fields.ObjectField):
     VERSION = '1.0'
 
     fields = {
-        'schemaVersion': fields.StringField(nullable=False),
-        'kind': fields.StringField(nullable=False),
-        'metadata': fields.DictOfStringsField(nullable=False),
-        'data': fields.DictOfStringsField(nullable=False)
+        'instance_key': ovo_fields.StringField(nullable=False),
+        'metadata': ovo_fields.DictOfStringsField(nullable=False),
+        'data': ovo_fields.DictOfStringsField(nullable=False)
     }
 
     def __init__(self, document):
@@ -54,23 +53,16 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
     VERSION = '1.0'
 
     fields = {
+        'id': ovo_fields.IntegerField(nullable=False, read_only=True),
         'blob': ovo_fields.ObjectField('DocumentPayload', nullable=False),
-        'name': ovo_fields.StringField(nullable=True),
         'revision_index': ovo_fields.NonNegativeIntegerField(nullable=False),
-        'status': fields.DocumentField(nullable=False)
+        'status': ovo_fields.StringField(nullable=False)
     }
 
     def __init__(self, **kwargs):
         super(Document, self).__init__(**kwargs)
 
-    @property
-    def name(self):
-        return self.name
+    def create(self):
+        updates = self.obj_get_changes()
 
-    @property
-    def revision(self):
-        return self.revision_index
-
-    @property
-    def status(self):
-        return self.status
+        #api_models.Document()

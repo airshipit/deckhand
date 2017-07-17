@@ -58,8 +58,8 @@ class Document(API_BASE):
     __tablename__ = 'document'
 
     id = sa.Column(sa.String(255), primary_key=True, autoincrement=True)
+    revision_index = sa.Column(sa.Integer, nullable=False)
     document_schema = sa.Column(sa.String(64), nullable=False)
-    # Represents metadata.name parameter.
     instance_key = sa.Column(sa.String(64), nullable=False, unique=True)
-    metadata = sa.Column(JSONEncodedDict(), nullable=False)
-    data = sa.Column(JSONEncodedDict(), nullable=False)
+    document_metadata = sa.Column(JSONEncodedDict(), nullable=False)
+    document_data = sa.Column(JSONEncodedDict(), nullable=False)
