@@ -325,7 +325,7 @@ This provides a common language for describing complex validations on sets of
 documents.
 
 Revisions can be thought of as commits in a linear git history, thus looking
-at a revision includes all content from previous revision.
+at a revision includes all content from previous revisions.
 
 ## Validation
 
