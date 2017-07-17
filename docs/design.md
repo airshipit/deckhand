@@ -135,7 +135,6 @@ data:
 ...
 ```
 
-
 ##### schema: metadata/Control/v1
 
 This schema is the same as the `Document` schema, except it omits the
@@ -152,13 +151,23 @@ the top-level `data` section should be omitted.
 
 ### Layering
 
-When queried, Deckhand assembles the chain of partial documents in the order
-specified in the `deckhand/LayeringPolicy/v1` document. Each chain of partial
-documents is made up only of documents using a single `schema`.
+Layering provides a restricted data inheritance model intended to help reduce
+duplication in configuration. Documents with different `schema`s are never
+layered together (see the Substitution section if you need to combine data
+from multiple types of documents).
 
-<!-- TODO: describe document chain construction w/ diagrams -->
+Layering is controlled in two places:
 
-During each layering step, the list of `actions` will be applied in order.
+1. The `LayeringPolicy` control document (described below), which defines the
+   valid layers and their order of precedence.
+2. In the `metadata.layeringDefinition` section of normal
+   (`metadata.schema=metadata/Document/v1`) documents.
+
+When rendering a particular document, you resolve the chain of parents upward
+through the layers, and begin working back down each layer rendering at each
+document in the chain.
+
+When rendering each layer, the list of `actions` will be applied in order.
 Supported actions are:
 
 * `merge` - a "deep" merge that layers new and modified data onto existing data
@@ -166,7 +175,115 @@ Supported actions are:
   given in this document
 * `delete` - remove the data at the specified path
 
-<!-- TODO: Add examples and possibly figures -->
+After actions are applied for a given layer, substitutions are applied (see
+the Substitution section for details).
+
+Selection of document parents is controlled by the `parentSelector` field and
+works as follows. A given document, `C`, that specifies a `parentSelector`
+will have exactly one parent, `P`. Document `P` will be the highest
+precedence (i.e. part of the lowest layer) document that has the labels
+indicated by the `parentSelector` (and possibly additional labels) from the
+set of all documents of the same `schema` as `C` that are in layers above the
+layer `C` is in. For example, consider the following sample documents:
+
+```yaml
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: global-1234
+  labels:
+    key1: value1
+  layeringDefinition:
+    abstract: true
+    layer: global
+data:
+  a:
+    x: 1
+    y: 2
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: region-1234
+  labels:
+    key1: value1
+  layeringDefinition:
+    abstract: true
+    layer: region
+    parentSelector:
+      key1: value1
+    actions:
+      - method: replace
+        path: .a
+data:
+  a:
+    z: 3
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: site-1234
+  layeringDefinition:
+    layer: site
+    parentSelector:
+      key1: value1
+    actions:
+      - method: merge
+        path: .
+data:
+  b: 4
+...
+```
+
+When rendering, the parent chosen for `site-1234` will be `region-1234`,
+since it is the highest precedence document that matches the label selector
+defined by `parentSelector`, and the parent chosen for `region-1234` will be
+`global-1234` for the same reason. The rendered result for `site-1234` would
+be:
+
+```yaml
+---
+schema: example/Kind/v1
+metadata:
+  name: site-1234
+data:
+  a:
+    z: 3
+  b: 4
+...
+```
+
+If `region-1234` were later removed, then the parent chosen for `site-1234`
+would become `global-1234`, and the rendered result would become:
+
+```yaml
+---
+schema: example/Kind/v1
+metadata:
+  name: site-1234
+data:
+  a:
+    x: 1
+    y: 2
+  b: 4
+...
+```
+
+<!-- TODO: Add figures for this example, with region present, have site point
+with dotted line at global and indicate in caption (or something) that it's
+selected for but ignored, because there's a higher-precedence layer to select
+-->
 
 ### Substitution
 
@@ -297,7 +414,7 @@ metadata:
   name: application-api
   storagePolicy: encrypted
 data: |-
-  -----BEGIN RSA PRIVATE KEY-----                                 
+  -----BEGIN RSA PRIVATE KEY-----
   MIIEpQIBAAKCAQEAx+m1+ao7uTVEs+I/Sie9YsXL0B9mOXFlzEdHX8P8x4nx78/T
   ...snip...
   Zf3ykIG8l71pIs4TGsPlnyeO6LzCWP5WRSh+BHnyXXjzx/uxMOpQ/6I=
