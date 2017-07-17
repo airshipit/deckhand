@@ -1,8 +1,27 @@
 CHANGES
 =======
 
-* Add oslo.log integration to Deckhand.
-* DECKHAND-10: Barbican initial integration
+* Temporary change - do not commit
+* Initial DB API models implementation
+* Added control (API) readme
+* [WIP] Implement documents API
+* Add kind param to SchemaVersion class
+* Change apiVersion references to schemaVersion
+* Remove apiVersion attribute from substitutions.src attributes
+* Remove apiVersion attribute from substitutions.src attributes
+* Update default\_schema with our updated schema definition
+* Trivial fix to default\_schema
+* Use regexes for jsonschema pre-validation
+* Add additional documentation
+* Add jsonschema validation to Deckhand
+* Initial engine framework
+* Fix incorrect comment
+* Deckhand initial ORM implementation
+* Deckhand initial ORM implementation
+* Add oslo.log integration
+* DECKHAND-10: Add Barbican integration to Deckhand
+* Update ChangeLog
+* Update AUTHORS
 * DECKHAND-2: Design core Deckhand API framework
 * Oslo config integration (#1)
 * Add ChangeLog

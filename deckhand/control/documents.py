@@ -56,12 +56,15 @@ class DocumentsResource(api_base.BaseResource):
 
         # Validate the document before doing anything with it.
         try:
+            LOG.debug(document)
+            LOG.debug('fopobar')
             doc_validation = document_validation.DocumentValidation(document)
         except deckhand_errors.InvalidFormat as e:
             return self.return_error(resp, falcon.HTTP_400, message=e)
 
         try:
-            migration = documents.Document.create()
+            LOG.debug('Calling Document.create()')
+            document = documents.Document.create()
         except Exception:
             pass
 
