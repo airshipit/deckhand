@@ -16,6 +16,7 @@
 # Models for deckhand
 #
 
+from oslo_log import log as logging
 import oslo_versionedobjects.fields as ovo_fields
 
 from deckhand.db import api_models
@@ -23,26 +24,29 @@ from deckhand import objects
 from deckhand.objects import base
 from deckhand.objects import fields as deckhand_fields
 
+LOG = logging.getLogger(__name__)
 
-class DocumentPayload(ovo_fields.ObjectField):
+
+class DocumentPayload(base.DeckhandPayloadBase):
 
     SCHEMA = {
-        'instance_key': ('document', 'uuid'),
-        'metadata': ('document', 'name'),
-        'data': ('document', 'hosts')
+        #'instance_key': ('document', 'instance_key'),
+        'metadata': ('document', 'metadata'),
+        'data': ('document', 'data')
     }
 
     # Version 1.0: Initial version
     VERSION = '1.0'
 
     fields = {
-        'instance_key': ovo_fields.StringField(nullable=False),
+        #'instance_key': ovo_fields.StringField(nullable=False),
         'metadata': ovo_fields.DictOfStringsField(nullable=False),
         'data': ovo_fields.DictOfStringsField(nullable=False)
     }
 
     def __init__(self, document):
         super(DocumentPayload, self).__init__()
+        LOG.debug(document)
         self.populate_schema(document=document)
 
 
@@ -59,10 +63,13 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
         'status': ovo_fields.StringField(nullable=False)
     }
 
-    def __init__(self, **kwargs):
-        super(Document, self).__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super(Document, self).__init__(*args, **kwargs)
+        # Set up defaults.
+        self.obj_reset_changes()
 
-    def create(self):
-        updates = self.obj_get_changes()
-
+    def create(self, document):
+        #updates = self.obj_get_changes()
+        LOG.debug(document)
+        self.blob = DocumentPayload(document)
         #api_models.Document()

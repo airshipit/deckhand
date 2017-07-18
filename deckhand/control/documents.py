@@ -64,9 +64,10 @@ class DocumentsResource(api_base.BaseResource):
 
         try:
             LOG.debug('Calling Document.create()')
-            document = documents.Document.create()
-        except Exception:
-            pass
+            documents.Document().create(document)
+        except Exception as e:
+            LOG.exception(e)
+            raise
 
         # Check if a document with the specified name already exists. If so,
         # treat this request as an update.
