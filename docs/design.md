@@ -10,15 +10,12 @@ auditability and validation in mind.
 * layering - helps reduce duplication in configuration while maintaining
   auditability across many sites
 * substitution - provides separation between secret data and other
-  configuration data, while allowing a simple, file-like interface for
-  clients
-  * These documents are designed to present consumer services with ready-to-use
-    documents which may include secrets.
+  configuration data, while allowing a simple interface for clients
 * revision history - improves auditability and enables services to provide
   functional validation of a well-defined collection of documents that are
   meant to operate together
 * validation - allows services to implement and register different kinds of
-  validations and report validation errors
+  validations and report errors
 
 ## Documents
 
@@ -288,13 +285,124 @@ selected for but ignored, because there's a higher-precedence layer to select
 
 ### Substitution
 
-Concrete documents can be used as a source of substitution into other
-documents. This substitution is layer-independent.
-
-This is primarily designed as a mechanism for inserting secrets into
+Substitution is primarily designed as a mechanism for inserting secrets into
 configuration documents, but works for unencrypted source documents as well.
+Substitution is applied at each layer after all merge actions occur.
 
-<!-- TODO: Add example(s) maybe simple + an example with source layering? -->
+Concrete (non-abstract) documents can be used as a source of substitution
+into other documents. This substitution is layer-independent, so given the 3
+layer example above, which includes `global`, `region` and `site` layers, a
+document in the `region` layer could insert data from a document in the
+`site` layer.
+
+Here is a sample set of documents demonstrating subistution:
+
+```yaml
+---
+schema: deckhand/Certificate/v1
+metadata:
+  name: example-cert
+  storagePolicy: cleartext
+  layeringDefinition:
+    layer: site
+data: |
+  CERTIFICATE DATA
+---
+schema: deckhand/CertificateKey/v1
+metadata:
+  name: example-key
+  storagePolicy: encrypted
+  layeringDefinition:
+    layer: site
+data: |
+  KEY DATA
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  name: example-password
+  storagePolicy: encrypted
+  layeringDefinition:
+    layer: site
+data: my-secret-password
+---
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  storagePolicy: cleartext
+  layeringDefinition:
+    layer: region
+  substitutions:
+    - dest:
+        path: .chart.values.tls.certificate
+      src:
+        schema: deckhand/Certificate/v1
+        name: example-cert
+        path: .
+    - dest:
+        path: .chart.values.tls.key
+      src:
+        schema: deckhand/CertificateKey/v1
+        name: example-key
+        path: .
+    - dest:
+        path: .chart.values.some_url
+        pattern: INSERT_[A-Z]+_HERE
+      src:
+        schema: deckhand/Passphrase/v1
+        name: example-password
+        path: .
+data:
+  chart:
+    details:
+      data: here
+    values:
+      some_url: http://admin:INSERT_PASSWORD_HERE@service-name:8080/v1
+...
+```
+
+The rendered document will look like:
+
+```yaml
+---
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  storagePolicy: cleartext
+  layeringDefinition:
+    layer: region
+  substitutions:
+    - dest:
+        path: .chart.values.tls.certificate
+      src:
+        schema: deckhand/Certificate/v1
+        name: example-cert
+        path: .
+    - dest:
+        path: .chart.values.tls.key
+      src:
+        schema: deckhand/CertificateKey/v1
+        name: example-key
+        path: .
+    - dest:
+        path: .chart.values.some_url
+        pattern: INSERT_[A-Z]+_HERE
+      src:
+        schema: deckhand/Passphrase/v1
+        name: example-password
+        path: .
+data:
+  chart:
+    details:
+      data: here
+    values:
+      some_url: http://admin:my-secret-password@service-name:8080/v1
+      tls:
+        certificate: |
+          CERTIFICATE DATA
+        key: |
+          KEY DATA
+...
+```
 
 ### Control Documents
 
