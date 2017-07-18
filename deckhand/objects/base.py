@@ -128,9 +128,6 @@ class DeckhandPayloadBase(DeckhandPersistentObject):
             if isinstance(source, dict):
                 source = self._dict_to_obj(source)
             try:
-                LOG.debug(source)
-                LOG.debug(field)
-
                 setattr(self, key, getattr(source, field))
             # ObjectActionError - not lazy loadable field
             # NotImplementedError - obj_load_attr() is not even defined
@@ -144,7 +141,7 @@ class DeckhandPayloadBase(DeckhandPersistentObject):
                           {'field': key,
                            'payload': self.__class__.__name__,
                            'exception': e})
-                # NOTE(gibi): This will fail if the payload field is not
+                # NOTE: This will fail if the payload field is not
                 # nullable, but that means that either the source object is not
                 # properly initialized or the payload field needs to be defined
                 # as nullable

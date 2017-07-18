@@ -19,7 +19,7 @@
 from oslo_log import log as logging
 import oslo_versionedobjects.fields as ovo_fields
 
-from deckhand.db import api_models
+from deckhand.db.sqlalchemy import api_models
 from deckhand import objects
 from deckhand.objects import base
 from deckhand.objects import fields as deckhand_fields
@@ -30,7 +30,8 @@ LOG = logging.getLogger(__name__)
 class DocumentPayload(base.DeckhandPayloadBase):
 
     SCHEMA = {
-        #'instance_key': ('document', 'instance_key'),
+        'schema_version': ('document', 'schemaVersion'),
+        'kind': ('document', 'kind'),
         'metadata': ('document', 'metadata'),
         'data': ('document', 'data')
     }
@@ -39,7 +40,8 @@ class DocumentPayload(base.DeckhandPayloadBase):
     VERSION = '1.0'
 
     fields = {
-        #'instance_key': ovo_fields.StringField(nullable=False),
+        'schema_version': ovo_fields.StringField(nullable=False),
+        'kind': ovo_fields.StringField(nullable=False),
         'metadata': ovo_fields.DictOfStringsField(nullable=False),
         'data': ovo_fields.DictOfStringsField(nullable=False)
     }
@@ -58,7 +60,7 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
 
     fields = {
         'id': ovo_fields.IntegerField(nullable=False, read_only=True),
-        'blob': ovo_fields.ObjectField('DocumentPayload', nullable=False),
+        'document': ovo_fields.ObjectField('DocumentPayload', nullable=False),
         'revision_index': ovo_fields.NonNegativeIntegerField(nullable=False),
         'status': ovo_fields.StringField(nullable=False)
     }
@@ -69,7 +71,24 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
         self.obj_reset_changes()
 
     def create(self, document):
-        #updates = self.obj_get_changes()
         LOG.debug(document)
-        self.blob = DocumentPayload(document)
-        #api_models.Document()
+        self.document = DocumentPayload(document)
+
+        if not self.document.populated:
+            return
+
+        payload = {
+            'revision_index': 0,
+            'schema_version': self.document.schema_version,
+            'kind': self.document.kind,
+            'doc_metadata': self.document.metadata,
+            'data': self.document.data
+        }
+        db_document = api_models.Document()
+        db_document.update(payload)
+
+        try:
+            # Need to pass session context
+            db_document.save()
+        except Exception as e:
+            LOG.exception(e)
