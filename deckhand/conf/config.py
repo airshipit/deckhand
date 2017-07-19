@@ -17,6 +17,18 @@ from oslo_config import cfg
 CONF = cfg.CONF
 
 
+database_group = cfg.OptGroup(
+    name='database',
+    title='Deckhand Database Options'
+)
+
+
+database_opts = [
+    cfg.StrOpt(name='connection',
+               default='')
+]
+
+
 keystone_auth_group = cfg.OptGroup(
     name='keystone_authtoken',
     title='Keystone Authentication Options'
@@ -66,8 +78,13 @@ logging_opts = [
 def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
+
+    conf.register_group(database_group)
+    conf.register_opts(database_opts, group=database_group)
+
     conf.register_group(keystone_auth_group)
     conf.register_opts(keystone_auth_opts, group=keystone_auth_group)
+
     conf.register_group(logging_group)
     conf.register_opts(logging_opts, group=logging_group)
 

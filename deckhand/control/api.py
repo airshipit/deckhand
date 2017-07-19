@@ -22,6 +22,7 @@ from deckhand.conf import config
 from deckhand.control import base as api_base
 from deckhand.control import documents
 from deckhand.control import secrets
+from deckhand.db.sqlalchemy import api as db_api
 
 CONF = cfg.CONF
 
@@ -55,6 +56,8 @@ def start_api(state_manager=None):
     """
     config.register_opts(CONF)
     __setup_logging()
+    engine = db_api.get_engine()
+    assert engine.engine.name == 'postgres'
 
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 

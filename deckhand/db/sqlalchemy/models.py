@@ -21,16 +21,12 @@ from sqlalchemy import Integer
 from sqlalchemy import orm
 from sqlalchemy import schema
 from sqlalchemy import String
-from sqlalchemy import types
-
-
-class _DeckhandBase(models.ModelBase, models.TimestampMixin):
-    pass
+from sqlalchemy import Text
 
 
 # Declarative base class which maintains a catalog of classes and tables
 # relative to that base.
-API_BASE = declarative.declarative_base(cls=_DeckhandBase)
+BASE = declarative.declarative_base()
 
 
 class JSONEncodedDict(types.TypeDecorator):
@@ -42,7 +38,7 @@ class JSONEncodedDict(types.TypeDecorator):
 
     """
 
-    impl = types.VARCHAR
+    impl = Text
 
     def process_bind_param(self, value, dialect):
         if value is not None:
@@ -56,7 +52,49 @@ class JSONEncodedDict(types.TypeDecorator):
         return value
 
 
-class Document(API_BASE):
+class DeckhandBase(models.ModelBase, models.TimestampMixin):
+    """Base class for Deckhand Models."""
+
+    __table_args__ = {'mysql_engine': 'InnoDB', 'mysql_charset': 'utf8'}
+    __table_initialized__ = False
+    __protected_attributes__ = set([
+        "created_at", "updated_at", "deleted_at", "deleted"])
+
+    def save(self, session=None):
+        from deckhand.db.sqlalchemy import api as db_api
+        super(DeckhandBase, self).save(session or db_api.get_session())
+
+    created_at = Column(DateTime, default=lambda: timeutils.utcnow(),
+                        nullable=False)
+    updated_at = Column(DateTime, default=lambda: timeutils.utcnow(),
+                        nullable=True, onupdate=lambda: timeutils.utcnow())
+    deleted_at = Column(DateTime)
+    deleted = Column(Boolean, nullable=False, default=False)
+
+    def delete(self, session=None):
+        """Delete this object."""
+        self.deleted = True
+        self.deleted_at = timeutils.utcnow()
+        self.save(session=session)
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def values(self):
+        return self.__dict__.values()
+
+    def items(self):
+        return self.__dict__.items()
+
+    def to_dict(self):
+        d = self.__dict__.copy()
+        # Remove private state instance, as it is not serializable and causes
+        # CircularReference.
+        d.pop("_sa_instance_state")
+        return d
+
+
+class Document(BASE, DeckhandBase):
     __tablename__ = 'document'
     __table_args__ = (schema.UniqueConstraint('schema_version', 'kind',
                       name='uniq_schema_version_kinds0schema_version0kind'),)

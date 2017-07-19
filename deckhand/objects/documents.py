@@ -87,8 +87,9 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
         db_document = api_models.Document()
         db_document.update(payload)
 
-        try:
-            # Need to pass session context
-            db_document.save()
-        except Exception as e:
-            LOG.exception(e)
+
+        # deckhand_context = context.RequestContext()
+        # try:
+        #     deckhand_context.session.add(db_document)
+        # except Exception as e:
+        #     LOG.exception(e)

@@ -34,13 +34,9 @@ class RequestContext(context.RequestContext):
                  timestamp=None, **kwargs):
         if user_id:
             kwargs['user'] = user_id
-        if project_id:
-            kwargs['tenant'] = project_id
 
         super(RequestContext, self).__init__(is_admin=is_admin, **kwargs)
 
-        self.read_deleted = read_deleted
-        self.remote_address = remote_address
         if not timestamp:
             timestamp = timeutils.utcnow()
         if isinstance(timestamp, six.string_types):
