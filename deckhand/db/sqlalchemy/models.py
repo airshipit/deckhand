@@ -12,16 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import uuid
+
 from oslo_db.sqlalchemy import models
 from oslo_serialization import jsonutils as json
 from oslo_utils import timeutils
+from sqlalchemy import Boolean
 from sqlalchemy import Column
+from sqlalchemy import DateTime
 from sqlalchemy.ext import declarative
 from sqlalchemy import Integer
 from sqlalchemy import orm
 from sqlalchemy import schema
 from sqlalchemy import String
 from sqlalchemy import Text
+from sqlalchemy.types import TypeDecorator
 
 
 # Declarative base class which maintains a catalog of classes and tables
@@ -29,7 +34,7 @@ from sqlalchemy import Text
 BASE = declarative.declarative_base()
 
 
-class JSONEncodedDict(types.TypeDecorator):
+class JSONEncodedDict(TypeDecorator):
     """Represents an immutable structure as a json-encoded string.
 
     Usage::
@@ -68,7 +73,7 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
                         nullable=False)
     updated_at = Column(DateTime, default=lambda: timeutils.utcnow(),
                         nullable=True, onupdate=lambda: timeutils.utcnow())
-    deleted_at = Column(DateTime)
+    deleted_at = Column(DateTime, nullable=True)
     deleted = Column(Boolean, nullable=False, default=False)
 
     def delete(self, session=None):
@@ -97,9 +102,10 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
 class Document(BASE, DeckhandBase):
     __tablename__ = 'document'
     __table_args__ = (schema.UniqueConstraint('schema_version', 'kind',
-                      name='uniq_schema_version_kinds0schema_version0kind'),)
+                      name='ix_documents_schema_version_kind'),)
 
-    id = Column(String(255), primary_key=True, autoincrement=True)
+    id = Column(String(36), primary_key=True,
+                default=lambda: str(uuid.uuid4()))
     revision_index = Column(Integer, nullable=False)
     schema_version = Column(String(64), nullable=False)
     kind = Column(String(64), nullable=False)
@@ -108,3 +114,17 @@ class Document(BASE, DeckhandBase):
     # "metadata" is reserved, so use "doc_metadata" instead.
     doc_metadata = Column(JSONEncodedDict(), nullable=False)
     data = Column(JSONEncodedDict(), nullable=False)
+
+
+def register_models(engine):
+    """Create database tables for all models with the given engine."""
+    models = [Document]
+    for model in models:
+        model.metadata.create_all(engine)
+
+
+def unregister_models(engine):
+    """Drop database tables for all models with the given engine."""
+    models = [Document]
+    for model in models:
+        model.metadata.drop_all(engine)

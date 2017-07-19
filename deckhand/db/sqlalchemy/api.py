@@ -34,6 +34,7 @@ import sqlalchemy.orm as sa_orm
 from sqlalchemy import sql
 import sqlalchemy.sql as sa_sql
 
+from deckhand.db.sqlalchemy import models
 
 sa_logger = None
 LOG = logging.getLogger(__name__)
@@ -96,6 +97,13 @@ def clear_db_env():
     _FACADE = None
 
 
-def image_create(context):
+def document_create(context, values, session=None):
     """Create a document."""
-    pass
+    models.register_models(get_engine())
+
+    values = values.copy()
+    session = session or get_session()
+    with session.begin():
+        document = models.Document()
+        document.update(values)
+        document.save(session=session)

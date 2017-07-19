@@ -19,7 +19,7 @@
 from oslo_log import log as logging
 import oslo_versionedobjects.fields as ovo_fields
 
-from deckhand.db.sqlalchemy import api_models
+from deckhand.db.sqlalchemy import api as db_api
 from deckhand import objects
 from deckhand.objects import base
 from deckhand.objects import fields as deckhand_fields
@@ -77,19 +77,12 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
         if not self.document.populated:
             return
 
-        payload = {
+        values = {
             'revision_index': 0,
             'schema_version': self.document.schema_version,
             'kind': self.document.kind,
             'doc_metadata': self.document.metadata,
             'data': self.document.data
         }
-        db_document = api_models.Document()
-        db_document.update(payload)
-
-
-        # deckhand_context = context.RequestContext()
-        # try:
-        #     deckhand_context.session.add(db_document)
-        # except Exception as e:
-        #     LOG.exception(e)
+        
+        db_api.document_create(None, values)
