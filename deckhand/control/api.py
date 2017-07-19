@@ -25,14 +25,17 @@ from deckhand.control import secrets
 from deckhand.db.sqlalchemy import api as db_api
 
 CONF = cfg.CONF
+LOG = None
 
 
 def __setup_logging():
+    global LOG
     LOGGER_NAME = CONF.logging.global_logger_name
     LOG = logging.getLogger(__name__, LOGGER_NAME)
 
     logging.register_options(CONF)
-
+    config.parse_args()
+    
     current_path = os.path.dirname(os.path.realpath(__file__))
     root_path = os.path.abspath(os.path.join(current_path, os.pardir,
                                              os.pardir))
@@ -54,10 +57,10 @@ def start_api(state_manager=None):
 
     Create routes for the v1.0 API and sets up logging.
     """
-    config.register_opts(CONF)
     __setup_logging()
+    # FOR TESTING -- REMOVE
     engine = db_api.get_engine()
-    assert engine.engine.name == 'postgres'
+    assert engine.engine.name == 'sqlite'
 
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 

@@ -17,17 +17,19 @@ from oslo_config import cfg
 CONF = cfg.CONF
 
 
-database_group = cfg.OptGroup(
-    name='database',
-    title='Deckhand Database Options'
-)
+barbican_group = cfg.OptGroup(
+    name='barbican',
+    title='Barbican Options',
+    help="""
+Barbican options for allowing Deckhand to communicate with Barbican.
+""")
 
-
-database_opts = [
-    cfg.StrOpt(name='connection',
-               default='')
+barbican_opts = [
+    cfg.StrOpt(
+        'api_endpoint',
+        sample_default='http://barbican.example.org:9311/',
+        help='URL override for the Barbican API endpoint.'),
 ]
-
 
 keystone_auth_group = cfg.OptGroup(
     name='keystone_authtoken',
@@ -49,20 +51,6 @@ keystone_auth_opts = [
                default='http://127.0.0.1/identity/v3')
 ]
 
-barbican_group = cfg.OptGroup(
-    name='barbican',
-    title='Barbican Options',
-    help="""
-Barbican options for allowing Deckhand to communicate with Barbican.
-""")
-
-barbican_opts = [
-    cfg.StrOpt(
-        'api_endpoint',
-        sample_default='http://barbican.example.org:9311/',
-        help='URL override for the Barbican API endpoint.'),
-]
-
 logging_group = cfg.OptGroup(
     name='logging',
     title='Logging Options',
@@ -79,9 +67,6 @@ def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
 
-    conf.register_group(database_group)
-    conf.register_opts(database_opts, group=database_group)
-
     conf.register_group(keystone_auth_group)
     conf.register_opts(keystone_auth_opts, group=keystone_auth_group)
 
@@ -93,6 +78,26 @@ def list_opts():
     return {barbican_group: barbican_opts,
             keystone_auth_group: keystone_auth_opts,
             logging_group: logging_opts}
+
+
+def parse_args(args=None, usage=None, default_config_files=None):
+    CONF(args=args,
+         project='deckhand',
+         usage=usage,
+         default_config_files=default_config_files)
+
+
+def parse_cache_args(args=None):
+    # Look for Deckhand config files in the following directories::
+    #
+    #  ~/.${project}/
+    #  ~/
+    #  /etc/${project}/
+    #  /etc/
+    #  ${SNAP}/etc/${project}
+    #  ${SNAP_COMMON}/etc/${project}
+    config_files = cfg.find_config_files(project='deckhand')
+    parse_args(args=args, default_config_files=config_files)
 
 
 register_opts(CONF)

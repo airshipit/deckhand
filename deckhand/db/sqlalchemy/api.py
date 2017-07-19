@@ -58,7 +58,8 @@ def _create_facade_lazily():
     if _FACADE is None:
         with _LOCK:
             if _FACADE is None:
-                _FACADE = session.EngineFacade.from_config(CONF)
+                _FACADE = session.EngineFacade.from_config(
+                    CONF, sqlite_fk=True)
     return _FACADE
 
 
