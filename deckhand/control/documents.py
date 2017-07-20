@@ -41,7 +41,7 @@ class DocumentsResource(api_base.BaseResource):
 
     def on_post(self, req, resp):
         """Create a document. Accepts YAML data only."""
-        if req.content_type != 'application/yaml':
+        if req.content_type != 'application/x-yaml':
             LOG.warning('Requires application/yaml payload.')
 
         document_data = req.stream.read(req.content_length or 0)

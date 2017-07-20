@@ -23,6 +23,6 @@ Document creation can be tested locally using:
 .. code-block:: console
 
     curl -i -X POST localhost:9000/api/v1.0/documents \
-        -H "Content-Type: application/yaml" \
+        -H "Content-Type: application/x-yaml" \
         --data-binary "@deckhand/tests/unit/resources/sample.yaml"
 
