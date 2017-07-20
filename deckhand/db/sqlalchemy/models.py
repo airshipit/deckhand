@@ -106,7 +106,8 @@ class Document(BASE, DeckhandBase):
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
-    revision_index = Column(Integer, nullable=False)
+    revision_index = Column(String(36), nullable=False,
+                            default=lambda: str(uuid.uuid4()))
     schema_version = Column(String(64), nullable=False)
     kind = Column(String(64), nullable=False)
     # NOTE: Do not define a maximum length for these JSON data below. However,

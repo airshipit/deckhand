@@ -16,10 +16,12 @@
 # Models for deckhand
 #
 
+from oslo_db import exception as db_exc
 from oslo_log import log as logging
 from oslo_versionedobjects import fields as ovo_fields
 
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand import errors
 from deckhand import objects
 from deckhand.objects import base
 from deckhand.objects import fields as deckhand_fields
@@ -48,7 +50,6 @@ class DocumentPayload(base.DeckhandPayloadBase):
 
     def __init__(self, document):
         super(DocumentPayload, self).__init__()
-        LOG.debug(document)
         self.populate_schema(document=document)
 
 
@@ -61,8 +62,7 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
     fields = {
         'id': ovo_fields.IntegerField(nullable=False, read_only=True),
         'document': ovo_fields.ObjectField('DocumentPayload', nullable=False),
-        'revision_index': ovo_fields.NonNegativeIntegerField(nullable=False),
-        'status': ovo_fields.StringField(nullable=False)
+        'revision_index': ovo_fields.NonNegativeIntegerField(nullable=False)
     }
 
     def __init__(self, *args, **kwargs):
@@ -71,18 +71,19 @@ class Document(base.DeckhandPersistentObject, base.DeckhandObject):
         self.obj_reset_changes()
 
     def create(self, document):
-        LOG.debug(document)
-        self.document = DocumentPayload(document)
-
-        if not self.document.populated:
-            return
+        document_obj = DocumentPayload(document)
 
         values = {
-            'revision_index': 0,
-            'schema_version': self.document.schema_version,
-            'kind': self.document.kind,
-            'doc_metadata': self.document.metadata,
-            'data': self.document.data
+            'schema_version': document_obj.schema_version,
+            'kind': document_obj.kind,
+            'doc_metadata': document_obj.metadata,
+            'data': document_obj.data
         }
-        
-        db_api.document_create(None, values)
+
+        try:
+            db_api.document_create(None, values)
+        except db_exc.DBDuplicateEntry as e:
+            raise errors.DocumentExists(
+                kind=values['kind'], schema_version=values['schema_version'])
+        except Exception as e:
+            raise db_exc.DBError(e)

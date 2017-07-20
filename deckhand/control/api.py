@@ -23,6 +23,7 @@ from deckhand.control import base as api_base
 from deckhand.control import documents
 from deckhand.control import secrets
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand.db.sqlalchemy import models as db_models
 
 CONF = cfg.CONF
 LOG = None
@@ -52,12 +53,17 @@ def __setup_logging():
     LOG.debug('Initiated Deckhand logging.')
 
 
+def __setup_db():
+    db_models.register_models(db_api.get_engine())
+
+
 def start_api(state_manager=None):
     """Main entry point for initializing the Deckhand API service.
 
     Create routes for the v1.0 API and sets up logging.
     """
     __setup_logging()
+    __setup_db()
 
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 

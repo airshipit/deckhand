@@ -97,8 +97,6 @@ def clear_db_env():
 
 def document_create(context, values, session=None):
     """Create a document."""
-    models.register_models(get_engine())
-
     values = values.copy()
     session = session or get_session()
     with session.begin():
