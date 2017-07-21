@@ -106,6 +106,12 @@ def drop_db():
     models.unregister_models(get_engine())
 
 
+def documents_create(documents, session=None):
+    """Create a set of documents."""
+    created_docs = [document_create(doc, session) for doc in documents]
+    return created_docs
+
+
 def document_create(values, session=None):
     """Create a document."""
     values = values.copy()
@@ -117,5 +123,5 @@ def document_create(values, session=None):
     with session.begin():
         document.update(values)
         document.save(session=session)
-    
+
     return document.to_dict()

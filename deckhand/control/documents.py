@@ -50,7 +50,7 @@ class DocumentsResource(api_base.BaseResource):
         document_data = req.stream.read(req.content_length or 0)
 
         try:
-            document = yaml.safe_load(document_data)
+            documents = [d for d in yaml.safe_load_all(document_data)]
         except yaml.YAMLError as e:
             error_msg = ("Could not parse the document into YAML data. "
                          "Details: %s." % e)
@@ -59,19 +59,20 @@ class DocumentsResource(api_base.BaseResource):
 
         # Validate the document before doing anything with it.
         try:
-            doc_validation = document_validation.DocumentValidation(document)
+            for doc in documents:
+                document_validation.DocumentValidation(doc)
         except deckhand_errors.InvalidFormat as e:
             return self.return_error(resp, falcon.HTTP_400, message=e)
 
         try:
-            created_document = db_api.document_create(document)
+            created_documents = db_api.documents_create(documents)
         except db_exc.DBDuplicateEntry as e:
             return self.return_error(resp, falcon.HTTP_409, message=e)
         except Exception as e:
             return self.return_error(resp, falcon.HTTP_500, message=e)
 
         resp.status = falcon.HTTP_201
-        resp.body = json.dumps(created_document)
+        resp.body = json.dumps(created_documents)
 
     def _check_document_exists(self):
         pass
