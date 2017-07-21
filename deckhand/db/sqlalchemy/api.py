@@ -29,6 +29,7 @@ import six
 from six.moves import range
 import sqlalchemy
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy import desc
 from sqlalchemy import MetaData, Table
 import sqlalchemy.orm as sa_orm
 from sqlalchemy import sql
@@ -120,9 +121,9 @@ def document_create(values, session=None):
     values['schema_version'] = values.pop('schemaVersion')
     session = session or get_session()
 
-    existing_document = document_get(
-        as_dict=False,
-        **{c: values[c] for c in models.Document.UNIQUE_CONSTRAINTS})
+    filters = copy.copy(models.Document.UNIQUE_CONSTRAINTS)
+    filters = [f for f in filters if f != 'revision_index']
+    existing_document = document_get(**{c: values[c] for c in filters})
 
     def _document_changed():
         other_document = copy.deepcopy(existing_document)
@@ -133,41 +134,41 @@ def document_create(values, session=None):
                 return True
         return False
 
+    def _document_create():
+        document = models.Document()
+        with session.begin():
+            document.update(values)
+            document.save(session=session)
+        return document
+
+    created_document = {}
     if existing_document:
-        # Only generate a new revision for the document if anything has
-        # changed.
+        # Only generate a new revision and entirely new document if anything
+        # was changed.
         if _document_changed():
             revision_index = revision_update(
                 revision_index=existing_document['revision_index'])['id']
             values['revision_index'] = revision_index
+            created_document = _document_create().to_dict()
+        # TODO: indicate that now document was actually created.
     else:
         revision_index = revision_create()['id']
         values['revision_index'] = revision_index
+        created_document = _document_create().to_dict()
 
-    document = existing_document or models.Document()
-    with session.begin():
-        document.update(values)
-        document.save(session=session)
-
-    return document.to_dict()
+    return created_document
 
 
-def document_get(session=None, as_dict=True, **filters):
-    unqiue_constraints = models.Document.UNIQUE_CONSTRAINTS
+def document_get(session=None, **filters):
     session = session or get_session()
 
-    if 'document_id' in filters:
-        # Get the document by `document_id`.
-        document = session.query(models.Document).get(filters['document_id'])
-    elif all([c in filters for c in unqiue_constraints]):
-        # Get the document by its unique constraints.
-        document = session.query(models.Document)
-        document = document.filter_by(**{c: filters[c]
-                                         for c in unqiue_constraints}).first()
+    document = session.query(models.Document)\
+        .filter_by(**filters)\
+        .options(sa_orm.joinedload("revision_index"))\
+        .order_by(desc(models.Revision.created_at))\
+        .first()
 
-    if as_dict:
-        return document.to_dict() if document else {}
-    return document
+    return document.to_dict() if document else {}
 
 
 ####################

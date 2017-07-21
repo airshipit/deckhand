@@ -25,6 +25,7 @@ from sqlalchemy.ext import declarative
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import orm
+from sqlalchemy.orm import backref, relationship
 from sqlalchemy import schema
 from sqlalchemy import String
 from sqlalchemy import Text
@@ -116,8 +117,23 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         return schema.UniqueConstraint(*fields, name=constraint_name)
 
 
+class Revision(BASE, DeckhandBase):
+    """Revision history for a ``Document``.
+
+    Like a doubly linked list, each ``Revision`` will have a unique ID along
+    with a previous and next pointer to each ``Revision`` that comprises the
+    revision history for a ``Document``.
+    """
+    __tablename__ = 'revisions'
+
+    id = Column(String(36), primary_key=True,
+                default=lambda: str(uuid.uuid4()))
+    previous = Column(Integer, ForeignKey('revisions.id'), nullable=True)
+    next = Column(Integer, ForeignKey('revisions.id'), nullable=True)
+
+
 class Document(BASE, DeckhandBase):
-    UNIQUE_CONSTRAINTS = ('schema_version', 'kind')
+    UNIQUE_CONSTRAINTS = ('schema_version', 'kind', 'revision_index')
     __tablename__ = 'documents'
     __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
 
@@ -125,6 +141,7 @@ class Document(BASE, DeckhandBase):
                 default=lambda: str(uuid.uuid4()))
     revision_index = Column(Integer, ForeignKey('revisions.id'),
                             nullable=False)
+    revision = relationship(Revision, backref=backref('revisions'))
     schema_version = Column(String(64), nullable=False)
     kind = Column(String(64), nullable=False)
     # NOTE: Do not define a maximum length for these JSON data below. However,
@@ -133,20 +150,6 @@ class Document(BASE, DeckhandBase):
     doc_metadata = Column(JSONEncodedDict(), nullable=False)
     data = Column(JSONEncodedDict(), nullable=False)
 
-
-class Revision(BASE, DeckhandBase):
-    """Revision history for a ``Document``.
-
-    Each ``Revision`` will have a unique ID along with a previous and next
-    pointer to each ``Revision`` that comprises the revision history for a
-    ``Document``.
-    """
-    __tablename__ = 'revisions'
-
-    id = Column(String(36), primary_key=True,
-                default=lambda: str(uuid.uuid4()))
-    previous = Column(Integer, ForeignKey('revisions.id'), nullable=True)
-    next = Column(Integer, ForeignKey('revisions.id'), nullable=True)
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""
