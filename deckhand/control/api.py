@@ -20,17 +20,22 @@ from oslo_log import log as logging
 
 from deckhand.conf import config
 from deckhand.control import base as api_base
+from deckhand.control import documents
 from deckhand.control import secrets
+from deckhand.db.sqlalchemy import api as db_api
 
 CONF = cfg.CONF
+LOG = None
 
 
 def __setup_logging():
-    LOGGER_NAME = CONF.logging.global_logger_name
+    global LOG
+    LOGGER_NAME = 'deckhand'
     LOG = logging.getLogger(__name__, LOGGER_NAME)
 
     logging.register_options(CONF)
-
+    config.parse_args()
+    
     current_path = os.path.dirname(os.path.realpath(__file__))
     root_path = os.path.abspath(os.path.join(current_path, os.pardir,
                                              os.pardir))
@@ -47,17 +52,22 @@ def __setup_logging():
     LOG.debug('Initiated Deckhand logging.')
 
 
+def __setup_db():
+    db_api.setup_db()
+
+
 def start_api(state_manager=None):
     """Main entry point for initializing the Deckhand API service.
 
     Create routes for the v1.0 API and sets up logging.
     """
-    config.register_opts(CONF)
     __setup_logging()
+    __setup_db()
 
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 
     v1_0_routes = [
+        ('documents', documents.DocumentsResource()),
         ('secrets', secrets.SecretsResource())
     ]
 

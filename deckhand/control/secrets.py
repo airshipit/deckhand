@@ -40,8 +40,8 @@ class SecretsResource(api_base.BaseResource):
         For a list of types, please refer to the following API documentation:
         https://docs.openstack.org/barbican/latest/api/reference/secret_types.html
         """
-        secret_name = req.params.get('name', None)
-        secret_type = req.params.get('type', None)
+        secret_name = req.params.get('name')
+        secret_type = req.params.get('type')
 
         if not secret_name:
             resp.status = falcon.HTTP_400

@@ -1,8 +1,37 @@
 CHANGES
 =======
 
-* Add oslo.log integration to Deckhand.
-* DECKHAND-10: Barbican initial integration
+* Change application/yaml to application/x-yaml
+* Cleaned up some logic, added exception handling to document creation
+* Add currently necessary oslo namespaces to oslo-config-generator conf file
+* Successfully creating document
+* Added logic for establishing DB connection
+* Refactor database sqlalchemy api/models
+* Added oslo\_context-based context for oslo\_db compatibility
+* Update database documents schema
+* Helper for generating versioned object automatically from dictionary payload
+* Update README
+* Temporary change - do not commit
+* Initial DB API models implementation
+* Added control (API) readme
+* [WIP] Implement documents API
+* Add kind param to SchemaVersion class
+* Change apiVersion references to schemaVersion
+* Remove apiVersion attribute from substitutions.src attributes
+* Remove apiVersion attribute from substitutions.src attributes
+* Update default\_schema with our updated schema definition
+* Trivial fix to default\_schema
+* Use regexes for jsonschema pre-validation
+* Add additional documentation
+* Add jsonschema validation to Deckhand
+* Initial engine framework
+* Fix incorrect comment
+* Deckhand initial ORM implementation
+* Deckhand initial ORM implementation
+* Add oslo.log integration
+* DECKHAND-10: Add Barbican integration to Deckhand
+* Update ChangeLog
+* Update AUTHORS
 * DECKHAND-2: Design core Deckhand API framework
 * Oslo config integration (#1)
 * Add ChangeLog
