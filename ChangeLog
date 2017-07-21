@@ -1,6 +1,16 @@
 CHANGES
 =======
 
+* Change application/yaml to application/x-yaml
+* Cleaned up some logic, added exception handling to document creation
+* Add currently necessary oslo namespaces to oslo-config-generator conf file
+* Successfully creating document
+* Added logic for establishing DB connection
+* Refactor database sqlalchemy api/models
+* Added oslo\_context-based context for oslo\_db compatibility
+* Update database documents schema
+* Helper for generating versioned object automatically from dictionary payload
+* Update README
 * Temporary change - do not commit
 * Initial DB API models implementation
 * Added control (API) readme

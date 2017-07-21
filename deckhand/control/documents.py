@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import yaml
 
 import falcon
 
+from oslo_db import exception as db_exc
 from oslo_log import log as logging
 
 from deckhand.control import base as api_base
+from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import document_validation
 from deckhand import errors as deckhand_errors
-from deckhand.objects import documents
 
 LOG = logging.getLogger(__name__)
 
@@ -61,17 +63,12 @@ class DocumentsResource(api_base.BaseResource):
             return self.return_error(resp, falcon.HTTP_400, message=e)
 
         try:
-            LOG.debug('Calling Document.create()')
-            documents.Document().create(document)
+            db_api.document_create(document)
+        except db_exc.DBDuplicateEntry as e:
+            return self.return_error(resp, falcon.HTTP_409, message=e)
         except Exception as e:
-            LOG.exception(e)
-            raise
+            return self.return_error(resp, falcon.HTTP_500, message=e)
 
-        # Check if a document with the specified name already exists. If so,
-        # treat this request as an update.
-        doc_name = doc_validation.doc_name
-
-        resp.data = doc_name
         resp.status = falcon.HTTP_201
 
     def _check_document_exists(self):

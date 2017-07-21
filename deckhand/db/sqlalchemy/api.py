@@ -95,9 +95,12 @@ def clear_db_env():
     _FACADE = None
 
 
-def document_create(context, values, session=None):
+def document_create(values, session=None):
     """Create a document."""
     values = values.copy()
+    values['doc_metadata'] = values.pop('metadata')
+    values['schema_version'] = values.pop('schemaVersion')
+
     session = session or get_session()
     with session.begin():
         document = models.Document()

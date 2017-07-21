@@ -106,6 +106,7 @@ class Document(BASE, DeckhandBase):
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
+    # TODO: the revision_index will be a foreign key to a Revision table.
     revision_index = Column(String(36), nullable=False,
                             default=lambda: str(uuid.uuid4()))
     schema_version = Column(String(64), nullable=False)

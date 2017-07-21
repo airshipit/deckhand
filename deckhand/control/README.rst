@@ -18,7 +18,7 @@ revision number will be returned.
 Testing
 -------
 
-Document creation can be tested locally using:
+Document creation can be tested locally using (from root deckhand directory):
 
 .. code-block:: console
 
