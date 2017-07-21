@@ -17,7 +17,7 @@
 #
 
 from oslo_log import log as logging
-import oslo_versionedobjects.fields as ovo_fields
+from oslo_versionedobjects import fields as ovo_fields
 
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import objects

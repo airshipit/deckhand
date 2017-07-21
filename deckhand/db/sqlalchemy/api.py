@@ -23,8 +23,6 @@ from oslo_db import exception as db_exception
 from oslo_db.sqlalchemy import session
 from oslo_log import log as logging
 from oslo_utils import excutils
-import osprofiler.sqlalchemy
-from retrying import retry
 import six
 from six.moves import range
 import sqlalchemy

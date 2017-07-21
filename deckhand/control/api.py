@@ -30,7 +30,7 @@ LOG = None
 
 def __setup_logging():
     global LOG
-    LOGGER_NAME = CONF.logging.global_logger_name
+    LOGGER_NAME = 'deckhand'
     LOG = logging.getLogger(__name__, LOGGER_NAME)
 
     logging.register_options(CONF)
@@ -58,9 +58,6 @@ def start_api(state_manager=None):
     Create routes for the v1.0 API and sets up logging.
     """
     __setup_logging()
-    # FOR TESTING -- REMOVE
-    engine = db_api.get_engine()
-    assert engine.engine.name == 'sqlite'
 
     control_api = falcon.API(request_type=api_base.DeckhandRequest)
 

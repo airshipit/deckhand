@@ -51,17 +51,6 @@ keystone_auth_opts = [
                default='http://127.0.0.1/identity/v3')
 ]
 
-logging_group = cfg.OptGroup(
-    name='logging',
-    title='Logging Options',
-    help='Logging options for Deckhand.')
-
-logging_opts = [
-    cfg.StrOpt('global_logger_name',
-                default='deckhand',
-                help='Logger name for the top-level logger.')
-]
-
 
 def register_opts(conf):
     conf.register_group(barbican_group)
@@ -70,14 +59,10 @@ def register_opts(conf):
     conf.register_group(keystone_auth_group)
     conf.register_opts(keystone_auth_opts, group=keystone_auth_group)
 
-    conf.register_group(logging_group)
-    conf.register_opts(logging_opts, group=logging_group)
-
 
 def list_opts():
     return {barbican_group: barbican_opts,
-            keystone_auth_group: keystone_auth_opts,
-            logging_group: logging_opts}
+            keystone_auth_group: keystone_auth_opts}
 
 
 def parse_args(args=None, usage=None, default_config_files=None):
