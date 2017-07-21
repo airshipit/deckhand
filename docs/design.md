@@ -598,6 +598,9 @@ This API will only support YAML as a serialization format. Since the IETF
 does not provide an official media type for YAML, this API will use
 `application/x-yaml`.
 
+This is a description of the `v1.0` API. Documented paths are considered
+relative to `/api/v1.0`.
+
 ### POST `/documents`
 
 Accepts a multi-document YAML body and creates a new revision which adds
@@ -666,17 +669,17 @@ Sample response:
 ```yaml
 ---
 count: 7
-next: https://deckhand/revisions?limit=2&offset=2
+next: https://deckhand/api/v1.0/revisions?limit=2&offset=2
 prev: null
 results:
   - id: 0
-    url: https://deckhand/revisions/0
+    url: https://deckhand/api/v1.0/revisions/0
     createdAt: 2017-07-14T21:23Z
     validationPolicies:
       site-deploy-validation:
         status: failed
   - id: 1
-    url: https://deckhand/revisions/1
+    url: https://deckhand/api/v1.0/revisions/1
     createdAt: 2017-07-16T01:15Z
     validationPolicies:
       site-deploy-validation:
@@ -699,23 +702,23 @@ Sample response:
 ```yaml
 ---
 id: 0
-url: https://deckhand/revisions/0
+url: https://deckhand/api/v1.0/revisions/0
 createdAt: 2017-07-14T021:23Z
 validationPolicies:
   site-deploy-validation:
-    url: https://deckhand/revisions/0/documents?schema=deckhand/ValidationPolicy/v1&name=site-deploy-validation
+    url: https://deckhand/api/v1.0/revisions/0/documents?schema=deckhand/ValidationPolicy/v1&name=site-deploy-validation
     status: failed
     validations:
       - name: deckhand-schema-validation
-        url: https://deckhand/revisions/0/validations/deckhand-schema-validation/0
+        url: https://deckhand/api/v1.0/revisions/0/validations/deckhand-schema-validation/0
         status: success
       - name: drydock-site-validation
         status: missing
       - name: promenade-site-validation
-        url: https://deckhand/revisions/0/validations/promenade-site-validation/0
+        url: https://deckhand/api/v1.0/revisions/0/validations/promenade-site-validation/0
         status: expired
       - name: armada-deployability-validation
-        url: https://deckhand/revisions/0/validations/armada-deployability-validation/0
+        url: https://deckhand/api/v1.0/revisions/0/validations/armada-deployability-validation/0
         status: failed
 ...
 ```
@@ -743,7 +746,7 @@ validator:
 An example `POST` request indicating validation failure:
 
 ```http
-POST /revisions/3/validations/promenade-site-validation
+POST /api/v1.0/revisions/3/validations/promenade-site-validation
 Content-Type: application/x-yaml
 
 ---
@@ -774,10 +777,10 @@ next: null
 prev: null
 results:
   - name: deckhand-schema-validation
-    url: https://deckhand/revisions/4/validations/deckhand-schema-validation
+    url: https://deckhand/api/v1.0/revisions/4/validations/deckhand-schema-validation
     status: success
   - name: promenade-site-validation
-    url: https://deckhand/revisions/4/validations/promenade-site-validation
+    url: https://deckhand/api/v1.0/revisions/4/validations/promenade-site-validation
     status: failure
 ...
 ```
@@ -795,7 +798,7 @@ next: null
 prev: null
 results:
   - id: 0
-    url: https://deckhand/revisions/4/validations/promenade-site-validation/0/entries/0
+    url: https://deckhand/api/v1.0/revisions/4/validations/promenade-site-validation/0/entries/0
     status: failure
 ...
 ```
@@ -810,7 +813,7 @@ Sample response:
 ```yaml
 ---
 name: promenade-site-validation
-url: https://deckhand/revisions/4/validations/promenade-site-validation/entries/0
+url: https://deckhand/api/v1.0/revisions/4/validations/promenade-site-validation/entries/0
 status: failure
 createdAt: 2017-07-16T02:03Z
 expiresAfter: null
