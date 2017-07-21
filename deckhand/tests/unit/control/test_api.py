@@ -22,6 +22,7 @@ from deckhand.control import base as api_base
 
 class TestApi(testtools.TestCase):
 
+
     @mock.patch.object(api, 'db_api', autospec=True)
     @mock.patch.object(api, 'config', autospec=True)
     @mock.patch.object(api, 'secrets', autospec=True)
