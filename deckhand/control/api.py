@@ -23,7 +23,6 @@ from deckhand.control import base as api_base
 from deckhand.control import documents
 from deckhand.control import secrets
 from deckhand.db.sqlalchemy import api as db_api
-from deckhand.db.sqlalchemy import models as db_models
 
 CONF = cfg.CONF
 LOG = None
@@ -54,7 +53,7 @@ def __setup_logging():
 
 
 def __setup_db():
-    db_models.register_models(db_api.get_engine())
+    db_api.setup_db()
 
 
 def start_api(state_manager=None):

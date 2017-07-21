@@ -19,6 +19,7 @@ import falcon
 
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
+from oslo_serialization import jsonutils as json
 
 from deckhand.control import base as api_base
 from deckhand.db.sqlalchemy import api as db_api
@@ -63,13 +64,14 @@ class DocumentsResource(api_base.BaseResource):
             return self.return_error(resp, falcon.HTTP_400, message=e)
 
         try:
-            db_api.document_create(document)
+            created_document = db_api.document_create(document)
         except db_exc.DBDuplicateEntry as e:
             return self.return_error(resp, falcon.HTTP_409, message=e)
         except Exception as e:
             return self.return_error(resp, falcon.HTTP_500, message=e)
 
         resp.status = falcon.HTTP_201
+        resp.body = json.dumps(created_document)
 
     def _check_document_exists(self):
         pass

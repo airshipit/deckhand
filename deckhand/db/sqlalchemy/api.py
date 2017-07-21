@@ -20,6 +20,7 @@ import threading
 
 from oslo_config import cfg
 from oslo_db import exception as db_exception
+from oslo_db import options
 from oslo_db.sqlalchemy import session
 from oslo_log import log as logging
 from oslo_utils import excutils
@@ -38,6 +39,8 @@ sa_logger = None
 LOG = logging.getLogger(__name__)
 
 CONF = cfg.CONF
+
+options.set_defaults(CONF)
 
 _FACADE = None
 _LOCK = threading.Lock()
@@ -95,6 +98,14 @@ def clear_db_env():
     _FACADE = None
 
 
+def setup_db():
+    models.register_models(get_engine())
+
+
+def drop_db():
+    models.unregister_models(get_engine())
+
+
 def document_create(values, session=None):
     """Create a document."""
     values = values.copy()
@@ -102,7 +113,9 @@ def document_create(values, session=None):
     values['schema_version'] = values.pop('schemaVersion')
 
     session = session or get_session()
+    document = models.Document()
     with session.begin():
-        document = models.Document()
         document.update(values)
         document.save(session=session)
+    
+    return document.to_dict()

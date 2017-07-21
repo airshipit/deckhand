@@ -23,13 +23,12 @@ from deckhand.control import base as api_base
 class TestApi(testtools.TestCase):
 
     @mock.patch.object(api, 'db_api', autospec=True)
-    @mock.patch.object(api, 'db_models', autospec=True)
     @mock.patch.object(api, 'config', autospec=True)
     @mock.patch.object(api, 'secrets', autospec=True)
     @mock.patch.object(api, 'documents', autospec=True)
     @mock.patch.object(api, 'falcon', autospec=True)
     def test_start_api(self, mock_falcon, mock_documents, mock_secrets,
-                       mock_config, mock_db_models, mock_db_api):
+                       mock_config, mock_db_api):
         mock_falcon_api = mock_falcon.API.return_value
 
         result = api.start_api()
@@ -43,5 +42,4 @@ class TestApi(testtools.TestCase):
             mock.call('/api/v1.0/secrets', mock_secrets.SecretsResource())
         ])
         mock_config.parse_args.assert_called_once_with()
-        mock_db_models.register_models.assert_called_once_with(
-            mock_db_api.get_engine())
+        mock_db_api.setup_db.assert_called_once_with()

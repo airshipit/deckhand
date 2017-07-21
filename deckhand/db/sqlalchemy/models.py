@@ -15,6 +15,7 @@
 import uuid
 
 from oslo_db.sqlalchemy import models
+from oslo_log import log as logging
 from oslo_serialization import jsonutils as json
 from oslo_utils import timeutils
 from sqlalchemy import Boolean
@@ -28,6 +29,9 @@ from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy.types import TypeDecorator
 
+from deckhand.common import timeutils
+
+LOG = logging.getLogger(__name__)
 
 # Declarative base class which maintains a catalog of classes and tables
 # relative to that base.
@@ -96,6 +100,11 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         # Remove private state instance, as it is not serializable and causes
         # CircularReference.
         d.pop("_sa_instance_state")
+
+        for k in ["created_at", "updated_at", "deleted_at", "deleted"]:
+            if k in d and d[k]:
+                d[k] = d[k].isoformat()
+
         return d
 
 
