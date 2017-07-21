@@ -179,10 +179,11 @@ the Substitution section for details).
 Selection of document parents is controlled by the `parentSelector` field and
 works as follows. A given document, `C`, that specifies a `parentSelector`
 will have exactly one parent, `P`. Document `P` will be the highest
-precedence (i.e. part of the lowest layer) document that has the labels
-indicated by the `parentSelector` (and possibly additional labels) from the
-set of all documents of the same `schema` as `C` that are in layers above the
-layer `C` is in. For example, consider the following sample documents:
+precedence (i.e. part of the lowest layer defined in the `layerOrder` list
+from the `LayeringPolicy`) document that has the labels indicated by the
+`parentSelector` (and possibly additional labels) from the set of all
+documents of the same `schema` as `C` that are in layers above the layer `C`
+is in. For example, consider the following sample documents:
 
 ```yaml
 ---
@@ -414,7 +415,12 @@ the following types of control documents are allowed.
 
 `DataSchema` documents are used by various services to register new schemas
 that Deckhand can use for validation. No `DataSchema` documents with names
-beginning with `deckhand/` or `metadata/` are allowed.
+beginning with `deckhand/` or `metadata/` are allowed.  Tme `metadata.name`
+field of each `DataSchema` document specifies the top level `schema` that it
+is used to validate.
+
+The contents of its `data` key are expected to be the json schema definition
+for the target document type from the target's top level `data` key down.
 
 <!-- TODO: give valid, tiny schema as example -->
 
@@ -465,12 +471,16 @@ allows services to check whether a particular revision (described below) of
 documents meets a configurable set of validations without having to know up
 front the complete list of validations.
 
-Deckhand provides validation of all concrete documents given their schema
-under the name `deckhand-schema-validation`. Since validations may indicate
-interactions with external and changing circumstances, an optional
-`expiresAfter` key may be specified for each validation as an ISO8601
-duration. If no `expiresAfter` is specified, a successful validation does not
-expire.
+Each validation `name` specified here is a reference to data that is postable
+by other services. Names beginning with `deckhand` are reserved for internal
+use. See the Validation section below for more details.
+
+Since validations may indicate interactions with external and changing
+circumstances, an optional `expiresAfter` key may be specified for each
+validation as an ISO8601 duration. If no `expiresAfter` is specified, a
+successful validation does not expire. Note that expirations are specific to
+the combination of `ValidationPolicy` and validation, not to each validation
+by itself.
 
 ```yaml
 ---
@@ -555,7 +565,32 @@ at a revision includes all content from previous revisions.
 
 ## Validation
 
-Services can report success for validation types for a given revision.
+The validation system provides a unified approach to complex validations that
+require coordination of multiple documents and business logic that resides in
+consumer services.
+
+Services can report success or failure of named validations for a given
+revision. Those validations can then be referenced by many `ValidationPolicy`
+control documents. The intended purpose use is to allow a simple mapping that
+enables consuming services to be able to quickly check whether the
+configuration in Deckhand is in a valid state for performing a specific
+action.
+
+### Deckhand-Provided Validations
+
+In addition to allowing 3rd party services to report configurable validation
+statuses, Deckhand provides a few internal validations which are made
+available immediately upon document ingestion.
+
+Here is a list of internal validations:
+
+* `deckhand-document-schema-validation` - All concrete documents in the
+  revision successfully pass their JSON schema validations. Will cause
+  this to report an error.
+* `deckhand-policy-validation` - All required policy documents are in-place,
+  and existing documents conform to those policies.  E.g. if a 3rd party
+  document specifies a `layer` that is not present in the layering policy,
+  that will cause this validation to report an error.
 
 ## API
 
@@ -651,7 +686,13 @@ results:
 
 ### GET `/revisions/{{revision_id}}`
 
-Get a detailed description of a particular revision.
+Get a detailed description of a particular revision. The status of each
+`ValidationPolicy` belonging to the revision is also included. Valid values
+for the status of each validation policy are:
+
+* `succeded` - All validations associated with the policy are `succeeded`.
+* `failed` - Any validation associated with the policy has status `failed`,
+  `expired` or `missing`.
 
 Sample response:
 
