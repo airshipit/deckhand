@@ -15,6 +15,7 @@
 
 """Defines interface for DB access."""
 
+import copy
 import datetime
 import threading
 
@@ -117,11 +118,82 @@ def document_create(values, session=None):
     values = values.copy()
     values['doc_metadata'] = values.pop('metadata')
     values['schema_version'] = values.pop('schemaVersion')
-
     session = session or get_session()
-    document = models.Document()
+
+    existing_document = document_get(
+        as_dict=False,
+        **{c: values[c] for c in models.Document.UNIQUE_CONSTRAINTS})
+
+    def _document_changed():
+        other_document = copy.deepcopy(existing_document)
+        other_document = other_document.to_dict()
+        # The document has changed if at least one value in ``values`` differs.
+        for key, val in values.items():
+            if val != other_document[key]:
+                return True
+        return False
+
+    if existing_document:
+        # Only generate a new revision for the document if anything has
+        # changed.
+        if _document_changed():
+            revision_index = revision_update(
+                revision_index=existing_document['revision_index'])['id']
+            values['revision_index'] = revision_index
+    else:
+        revision_index = revision_create()['id']
+        values['revision_index'] = revision_index
+
+    document = existing_document or models.Document()
     with session.begin():
         document.update(values)
         document.save(session=session)
 
     return document.to_dict()
+
+
+def document_get(session=None, as_dict=True, **filters):
+    unqiue_constraints = models.Document.UNIQUE_CONSTRAINTS
+    session = session or get_session()
+
+    if 'document_id' in filters:
+        # Get the document by `document_id`.
+        document = session.query(models.Document).get(filters['document_id'])
+    elif all([c in filters for c in unqiue_constraints]):
+        # Get the document by its unique constraints.
+        document = session.query(models.Document)
+        document = document.filter_by(**{c: filters[c]
+                                         for c in unqiue_constraints}).first()
+
+    if as_dict:
+        return document.to_dict() if document else {}
+    return document
+
+
+####################
+
+
+def revision_create(session=None):
+    session = session or get_session()
+    revision = models.Revision()
+    with session.begin():
+        revision.save(session=session)
+
+    return revision.to_dict()
+
+
+def revision_update(session=None, revision_index=None):
+    session = session or get_session()
+    previous_revision = session.query(models.Revision).get(revision_index)
+
+    new_revision = models.Revision()
+    with session.begin():
+        # Create the new revision with a reference to the previous revision.
+        new_revision.update({'previous': revision_index})
+        new_revision.save(session=session)
+
+        # Update the previous revision with a reference to the new revision.
+        previous_revision.update({'next': new_revision.id})
+        previous_revision.save(session=session)
+
+    return new_revision.to_dict()
