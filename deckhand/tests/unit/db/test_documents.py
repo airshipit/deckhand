@@ -46,7 +46,7 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
 			self.assertEqual(val, actual[key])
 
 	def _validate_revision(self, revision):
-		expected_attrs = ('id', 'document_id', 'child_id', 'parent_id')
+		expected_attrs = ('id', 'child_id', 'parent_id')
 		for attr in expected_attrs:
 			self.assertIn(attr, revision)
 			self.assertThat(revision[attr], matchers.MatchesAny(
@@ -57,26 +57,19 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
 		document = db_api.document_create(fixture)
 		self._validate_document(fixture, document)
 
-		revision = db_api.revision_get(document['id'])
+		revision = db_api.revision_get(document['revision_id'])
 		self._validate_revision(revision)
-		self.assertEqual(document['id'], revision['document_id'])
+		self.assertEqual(document['revision_id'], revision['id'])
 
 	def test_create_and_update_document(self):
 		"""
 		Check that the following relationship is true:
 
-		    parent_document <-- parent_revision
-                      ^         /          
-                       \     (has child)
-					    \	  /
-						 \	 /
-						  \ /
-					      / \
-				         /   \
-                        /     \
-                       /     (has parent)
-                      v         \
-		    child_document <-- child_revision
+	        parent_document --> parent_revision
+	                             |         ^
+	                         (has child) (has parent)
+	                             v         |
+	        child_document --> child_revision
 		"""
 		fixture = DocumentFixture().get_minimal_fixture()
 		child_document = db_api.document_create(fixture)
@@ -92,13 +85,13 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
 
 		# Validate that the parent document has a different revision and
 		# that the revisions and document links are correct.
-		child_revision = db_api.revision_get(child_document['id'])
-		parent_revision = db_api.revision_get(parent_document['id'])
+		child_revision = db_api.revision_get(child_document['revision_id'])
+		parent_revision = db_api.revision_get(parent_document['revision_id'])
 		for revision in (child_revision, parent_revision):
 			self._validate_revision(revision)
 
 		self.assertNotEqual(child_revision['id'], parent_revision['id'])
-		self.assertEqual(parent_document['id'],
-						 parent_revision['document_id'])
-		self.assertEqual(child_document['id'], parent_revision['child_id'])
-		self.assertEqual(parent_document['id'], child_revision['parent_id'])
+		self.assertEqual(parent_document['revision_id'],
+						 parent_revision['id'])
+		self.assertEqual(child_document['revision_id'], child_revision['id'])
+		self.assertEqual(parent_document['revision_id'], parent_revision['id'])

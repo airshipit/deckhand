@@ -128,17 +128,14 @@ class Revision(BASE, DeckhandBase):
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
-    document_id = Column(Integer, ForeignKey('documents.id'), nullable=True)
-    parent_id = Column(Integer, ForeignKey('documents.id'), nullable=True)
-    child_id = Column(Integer, ForeignKey('documents.id'), nullable=True)
-    document = relationship("Document", back_populates="revision",
-                            foreign_keys=[document_id])
+    parent_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
+    child_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
 
 
 class Document(BASE, DeckhandBase):
-    UNIQUE_CONSTRAINTS = ('schema_version', 'kind')
+    UNIQUE_CONSTRAINTS = ('schema_version', 'kind', 'revision_id')
     __tablename__ = 'documents'
-    #__table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
+    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
@@ -149,9 +146,11 @@ class Document(BASE, DeckhandBase):
     # "metadata" is reserved, so use "doc_metadata" instead.
     doc_metadata = Column(JSONEncodedDict(), nullable=False)
     data = Column(JSONEncodedDict(), nullable=False)
-    revision = relationship("Revision", uselist=False,
-                            back_populates="document",
-                            foreign_keys="[Revision.document_id]")
+    revision_id = Column(Integer, ForeignKey('revisions.id'), nullable=False)
+
+    revision = relationship("Revision",
+                            foreign_keys=[revision_id],
+                            cascade="all, delete")
 
 
 def register_models(engine):
