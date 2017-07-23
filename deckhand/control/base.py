@@ -72,7 +72,7 @@ class BaseResource(object):
 
     def return_error(self, resp, status_code, message="", retry=False):
         resp.body = json.dumps(
-            {'type': 'error', 'message': message, 'retry': retry})
+            {'type': 'error', 'message': str(message), 'retry': retry})
         resp.status = status_code
 
 

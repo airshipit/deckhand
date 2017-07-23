@@ -121,16 +121,15 @@ def document_create(values, session=None):
     values['schema_version'] = values.pop('schemaVersion')
     session = session or get_session()
 
-    filters = copy.copy(models.Document.UNIQUE_CONSTRAINTS)
-    filters = [f for f in filters if f != 'revision_index']
+    filters = models.Document.UNIQUE_CONSTRAINTS
     existing_document = document_get(**{c: values[c] for c in filters})
 
+    created_document = {}
+
     def _document_changed():
-        other_document = copy.deepcopy(existing_document)
-        other_document = other_document.to_dict()
         # The document has changed if at least one value in ``values`` differs.
         for key, val in values.items():
-            if val != other_document[key]:
+            if val != existing_document[key]:
                 return True
         return False
 
@@ -139,62 +138,87 @@ def document_create(values, session=None):
         with session.begin():
             document.update(values)
             document.save(session=session)
-        return document
+        return document.to_dict()
 
-    created_document = {}
     if existing_document:
         # Only generate a new revision and entirely new document if anything
         # was changed.
         if _document_changed():
-            revision_index = revision_update(
-                revision_index=existing_document['revision_index'])['id']
-            values['revision_index'] = revision_index
-            created_document = _document_create().to_dict()
-        # TODO: indicate that now document was actually created.
+            created_document = _document_create()
+            revision_update(created_document['id'], existing_document['id'])
     else:
-        revision_index = revision_create()['id']
-        values['revision_index'] = revision_index
-        created_document = _document_create().to_dict()
+        created_document = _document_create()
+        revision_create(created_document['id'])
 
     return created_document
 
 
 def document_get(session=None, **filters):
     session = session or get_session()
-
-    document = session.query(models.Document)\
-        .filter_by(**filters)\
-        .options(sa_orm.joinedload("revision_index"))\
-        .order_by(desc(models.Revision.created_at))\
-        .first()
-
+    document = session.query(models.Document).filter_by(**filters).first()
     return document.to_dict() if document else {}
 
 
 ####################
 
 
-def revision_create(session=None):
+def revision_create(document_id, session=None):
     session = session or get_session()
     revision = models.Revision()
     with session.begin():
+        revision.update({'document_id': document_id})
         revision.save(session=session)
 
     return revision.to_dict()
 
 
-def revision_update(session=None, revision_index=None):
+def revision_get(document_id, session=None):
     session = session or get_session()
-    previous_revision = session.query(models.Revision).get(revision_index)
+    revision = session.query(models.Revision)\
+        .filter_by(document_id=document_id).first()
+    return revision.to_dict()
 
-    new_revision = models.Revision()
+
+def revision_update(document_id, child_document_id, session=None):
+    """Create a parent revision and update the child revision.
+
+    The ``document_id`` references the newly created document that is a more
+    up-to-date revision. Create a new (parent) revision that references
+    ``document_id`` and whose ``child_id`` is ``child_document_id``.
+
+    Set the ``parent_id`` for ``child_revision`` to ``document_id``.
+
+    After this function has executed, the following relationship is true:
+
+        parent_document <-- parent_revision
+                  ^         /          
+                   \     (has child)
+                    \     /
+                     \   /
+                      \ /
+                      / \
+                     /   \
+                    /     \
+                   /     (has parent)
+                  v         \
+        child_document <-- child_revision
+
+    :param document_id: The ID corresponding to the up-to-date document.
+    :param child_document_id: The ID corresponding tothe out-of-date document.
+    :param session: The database session.
+    :returns: The dictionary representation of the newly created revision.
+    """
+    session = session or get_session()
+    parent_revision = models.Revision()
     with session.begin():
-        # Create the new revision with a reference to the previous revision.
-        new_revision.update({'previous': revision_index})
-        new_revision.save(session=session)
+        parent_revision.update({'document_id': document_id,
+                                'child_id': child_document_id})   
+        parent_revision.save(session=session)
 
-        # Update the previous revision with a reference to the new revision.
-        previous_revision.update({'next': new_revision.id})
-        previous_revision.save(session=session)
+    child_revision = session.query(models.Revision)\
+        .filter_by(document_id=child_document_id).first()
+    with session.begin():
+        child_revision.update({'parent_id': document_id})
+        child_revision.save(session=session)
 
-    return new_revision.to_dict()
+    return parent_revision.to_dict()
