@@ -13,17 +13,20 @@
 # limitations under the License.
 
 import jsonschema
+from oslo_log import log as logging
+import six
 
 from deckhand.engine.schema.v1_0 import default_policy_validation
 from deckhand.engine.schema.v1_0 import default_schema_validation
 from deckhand import errors
 
+LOG = logging.getLogger(__name__)
+
 
 class DocumentValidation(object):
     """Class for document validation logic for YAML files.
 
-    This class is responsible for parsing, validating and retrieving secret
-    values for values stored in the YAML file.
+    This class is responsible for performing built-in validations on Documents.
 
     :param data: YAML data that requires secrets to be validated, merged and
         consolidated.
@@ -45,6 +48,8 @@ class DocumentValidation(object):
           - `deckhand-document-schema-validation`
           - `deckhand-policy-validation`
         """
+
+        # TODO: Use the correct validation based on the Document's schema.
         internal_validations = [
             {'version': 'v1', 'fqn': 'deckhand-document-schema-validation',
              'schema': default_schema_validation},
@@ -56,7 +61,7 @@ class DocumentValidation(object):
 
         @property
         def schema(self):
-            # TODO: return schema based on version and kind.
+            # TODO: return schema based on Document's schema.
             return [v['schema'] for v in self.internal_validations
                     if v['version'] == self.schema_version][0].schema
 
@@ -64,11 +69,22 @@ class DocumentValidation(object):
         """Pre-validate that the YAML file is correctly formatted."""
         self._validate_with_schema()
 
-        # TODO(fm577c): Query Deckhand API to validate "src" values.
-
     def _validate_with_schema(self):
-        # Validate the document using the schema defined by the document's
-        # `schemaVersion` and `kind`.
+        # Validate the document using the document's ``schema``. Only validate
+        # concrete documents.
+        try:
+            abstract = self.data['metadata']['layeringDefinition'][
+                'abstract']
+            is_abstract = six.text_type(abstract).lower() == 'true'
+        except KeyError as e:
+            raise errors.InvalidFormat(
+                "Could not find 'abstract' property from document.")
+
+        if is_abstract:
+            LOG.info(
+                "Skipping validation for the document because it is abstract")
+            return
+
         try:
             schema_version = self.data['schema'].split('/')[-1]
             doc_schema_version = self.SchemaVersion(schema_version)

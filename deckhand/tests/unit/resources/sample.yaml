@@ -8,7 +8,7 @@ metadata:
     genesis: enabled
     master: enabled
   layeringDefinition:
-    abstract: true
+    abstract: false
     layer: region
     parentSelector:
       required_key_a: required_label_a
