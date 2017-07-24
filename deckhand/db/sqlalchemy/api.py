@@ -118,7 +118,6 @@ def document_create(values, session=None):
     """Create a document."""
     values = values.copy()
     values['_metadata'] = values.pop('metadata')
-    print(values)
     values['name'] = values['_metadata']['name']
     session = session or get_session()
 

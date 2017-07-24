@@ -14,7 +14,8 @@
 
 import jsonschema
 
-from deckhand.engine.schema.v1_0 import default_schema
+from deckhand.engine.schema.v1_0 import default_policy_validation
+from deckhand.engine.schema.v1_0 import default_schema_validation
 from deckhand import errors
 
 
@@ -38,11 +39,17 @@ class DocumentValidation(object):
         Retrieves the schema that corresponds to "apiVersion" in the YAML
         data. This schema is responsible for performing pre-validation on
         YAML data.
-        """
 
-        # TODO: Update kind according to requirements.
-        schema_versions_info = [{'version': 'v1', 'kind': 'default',
-                                 'schema': default_schema}]
+        The built-in validation schemas that are always executed include:
+
+          - `deckhand-document-schema-validation`
+          - `deckhand-policy-validation`
+        """
+        internal_validations = [
+            {'version': 'v1', 'fqn': 'deckhand-document-schema-validation',
+             'schema': default_schema_validation},
+            {'version': 'v1', 'fqn': 'deckhand-policy-validation',
+             'schema': default_policy_validation}]
 
         def __init__(self, schema_version):
             self.schema_version = schema_version
@@ -50,7 +57,7 @@ class DocumentValidation(object):
         @property
         def schema(self):
             # TODO: return schema based on version and kind.
-            return [v['schema'] for v in self.schema_versions_info
+            return [v['schema'] for v in self.internal_validations
                     if v['version'] == self.schema_version][0].schema
 
     def pre_validate_data(self):
