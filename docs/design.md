@@ -592,6 +592,21 @@ Here is a list of internal validations:
   document specifies a `layer` that is not present in the layering policy,
   that will cause this validation to report an error.
 
+## Access Control
+
+Deckhand will use standard OpenStack Role Based Access Control using the
+following actions:
+
+- `read_cleartext_document` - Read unencrypted documents.
+- `read_encrypted_document` - Read (including substitution and layering)
+  encrypted documents.
+- `read_revision` - Read details about revisions.
+- `read_validation` - Read validation policy status, and validation results,
+  including error messages.
+- `write_cleartext_document` - Create, update or delete unencrypted documents.
+- `write_encrypted_document` - Create, update or delete encrypted documents.
+- `write_validation` - Write validation results.
+
 ## API
 
 This API will only support YAML as a serialization format. Since the IETF
@@ -624,6 +639,9 @@ If no changes are detected, a new revision should not be created. This allows
 services to periodically re-register their schemas without creating
 unnecessary revisions.
 
+This endpoint uses the `write_cleartext_document` and
+`write_encrypted_document` actions.
+
 ### GET `/revisions/{revision_id}/documents`
 
 Returns a multi-document YAML response containing all the documents matching
@@ -648,6 +666,9 @@ Supported query string parameters:
   `metadata.label=key=value`. Repeating this parameter indicates all
   requested labels must apply (AND not OR).
 
+This endpoint uses the `read_cleartext_document` and
+`read_encrypted_document` actions.
+
 ### GET `/revisions/{revision_id}/rendered-documents`
 
 Returns a multi-document YAML of fully layered and substituted documents. No
@@ -657,6 +678,9 @@ consumers will interact with for their configuration.
 Valid query parameters are the same as for
 `/revisions/{revision_id}/documents`, minus the paremters in
 `metadata.layeringDetinition`, which are not supported.
+
+This endpoint uses the `read_cleartext_document` and
+`read_encrypted_document` actions.
 
 ### GET `/revisions`
 
@@ -686,6 +710,8 @@ results:
         status: succeeded
 ...
 ```
+
+This endpoint uses the `read_revision` action.
 
 ### GET `/revisions/{{revision_id}}`
 
@@ -728,6 +754,8 @@ A status of `missing` indicates that no entries have been created. A status
 of `expired` indicates that the validation had succeeded, but the
 `expiresAfter` limit specified in the `ValidationPolicy` has been exceeded.
 
+This endpoint uses the `read_revision` action.
+
 ### POST `/revisions/{{revision_id}}/validations/{{name}}`
 
 Add the results of a validation for a particular revision.
@@ -764,6 +792,8 @@ validator:
 ...
 ```
 
+This endpoint uses the `write_validation` action.
+
 ### GET `/revisions/{{revision_id}}/validations`
 
 Gets the list of validations which have reported for this revision.
@@ -785,6 +815,8 @@ results:
 ...
 ```
 
+This endpoint uses the `read_validation` action.
+
 ### GET `/revisions/{{revision_id}}/validations/{{name}}`
 
 Gets the list of validation entry summaries that have been posted.
@@ -802,6 +834,8 @@ results:
     status: failure
 ...
 ```
+
+This endpoint uses the `read_validation` action.
 
 ### GET `/revisions/{{revision_id}}/validations/{{name}}/entries/{{entry_id}}`
 
@@ -827,3 +861,5 @@ errors:
     message: Node has master role, but not included in cluster masters list.
 ...
 ```
+
+This endpoint uses the `read_validation` action.
