@@ -26,9 +26,8 @@ class DocumentFixture(object):
 
     def get_minimal_fixture(self, **kwargs):
         fixture = {'data': 'fake document data',
-                   'metadata': 'fake metadata',
-                   'kind': 'FakeConfigType',
-                   'schemaVersion': 'deckhand/v1'}
+                   'metadata': {'name': 'fake metadata'},
+                   'schema': 'deckhand/v1'}
         fixture.update(kwargs)
         return fixture
 
@@ -36,8 +35,7 @@ class DocumentFixture(object):
 class TestDocumentsApi(base.DeckhandWithDBTestCase):
 
 	def _validate_document(self, expected, actual):
-		expected['doc_metadata'] = expected.pop('metadata')
-		expected['schema_version'] = expected.pop('schemaVersion')
+		expected['_metadata'] = expected.pop('metadata')
 
 		# TODO: Validate "status" fields, like created_at.
 		self.assertIsInstance(actual, dict)
@@ -74,13 +72,13 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
 		fixture = DocumentFixture().get_minimal_fixture()
 		child_document = db_api.document_create(fixture)
 
-		fixture['metadata'] = 'modified fake metadata'
+		fixture['metadata'] = {'name': 'modified fake metadata'}
 		parent_document = db_api.document_create(fixture)
 		self._validate_document(fixture, parent_document)
 
 		# Validate that the new document was created.
-		self.assertEqual('modified fake metadata',
-						 parent_document['doc_metadata'])
+		self.assertEqual({'name': 'modified fake metadata'},
+						 parent_document['_metadata'])
 		self.assertNotEqual(child_document['id'], parent_document['id'])
 
 		# Validate that the parent document has a different revision and

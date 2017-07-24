@@ -133,18 +133,18 @@ class Revision(BASE, DeckhandBase):
 
 
 class Document(BASE, DeckhandBase):
-    UNIQUE_CONSTRAINTS = ('schema_version', 'kind', 'revision_id')
+    UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
     __tablename__ = 'documents'
     __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
-    schema_version = Column(String(64), nullable=False)
-    kind = Column(String(64), nullable=False)
+    schema = Column(String(64), nullable=False)
+    name = Column(String(64), nullable=False)
     # NOTE: Do not define a maximum length for these JSON data below. However,
     # this approach is not compatible with all database types.
     # "metadata" is reserved, so use "doc_metadata" instead.
-    doc_metadata = Column(JSONEncodedDict(), nullable=False)
+    _metadata = Column(JSONEncodedDict(), nullable=False)
     data = Column(JSONEncodedDict(), nullable=False)
     revision_id = Column(Integer, ForeignKey('revisions.id'), nullable=False)
 

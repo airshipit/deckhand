@@ -117,8 +117,9 @@ def documents_create(documents, session=None):
 def document_create(values, session=None):
     """Create a document."""
     values = values.copy()
-    values['doc_metadata'] = values.pop('metadata')
-    values['schema_version'] = values.pop('schemaVersion')
+    values['_metadata'] = values.pop('metadata')
+    print(values)
+    values['name'] = values['_metadata']['name']
     session = session or get_session()
 
     filters = models.Document.UNIQUE_CONSTRAINTS

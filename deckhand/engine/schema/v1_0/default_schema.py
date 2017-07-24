@@ -18,8 +18,7 @@ substitution_schema = {
         'dest': {
             'type': 'object',
             'properties': {
-                'path': {'type': 'string'},
-                'replacePattern': {'type': 'string'}
+                'path': {'type': 'string'}
             },
             'additionalProperties': False,
             # 'replacePattern' is not required.
@@ -28,12 +27,12 @@ substitution_schema = {
         'src': {
             'type': 'object',
             'properties': {
-                'kind': {'type': 'string'},
+                'schema': {'type': 'string'},
                 'name': {'type': 'string'},
                 'path': {'type': 'string'}
             },
             'additionalProperties': False,
-            'required': ['kind', 'name', 'path']
+            'required': ['schema', 'name', 'path']
         }
     },
     'additionalProperties': False,
@@ -43,45 +42,46 @@ substitution_schema = {
 schema = {
     'type': 'object',
     'properties': {
-        'schemaVersion': {
+        'schema': {
             'type': 'string',
-            'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
+            'pattern': '^(.*\/v[0-9]{1})$'
         },
-        # TODO: The kind should be an enum.
-        'kind': {'type': 'string'},
         'metadata': {
             'type': 'object',
             'properties': {
-                'metadataVersion': {
+                'schema': {
                     'type': 'string',
-                    'pattern': '^([A-Za-z]+\/v[0-9]{1})$'
+                    'pattern': '^(.*/v[0-9]{1})$'
                 },
                 'name': {'type': 'string'},
+                'storagePolicy': {'type': 'string'},
                 'labels': {
-                    'type': 'object',
-                    'properties': {
-                        'component': {'type': 'string'},
-                        'hostname': {'type': 'string'}
-                    },
-                    'additionalProperties': False,
-                    'required': ['component', 'hostname']
+                    'type': 'object'
                 },
-                'layerDefinition': {
+                'layeringDefinition': {
                     'type': 'object',
                     'properties': {
-                        'layer': {'enum': ['global', 'region', 'site']},
+                        'layer': {'type': 'string'},
                         'abstract': {'type': 'boolean'},
-                        'childSelector': {
-                            'type': 'object',
-                            'properties': {
-                                'label': {'type': 'string'}
-                            },
-                            'additionalProperties': False,
-                            'required': ['label']
+                        'parentSelector': {
+                            'type': 'object'
+                        },
+                        'actions': {
+                            'type': 'array',
+                            'items': {
+                                'type': 'object',
+                                'properties': {
+                                    'method': {'enum': ['merge', 'delete',
+                                                        'replace']},
+                                    'path': {'type': 'string'}
+                                },
+                                'additionalProperties': False,
+                                'required': ['method', 'path']
+                            }
                         }
                     },
                     'additionalProperties': False,
-                    'required': ['layer', 'abstract', 'childSelector']
+                    'required': ['layer', 'abstract', 'parentSelector']
                 },
                 'substitutions': {
                     'type': 'array',
@@ -89,13 +89,13 @@ schema = {
                 }
             },
             'additionalProperties': False,
-            'required': ['metadataVersion', 'name', 'labels',
-                         'layerDefinition', 'substitutions']
+            'required': ['schema', 'name', 'storagePolicy', 'labels',
+                         'layeringDefinition', 'substitutions']
         },
         'data': {
             'type': 'object'
         }
     },
     'additionalProperties': False,
-    'required': ['schemaVersion', 'kind', 'metadata', 'data']
+    'required': ['schema', 'metadata', 'data']
 }

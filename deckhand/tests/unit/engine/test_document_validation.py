@@ -81,8 +81,7 @@ class TestDocumentValidation(testtools.TestCase):
         invalid_data = [
             (self._corrupt_data('data'), 'data'),
             (self._corrupt_data('metadata'), 'metadata'),
-            (self._corrupt_data('metadata.metadataVersion'),
-                                'metadataVersion'),
+            (self._corrupt_data('metadata.schema'), 'schema'),
             (self._corrupt_data('metadata.name'), 'name'),
             (self._corrupt_data('metadata.substitutions'), 'substitutions'),
             (self._corrupt_data('metadata.substitutions.0.dest'), 'dest'),

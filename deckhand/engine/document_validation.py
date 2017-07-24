@@ -44,9 +44,8 @@ class DocumentValidation(object):
         schema_versions_info = [{'version': 'v1', 'kind': 'default',
                                  'schema': default_schema}]
 
-        def __init__(self, schema_version, kind):
+        def __init__(self, schema_version):
             self.schema_version = schema_version
-            self.kind = kind
 
         @property
         def schema(self):
@@ -60,21 +59,15 @@ class DocumentValidation(object):
 
         # TODO(fm577c): Query Deckhand API to validate "src" values.
 
-    @property
-    def doc_name(self):
-        return (self.data['schemaVersion'] + self.data['kind'] +
-                self.data['metadata']['name'])
-
     def _validate_with_schema(self):
         # Validate the document using the schema defined by the document's
         # `schemaVersion` and `kind`.
         try:
-            schema_version = self.data['schemaVersion'].split('/')[-1]
-            doc_kind = self.data['kind']
-            doc_schema_version = self.SchemaVersion(schema_version, doc_kind)
+            schema_version = self.data['schema'].split('/')[-1]
+            doc_schema_version = self.SchemaVersion(schema_version)
         except (AttributeError, IndexError, KeyError) as e:
             raise errors.InvalidFormat(
-                'The provided schemaVersion is invalid or missing. Exception: '
+                'The provided schema is invalid or missing. Exception: '
                 '%s.' % e)
         try:
             jsonschema.validate(self.data, doc_schema_version.schema)
