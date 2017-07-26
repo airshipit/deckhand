@@ -58,9 +58,50 @@ class InvalidDocumentFormat(DeckhandException):
         super(InvalidDocumentFormat, self).__init__(**kwargs)
 
 
-class UnknownDocumentFormat(DeckhandException):
-    msg_fmt = ("Could not determine the validation schema to validate the "
-                "document type: %(document_type)s.")
+# TODO(fmontei): Remove this in a future commit.
+class ApiError(Exception):
+    pass
+
+
+class InvalidFormat(ApiError):
+    """The YAML file is incorrectly formatted and cannot be read."""
+
+
+class DocumentExists(DeckhandException):
+    msg_fmt = ("Document with kind %(kind)s and schemaVersion "
+               "%(schema_version)s already exists.")
+    code = 409
+
+
+class LayeringPolicyNotFound(DeckhandException):
+    msg_fmt = ("LayeringPolicy with schema %(schema)s not found in the "
+               "system.")
+    code = 400
+
+
+class LayeringPolicyMalformed(DeckhandException):
+    msg_fmt = ("LayeringPolicy with schema %(schema)s is improperly formatted:"
+               " %(document)s.")
+    code = 400
+
+
+class IndeterminateDocumentParent(DeckhandException):
+    msg_fmt = ("Too many parent documents found for document %(document)s.")
+    code = 400
+
+
+class MissingDocumentParent(DeckhandException):
+    msg_fmt = ("Missing parent document for document %(document)s.")
+    code = 400
+
+
+class MissingDocumentKey(DeckhandException):
+    msg_fmt = ("Missing document key %(key)s from either parent or child. "
+               "Parent: %(parent)s. Child: %(child)s.")
+
+
+class UnsupportedActionMethod(DeckhandException):
+    msg_fmt = ("Method in %(actions)s is invalid for document %(document)s.")
     code = 400
 
 
