@@ -165,13 +165,13 @@ When rendering a particular document, you resolve the chain of parents upward
 through the layers, and begin working back down each layer rendering at each
 document in the chain.
 
-When rendering each layer, the list of `actions` will be applied in order.
-Supported actions are:
+When rendering each layer, the parent document is used as the starting point,
+so the entire contents of the parent are brought forward.  Then the list of
+`actions` will be applied in order.  Supported actions are:
 
-* `merge` - a "deep" merge that layers new and modified data onto existing data
-* `replace` - overwrite data at the specified path and replace it with the data
-  given in this document
-* `delete` - remove the data at the specified path
+* `merge` - "deep" merge child data at the specified path into the existing data
+* `replace` - overwrite existing data with child data at the specified path
+* `delete` - remove the existing data at the specified path
 
 After actions are applied for a given layer, substitutions are applied (see
 the Substitution section for details).
