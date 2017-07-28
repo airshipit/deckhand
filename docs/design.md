@@ -863,3 +863,11 @@ errors:
 ```
 
 This endpoint uses the `read_validation` action.
+
+### DELETE `/docuemnts/{{schema}}/{{name}}`
+
+Delete the specified document.  This is equivalent to posting a tombstone for
+the document.
+
+This endpoint uses the `write_cleartext_document` and
+`write_encrypted_document` actions.
