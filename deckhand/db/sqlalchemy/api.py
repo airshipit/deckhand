@@ -114,53 +114,56 @@ def documents_create(documents, session=None):
     return created_docs
 
 
-def document_create(values, session=None):
+def documents_create(values_list, session=None):
     """Create a document."""
-    values = values.copy()
-    values['_metadata'] = values.pop('metadata')
-    values['name'] = values['_metadata']['name']
+    values_list = copy.deepcopy(values_list)
     session = session or get_session()
-
     filters = models.Document.UNIQUE_CONSTRAINTS
-    try:
-        existing_document = document_get(
-            raw_dict=True,
-            **{c: values[c] for c in filters if c != 'revision_id'})
-    except db_exception.DBError:
-        # Ignore bad data at this point. Allow creation to bubble up the error
-        # related to bad data.
-        existing_document = None
 
-    created_document = {}
+    do_create = False
+    documents_created = []
 
-    def _document_changed():
+    def _document_changed(existing_document):
         # The document has changed if at least one value in ``values`` differs.
         for key, val in values.items():
             if val != existing_document[key]:
                 return True
         return False
 
-    def _document_create():
+    def _document_create(values):
         document = models.Document()
         with session.begin():
             document.update(values)
             document.save(session=session)
         return document.to_dict()
 
-    if existing_document:
-        # Only generate a new revision and entirely new document if anything
-        # was changed.
-        if _document_changed():
-            revision = revision_create_parent(existing_document)
-            values['revision_id'] = revision['id']
-            created_document = _document_create()
-            revision_update_child(existing_document, created_document)
-    else:
-        revision = revision_create()
-        values['revision_id'] = revision['id']
-        created_document = _document_create()
+    for values in values_list:
+        values['_metadata'] = values.pop('metadata')
+        values['name'] = values['_metadata']['name']
+    
+        try:
+            existing_document = document_get(
+                raw_dict=True,
+                **{c: values[c] for c in filters if c != 'revision_id'})
+        except db_exception.DBError:
+            # Ignore bad data at this point. Allow creation to bubble up the
+            # error related to bad data.
+            existing_document = None
 
-    return created_document
+        if not existing_document:
+            do_create = True
+        elif existing_document and _document_changed(existing_document):
+            do_create = True
+
+    if do_create:
+        revision = revision_create()
+
+        for values in values_list:
+            values['revision_id'] = revision['id']
+            doc = _document_create(values)
+            documents_created.append(doc)
+
+    return documents_created
 
 
 def document_get(session=None, raw_dict=False, **filters):

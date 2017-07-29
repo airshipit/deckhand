@@ -19,6 +19,7 @@ import testtools
 from testtools import matchers
 
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand.tests import test_utils
 from deckhand.tests.unit import base
 
 BASE_EXPECTED_FIELDS = ("created_at", "updated_at", "deleted_at", "deleted")
@@ -32,19 +33,28 @@ class DocumentFixture(object):
 
     @staticmethod
     def get_minimal_fixture(**kwargs):
-        fixture = {'data': 'fake document data',
-                   'metadata': {'name': 'fake metadata'},
-                   'schema': 'deckhand/v1'}
+        fixture = {'data': test_utils.rand_name('data'),
+                   'metadata': {'name': test_utils.rand_name('name')},
+                   'schema': test_utils.rand_name('schema', prefix='deckhand')}
         fixture.update(kwargs)
         return fixture
+
+    @staticmethod
+    def get_minimal_multi_fixture(count=2, **kwargs):
+        return [DocumentFixture.get_minimal_fixture(**kwargs) 
+                for _ in range(count)]
 
 
 class TestDocumentsApi(base.DeckhandWithDBTestCase):
 
-    def _create_document(self, payload):
-        doc = db_api.document_create(payload)
-        self._validate_document(expected=payload, actual=doc)
-        return doc
+    def _create_documents(self, payload):
+        if not isinstance(payload, list):
+            payload = [payload]
+
+        docs = db_api.documents_create(payload)
+        for idx, doc in enumerate(docs):
+            self._validate_document(expected=payload[idx], actual=doc)
+        return docs
 
     def _get_document(self, **fields):
         doc = db_api.document_get(**fields)
@@ -107,115 +117,51 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
 
     def test_create_and_get_document(self):
         payload = DocumentFixture.get_minimal_fixture()
-        document = self._create_document(payload)
-        retrieved_document = self._get_document(id=document['id'])
-        self.assertEqual(document, retrieved_document)
+        documents = self._create_documents(payload)
+
+        self.assertIsInstance(documents, list)
+        self.assertEqual(1, len(documents))
+
+        for document in documents:
+            retrieved_document = self._get_document(id=document['id'])
+            self.assertEqual(document, retrieved_document)
+
+    def test_create_document_again_with_no_changes(self):
+        payload = DocumentFixture.get_minimal_fixture()
+        self._create_documents(payload)
+        documents = self._create_documents(payload)
+
+        self.assertIsInstance(documents, list)
+        self.assertEmpty(documents)
 
     def test_create_document_and_get_revision(self):
         payload = DocumentFixture.get_minimal_fixture()
-        document = self._create_document(payload)
+        documents = self._create_documents(payload)
 
-        revision = self._get_revision(document['revision_id'])
-        self._validate_revision(revision)
-        self.assertEqual(document['revision_id'], revision['id'])
+        self.assertIsInstance(documents, list)
+        self.assertEqual(1, len(documents))
 
-    def test_create_and_update_document(self):
-        """
-        Check that the following relationship is true:
-
-            parent_document --> parent_revision
-                                 |         ^
-                             (has child) (has parent)
-                                 v         |
-            child_document --> child_revision
-        """
-        child_payload = DocumentFixture.get_minimal_fixture()
-        child_document = self._create_document(child_payload)
-
-        parent_payload = DocumentFixture.get_minimal_fixture()
-        parent_payload['data'] = 'fake updated document data'
-        parent_document = self._create_document(parent_payload)
-
-        # Validate that the new document was created.
-        self.assertEqual('fake updated document data', parent_document['data'])
-        self.assertNotEqual(child_document['id'], parent_document['id'])
-
-        # Validate that the parent document has a different revision and
-        # that the revisions and document links are correct.
-        child_revision = self._get_revision(child_document['revision_id'])
-        parent_revision = self._get_revision(parent_document['revision_id'])
-
-        self._validate_revision_connections(
-            parent_document, parent_revision, child_document, child_revision)
-
-    def test_create_and_update_document_schema(self):
-        """
-        Check that the following relationship is true:
-
-            parent_document --> parent_revision
-            child_document --> child_revision
-
-        "schema" is unique so changing it results in a new document being
-        created.
-        """
-        child_payload = DocumentFixture.get_minimal_fixture()
-        child_document = self._create_document(child_payload)
-
-        parent_payload = DocumentFixture.get_minimal_fixture()
-        parent_payload['schema'] = 'deckhand/v2'
-        parent_document = self._create_document(parent_payload)
-
-        # Validate that the new document was created.
-        self.assertEqual('deckhand/v2', parent_document['schema'])
-        self.assertNotEqual(child_document['id'], parent_document['id'])
-
-        # Validate that the parent document has a different revision and
-        # that the revisions and document links are correct.
-        child_revision = self._get_revision(child_document['revision_id'])
-        parent_revision = self._get_revision(parent_document['revision_id'])
-
-        self._validate_revision_connections(
-            parent_document, parent_revision, child_document, child_revision,
-            False)
-
-    def test_create_and_update_document_metadata_name(self):
-        """
-        Check that the following relationship is true:
-
-            parent_document --> parent_revision
-            child_document --> child_revision
-
-        "metadata.name" is unique so changing it results in a new document
-        being created.
-        """
-        child_payload = DocumentFixture.get_minimal_fixture()
-        child_document = self._create_document(child_payload)
-
-        parent_payload = DocumentFixture.get_minimal_fixture()
-        parent_payload['metadata'] = {'name': 'fake updated metadata'}
-        parent_document = self._create_document(parent_payload)
-
-        # Validate that the new document was created.
-        self.assertEqual({'name': 'fake updated metadata'},
-                         parent_document['metadata'])
-        self.assertNotEqual(child_document['id'], parent_document['id'])
-
-        # Validate that the parent document has a different revision and
-        # that the revisions and document links are correct.
-        child_revision = self._get_revision(child_document['revision_id'])
-        parent_revision = self._get_revision(parent_document['revision_id'])
-
-        self._validate_revision_connections(
-            parent_document, parent_revision, child_document, child_revision,
-            False)
+        for document in documents:
+            revision = self._get_revision(document['revision_id'])
+            self._validate_revision(revision)
+            self.assertEqual(document['revision_id'], revision['id'])
 
     def test_get_documents_by_revision_id(self):
         payload = DocumentFixture.get_minimal_fixture()
-        document = self._create_document(payload)
+        documents = self._create_documents(payload)
 
-        revision = self._get_revision(document['revision_id'])
+        revision = self._get_revision(documents[0]['revision_id'])
         self.assertEqual(1, len(revision['documents']))
-        self.assertEqual(document, revision['documents'][0])
+        self.assertEqual(documents[0], revision['documents'][0])
 
     def test_get_multiple_documents_by_revision_id(self):
-        # TODO
+        payload = DocumentFixture.get_minimal_multi_fixture(count=3)
+        documents = self._create_documents(payload)
+
+        self.assertIsInstance(documents, list)
+        self.assertEqual(3, len(documents))
+
+        for document in documents:
+            revision = self._get_revision(document['revision_id'])
+            self._validate_revision(revision)
+            self.assertEqual(document['revision_id'], revision['id'])
