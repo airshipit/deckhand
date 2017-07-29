@@ -134,6 +134,13 @@ class Revision(BASE, DeckhandBase):
     parent_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
     child_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
 
+    documents = relationship("Document")
+
+    def to_dict(self):
+        d = super(Revision, self).to_dict()
+        d['documents'] = [doc.to_dict() for doc in self.documents]
+        return d
+
 
 class Document(BASE, DeckhandBase):
     UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
@@ -151,10 +158,18 @@ class Document(BASE, DeckhandBase):
     data = Column(JSONEncodedDict(), nullable=False)
     revision_id = Column(Integer, ForeignKey('revisions.id'), nullable=False)
 
-    revision = relationship("Revision",
-                            foreign_keys=[revision_id],
-                            cascade="all, delete")
+    def to_dict(self, raw_dict=False):
+        """Convert the ``Document`` object into a dictionary format.
 
+        :param raw_dict: if True, returns unmodified data; else returns data
+            expected by users.
+        :returns: dictionary format of ``Document`` object.
+        """
+        d = super(Document, self).to_dict()
+        # ``_metadata`` is used in the DB schema as ``metadata`` is reserved.
+        if not raw_dict:
+            d['metadata'] = d.pop('_metadata')
+        return d
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""

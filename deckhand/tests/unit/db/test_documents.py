@@ -21,12 +21,14 @@ from testtools import matchers
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.tests.unit import base
 
+BASE_EXPECTED_FIELDS = ("created_at", "updated_at", "deleted_at", "deleted")
+DOCUMENT_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
+    "id", "schema", "name", "metadata", "data", "revision_id")
+REVISION_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
+    "id", "child_id", "parent_id", "documents")
+
 
 class DocumentFixture(object):
-
-    EXPECTED_FIELDS = ("created_at", "updated_at", "deleted_at", "deleted",
-                       "id", "schema", "name", "_metadata", "data",
-                       "revision_id")
 
     @staticmethod
     def get_minimal_fixture(**kwargs):
@@ -54,18 +56,25 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
         self._validate_revision(revision)
         return revision
 
+    def _validate_object(self, obj):
+        for attr in BASE_EXPECTED_FIELDS:
+            if attr.endswith('_at'):
+                self.assertThat(obj[attr], matchers.MatchesAny(
+                        matchers.Is(None), matchers.IsInstance(str)))
+            else:
+                self.assertIsInstance(obj[attr], bool)
+
     def _validate_document(self, actual, expected=None, is_deleted=False):
+        self._validate_object(actual)
+
         # Validate that the document has all expected fields and is a dict.
-        expected_fields = list(DocumentFixture.EXPECTED_FIELDS)
+        expected_fields = list(DOCUMENT_EXPECTED_FIELDS)
         if not is_deleted:
             expected_fields.remove('deleted_at')
 
         self.assertIsInstance(actual, dict)
         for field in expected_fields:
             self.assertIn(field, actual)
-
-        # ``_metadata`` is used in the DB schema as ``metadata`` is reserved.
-        actual['metadata'] = actual.pop('_metadata')
 
         if expected:
             # Validate that the expected values are equivalent to actual
@@ -74,11 +83,10 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
                 self.assertEqual(val, actual[key])
 
     def _validate_revision(self, revision):
-        expected_attrs = ('id', 'child_id', 'parent_id')
-        for attr in expected_attrs:
+        self._validate_object(revision)
+
+        for attr in REVISION_EXPECTED_FIELDS:
             self.assertIn(attr, revision)
-            self.assertThat(revision[attr], matchers.MatchesAny(
-                matchers.Is(None), matchers.IsInstance(unicode)))
 
     def _validate_revision_connections(self, parent_document, parent_revision,
                                        child_document, child_revision,
@@ -200,3 +208,14 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
         self._validate_revision_connections(
             parent_document, parent_revision, child_document, child_revision,
             False)
+
+    def test_get_documents_by_revision_id(self):
+        payload = DocumentFixture.get_minimal_fixture()
+        document = self._create_document(payload)
+
+        revision = self._get_revision(document['revision_id'])
+        self.assertEqual(1, len(revision['documents']))
+        self.assertEqual(document, revision['documents'][0])
+
+    def test_get_multiple_documents_by_revision_id(self):
+        # TODO
