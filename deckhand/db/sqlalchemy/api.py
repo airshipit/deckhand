@@ -115,7 +115,12 @@ def documents_create(documents, session=None):
 
 
 def documents_create(values_list, session=None):
-    """Create a document."""
+    """Create a set of documents and associated schema.
+
+    If no changes are detected, a new revision will not be created. This
+    allows services to periodically re-register their schemas without
+    creating unnecessary revisions.
+    """
     values_list = copy.deepcopy(values_list)
     session = session or get_session()
     filters = models.Document.UNIQUE_CONSTRAINTS
@@ -188,56 +193,3 @@ def revision_get(revision_id, session=None):
     session = session or get_session()
     revision = session.query(models.Revision).get(revision_id)
     return revision.to_dict()
-
-
-def revision_create_parent(child_document, session=None):
-    """Create a parent revision.
-
-    Create a new (parent) revision that references whose ``child_id`` is
-    the ID of ``child_document``.
-
-    After this function has executed, the following relationship is true:
-
-        parent_document --> parent_revision
-                             |
-                         (has child)
-                             v
-        child_document --> child_revision
-
-    :param child_document: The out-of-date document.
-    :param session: The database session.
-    :returns: The dictionary representation of the newly created revision.
-    """
-    session = session or get_session()
-    parent_revision = models.Revision()
-    with session.begin():
-        parent_revision.update({'child_id': child_document['revision_id']})
-        parent_revision.save(session=session)
-
-    return parent_revision.to_dict()
-
-
-def revision_update_child(child_document, parent_document, session=None):
-    """Update the child revision for an out-of-date document.
-
-    After this function has executed, the following relationship is true:
-
-        parent_document --> parent_revision
-                             |         ^
-                         (has child) (has parent)
-                             v         |
-        child_document --> child_revision
-
-    :param child_document: The out-of-date document.
-    :param parent_document: The up-to-date document.
-    :param session: The database session.
-    :returns: The dictionary representation of the ``child_revision``.
-    """
-    session = session or get_session()
-    child_revision = session.query(models.Revision).get(
-        child_document['revision_id'])
-    with session.begin():
-        child_revision.update({'parent_id': parent_document['revision_id']})
-        child_revision.save(session=session)
-
-    return child_revision.to_dict()

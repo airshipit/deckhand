@@ -98,23 +98,6 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
         for attr in REVISION_EXPECTED_FIELDS:
             self.assertIn(attr, revision)
 
-    def _validate_revision_connections(self, parent_document, parent_revision,
-                                       child_document, child_revision,
-                                       parent_child_connected=True):
-        self.assertNotEqual(child_revision['id'], parent_revision['id'])
-        self.assertEqual(parent_document['revision_id'], parent_revision['id'])
-        self.assertEqual(child_document['revision_id'], child_revision['id'])
-
-        # Validate that the revisions are distinct and connected together.
-        if parent_child_connected:
-            self.assertEqual(parent_revision['child_id'], child_revision['id'])
-            self.assertEqual(
-                child_revision['parent_id'], parent_revision['id'])
-        # Validate that the revisions are distinct but unconnected.
-        else:
-            self.assertIsNone(parent_revision['child_id'])
-            self.assertIsNone(child_revision['parent_id'])
-
     def test_create_and_get_document(self):
         payload = DocumentFixture.get_minimal_fixture()
         documents = self._create_documents(payload)
