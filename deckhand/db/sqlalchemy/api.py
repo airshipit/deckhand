@@ -122,8 +122,13 @@ def document_create(values, session=None):
     session = session or get_session()
 
     filters = models.Document.UNIQUE_CONSTRAINTS
-    existing_document = document_get(**{c: values[c] for c in filters
-                                        if c != 'revision_id'})
+    try:
+        existing_document = document_get(**{c: values[c] for c in filters
+                                            if c != 'revision_id'})
+    except db_exception.DBError:
+        # Ignore bad data at this point. Allow creation to bubble up the error
+        # related to bad data.
+        existing_document = None
 
     created_document = {}
 

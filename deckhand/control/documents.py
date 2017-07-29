@@ -32,16 +32,6 @@ LOG = logging.getLogger(__name__)
 class DocumentsResource(api_base.BaseResource):
     """API resource for realizing CRUD endpoints for Documents."""
 
-    def __init__(self, **kwargs):
-        super(DocumentsResource, self).__init__(**kwargs)
-        self.authorized_roles = ['user']
-
-    def on_get(self, req, resp):
-        pass
-
-    def on_head(self, req, resp):
-        pass
-
     def on_post(self, req, resp):
         """Create a document. Accepts YAML data only."""
         if req.content_type != 'application/x-yaml':
@@ -73,6 +63,3 @@ class DocumentsResource(api_base.BaseResource):
 
         resp.status = falcon.HTTP_201
         resp.body = json.dumps(created_documents)
-
-    def _check_document_exists(self):
-        pass

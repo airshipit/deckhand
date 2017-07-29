@@ -103,6 +103,9 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         # CircularReference.
         d.pop("_sa_instance_state")
 
+        if 'deleted_at' not in d:
+            d.setdefault('deleted_at', None)
+
         for k in ["created_at", "updated_at", "deleted_at", "deleted"]:
             if k in d and d[k]:
                 d[k] = d[k].isoformat()

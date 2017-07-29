@@ -80,6 +80,7 @@ class DocumentValidation(object):
             raise errors.InvalidFormat(
                 "Could not find 'abstract' property from document.")
 
+        # TODO: This should be done inside a different module.
         if is_abstract:
             LOG.info(
                 "Skipping validation for the document because it is abstract")

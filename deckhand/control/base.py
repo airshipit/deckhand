@@ -17,6 +17,7 @@ import uuid
 
 import falcon
 from falcon import request
+import six
 
 from deckhand import errors
 
@@ -72,7 +73,8 @@ class BaseResource(object):
 
     def return_error(self, resp, status_code, message="", retry=False):
         resp.body = json.dumps(
-            {'type': 'error', 'message': str(message), 'retry': retry})
+            {'type': 'error', 'message': six.text_type(message),
+             'retry': retry})
         resp.status = status_code
 
 
@@ -80,7 +82,7 @@ class DeckhandRequestContext(object):
 
     def __init__(self):
         self.user = None
-        self.roles = ['anyone']
+        self.roles = ['*']
         self.request_id = str(uuid.uuid4())
 
     def set_user(self, user):
