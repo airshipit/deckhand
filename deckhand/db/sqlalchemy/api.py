@@ -207,6 +207,20 @@ def revision_get(revision_id, session=None):
     return revision
 
 
+def revision_get_all(session=None):
+    """Return list of all revisions."""
+    session = session or get_session()
+    revisions = session.query(models.Revision).all()
+
+    revisions_resp = []
+    for revision in revisions:
+        revision_dict = revision.to_dict()
+        revision['count'] = len(revision_dict.pop('documents'))
+        revisions_resp.append(revision)
+
+    return revisions_resp
+
+
 def revision_get_documents(revision_id, session=None, **filters):
     """Return the documents that match filters for the specified `revision_id`.
 

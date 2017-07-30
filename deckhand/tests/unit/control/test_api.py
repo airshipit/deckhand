@@ -19,6 +19,7 @@ import testtools
 from deckhand.control import api
 from deckhand.control import base as api_base
 from deckhand.control import documents
+from deckhand.control import revision_documents
 from deckhand.control import revisions
 from deckhand.control import secrets
 
@@ -27,10 +28,11 @@ class TestApi(testtools.TestCase):
 
     def setUp(self):
         super(TestApi, self).setUp()
-        for resource in (documents, revisions, secrets):
+        for resource in (documents, revisions, revision_documents, secrets):
             resource_name = resource.__name__.split('.')[-1]
             resource_obj = mock.patch.object(
-                resource, '%sResource' % resource_name.title()).start()
+                resource, '%sResource' % resource_name.title().replace('_', '')
+            ).start()
             setattr(self, '%s_resource' % resource_name, resource_obj)
 
     @mock.patch.object(api, 'db_api', autospec=True)
@@ -47,8 +49,9 @@ class TestApi(testtools.TestCase):
             request_type=api_base.DeckhandRequest)
         mock_falcon_api.add_route.assert_has_calls([
             mock.call('/api/v1.0/documents', self.documents_resource()),
+            mock.call('/api/v1.0/revisions', self.revisions_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/documents',
-                      self.revisions_resource()),
+                      self.revision_documents_resource()),
             mock.call('/api/v1.0/secrets', self.secrets_resource())
         ])
         mock_config.parse_args.assert_called_once_with()

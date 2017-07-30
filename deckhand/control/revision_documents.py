@@ -12,23 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+import yaml
+
 import falcon
+
+from oslo_db import exception as db_exc
+from oslo_log import log as logging
+from oslo_serialization import jsonutils as json
 
 from deckhand.control import base as api_base
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand import errors
+
+LOG = logging.getLogger(__name__)
 
 
-class RevisionsResource(api_base.BaseResource):
+class RevisionDocumentsResource(api_base.BaseResource):
     """API resource for realizing CRUD endpoints for Document Revisions."""
 
     def on_get(self, req, resp, revision_id):
-        """Returns list of existing revisions.
+        """Returns all documents for a `revision_id`.
         
-        Lists existing revisions and reports basic details including a summary
-        of validation status for each `deckhand/ValidationPolicy` that is part
-        of each revision.
+        Returns a multi-document YAML response containing all the documents
+        matching the filters specified via query string parameters. Returned
+        documents will be as originally posted with no substitutions or
+        layering applied.
         """
-        revisions = db_api.revision_get_all()
+        params = req.params
+        try:
+            documents = db_api.revision_get_documents(revision_id, **params)
+        except errors.RevisionNotFound as e:
+            return self.return_error(resp, falcon.HTTP_403, message=e)
 
         resp.status = falcon.HTTP_200
-        resp.body = json.dumps(revisions)
+        # TODO: return YAML-encoded body
+        resp.body = json.dumps(documents)

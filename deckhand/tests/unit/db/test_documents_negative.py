@@ -12,18 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import testtools
-
-from deckhand.db.sqlalchemy import api as db_api
-from deckhand.tests import test_utils
-from deckhand.tests.unit import base
-from deckhand.tests.unit.db import test_documents
+from deckhand.tests.unit.db import base
 
 
-class TestDocumentsNegative(test_documents.TestDocumentsBase):
+class TestDocumentsNegative(base.TestDbBase):
 
     def test_get_documents_by_revision_id_and_wrong_filters(self):
-        payload = test_documents.DocumentFixture.get_minimal_fixture()
+        payload = base.DocumentFixture.get_minimal_fixture()
         document = self._create_documents(payload)[0]
         filters = {
             'schema': 'fake_schema',
