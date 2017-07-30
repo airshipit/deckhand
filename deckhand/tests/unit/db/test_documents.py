@@ -31,7 +31,9 @@ class DocumentFixture(object):
     @staticmethod
     def get_minimal_fixture(**kwargs):
         fixture = {
-            'data': test_utils.rand_name('data'),
+            'data': {
+                test_utils.rand_name('key'): test_utils.rand_name('value')
+            },
             'metadata': {
                 'name': test_utils.rand_name('metadata_data'),
                 'label': test_utils.rand_name('metadata_label'),

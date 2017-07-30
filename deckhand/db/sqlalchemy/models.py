@@ -15,8 +15,7 @@
 import uuid
 
 from oslo_db.sqlalchemy import models
-from oslo_log import log as logging
-from oslo_serialization import jsonutils as json
+from oslo_db.sqlalchemy import types as oslo_types
 from oslo_utils import timeutils
 from sqlalchemy import Boolean
 from sqlalchemy import Column
@@ -31,36 +30,10 @@ from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy.types import TypeDecorator
 
-from deckhand.common import timeutils
-
-LOG = logging.getLogger(__name__)
 
 # Declarative base class which maintains a catalog of classes and tables
 # relative to that base.
 BASE = declarative.declarative_base()
-
-
-class JSONEncodedDict(TypeDecorator):
-    """Represents an immutable structure as a json-encoded string.
-
-    Usage::
-
-        JSONEncodedDict(255)
-
-    """
-
-    impl = Text
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            value = json.dumps(value)
-
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            value = json.loads(value)
-        return value
 
 
 class DeckhandBase(models.ModelBase, models.TimestampMixin):
@@ -133,6 +106,7 @@ class Revision(BASE, DeckhandBase):
                 default=lambda: str(uuid.uuid4()))
     parent_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
     child_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
+    results = Column(oslo_types.JsonEncodedList(), nullable=True)
 
     documents = relationship("Document")
 
@@ -154,8 +128,8 @@ class Document(BASE, DeckhandBase):
     # NOTE: Do not define a maximum length for these JSON data below. However,
     # this approach is not compatible with all database types.
     # "metadata" is reserved, so use "doc_metadata" instead.
-    _metadata = Column(JSONEncodedDict(), nullable=False)
-    data = Column(JSONEncodedDict(), nullable=False)
+    _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
+    data = Column(oslo_types.JsonEncodedDict(), nullable=False)
     revision_id = Column(Integer, ForeignKey('revisions.id'), nullable=False)
 
     def to_dict(self, raw_dict=False):
