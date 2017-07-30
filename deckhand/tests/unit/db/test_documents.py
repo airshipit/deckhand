@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
-import uuid
-
 import testtools
 from testtools import matchers
 
@@ -33,9 +30,17 @@ class DocumentFixture(object):
 
     @staticmethod
     def get_minimal_fixture(**kwargs):
-        fixture = {'data': test_utils.rand_name('data'),
-                   'metadata': {'name': test_utils.rand_name('name')},
-                   'schema': test_utils.rand_name('schema', prefix='deckhand')}
+        fixture = {
+            'data': test_utils.rand_name('data'),
+            'metadata': {
+                'name': test_utils.rand_name('metadata_data'),
+                'label': test_utils.rand_name('metadata_label'),
+                'layeringDefinition': {
+                    'abstract': test_utils.rand_bool(),
+                    'layer': test_utils.rand_name('layer')
+                }
+            },
+            'schema': test_utils.rand_name('schema')}
         fixture.update(kwargs)
         return fixture
 
@@ -45,7 +50,7 @@ class DocumentFixture(object):
                 for _ in range(count)]
 
 
-class TestDocumentsApi(base.DeckhandWithDBTestCase):
+class TestDocumentsBase(base.DeckhandWithDBTestCase):
 
     def _create_documents(self, payload):
         if not isinstance(payload, list):
@@ -65,6 +70,12 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
         revision = db_api.revision_get(revision_id)
         self._validate_revision(revision)
         return revision
+
+    def _get_revision_documents(self, revision_id, **filters):
+        documents = db_api.revision_get_documents(revision_id, **filters)
+        for document in documents:
+            self._validate_document(document)
+        return documents
 
     def _validate_object(self, obj):
         for attr in BASE_EXPECTED_FIELDS:
@@ -97,6 +108,9 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
 
         for attr in REVISION_EXPECTED_FIELDS:
             self.assertIn(attr, revision)
+
+
+class TestDocuments(TestDocumentsBase):
 
     def test_create_and_get_document(self):
         payload = DocumentFixture.get_minimal_fixture()
@@ -148,3 +162,21 @@ class TestDocumentsApi(base.DeckhandWithDBTestCase):
             revision = self._get_revision(document['revision_id'])
             self._validate_revision(revision)
             self.assertEqual(document['revision_id'], revision['id'])
+
+    def test_get_documents_by_revision_id_and_filters(self):
+        payload = DocumentFixture.get_minimal_fixture()
+        document = self._create_documents(payload)[0]
+        filters = {
+            'schema': document['schema'],
+            'metadata.name': document['metadata']['name'],
+            'metadata.layeringDefinition.abstract':
+                document['metadata']['layeringDefinition']['abstract'],
+            'metadata.layeringDefinition.layer':
+                document['metadata']['layeringDefinition']['layer'],
+            'metadata.label': document['metadata']['label']
+        }
+
+        documents = self._get_revision_documents(
+            document['revision_id'], **filters)
+        self.assertEqual(1, len(documents))
+        self.assertEqual(document, documents[0])

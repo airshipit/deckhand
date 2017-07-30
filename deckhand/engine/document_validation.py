@@ -98,38 +98,3 @@ class DocumentValidation(object):
         except jsonschema.exceptions.ValidationError as e:
             raise errors.InvalidFormat('The provided YAML file is invalid. '
                                        'Exception: %s.' % e.message)
-
-    def _multi_getattr(self, multi_key, substitutable_data):
-        """Iteratively check for nested attributes in the YAML data.
-
-        Check for nested attributes included in "dest" attributes in the data
-        section of the YAML file. For example, a "dest" attribute of
-        ".foo.bar.baz" should mean that the YAML data adheres to:
-
-        .. code-block:: yaml
-
-           ---
-           foo:
-               bar:
-                   baz: <data_to_be_substituted_here>
-
-        :param multi_key: A multi-part key that references nested data in the
-            substitutable part of the YAML data, e.g. ".foo.bar.baz".
-        :param substitutable_data: The section of data in the YAML data that
-            is intended to be substituted with secrets.
-        :returns: Tuple where first value is a boolean indicating that the
-            nested attribute was found and the second value is the attribute
-            that was not found, if applicable.
-        """
-        attrs = multi_key.split('.')
-        # Ignore the first attribute if it is "." as that is a self-reference.
-        if attrs[0] == '':
-            attrs = attrs[1:]
-
-        data = substitutable_data
-        for attr in attrs:
-            if attr not in data:
-                return False, attr
-            data = data.get(attr)
-
-        return True, None

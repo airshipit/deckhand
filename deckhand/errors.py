@@ -57,3 +57,7 @@ class DocumentExists(DeckhandException):
     msg_fmt = ("Document with kind %(kind)s and schemaVersion "
                "%(schema_version)s already exists.")
 
+
+class RevisionNotFound(DeckhandException):
+    msg_fmt = ("The requested revision %(revision)s was not found.")
+    code = 403

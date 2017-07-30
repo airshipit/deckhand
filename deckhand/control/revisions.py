@@ -23,8 +23,7 @@ from oslo_serialization import jsonutils as json
 
 from deckhand.control import base as api_base
 from deckhand.db.sqlalchemy import api as db_api
-from deckhand.engine import document_validation
-from deckhand import errors as deckhand_errors
+from deckhand import errors
 
 LOG = logging.getLogger(__name__)
 
@@ -40,6 +39,12 @@ class RevisionsResource(api_base.BaseResource):
         documents will be as originally posted with no substitutions or
         layering applied.
         """
-        revision = db_api.revision_get(revision_id)
-        resp.status = falcon.HTTP_201
-        resp.body = revision['documents']
+        params = req.params
+        LOG.debug('PARAMS: %s' % params)
+        try:
+            documents = db_api.revision_get_documents(revision_id, **params)
+        except errors.RevisionNotFound as e:
+            return self.return_error(resp, falcon.HTTP_403, message=e)
+
+        resp.status = falcon.HTTP_200
+        resp.body = json.dumps(documents)

@@ -34,7 +34,7 @@ def rand_uuid_hex():
     return uuid.uuid4().hex
 
 
-def rand_name(name='', prefix='tempest'):
+def rand_name(name='', prefix='deckhand'):
     """Generate a random name that includes a random number
 
     :param str name: The name that you want to include
@@ -51,3 +51,12 @@ def rand_name(name='', prefix='tempest'):
     if prefix:
         rand_name = prefix + '-' + rand_name
     return rand_name
+
+
+def rand_bool():
+    """Generate a random boolean value.
+
+    :return: a random boolean value.
+    :rtype: boolean
+    """
+    return random.choice([True, False])

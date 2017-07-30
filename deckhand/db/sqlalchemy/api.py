@@ -15,6 +15,7 @@
 
 """Defines interface for DB access."""
 
+import ast
 import copy
 import datetime
 import threading
@@ -36,6 +37,8 @@ from sqlalchemy import sql
 import sqlalchemy.sql as sa_sql
 
 from deckhand.db.sqlalchemy import models
+from deckhand import errors
+from deckhand import utils
 
 sa_logger = None
 LOG = logging.getLogger(__name__)
@@ -190,6 +193,64 @@ def revision_create(session=None):
 
 
 def revision_get(revision_id, session=None):
+    """Return the specified `revision_id`.
+
+    :raises: RevisionNotFound if the revision was not found.
+    """
     session = session or get_session()
-    revision = session.query(models.Revision).get(revision_id)
-    return revision.to_dict()
+    try:
+        revision = session.query(models.Revision).filter_by(
+            id=revision_id).one().to_dict()
+    except sa_orm.exc.NoResultFound:
+        raise errors.RevisionNotFound(revision=revision_id)
+
+    return revision
+
+
+def revision_get_documents(revision_id, session=None, **filters):
+    """Return the documents that match filters for the specified `revision_id`.
+
+    :raises: RevisionNotFound if the revision was not found.
+    """
+    session = session or get_session()
+    try:
+        revision = session.query(models.Revision).filter_by(
+            id=revision_id).one().to_dict()
+    except sa_orm.exc.NoResultFound:
+        raise errors.RevisionNotFound(revision=revision_id)
+
+    filtered_documents = _filter_revision_documents(
+        revision['documents'], **filters)
+    return filtered_documents
+
+
+def _filter_revision_documents(documents, **filters):
+    """Return the list of documents that match filters.
+
+    :returns: list of documents that match specified filters.
+    """
+    # TODO: Implement this as an sqlalchemy query.
+    filtered_documents = []
+
+    for document in documents:
+        match = True
+
+        for filter_key, filter_val in filters.items():
+            actual_val = utils.multi_getattr(filter_key, document)
+
+            if (isinstance(actual_val, bool)
+                and isinstance(filter_val, six.text_type)):
+                try:
+                    filter_val = ast.literal_eval(filter_val.title())
+                except ValueError:
+                    # If not True/False, set to None to avoid matching
+                    # `actual_val` which is always boolean.
+                    filter_val = None
+
+            if actual_val != filter_val:
+                match = False
+
+        if match:
+            filtered_documents.append(document)
+
+    return filtered_documents
