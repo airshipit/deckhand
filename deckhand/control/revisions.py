@@ -15,6 +15,7 @@
 import falcon
 
 from deckhand.control import base as api_base
+from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
 
 
@@ -29,6 +30,7 @@ class RevisionsResource(api_base.BaseResource):
         of each revision.
         """
         revisions = db_api.revision_get_all()
+        resp = revision_view.ViewBuilder().list(revisions)
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')

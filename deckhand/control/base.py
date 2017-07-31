@@ -99,7 +99,7 @@ class DeckhandRequestContext(object):
 
     def __init__(self):
         self.user = None
-        self.roles = ['*']
+        self.roles = []
         self.request_id = str(uuid.uuid4())
 
     def set_user(self, user):

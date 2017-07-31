@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import string
-
 
 def multi_getattr(multi_key, dict_data):
     """Iteratively check for nested attributes in the YAML data.
@@ -47,8 +45,3 @@ def multi_getattr(multi_key, dict_data):
         data = data.get(attr)
 
     return data
-
-
-def to_camel_case(s):
-    return (s[0].lower() + string.capwords(s, sep='_').replace('_', '')[1:]
-            if s else s)

@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from deckhand.tests.unit.db import base
+import string
 
 
-class TestRevisionViews(base.TestDbBase):
+def to_camel_case(s):
+    return (s[0].lower() + string.capwords(s, sep='_').replace('_', '')[1:]
+            if s else s)
 
-    def test_list(self):
-        payload = [base.DocumentFixture.get_minimal_fixture()
-                   for _ in range(4)]
-        self._create_documents(payload)
 
-        revisions = self._list_revisions()
-        self.assertIsInstance(revisions, list)
-        self.assertEqual(1, len(revisions))
-        self.assertEqual(4, len(revisions[0]['documents']))
+class ViewBuilder(object):
+    """Model API responses as dictionaries."""
+
+    _collection_name = None

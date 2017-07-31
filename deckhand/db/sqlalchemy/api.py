@@ -203,7 +203,6 @@ def revision_get(revision_id, session=None):
             id=revision_id).one().to_dict()
     except sa_orm.exc.NoResultFound:
         raise errors.RevisionNotFound(revision=revision_id)
-
     return revision
 
 
@@ -211,22 +210,7 @@ def revision_get_all(session=None):
     """Return list of all revisions."""
     session = session or get_session()
     revisions = session.query(models.Revision).all()
-    revisions_resp = [r.to_dict() for r in revisions]
-    resp_body = {
-        'count': len(revisions_resp),
-        'next': None,
-        'prev': None,
-        'revisions': []
-    }
-
-    for revision in revisions_resp:
-        result = {}
-        for attr in ('id', 'created_at'):
-            result[utils.to_camel_case(attr)] = revision[attr]
-        result['count'] = len(revision.pop('documents'))
-        resp_body['revisions'].append(result)
-
-    return resp_body
+    return [r.to_dict() for r in revisions]
 
 
 def revision_get_documents(revision_id, session=None, **filters):

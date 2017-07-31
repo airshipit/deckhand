@@ -16,15 +16,6 @@ import random
 import uuid
 
 
-def rand_uuid():
-    """Generate a random UUID string
-
-    :return: a random UUID (e.g. '1dc12c7d-60eb-4b61-a7a2-17cf210155b6')
-    :rtype: string
-    """
-    return uuidutils.generate_uuid()
-
-
 def rand_uuid_hex():
     """Generate a random UUID hex string
 
@@ -60,3 +51,12 @@ def rand_bool():
     :rtype: boolean
     """
     return random.choice([True, False])
+
+
+def rand_int(min, max):
+    """Generate a random integer value between range (`min`, `max`).
+
+    :return: a random integer between the range(`min`, `max`).
+    :rtype: integer
+    """
+    return random.randint(min, max)

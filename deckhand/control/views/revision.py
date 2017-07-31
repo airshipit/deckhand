@@ -12,17 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from deckhand.tests.unit.db import base
+from deckhand.control import common
 
 
-class TestRevisionViews(base.TestDbBase):
+class ViewBuilder(common.ViewBuilder):
+	"""Model revision API responses as a python dictionary."""
 
-    def test_list(self):
-        payload = [base.DocumentFixture.get_minimal_fixture()
-                   for _ in range(4)]
-        self._create_documents(payload)
+	_collection_name = 'revisions'
 
-        revisions = self._list_revisions()
-        self.assertIsInstance(revisions, list)
-        self.assertEqual(1, len(revisions))
-        self.assertEqual(4, len(revisions[0]['documents']))
+	def list(self, revisions):
+	    resp_body = {
+	        'count': len(revisions),
+	        'next': None,
+	        'prev': None,
+	        'results': []
+	    }
+
+	    for revision in revisions:
+	        result = {}
+	        for attr in ('id', 'created_at'):
+	            result[common.to_camel_case(attr)] = revision[attr]
+	        result['count'] = len(revision.pop('documents'))
+	        resp_body['results'].append(result)
+
+	    return resp_body
