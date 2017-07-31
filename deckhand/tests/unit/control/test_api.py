@@ -30,18 +30,10 @@ class TestApi(testtools.TestCase):
         super(TestApi, self).setUp()
         for resource in (documents, revisions, revision_documents, secrets):
             resource_name = resource.__name__.split('.')[-1]
-
-            # Mock the singular/plural version.
-            resource_names = [resource_name, resource_name[:-1]]
-            for resource_name in resource_names:
-                try:
-                    resource_obj = mock.patch.object(
-                        resource, '%sResource' % resource_name.title().replace(
-                            '_', '')).start()
-                    setattr(self, '%s_resource' % resource_name, resource_obj)
-                except AttributeError:
-                    # If a resource doesn't exist, ignore.
-                    pass
+            resource_obj = mock.patch.object(
+                resource, '%sResource' % resource_name.title().replace(
+                    '_', '')).start()
+            setattr(self, '%s_resource' % resource_name, resource_obj)
 
     @mock.patch.object(api, 'db_api', autospec=True)
     @mock.patch.object(api, 'config', autospec=True)
@@ -59,7 +51,7 @@ class TestApi(testtools.TestCase):
             mock.call('/api/v1.0/documents', self.documents_resource()),
             mock.call('/api/v1.0/revisions', self.revisions_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}',
-                      self.revision_resource()),
+                      self.revisions_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/documents',
                       self.revision_documents_resource()),
             mock.call('/api/v1.0/secrets', self.secrets_resource())
