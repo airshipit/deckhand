@@ -91,8 +91,8 @@ class BaseResource(object):
             return yaml.safe_dump(dict_body)
         elif isinstance(dict_body, list):
             return yaml.safe_dump_all(dict_body)
-        return TypeError('Unrecognized dict_body type when converting response'
-                         ' body to YAML format.')
+        raise TypeError('Unrecognized dict_body type when converting response '
+                        'body to YAML format.')
 
 
 class DeckhandRequestContext(object):
