@@ -24,3 +24,8 @@ class ViewBuilder(object):
     """Model API responses as dictionaries."""
 
     _collection_name = None
+
+    def _gen_url(self, revision):
+        # TODO: Use a config-based url for the base url below.
+        base_url = 'https://deckhand/api/v1.0/%s/%s'
+        return base_url % (self._collection_name, revision.get('id'))

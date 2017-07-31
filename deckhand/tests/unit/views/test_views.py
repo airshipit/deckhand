@@ -64,3 +64,15 @@ class TestRevisionViews(base.TestDbBase):
             self.assertIn('id', revisions_view['results'][idx])
             self.assertEqual(doc_count, revisions_view['results'][idx][
                 'count'])
+
+    def test_show_revision(self):
+        payload = [base.DocumentFixture.get_minimal_fixture()
+                   for _ in range(4)]
+        documents = self._create_documents(payload)
+        revision = self._get_revision(documents[0]['revision_id'])
+        revision_view = self.view_builder.show(revision)
+
+        expected_attrs = ('id', 'url', 'createdAt', 'validationPolicies')
+        for attr in expected_attrs:
+            self.assertIn(attr, revision_view)
+        self.assertIsInstance(revision_view['validationPolicies'], list)

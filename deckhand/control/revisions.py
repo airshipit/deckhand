@@ -20,7 +20,7 @@ from deckhand.db.sqlalchemy import api as db_api
 
 
 class RevisionsResource(api_base.BaseResource):
-    """API resource for realizing CRUD endpoints for Revisions."""
+    """API resource for realizing GET /revisions."""
 
     def on_get(self, req, resp):
         """Returns list of existing revisions.
@@ -30,8 +30,25 @@ class RevisionsResource(api_base.BaseResource):
         of each revision.
         """
         revisions = db_api.revision_get_all()
-        revisions_view = revision_view.ViewBuilder().list(revisions)
+        revisions_resp = revision_view.ViewBuilder().list(revisions)
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(revisions_view)
+        resp.body = self.to_yaml_body(revisions_resp)
+
+
+class RevisionResource(api_base.BaseResource):
+    """API resource for realizing GET /revisions/{revision_id}."""
+
+    def on_get(self, req, resp, revision_id):
+        """Returns detailed description of a particular revision.
+
+        The status of each ValidationPolicy belonging to the revision is also
+        included.
+        """
+        revision = db_api.revision_get(revision_id)
+        revision_resp = revision_view.ViewBuilder().show(revision)
+
+        resp.status = falcon.HTTP_200
+        resp.append_header('Content-Type', 'application/x-yaml')
+        resp.body = self.to_yaml_body(revision_resp)

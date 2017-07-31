@@ -36,3 +36,12 @@ class ViewBuilder(common.ViewBuilder):
 	        resp_body['results'].append(result)
 
 	    return resp_body
+
+	def show(self, revision):
+		return {
+			'id': revision.get('id'),
+			'createdAt': revision.get('created_at'),
+			'url': self._gen_url(revision),
+			# TODO: Not yet implemented.
+			'validationPolicies': [],
+		}
