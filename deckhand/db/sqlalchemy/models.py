@@ -94,12 +94,6 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
 
 
 class Revision(BASE, DeckhandBase):
-    """Revision history for a ``Document``.
-
-    Like a doubly linked list, each ``Revision`` will have a unique ID along
-    with a previous and next pointer to each ``Revision`` that comprises the
-    revision history for a ``Document``.
-    """
     __tablename__ = 'revisions'
 
     id = Column(String(36), primary_key=True,
