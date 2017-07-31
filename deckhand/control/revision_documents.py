@@ -38,4 +38,5 @@ class RevisionDocumentsResource(api_base.BaseResource):
             return self.return_error(resp, falcon.HTTP_404, message=e)
 
         resp.status = falcon.HTTP_200
+        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.to_yaml_body(documents)

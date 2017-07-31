@@ -31,4 +31,5 @@ class RevisionsResource(api_base.BaseResource):
         revisions = db_api.revision_get_all()
 
         resp.status = falcon.HTTP_200
+        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.to_yaml_body(revisions)
