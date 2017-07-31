@@ -21,7 +21,7 @@ from deckhand.db.sqlalchemy import api as db_api
 class RevisionsResource(api_base.BaseResource):
     """API resource for realizing CRUD endpoints for Document Revisions."""
 
-    def on_get(self, req, resp, revision_id):
+    def on_get(self, req, resp):
         """Returns list of existing revisions.
         
         Lists existing revisions and reports basic details including a summary
@@ -31,4 +31,4 @@ class RevisionsResource(api_base.BaseResource):
         revisions = db_api.revision_get_all()
 
         resp.status = falcon.HTTP_200
-        resp.body = json.dumps(revisions)
+        resp.body = self.to_yaml_body(revisions)

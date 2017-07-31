@@ -211,12 +211,10 @@ def revision_get_all(session=None):
     """Return list of all revisions."""
     session = session or get_session()
     revisions = session.query(models.Revision).all()
+    revisions_resp = [r.to_dict() for r in revisions]
 
-    revisions_resp = []
-    for revision in revisions:
-        revision_dict = revision.to_dict()
-        revision['count'] = len(revision_dict.pop('documents'))
-        revisions_resp.append(revision)
+    for revision in revisions_resp:
+        revision['count'] = len(revision.pop('documents'))
 
     return revisions_resp
 

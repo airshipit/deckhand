@@ -62,4 +62,4 @@ class DocumentsResource(api_base.BaseResource):
             return self.return_error(resp, falcon.HTTP_500, message=e)
 
         resp.status = falcon.HTTP_201
-        resp.body = json.dumps(created_documents)
+        resp.body = self.to_yaml_body(created_documents)

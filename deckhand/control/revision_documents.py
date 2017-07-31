@@ -12,20 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-import yaml
-
 import falcon
-
 from oslo_db import exception as db_exc
-from oslo_log import log as logging
-from oslo_serialization import jsonutils as json
 
 from deckhand.control import base as api_base
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
-
-LOG = logging.getLogger(__name__)
 
 
 class RevisionDocumentsResource(api_base.BaseResource):
@@ -43,8 +35,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
         try:
             documents = db_api.revision_get_documents(revision_id, **params)
         except errors.RevisionNotFound as e:
-            return self.return_error(resp, falcon.HTTP_403, message=e)
+            return self.return_error(resp, falcon.HTTP_404, message=e)
 
         resp.status = falcon.HTTP_200
-        # TODO: return YAML-encoded body
-        resp.body = json.dumps(documents)
+        resp.body = self.to_yaml_body(documents)

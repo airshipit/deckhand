@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import uuid
+import yaml
 
 import falcon
 from falcon import request
+from oslo_serialization import jsonutils as json
 import six
 
 from deckhand import errors
@@ -76,6 +77,14 @@ class BaseResource(object):
             {'type': 'error', 'message': six.text_type(message),
              'retry': retry})
         resp.status = status_code
+
+    def to_yaml_body(self, dict_body):
+        """Converts dictionary into YAML response body.
+
+        :dict_body: response body to be converted to YAML.
+        :returns: YAML encoding of `dict_body`.
+        """
+        return yaml.safe_dump_all(dict_body)
 
 
 class DeckhandRequestContext(object):
