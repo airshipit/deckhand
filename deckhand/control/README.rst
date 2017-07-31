@@ -79,15 +79,23 @@ Sample response:
 
 ```yaml
 ---
-child_id: null
-count: 2
-created_at: '2017-07-31T14:36:00.348967'
-deleted: false
-deleted_at: null
-id: d3428d6a-d8c4-4a5b-8006-aba974cc36a2
-parent_id: null
-results: []
-updated_at: '2017-07-31T14:36:00.348973'
+count: 7
+next: https://deckhand/api/v1.0/revisions?limit=2&offset=2
+prev: null
+results:
+  - id: 0
+    url: https://deckhand/api/v1.0/revisions/0
+    createdAt: 2017-07-14T21:23Z
+    validationPolicies:
+      site-deploy-validation:
+        status: failed
+  - id: 1
+    url: https://deckhand/api/v1.0/revisions/1
+    createdAt: 2017-07-16T01:15Z
+    validationPolicies:
+      site-deploy-validation:
+        status: succeeded
+...
 ```
 
 GET `/revisions/{revision_id}/documents`

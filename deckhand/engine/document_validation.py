@@ -34,7 +34,6 @@ class DocumentValidation(object):
 
     def __init__(self, data):
         self.data = data
-        self.pre_validate_data()
 
     class SchemaVersion(object):
         """Class for retrieving correct schema for pre-validation on YAML.
@@ -65,7 +64,7 @@ class DocumentValidation(object):
             return [v['schema'] for v in self.internal_validations
                     if v['version'] == self.schema_version][0].schema
 
-    def pre_validate_data(self):
+    def pre_validate(self):
         """Pre-validate that the YAML file is correctly formatted."""
         self._validate_with_schema()
 

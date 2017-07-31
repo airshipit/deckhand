@@ -47,10 +47,11 @@ class DocumentsResource(api_base.BaseResource):
             LOG.error(error_msg)
             return self.return_error(resp, falcon.HTTP_400, message=error_msg)
 
-        # Validate the document before doing anything with it.
+        # All concrete documents in the payload must successfully pass their
+        # JSON schema validations. Otherwise raise an error.
         try:
             for doc in documents:
-                document_validation.DocumentValidation(doc)
+                document_validation.DocumentValidation(doc).pre_validate()
         except deckhand_errors.InvalidFormat as e:
             return self.return_error(resp, falcon.HTTP_400, message=e)
 

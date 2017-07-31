@@ -212,11 +212,21 @@ def revision_get_all(session=None):
     session = session or get_session()
     revisions = session.query(models.Revision).all()
     revisions_resp = [r.to_dict() for r in revisions]
+    resp_body = {
+        'count': len(revisions_resp),
+        'next': None,
+        'prev': None,
+        'revisions': []
+    }
 
     for revision in revisions_resp:
-        revision['count'] = len(revision.pop('documents'))
+        result = {}
+        for attr in ('id', 'created_at'):
+            result[utils.to_camel_case(attr)] = revision[attr]
+        result['count'] = len(revision.pop('documents'))
+        resp_body['revisions'].append(result)
 
-    return revisions_resp
+    return resp_body
 
 
 def revision_get_documents(revision_id, session=None, **filters):

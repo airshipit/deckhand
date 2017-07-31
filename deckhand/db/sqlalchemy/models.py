@@ -121,7 +121,7 @@ class Document(BASE, DeckhandBase):
     name = Column(String(64), nullable=False)
     # NOTE: Do not define a maximum length for these JSON data below. However,
     # this approach is not compatible with all database types.
-    # "metadata" is reserved, so use "doc_metadata" instead.
+    # "metadata" is reserved, so use "_metadata" instead.
     _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
     data = Column(oslo_types.JsonEncodedDict(), nullable=False)
     revision_id = Column(Integer, ForeignKey('revisions.id'), nullable=False)

@@ -17,10 +17,13 @@ import yaml
 
 import falcon
 from falcon import request
+from oslo_log import log as logging
 from oslo_serialization import jsonutils as json
 import six
 
 from deckhand import errors
+
+LOG = logging.getLogger(__name__)
 
 
 class BaseResource(object):
@@ -79,12 +82,17 @@ class BaseResource(object):
         resp.status = status_code
 
     def to_yaml_body(self, dict_body):
-        """Converts dictionary into YAML response body.
+        """Converts JSON body into YAML response body.
 
         :dict_body: response body to be converted to YAML.
         :returns: YAML encoding of `dict_body`.
         """
-        return yaml.safe_dump_all(dict_body)
+        if isinstance(dict_body, dict):
+            return yaml.safe_dump(dict_body)
+        elif isinstance(dict_body, list):
+            return yaml.safe_dump_all(dict_body)
+        return TypeError('Unrecognized dict_body type when converting response'
+                         ' body to YAML format.')
 
 
 class DeckhandRequestContext(object):

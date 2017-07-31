@@ -23,6 +23,10 @@ class TestRevisions(base.TestDbBase):
         self._create_documents(payload)
 
         revisions = self._list_revisions()
-        self.assertIsInstance(revisions, list)
+        self.assertIsInstance(revisions, dict)
+        self.assertIn('revisions', revisions)
+        self.assertIsInstance(revisions['revisions'], list)
+
+        revisions = revisions['revisions']
         self.assertEqual(1, len(revisions))
         self.assertEqual(4, revisions[0]["count"])

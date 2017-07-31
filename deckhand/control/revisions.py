@@ -19,7 +19,7 @@ from deckhand.db.sqlalchemy import api as db_api
 
 
 class RevisionsResource(api_base.BaseResource):
-    """API resource for realizing CRUD endpoints for Document Revisions."""
+    """API resource for realizing CRUD endpoints for Revisions."""
 
     def on_get(self, req, resp):
         """Returns list of existing revisions.
