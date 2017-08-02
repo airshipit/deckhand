@@ -17,6 +17,7 @@ import os
 import testtools
 import yaml
 
+import mock
 import six
 
 from deckhand.engine import document_validation
@@ -70,19 +71,15 @@ class TestDocumentValidation(testtools.TestCase):
         return corrupted_data
 
     def test_initialization(self):
-        doc_validation = document_validation.DocumentValidation(
-            self.data)
-        self.assertIsInstance(doc_validation,
-                              document_validation.DocumentValidation)
+        doc_validation = document_validation.DocumentValidation(self.data)
+        doc_validation.pre_validate()  # Should not raise any errors.
 
     def test_initialization_missing_sections(self):
         expected_err = ("The provided YAML file is invalid. Exception: '%s' "
                         "is a required property.")
         invalid_data = [
             (self._corrupt_data('data'), 'data'),
-            (self._corrupt_data('metadata'), 'metadata'),
-            (self._corrupt_data('metadata.metadataVersion'),
-                                'metadataVersion'),
+            (self._corrupt_data('metadata.schema'), 'schema'),
             (self._corrupt_data('metadata.name'), 'name'),
             (self._corrupt_data('metadata.substitutions'), 'substitutions'),
             (self._corrupt_data('metadata.substitutions.0.dest'), 'dest'),
@@ -92,4 +89,35 @@ class TestDocumentValidation(testtools.TestCase):
         for invalid_entry, missing_key in invalid_data:
             with six.assertRaisesRegex(self, errors.InvalidFormat,
                                        expected_err % missing_key):
-                document_validation.DocumentValidation(invalid_entry)
+                doc_validation = document_validation.DocumentValidation(
+                    invalid_entry)
+                doc_validation.pre_validate()
+
+    def test_initialization_missing_abstract_section(self):
+        expected_err = ("Could not find 'abstract' property from document.")
+        invalid_data = [
+            self._corrupt_data('metadata'),
+            self._corrupt_data('metadata.layeringDefinition'),
+            self._corrupt_data('metadata.layeringDefinition.abstract'),
+        ]
+
+        for invalid_entry in invalid_data:
+            with six.assertRaisesRegex(self, errors.InvalidFormat,
+                                       expected_err):
+                doc_validation = document_validation.DocumentValidation(
+                    invalid_entry)
+                doc_validation.pre_validate()
+
+    @mock.patch.object(document_validation, 'LOG', autospec=True)
+    def test_initialization_with_abstract_document(self, mock_log):
+        abstract_data = copy.deepcopy(self.data)
+
+        for true_val in (True, 'true', 'True'):
+            abstract_data['metadata']['layeringDefinition']['abstract'] = True
+
+            doc_validation = document_validation.DocumentValidation(
+                abstract_data)
+            doc_validation.pre_validate()
+            mock_log.info.assert_called_once_with(
+                "Skipping validation for the document because it is abstract")
+            mock_log.info.reset_mock()

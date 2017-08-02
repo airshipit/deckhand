@@ -18,17 +18,27 @@ import testtools
 
 from deckhand.control import api
 from deckhand.control import base as api_base
+from deckhand.control import documents
+from deckhand.control import revision_documents
+from deckhand.control import revisions
+from deckhand.control import secrets
 
 
 class TestApi(testtools.TestCase):
 
+    def setUp(self):
+        super(TestApi, self).setUp()
+        for resource in (documents, revisions, revision_documents, secrets):
+            resource_name = resource.__name__.split('.')[-1]
+            resource_obj = mock.patch.object(
+                resource, '%sResource' % resource_name.title().replace(
+                    '_', '')).start()
+            setattr(self, '%s_resource' % resource_name, resource_obj)
 
     @mock.patch.object(api, 'db_api', autospec=True)
     @mock.patch.object(api, 'config', autospec=True)
-    @mock.patch.object(api, 'secrets', autospec=True)
-    @mock.patch.object(api, 'documents', autospec=True)
     @mock.patch.object(api, 'falcon', autospec=True)
-    def test_start_api(self, mock_falcon, mock_documents, mock_secrets,
+    def test_start_api(self, mock_falcon,
                        mock_config, mock_db_api):
         mock_falcon_api = mock_falcon.API.return_value
 
@@ -38,9 +48,13 @@ class TestApi(testtools.TestCase):
         mock_falcon.API.assert_called_once_with(
             request_type=api_base.DeckhandRequest)
         mock_falcon_api.add_route.assert_has_calls([
-            mock.call(
-                '/api/v1.0/documents', mock_documents.DocumentsResource()),
-            mock.call('/api/v1.0/secrets', mock_secrets.SecretsResource())
+            mock.call('/api/v1.0/documents', self.documents_resource()),
+            mock.call('/api/v1.0/revisions', self.revisions_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}',
+                      self.revisions_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}/documents',
+                      self.revision_documents_resource()),
+            mock.call('/api/v1.0/secrets', self.secrets_resource())
         ])
         mock_config.parse_args.assert_called_once_with()
         mock_db_api.setup_db.assert_called_once_with()

@@ -15,50 +15,25 @@
 import uuid
 
 from oslo_db.sqlalchemy import models
-from oslo_log import log as logging
-from oslo_serialization import jsonutils as json
+from oslo_db.sqlalchemy import types as oslo_types
 from oslo_utils import timeutils
 from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy.ext import declarative
+from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import orm
+from sqlalchemy.orm import backref, relationship
 from sqlalchemy import schema
 from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy.types import TypeDecorator
 
-from deckhand.common import timeutils
-
-LOG = logging.getLogger(__name__)
 
 # Declarative base class which maintains a catalog of classes and tables
 # relative to that base.
 BASE = declarative.declarative_base()
-
-
-class JSONEncodedDict(TypeDecorator):
-    """Represents an immutable structure as a json-encoded string.
-
-    Usage::
-
-        JSONEncodedDict(255)
-
-    """
-
-    impl = Text
-
-    def process_bind_param(self, value, dialect):
-        if value is not None:
-            value = json.dumps(value)
-
-        return value
-
-    def process_result_value(self, value, dialect):
-        if value is not None:
-            value = json.loads(value)
-        return value
 
 
 class DeckhandBase(models.ModelBase, models.TimestampMixin):
@@ -101,31 +76,68 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         # CircularReference.
         d.pop("_sa_instance_state")
 
+        if 'deleted_at' not in d:
+            d.setdefault('deleted_at', None)
+
         for k in ["created_at", "updated_at", "deleted_at", "deleted"]:
             if k in d and d[k]:
                 d[k] = d[k].isoformat()
 
         return d
 
+    @staticmethod
+    def gen_unqiue_contraint(self, *fields):
+        constraint_name = 'ix_' + self.__class__.__name__.lower() + '_'
+        for field in fields:
+            constraint_name = constraint_name + '_%s' % field
+        return schema.UniqueConstraint(*fields, name=constraint_name)
 
-class Document(BASE, DeckhandBase):
-    __tablename__ = 'document'
-    __table_args__ = (schema.UniqueConstraint('schema_version', 'kind',
-                      name='ix_documents_schema_version_kind'),)
+
+class Revision(BASE, DeckhandBase):
+    __tablename__ = 'revisions'
 
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
-    # TODO: the revision_index will be a foreign key to a Revision table.
-    revision_index = Column(String(36), nullable=False,
-                            default=lambda: str(uuid.uuid4()))
-    schema_version = Column(String(64), nullable=False)
-    kind = Column(String(64), nullable=False)
+    parent_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
+    child_id = Column(Integer, ForeignKey('revisions.id'), nullable=True)
+    results = Column(oslo_types.JsonEncodedList(), nullable=True)
+
+    documents = relationship("Document")
+
+    def to_dict(self):
+        d = super(Revision, self).to_dict()
+        d['documents'] = [doc.to_dict() for doc in self.documents]
+        return d
+
+
+class Document(BASE, DeckhandBase):
+    UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
+    __tablename__ = 'documents'
+    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
+
+    id = Column(String(36), primary_key=True,
+                default=lambda: str(uuid.uuid4()))
+    schema = Column(String(64), nullable=False)
+    name = Column(String(64), nullable=False)
     # NOTE: Do not define a maximum length for these JSON data below. However,
     # this approach is not compatible with all database types.
-    # "metadata" is reserved, so use "doc_metadata" instead.
-    doc_metadata = Column(JSONEncodedDict(), nullable=False)
-    data = Column(JSONEncodedDict(), nullable=False)
+    # "metadata" is reserved, so use "_metadata" instead.
+    _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
+    data = Column(oslo_types.JsonEncodedDict(), nullable=False)
+    revision_id = Column(Integer, ForeignKey('revisions.id'), nullable=False)
 
+    def to_dict(self, raw_dict=False):
+        """Convert the ``Document`` object into a dictionary format.
+
+        :param raw_dict: if True, returns unmodified data; else returns data
+            expected by users.
+        :returns: dictionary format of ``Document`` object.
+        """
+        d = super(Document, self).to_dict()
+        # ``_metadata`` is used in the DB schema as ``metadata`` is reserved.
+        if not raw_dict:
+            d['metadata'] = d.pop('_metadata')
+        return d
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""

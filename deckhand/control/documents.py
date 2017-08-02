@@ -32,16 +32,6 @@ LOG = logging.getLogger(__name__)
 class DocumentsResource(api_base.BaseResource):
     """API resource for realizing CRUD endpoints for Documents."""
 
-    def __init__(self, **kwargs):
-        super(DocumentsResource, self).__init__(**kwargs)
-        self.authorized_roles = ['user']
-
-    def on_get(self, req, resp):
-        pass
-
-    def on_head(self, req, resp):
-        pass
-
     def on_post(self, req, resp):
         """Create a document. Accepts YAML data only."""
         if req.content_type != 'application/x-yaml':
@@ -57,10 +47,11 @@ class DocumentsResource(api_base.BaseResource):
             LOG.error(error_msg)
             return self.return_error(resp, falcon.HTTP_400, message=error_msg)
 
-        # Validate the document before doing anything with it.
+        # All concrete documents in the payload must successfully pass their
+        # JSON schema validations. Otherwise raise an error.
         try:
             for doc in documents:
-                document_validation.DocumentValidation(doc)
+                document_validation.DocumentValidation(doc).pre_validate()
         except deckhand_errors.InvalidFormat as e:
             return self.return_error(resp, falcon.HTTP_400, message=e)
 
@@ -72,7 +63,5 @@ class DocumentsResource(api_base.BaseResource):
             return self.return_error(resp, falcon.HTTP_500, message=e)
 
         resp.status = falcon.HTTP_201
-        resp.body = json.dumps(created_documents)
-
-    def _check_document_exists(self):
-        pass
+        resp.append_header('Content-Type', 'application/x-yaml')
+        resp.body = self.to_yaml_body(created_documents)

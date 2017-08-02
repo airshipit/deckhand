@@ -14,7 +14,7 @@
 
 
 class DeckhandException(Exception):
-    """Base Nova Exception
+    """Base Deckhand Exception
     To correctly use this class, inherit from it and define
     a 'msg_fmt' property. That msg_fmt will get printf'd
     with the keyword arguments provided to the constructor.
@@ -57,3 +57,7 @@ class DocumentExists(DeckhandException):
     msg_fmt = ("Document with kind %(kind)s and schemaVersion "
                "%(schema_version)s already exists.")
 
+
+class RevisionNotFound(DeckhandException):
+    msg_fmt = ("The requested revision %(revision)s was not found.")
+    code = 403

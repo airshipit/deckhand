@@ -1,33 +1,38 @@
-# Sample YAML file for testing forward replacement.
 ---
-schemaVersion: promenade/v1
-kind: SomeConfigType
+schema: some-service/ResourceType/v1
 metadata:
-  metadataVersion: deckhand/v1
-  name: a-unique-config-name-12345
+  schema: metadata/Document/v1
+  name: unique-name-given-schema
+  storagePolicy: cleartext
   labels:
-    component: apiserver
-    hostname: server0
-  layerDefinition:
-      layer: global
-      abstract: True
-      childSelector:
-        label: value
+    genesis: enabled
+    master: enabled
+  layeringDefinition:
+    abstract: false
+    layer: region
+    parentSelector:
+      required_key_a: required_label_a
+      required_key_b: required_label_b
+    actions:
+      - method: merge
+        path: .path.to.merge.into.parent
+      - method: delete
+        path: .path.to.delete
   substitutions:
     - dest:
-        path: .tls_endpoint.certificate
-        replacePattern: 'test.pattern'
+        path: .substitution.target
       src:
-        kind: Certificate
-        name: some-certificate-asdf-1234
-        path: .cert
-    - dest:
-        path: .tls_endpoint.key
-      src:
-        kind: CertificateKey
-        name: some-certificate-asdf-1234
-        path: .key
+        schema: another-service/SourceType/v1
+        name: name-of-source-document
+        path: .source.path
 data:
-  tls_endpoint:
-    certificate: '.cert'
-    key: deckhand/v1:some-certificate-asdf-1234
+  path:
+    to:
+      merge:
+        into:
+          parent:
+            foo: bar
+          ignored:  # Will not be part of the resultant document after layering.
+            data: here
+  substitution:
+    target: null  # Paths do not need to exist to be specified as substitution destinations.
