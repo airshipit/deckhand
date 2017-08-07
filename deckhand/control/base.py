@@ -17,8 +17,6 @@ import yaml
 import falcon
 from oslo_context import context
 from oslo_log import log as logging
-from oslo_serialization import jsonutils as json
-import six
 
 LOG = logging.getLogger(__name__)
 
@@ -37,12 +35,6 @@ class BaseResource(object):
 
         resp.headers['Allow'] = ','.join(allowed_methods)
         resp.status = falcon.HTTP_200
-
-    def return_error(self, resp, status_code, message="", retry=False):
-        resp.body = json.dumps(
-            {'type': 'error', 'message': six.text_type(message),
-             'retry': retry})
-        resp.status = status_code
 
     def to_yaml_body(self, dict_body):
         """Converts JSON body into YAML response body.

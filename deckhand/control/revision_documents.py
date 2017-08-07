@@ -40,8 +40,8 @@ class RevisionDocumentsResource(api_base.BaseResource):
         try:
             documents = db_api.revision_get_documents(
                 revision_id, **sanitized_params)
-        except errors.RevisionNotFound:
-            raise falcon.HTTPNotFound()
+        except errors.RevisionNotFound as e:
+            raise falcon.HTTPNotFound(description=e.format_message())
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')

@@ -18,7 +18,6 @@ import gabbi.json_parser
 import os
 import yaml
 
-
 TESTS_DIR = 'gabbits'
 
 
@@ -40,12 +39,20 @@ class MultidocJsonpaths(gabbi.handlers.jsonhandler.JSONHandler):
 
     @staticmethod
     def loads(string):
+        # NOTE: The simple approach to handling dictionary versus list response
+        # bodies is to always parse the response body as a list and index into
+        # the first element using [0] throughout the tests.
         return list(yaml.safe_load_all(string))
 
 
 def load_tests(loader, tests, pattern):
     test_dir = os.path.join(os.path.dirname(__file__), TESTS_DIR)
     return gabbi.driver.build_tests(test_dir, loader,
+            # NOTE(fmontei): When there are multiple handlers listed that
+            # accept the same content-type, the one that is earliest in the
+            # list will be used. Thus, we cannot specify multiple content
+            # handlers for handling list/dictionary responses from the server
+            # using different handlers.
             content_handlers=[MultidocJsonpaths],
             verbose=True,
             url=os.environ['DECKHAND_TEST_URL'])

@@ -26,6 +26,7 @@ from sqlalchemy import Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy import schema
 from sqlalchemy import String
+from sqlalchemy import Unicode
 
 
 # Declarative base class which maintains a catalog of classes and tables
@@ -41,10 +42,6 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
     __protected_attributes__ = set([
         "created_at", "updated_at", "deleted_at", "deleted"])
 
-    def save(self, session=None):
-        from deckhand.db.sqlalchemy import api as db_api
-        super(DeckhandBase, self).save(session or db_api.get_session())
-
     created_at = Column(DateTime, default=lambda: timeutils.utcnow(),
                         nullable=False)
     updated_at = Column(DateTime, default=lambda: timeutils.utcnow(),
@@ -52,11 +49,14 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
     deleted_at = Column(DateTime, nullable=True)
     deleted = Column(Boolean, nullable=False, default=False)
 
+    def save(self, session=None):
+        from deckhand.db.sqlalchemy import api as db_api
+        super(DeckhandBase, self).save(session or db_api.get_session())
+
     def safe_delete(self, session=None):
-        """Delete this object."""
         self.deleted = True
         self.deleted_at = timeutils.utcnow()
-        self.save(session=session)
+        super(DeckhandBase, self).delete(session=session)
 
     def keys(self):
         return self.__dict__.keys()
@@ -68,22 +68,20 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         return self.__dict__.items()
 
     def to_dict(self, raw_dict=False):
-        """Conver the object into dictionary format.
+        """Convert the object into dictionary format.
 
-        :param raw_dict: if True, returns unmodified data; else returns data
-            expected by users.
+        :param raw_dict: Renames the key "_metadata" to "metadata".
         """
         d = self.__dict__.copy()
         # Remove private state instance, as it is not serializable and causes
         # CircularReference.
         d.pop("_sa_instance_state")
 
-        if 'deleted_at' not in d:
-            d.setdefault('deleted_at', None)
-
-        for k in ["created_at", "updated_at", "deleted_at"]:
+        for k in ["created_at", "updated_at", "deleted_at", "deleted"]:
             if k in d and d[k]:
                 d[k] = d[k].isoformat()
+            else:
+                d.setdefault(k, None)
 
         # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``_metadata``
         # must be used to store document metadata information in the DB.
@@ -114,13 +112,27 @@ class Revision(BASE, DeckhandBase):
                 default=lambda: str(uuid.uuid4()))
     documents = relationship("Document")
     validation_policies = relationship("ValidationPolicy")
+    tags = relationship("RevisionTag")
 
     def to_dict(self):
         d = super(Revision, self).to_dict()
         d['documents'] = [doc.to_dict() for doc in self.documents]
         d['validation_policies'] = [
             vp.to_dict() for vp in self.validation_policies]
+        d['tags'] = [tag.to_dict() for tag in self.tags]
         return d
+
+
+class RevisionTag(BASE, DeckhandBase):
+    UNIQUE_CONSTRAINTS = ('tag', 'revision_id')
+    __tablename__ = 'revision_tags'
+    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
+
+    tag = Column(Unicode(80), primary_key=True, nullable=False)
+    data = Column(oslo_types.JsonEncodedDict(), nullable=True, default={})
+    revision_id = Column(
+        Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
+        nullable=False)
 
 
 class DocumentMixin(object):
