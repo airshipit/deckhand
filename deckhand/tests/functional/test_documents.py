@@ -33,12 +33,23 @@ class TestDocumentsApi(test_base.TestFunctionalBase):
 
     def test_create_document(self):
         yaml_data = self._read_test_resource('sample_document')
-        result = self.app.simulate_post('/api/v1.0/documents', body=yaml_data)
-        self.assertEqual(falcon.HTTP_201, result.status)
+        resp = self.app.simulate_post('/api/v1.0/documents', body=yaml_data)
+        self.assertEqual(falcon.HTTP_201, resp.status)
 
         # Validate that the correct number of documents were created: one
         # document corresponding to ``yaml_data``.
-        resp_documents = [d for d in yaml.safe_load_all(result.text)]
+        resp_documents = [d for d in yaml.safe_load_all(resp.text)]
         self.assertIsInstance(resp_documents, list)
         self.assertEqual(1, len(resp_documents))
         self.assertIn('revision_id', resp_documents[0])
+
+    def test_create_duplicate_document(self):
+        yaml_data = self._read_test_resource('sample_document')
+
+        # Second iteration will create the duplicate document.
+        for _ in range(2):
+            resp = self.app.simulate_post(
+                '/api/v1.0/documents', body=yaml_data)
+
+        self.assertEqual(falcon.HTTP_204, resp.status)
+        self.assertEmpty(resp.text)
