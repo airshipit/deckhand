@@ -18,6 +18,7 @@ import os
 import pkgutil
 
 LIST_OPTS_FUNC_NAME = "list_opts"
+IGNORED_MODULES = ('opts', 'constants', 'utils')
 
 
 def _tupleize(dct):
@@ -50,7 +51,7 @@ def _list_module_names():
     module_names = []
     package_path = os.path.dirname(os.path.abspath(__file__))
     for _, modname, ispkg in pkgutil.iter_modules(path=[package_path]):
-        if modname == "opts" or ispkg:
+        if modname in IGNORED_MODULES or ispkg:
             continue
         else:
             module_names.append(modname)

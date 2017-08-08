@@ -32,8 +32,6 @@ LOG = None
 
 def __setup_logging():
     global LOG
-    LOGGER_NAME = 'deckhand'
-    LOG = logging.getLogger(__name__, LOGGER_NAME)
 
     logging.register_options(CONF)
     config.parse_args()
@@ -50,7 +48,8 @@ def __setup_logging():
         os.path.isfile(logging_cfg_path)):
         CONF.log_config_append = logging_cfg_path
 
-    logging.setup(CONF, LOGGER_NAME)
+    logging.setup(CONF, 'deckhand')
+    LOG = logging.getLogger(__name__, 'deckhand')
     LOG.debug('Initiated Deckhand logging.')
 
 

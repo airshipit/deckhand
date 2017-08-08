@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from keystoneauth1 import loading as ks_loading
 from oslo_config import cfg
 
 CONF = cfg.CONF
@@ -31,38 +32,21 @@ barbican_opts = [
         help='URL override for the Barbican API endpoint.'),
 ]
 
-keystone_auth_group = cfg.OptGroup(
-    name='keystone_authtoken',
-    title='Keystone Authentication Options'
-)
-
-keystone_auth_opts = [
-    cfg.StrOpt(name='project_domain_name',
-               default='Default'),
-    cfg.StrOpt(name='project_name',
-               default='admin'),
-    cfg.StrOpt(name='user_domain_name',
-               default='Default'),
-    cfg.StrOpt(name='password',
-               default='devstack'),
-    cfg.StrOpt(name='username',
-               default='admin'),
-    cfg.StrOpt(name='auth_url',
-               default='http://127.0.0.1/identity/v3')
-]
-
 
 def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
-
-    conf.register_group(keystone_auth_group)
-    conf.register_opts(keystone_auth_opts, group=keystone_auth_group)
+    ks_loading.register_auth_conf_options(conf, group=barbican_group.name)
+    ks_loading.register_session_conf_options(conf, group=barbican_group.name)
 
 
 def list_opts():
-    return {barbican_group: barbican_opts,
-            keystone_auth_group: keystone_auth_opts}
+    opts = {barbican_group: barbican_opts +
+                            ks_loading.get_session_conf_options() +
+                            ks_loading.get_auth_common_conf_options() +
+                            ks_loading.get_auth_plugin_conf_options(
+                                'v3password')}
+    return opts
 
 
 def parse_args(args=None, usage=None, default_config_files=None):
