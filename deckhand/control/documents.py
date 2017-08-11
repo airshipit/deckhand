@@ -20,6 +20,7 @@ from oslo_db import exception as db_exc
 from oslo_log import log as logging
 
 from deckhand.control import base as api_base
+from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import document_validation
 from deckhand import errors as deckhand_errors
@@ -64,4 +65,5 @@ class DocumentsResource(api_base.BaseResource):
 
         resp.status = falcon.HTTP_201
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(created_documents)
+        resp_body = document_view.ViewBuilder().list(created_documents)
+        resp.body = self.to_yaml_body(resp_body)
