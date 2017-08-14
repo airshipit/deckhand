@@ -24,7 +24,6 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-etc/*.sample
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -47,6 +46,7 @@ coverage.xml
 *.cover
 .hypothesis/
 .testrepository/*
+cover/*
 
 # Translations
 *.mo
