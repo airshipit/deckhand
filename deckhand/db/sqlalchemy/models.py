@@ -23,12 +23,9 @@ from sqlalchemy import DateTime
 from sqlalchemy.ext import declarative
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
-from sqlalchemy import orm
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy import schema
 from sqlalchemy import String
-from sqlalchemy import Text
-from sqlalchemy.types import TypeDecorator
 
 
 # Declarative base class which maintains a catalog of classes and tables
@@ -121,7 +118,8 @@ class Revision(BASE, DeckhandBase):
 
 class DocumentMixin(object):
     """Mixin class for sharing common columns across all document resources
-    such as documents themselves, layering policies and validation policies."""
+    such as documents themselves, layering policies and validation policies.
+    """
 
     name = Column(String(64), nullable=False)
     schema = Column(String(64), nullable=False)

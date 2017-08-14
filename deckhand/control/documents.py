@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import yaml
 
 import falcon
 
 from oslo_db import exception as db_exc
 from oslo_log import log as logging
-from oslo_serialization import jsonutils as json
 
 from deckhand.control import base as api_base
 from deckhand.db.sqlalchemy import api as db_api

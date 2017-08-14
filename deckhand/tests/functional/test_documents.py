@@ -17,9 +17,7 @@ import yaml
 
 import falcon
 
-from deckhand.control import api
 from deckhand.tests.functional import base as test_base
-from deckhand import types
 
 
 class TestDocumentsApi(test_base.TestFunctionalBase):
@@ -37,10 +35,6 @@ class TestDocumentsApi(test_base.TestFunctionalBase):
         yaml_data = self._read_test_resource('sample_document')
         result = self.app.simulate_post('/api/v1.0/documents', body=yaml_data)
         self.assertEqual(falcon.HTTP_201, result.status)
-
-        expected_documents = [yaml.safe_load(yaml_data)]
-        expected_validation_policy = self.validation_policy_factory.gen(
-            types.DECKHAND_SCHEMA_VALIDATION, status='success')
 
         # Validate that the correct number of documents were created: one
         # document corresponding to ``yaml_data``.

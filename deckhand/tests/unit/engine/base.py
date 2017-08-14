@@ -16,11 +16,6 @@ import copy
 import os
 import yaml
 
-import mock
-import six
-
-from deckhand.engine import document_validation
-from deckhand import errors
 from deckhand.tests.unit import base as test_base
 
 

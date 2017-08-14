@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import falcon
-from oslo_db import exception as db_exc
 
 from deckhand.control import base as api_base
 from deckhand.db.sqlalchemy import api as db_api
@@ -25,7 +24,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
 
     def on_get(self, req, resp, revision_id):
         """Returns all documents for a `revision_id`.
-        
+
         Returns a multi-document YAML response containing all the documents
         matching the filters specified via query string parameters. Returned
         documents will be as originally posted with no substitutions or

@@ -17,7 +17,6 @@
 
 import ast
 import copy
-import datetime
 import threading
 
 from oslo_config import cfg
@@ -25,16 +24,8 @@ from oslo_db import exception as db_exception
 from oslo_db import options
 from oslo_db.sqlalchemy import session
 from oslo_log import log as logging
-from oslo_utils import excutils
 import six
-from six.moves import range
-import sqlalchemy
-from sqlalchemy.ext.compiler import compiles
-from sqlalchemy import desc
-from sqlalchemy import MetaData, Table
 import sqlalchemy.orm as sa_orm
-from sqlalchemy import sql
-import sqlalchemy.sql as sa_sql
 
 from deckhand.db.sqlalchemy import models
 from deckhand import errors
@@ -80,22 +71,6 @@ def get_session(autocommit=True, expire_on_commit=False):
     facade = _create_facade_lazily()
     return facade.get_session(autocommit=autocommit,
                               expire_on_commit=expire_on_commit)
-
-
-def _validate_db_int(**kwargs):
-    """Make sure that all arguments are less than or equal to 2 ** 31 - 1.
-    This limitation is introduced because databases stores INT in 4 bytes.
-    If the validation fails for some argument, exception. Invalid is raised
-    with appropriate information.
-    """
-    max_int = (2 ** 31) - 1
-
-    for param_key, param_value in kwargs.items():
-        if param_value and param_value > max_int:
-            msg = _("'%(param)s' value out of range, "
-                    "must not exceed %(max)d.") % {"param": param_key,
-                                                   "max": max_int}
-            raise exception.Invalid(msg)
 
 
 def clear_db_env():
@@ -255,7 +230,7 @@ def _filter_revision_documents(documents, **filters):
 
     :returns: list of documents that match specified filters.
     """
-    # TODO: Implement this as an sqlalchemy query.
+    # TODO(fmontei): Implement this as an sqlalchemy query.
     filtered_documents = []
 
     for document in documents:

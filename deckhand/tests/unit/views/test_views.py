@@ -14,8 +14,8 @@
 
 from deckhand.control.views import revision
 from deckhand import factories
-from deckhand.tests.unit.db import base
 from deckhand.tests import test_utils
+from deckhand.tests.unit.db import base
 from deckhand import types
 
 
@@ -103,9 +103,6 @@ class TestRevisionViews(base.TestDbBase):
 
         expected_attrs = ('id', 'url', 'createdAt', 'validationPolicies',
                           'status')
-        expected_validation_policies = [
-            {'name': 'deckhand-schema-validation'}, 'status'
-        ]
 
         for attr in expected_attrs:
             self.assertIn(attr, revision_view)
@@ -117,7 +114,6 @@ class TestRevisionViews(base.TestDbBase):
                          'deckhand-schema-validation')
         self.assertEqual(revision_view['validationPolicies'][0]['status'],
                          'success')
-
 
     def test_show_revision_failed_validation_policy(self):
         # Simulate 4 document payload with an internally generated validation
@@ -134,9 +130,6 @@ class TestRevisionViews(base.TestDbBase):
 
         expected_attrs = ('id', 'url', 'createdAt', 'validationPolicies',
                           'status')
-        expected_validation_policies = [
-            {'name': 'deckhand-schema-validation'}, 'status'
-        ]
 
         for attr in expected_attrs:
             self.assertIn(attr, revision_view)
