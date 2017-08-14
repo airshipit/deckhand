@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import fixtures
+import mock
 from oslo_config import cfg
 from oslo_log import log as logging
 import testtools
@@ -39,6 +40,36 @@ class DeckhandTestCase(testtools.TestCase):
             self.assertEqual(0, len(collection))
         elif isinstance(collection, dict):
             self.assertEqual(0, len(collection.keys()))
+
+    def patch(self, target, autospec=True, **kwargs):
+        """Returns a started `mock.patch` object for the supplied target.
+
+        The caller may then call the returned patcher to create a mock object.
+
+        The caller does not need to call stop() on the returned
+        patcher object, as this method automatically adds a cleanup
+        to the test class to stop the patcher.
+
+        :param target: String module.class or module.object expression to patch
+        :param **kwargs: Passed as-is to `mock.patch`. See mock documentation
+                         for details.
+        """
+        p = mock.patch(target, autospec=autospec, **kwargs)
+        m = p.start()
+        self.addCleanup(p.stop)
+        return m
+
+    def patchobject(self, target, attribute, new=mock.DEFAULT, autospec=True):
+        """Convenient wrapper around `mock.patch.object`
+
+        Returns a started mock that will be automatically stopped after the
+        test ran.
+        """
+
+        p = mock.patch.object(target, attribute, new, autospec=autospec)
+        m = p.start()
+        self.addCleanup(p.stop)
+        return m
 
 
 class DeckhandWithDBTestCase(DeckhandTestCase):

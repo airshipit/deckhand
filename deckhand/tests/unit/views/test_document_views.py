@@ -44,6 +44,9 @@ class TestRevisionViews(base.TestDbBase):
             for attr in ('bucket', 'revision'):
                 self.assertIn(attr, document_view[idx]['status'])
 
+        revision_ids = set([v['status']['revision'] for v in document_view])
+        self.assertEqual([1], list(revision_ids))
+
     def test_create_single_document(self):
         self._test_document_creation_view(1)
 

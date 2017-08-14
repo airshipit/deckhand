@@ -77,8 +77,7 @@ class TestRevisionTags(base.TestDbBase):
 
         for idx, tag in enumerate(tags):
             expected_tag_names = sorted(tags[idx + 1:])
-            result = db_api.revision_tag_delete(self.revision_id, tag)
-            self.assertIsNone(result)
+            db_api.revision_tag_delete(self.revision_id, tag)
 
             retrieved_tags = db_api.revision_tag_get_all(self.revision_id)
             retrieved_tag_names = [t['tag'] for t in retrieved_tags]

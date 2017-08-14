@@ -14,6 +14,7 @@
 
 from deckhand.control import common
 from deckhand import types
+from deckhand import utils
 
 
 class ViewBuilder(common.ViewBuilder):
@@ -32,7 +33,7 @@ class ViewBuilder(common.ViewBuilder):
             rev_documents = revision.pop('documents')
 
             for attr in ('id', 'created_at'):
-                body[common.to_camel_case(attr)] = revision[attr]
+                body[utils.to_camel_case(attr)] = revision[attr]
 
             body['tags'].update([t['tag'] for t in revision['tags']])
             body['buckets'].update(

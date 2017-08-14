@@ -1,18 +1,20 @@
-# Copyright 2017 AT&T Intellectual Property.  All other rights reserved.
+# Copyright 2016 OpenStack Foundation
+# All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#         http://www.apache.org/licenses/LICENSE-2.0
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
 
 import random
+import string
 import uuid
 
 
@@ -60,3 +62,25 @@ def rand_int(min, max):
     :rtype: integer
     """
     return random.randint(min, max)
+
+
+def rand_password(length=15):
+    """Generate a random password
+    :param int length: The length of password that you expect to set
+                       (If it's smaller than 3, it's same as 3.)
+    :return: a random password. The format is
+             '<random upper letter>-<random number>-<random special character>
+              -<random ascii letters or digit characters or special symbols>'
+             (e.g. 'G2*ac8&lKFFgh%2')
+    :rtype: string
+    """
+    upper = random.choice(string.ascii_uppercase)
+    ascii_char = string.ascii_letters
+    digits = string.digits
+    digit = random.choice(string.digits)
+    puncs = '~!@#%^&*_=+'
+    punc = random.choice(puncs)
+    seed = ascii_char + digits + puncs
+    pre = upper + digit + punc
+    password = pre + ''.join(random.choice(seed) for x in range(length - 3))
+    return password

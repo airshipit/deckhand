@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(fmontei): Make all these version-less.
 DOCUMENT_SCHEMA_TYPES = (
     CERTIFICATE_SCHEMA,
     CERTIFICATE_KEY_SCHEMA,
@@ -19,12 +20,24 @@ DOCUMENT_SCHEMA_TYPES = (
     PASSPHRASE_SCHEMA,
     VALIDATION_POLICY_SCHEMA,
 ) = (
-    'deckhand/Certificate/v1',
-    'deckhand/CertificateKey/v1',
+    'deckhand/Certificate',
+    'deckhand/CertificateKey',
     'deckhand/LayeringPolicy/v1',
-    'deckhand/Passphrase/v1',
+    'deckhand/Passphrase',
     'deckhand/ValidationPolicy/v1',
 )
+
+
+DOCUMENT_SECRET_TYPES = (
+    CERTIFICATE_KEY_SCHEMA,
+    CERTIFICATE_SCHEMA,
+    PASSPHRASE_SCHEMA
+) = (
+    'deckhand/Certificate',
+    'deckhand/CertificateKey',
+    'deckhand/Passphrase'
+)
+
 
 DECKHAND_VALIDATION_TYPES = (
     DECKHAND_SCHEMA_VALIDATION,

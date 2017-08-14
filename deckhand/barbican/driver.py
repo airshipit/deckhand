@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import barbicanclient
+from oslo_log import log as logging
+
 from deckhand.barbican import client_wrapper
+from deckhand import errors
+from deckhand import utils
+
+LOG = logging.getLogger(__name__)
 
 
 class BarbicanDriver(object):
@@ -22,4 +29,20 @@ class BarbicanDriver(object):
 
     def create_secret(self, **kwargs):
         """Create a secret."""
-        return self.barbicanclient.call("secrets.create", **kwargs)
+        secret = self.barbicanclient.call("secrets.create", **kwargs)
+
+        try:
+            secret.store()
+        except (barbicanclient.exceptions.HTTPAuthError,
+                barbicanclient.exceptions.HTTPClientError,
+                barbicanclient.exceptions.HTTPServerError) as e:
+            LOG.exception(e.message)
+            raise errors.BarbicanException(message=e.message,
+                                           code=e.status_code)
+
+        # NOTE(fmontei): The dictionary representation of the Secret object by
+        # default has keys that are not snake case -- so make them snake case.
+        resp = secret.to_dict()
+        for key in resp.keys():
+            resp[utils.to_snake_case(key)] = resp.pop(key)
+        return resp

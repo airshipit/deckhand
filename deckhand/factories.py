@@ -240,6 +240,65 @@ class DocumentFactory(DeckhandFactory):
         return rendered_template
 
 
+class DocumentSecretFactory(DeckhandFactory):
+    """Class for auto-generating document secrets templates for testing.
+
+    Returns formats that adhere to the following supported schemas:
+
+      * deckhand/Certificate/v1
+      * deckhand/CertificateKey/v1
+      * deckhand/Passphrase/v1
+    """
+
+    DOCUMENT_SECRET_TEMPLATE = {
+        "data": {
+        },
+        "metadata": {
+            "schema": "metadata/Document/v1",
+            "name": "application-api",
+            "storagePolicy": ""
+        },
+        "schema": "deckhand/%s/v1"
+    }
+
+    def __init__(self):
+        """Constructor for ``DocumentSecretFactory``.
+
+        Returns a template whose YAML representation is of the form::
+
+            ---
+            schema: deckhand/Certificate/v1
+            metadata:
+              schema: metadata/Document/v1
+              name: application-api
+              storagePolicy: cleartext
+            data: |-
+              -----BEGIN CERTIFICATE-----
+              MIIDYDCCAkigAwIBAgIUKG41PW4VtiphzASAMY4/3hL8OtAwDQYJKoZIhvcNAQEL
+              ...snip...
+              P3WT9CfFARnsw2nKjnglQcwKkKLYip0WY2wh3FE7nrQZP6xKNaSRlh6p2pCGwwwH
+              HkvVwA==
+              -----END CERTIFICATE-----
+            ...
+        """
+
+    def gen(self):
+        pass
+
+    def gen_test(self, schema, storage_policy, data=None):
+        if data is None:
+            data = test_utils.rand_password()
+
+        document_secret_template = copy.deepcopy(self.DOCUMENT_SECRET_TEMPLATE)
+
+        document_secret_template['metadata']['storagePolicy'] = storage_policy
+        document_secret_template['schema'] = (
+            document_secret_template['schema'] % schema)
+        document_secret_template['data'] = data
+
+        return document_secret_template
+
+
 class ValidationPolicyFactory(DeckhandFactory):
     """Class for auto-generating validation policy templates for testing."""
 
@@ -274,7 +333,6 @@ class ValidationPolicyFactory(DeckhandFactory):
                 - name: armada-deployability-validation
             ...
         """
-        pass
 
     def gen(self, validation_type, status):
         if validation_type not in types.DECKHAND_VALIDATION_TYPES:

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
-
 from oslo_db.sqlalchemy import models
 from oslo_db.sqlalchemy import types as oslo_types
 from oslo_utils import timeutils
@@ -26,7 +24,6 @@ from sqlalchemy import Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy import schema
 from sqlalchemy import String
-from sqlalchemy import Unicode
 
 
 # Declarative base class which maintains a catalog of classes and tables
@@ -90,12 +87,12 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
 
         return d
 
-    @staticmethod
-    def gen_unqiue_contraint(*fields):
-        constraint_name = 'ix_' + DeckhandBase.__name__.lower() + '_'
-        for field in fields:
-            constraint_name = constraint_name + '_%s' % field
-        return schema.UniqueConstraint(*fields, name=constraint_name)
+
+def gen_unique_constraint(table_name, *fields):
+    constraint_name = 'ix_' + table_name.lower()
+    for field in fields:
+        constraint_name = constraint_name + '_%s' % field
+    return schema.UniqueConstraint(*fields, name=constraint_name)
 
 
 class Bucket(BASE, DeckhandBase):
@@ -108,8 +105,7 @@ class Bucket(BASE, DeckhandBase):
 class Revision(BASE, DeckhandBase):
     __tablename__ = 'revisions'
 
-    id = Column(String(36), primary_key=True,
-                default=lambda: str(uuid.uuid4()))
+    id = Column(Integer, primary_key=True)
     documents = relationship("Document")
     tags = relationship("RevisionTag")
 
@@ -123,9 +119,10 @@ class Revision(BASE, DeckhandBase):
 class RevisionTag(BASE, DeckhandBase):
     UNIQUE_CONSTRAINTS = ('tag', 'revision_id')
     __tablename__ = 'revision_tags'
-    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
+    __table_args__ = (
+        gen_unique_constraint(__tablename__, *UNIQUE_CONSTRAINTS),)
 
-    tag = Column(Unicode(80), primary_key=True, nullable=False)
+    tag = Column(String(64), primary_key=True, nullable=False)
     data = Column(oslo_types.JsonEncodedDict(), nullable=True, default={})
     revision_id = Column(
         Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
@@ -135,17 +132,17 @@ class RevisionTag(BASE, DeckhandBase):
 class Document(BASE, DeckhandBase):
     UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
     __tablename__ = 'documents'
-    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
+    __table_args__ = (gen_unique_constraint(*UNIQUE_CONSTRAINTS),)
 
-    id = Column(String(36), primary_key=True,
-                default=lambda: str(uuid.uuid4()))
+    id = Column(Integer, primary_key=True)
     name = Column(String(64), nullable=False)
     schema = Column(String(64), nullable=False)
     # NOTE: Do not define a maximum length for these JSON data below. However,
     # this approach is not compatible with all database types.
     # "metadata" is reserved, so use "_metadata" instead.
     _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
-    data = Column(oslo_types.JsonEncodedDict(), nullable=False)
+    data = Column(oslo_types.JsonEncodedDict(), nullable=True)
+    is_secret = Column(Boolean, nullable=False, default=False)
 
     bucket_id = Column(Integer, ForeignKey('buckets.name', ondelete='CASCADE'),
                        nullable=False)

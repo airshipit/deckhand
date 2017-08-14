@@ -25,7 +25,6 @@ from deckhand.control import middleware
 from deckhand.control import revision_documents
 from deckhand.control import revision_tags
 from deckhand.control import revisions
-from deckhand.control import secrets
 from deckhand.db.sqlalchemy import api as db_api
 
 CONF = cfg.CONF
@@ -102,9 +101,7 @@ def start_api(state_manager=None):
             revision_documents.RevisionDocumentsResource()),
         ('revisions/{revision_id}/tags', revision_tags.RevisionTagsResource()),
         ('revisions/{revision_id}/tags/{tag}',
-            revision_tags.RevisionTagsResource()),
-        # TODO(fmontei): remove in follow-up commit.
-        ('secrets', secrets.SecretsResource())
+            revision_tags.RevisionTagsResource())
     ]
 
     for path, res in v1_0_routes:

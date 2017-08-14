@@ -125,3 +125,9 @@ class RevisionTagBadFormat(DeckhandException):
     msg_fmt = ("The requested tag data %(data)s must either be null or "
                "dictionary.")
     code = 400
+
+
+class BarbicanException(DeckhandException):
+
+    def __init__(self, message, code):
+        super(BarbicanException, self).__init__(message=message, code=code)

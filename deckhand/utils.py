@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+import string
+
+
+def to_camel_case(s):
+    """Convert string to camel case."""
+    return (s[0].lower() + string.capwords(s, sep='_')
+            .replace('_', '')[1:] if s else s)
+
+
+def to_snake_case(name):
+    """Convert string to snake case."""
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
 
 def multi_getattr(multi_key, dict_data):
     """Iteratively check for nested attributes in the YAML data.
