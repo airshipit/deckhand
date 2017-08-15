@@ -17,9 +17,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import testtools
 
-from deckhand.conf import config
 from deckhand.db.sqlalchemy import api as db_api
-from deckhand.db.sqlalchemy import models as db_models
 
 CONF = cfg.CONF
 logging.register_options(CONF)

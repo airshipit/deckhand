@@ -120,7 +120,7 @@ class DocumentValidation(object):
         validation_policy_factory = factories.ValidationPolicyFactory()
 
         for document in self.documents:
-            document_validations = self._validate_one(document)
+            self._validate_one(document)
 
         deckhand_schema_validation = validation_policy_factory.gen(
             types.DECKHAND_SCHEMA_VALIDATION, status='success')
@@ -156,12 +156,12 @@ class DocumentValidation(object):
                     document_type=document['schema'])
             else:
                 LOG.info('Skipping schema validation for abstract '
-                         'document: %s.' % document)
+                         'document: %s.', document)
 
     def _is_abstract(self, document):
         try:
             is_abstract = document['metadata']['layeringDefinition'][
-                'abstract'] == True
+                'abstract'] is True
             return is_abstract
         # NOTE(fmontei): If the document is of ``document_schema`` type and
         # no "layeringDefinition" or "abstract" property is found, then treat

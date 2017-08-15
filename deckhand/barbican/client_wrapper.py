@@ -14,6 +14,7 @@
 
 from keystoneauth1.identity import v3
 from keystoneauth1 import session
+from oslo_log import log as logging
 
 from deckhand.conf import config
 from deckhand import errors
@@ -22,6 +23,7 @@ from barbicanclient import barbican
 from barbicanclient import exceptions as barbican_exc
 
 CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class BarbicanClientWrapper(object):
@@ -41,8 +43,8 @@ class BarbicanClientWrapper(object):
         if retry_on_conflict and self._cached_client is not None:
             return self._cached_client
 
-        # TODO: Deckhand's configuration file needs to be populated with
-        # correct Keysone authentication values as well as the Barbican
+        # TODO(fmontei): Deckhand's configuration file needs to be populated
+        # with correct Keysone authentication values as well as the Barbican
         # endpoint URL automatically.
         barbican_url = (CONF.barbican.api_endpoint
                         if CONF.barbican.api_endpoint
@@ -53,7 +55,7 @@ class BarbicanClientWrapper(object):
         sess = session.Session(auth=auth)
 
         try:
-            # TODO: replace with ``barbican_url``.
+            # TODO(fmontei): replace with ``barbican_url``.
             cli = barbican.client.Client(endpoint=barbican_url,
                                          session=sess)
             # Cache the client so we don't have to reconstruct and
@@ -63,7 +65,7 @@ class BarbicanClientWrapper(object):
 
         except barbican_exc.HTTPAuthError:
             msg = _("Unable to authenticate Barbican client.")
-            # TODO: Log the error.
+            # TODO(fmontei): Log the error.
             raise errors.ApiError(msg)
 
         return cli
@@ -106,9 +108,8 @@ class BarbicanClientWrapper(object):
                 # client and the next try will start with a fresh one.
                 if not attempt:
                     self._invalidate_cached_client()
-                    # TODO: include after implementing oslo.log.
-                    # LOG.debug("The Barbican client became unauthorized. "
-                    #           "Will attempt to reauthorize and try again.")
+                    LOG.debug("The Barbican client became unauthorized. "
+                              "Will attempt to reauthorize and try again.")
                 else:
                     # This code should be unreachable actually
                     raise

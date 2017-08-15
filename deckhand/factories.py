@@ -14,6 +14,7 @@
 
 import abc
 import copy
+import six
 
 from oslo_log import log as logging
 
@@ -23,8 +24,8 @@ from deckhand import types
 LOG = logging.getLogger(__name__)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class DeckhandFactory(object):
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def gen(self, *args):

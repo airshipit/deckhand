@@ -14,7 +14,6 @@
 
 import mock
 
-import falcon
 from falcon import testing as falcon_testing
 
 from deckhand.control import api

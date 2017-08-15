@@ -25,7 +25,7 @@ class RevisionsResource(api_base.BaseResource):
 
     def on_get(self, req, resp, revision_id=None):
         """Returns list of existing revisions.
-        
+
         Lists existing revisions and reports basic details including a summary
         of validation status for each `deckhand/ValidationPolicy` that is part
         of each revision.
