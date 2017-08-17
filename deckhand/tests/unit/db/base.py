@@ -25,6 +25,7 @@ REVISION_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
     "id", "documents", "validation_policies")
 
 
+# TODO(fmontei): Move this into a separate module called `fixtures`.
 class DocumentFixture(object):
 
     @staticmethod
