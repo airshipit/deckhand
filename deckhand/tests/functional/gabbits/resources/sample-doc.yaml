@@ -1,0 +1,45 @@
+---
+schema: promenade/ResourceType/v1.0
+metadata:
+  schema: metadata/Document/v1.0
+  name: a-unique-config-name-12345
+  labels:
+    component: apiserver
+    hostname: server0
+  layeringDefinition:
+      layer: global
+      abstract: False
+      parentSelector:
+        required_key_a: required_label_a
+        required_key_b: required_label_b
+      actions:
+        - method: merge
+          path: .path.to.merge.into.parent
+        - method: delete
+          path: .path.to.delete
+  substitutions:
+    - dest:
+        path: .chart.values.tls.certificate
+      src:
+        schema: deckhand/Certificate/v1.0
+        name: example-cert
+        path: .
+    - dest:
+        path: .chart.values.tls.key
+      src:
+        schema: deckhand/CertificateKey/v1.0
+        name: example-key
+        path: .
+    - dest:
+        path: .chart.values.some_url
+        pattern: INSERT_[A-Z]+_HERE
+      src:
+        schema: deckhand/Passphrase/v1.0
+        name: example-password
+        path: .
+data:
+  chart:
+    details:
+      data: here
+    values:
+      some_url: http://admin:INSERT_PASSWORD_HERE@service-name:8080/v1
