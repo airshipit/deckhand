@@ -1,0 +1,57 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: global-1234
+  labels:
+    key1: value1
+  layeringDefinition:
+    abstract: true
+    layer: global
+data:
+  a:
+    x: 1
+    y: 2
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: region-1234
+  labels:
+    key1: value1
+  layeringDefinition:
+    abstract: true
+    layer: region
+    parentSelector:
+      key1: value1
+    actions:
+      - method: replace
+        path: .a
+data:
+  a:
+    z: 3
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: site-1234
+  layeringDefinition:
+    layer: site
+    parentSelector:
+      key1: value1
+    actions:
+      - method: merge
+        path: .
+data:
+  b: 4
+...

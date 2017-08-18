@@ -1,0 +1,7 @@
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  schema: metadata/Document/v1
+  name: my-passphrase
+data: not-a-real-password
+...

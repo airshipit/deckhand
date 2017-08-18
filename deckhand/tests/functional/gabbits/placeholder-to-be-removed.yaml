@@ -1,0 +1,13 @@
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: placeholder
+    desc: |
+      There must be at least one passing test to make the test harness happy.
+      This should be removed as soon as there is a passing functional test.
+    GET: /api/v1.0/revisions
+    status: 200

@@ -1,0 +1,33 @@
+# Tests error paths for document crud.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Creates a single initial document in one bucket
+# 3. Attempts to create the same document in a separate bucket.
+#    - Verifies 409 response code
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    skip: Not implemented.
+
+  - name: create
+    desc: Create initial documents
+    PUT: /api/v1.0/bucket/a/documents
+    status: 201
+    data: <@resources/sample-document.yaml
+    skip: Not implemented.
+
+  - name: error
+    desc: Trigger error case
+    PUT: /api/v1.0/bucket/b/documents
+    status: 409
+    data: <@resources/sample-document.yaml
+    skip: Not implemented.

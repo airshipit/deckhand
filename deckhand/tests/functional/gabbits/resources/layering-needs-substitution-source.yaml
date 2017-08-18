@@ -1,0 +1,46 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: abstract-1234
+  labels:
+    key1: value1
+  layeringDefinition:
+    abstract: true
+    layer: global
+data:
+  a:
+    x: 1
+    y: 2
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: concrete-1234
+  layeringDefinition:
+    layer: site
+    parentSelector:
+      key1: value1
+    actions:
+      - method: merge
+        path: .
+  substitutions:
+    - dest:
+        path: .sub
+      src:
+        schema: deckhand/Passphrase/v1
+        name: my-passphrase
+        path: .
+data:
+  b: 4
+...

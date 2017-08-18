@@ -46,11 +46,10 @@ level of each document is a dictionary with 3 keys: `schema`, `metadata`, and
 
 #### Document Metadata
 
-There are 3 supported kinds of document metadata. Documents with `Document`
+There are 2 supported kinds of document metadata. Documents with `Document`
 metadata are the most common, and are used for normal configuration data.
 Documents with `Control` metadata are used to customize the behavior of
-Deckhand. Documents with `Tombstone` metadata are used to delete pre-existing
-documents with either `Document` or `Control` metadata.
+Deckhand.
 
 ##### schema: metadata/Document/v1
 
@@ -141,11 +140,6 @@ actions are not supported on `Control` documents.
 
 The complete list of valid `Control` document kinds is specified below along
 with descriptions of each document kind.
-
-##### schema: metadata/Tombstone/v1
-
-The only valid key in a `Tombstone` metadata section is `name`.  Additionally,
-the top-level `data` section should be omitted.
 
 ### Layering
 
@@ -554,6 +548,20 @@ data: some-password
 ...
 ```
 
+## Buckets
+
+Collections of documents, called buckets, are managed together.  All documents
+belong to a bucket and all documents that are part of a bucket must be fully
+specified together.
+
+To create or update a new document in, e.g. bucket `mop`, one must PUT the
+entire set of documents already in `mop` along with the new or modified
+document.  Any documents not included in that PUT will be automatically
+deleted in the created revision.
+
+This feature allows the separation of concerns when delivering different
+categories of documents, while making the delivered payload more declarative.
+
 ## Revision History
 
 Documents will be ingested in batches which will be given a revision index.
@@ -597,6 +605,7 @@ Here is a list of internal validations:
 Deckhand will use standard OpenStack Role Based Access Control using the
 following actions:
 
+- `purge_database` - Remove all documents and revisions from the database.
 - `read_cleartext_document` - Read unencrypted documents.
 - `read_encrypted_document` - Read (including substitution and layering)
   encrypted documents.
@@ -616,21 +625,20 @@ does not provide an official media type for YAML, this API will use
 This is a description of the `v1.0` API. Documented paths are considered
 relative to `/api/v1.0`.
 
-### POST `/documents`
+### PUT `/bucket/{bucket_name}/documents`
 
-Accepts a multi-document YAML body and creates a new revision which adds
-those documents. Updates are detected based on exact match to an existing
-document of `schema` + `metadata.name`. Documents are "deleted" by including
-documents with the tombstone metadata schema, such as:
+Accepts a multi-document YAML body and creates a new revision that updates the
+contents of the `bucket_name` bucket.  Documents from the specified bucket that
+exist in previous revisions, but are absent from the request are removed from
+that revision (though still accessible via older revisions).
 
-```yaml
----
-schema: any-namespace/AnyKind/v1
-metadata:
-  schema: metadata/Tombstone/v1
-  name: name-to-delete
-...
-```
+Documents in other buckets are not changed and will be included in queries for
+documents of the newly created revision.
+
+Updates are detected based on exact match to an existing document of `schema` +
+`metadata.name`.  It is an error that responds with `409 Conflict` to attempt
+to PUT a document with the same `schema` + `metadata.name` as an existing
+document from a different bucket in the most-recent revision.
 
 This endpoint is the only way to add, update, and delete documents. This
 triggers Deckhand's internal schema validations for all documents.
@@ -642,19 +650,11 @@ unnecessary revisions.
 This endpoint uses the `write_cleartext_document` and
 `write_encrypted_document` actions.
 
-### DELETE `/documents/{{schema}}/{{name}}`
-
-Delete the specified document.  This is equivalent to posting a tombstone for
-the document.
-
-This endpoint uses the `write_cleartext_document` and
-`write_encrypted_document` actions.
-
 ### GET `/revisions/{revision_id}/documents`
 
 Returns a multi-document YAML response containing all the documents matching
 the filters specified via query string parameters. Returned documents will be
-as originally posted with no substitutions or layering applied.
+as originally added with no substitutions or layering applied.
 
 Supported query string parameters:
 
@@ -673,6 +673,9 @@ Supported query string parameters:
 * `metadata.label` - string, optional, repeatable - Uses the format
   `metadata.label=key=value`. Repeating this parameter indicates all
   requested labels must apply (AND not OR).
+* `status.bucket` - string, optional, repeatable - Used to select documents
+  only from a particular bucket.  Repeating this parameter indicates documents
+  from any of the specified buckets should be returned.
 
 This endpoint uses the `read_cleartext_document` and
 `read_encrypted_document` actions.
@@ -720,6 +723,13 @@ results:
 ```
 
 This endpoint uses the `read_revision` action.
+
+### DELETE `/revisions`
+
+Permanently delete all documents.  This removes all revisions and resets the
+data store.
+
+This endpoint uses the `purge_database` action.
 
 ### GET `/revisions/{{revision_id}}`
 
@@ -979,7 +989,6 @@ metadata:
 ```
 
 This endpoint uses the `read_tag` action.
-
 
 ### DELETE `/revisions/{{revision_id}}/tags/{{tag}}`
 
