@@ -19,8 +19,9 @@ from oslo_config import cfg
 from oslo_log import log as logging
 
 from deckhand.conf import config
-from deckhand.control import base as api_base
-from deckhand.control import documents
+from deckhand.control import base
+from deckhand.control import buckets
+from deckhand.control import middleware
 from deckhand.control import revision_documents
 from deckhand.control import revisions
 from deckhand.control import secrets
@@ -54,7 +55,27 @@ def __setup_logging():
 
 
 def __setup_db():
+    db_api.drop_db()
     db_api.setup_db()
+
+
+def _get_routing_map():
+    ROUTING_MAP = {
+        '/api/v1.0/bucket/.+/documents': ['PUT'],
+        '/api/v1.0/revisions': ['GET', 'DELETE'],
+        '/api/v1.0/revisions/.+': ['GET'],
+        '/api/v1.0/revisions/documents': ['GET']
+    }
+
+    for route in ROUTING_MAP.keys():
+        # Denote the start of the regex with "^".
+        route_re = '^.*' + route
+        # Debite the end of the regex with "$". Allow for an optional "/" at
+        # the end of each request uri.
+        route_re = route_re + '[/]{0,1}$'
+        ROUTING_MAP[route_re] = ROUTING_MAP.pop(route)
+
+    return ROUTING_MAP
 
 
 def start_api(state_manager=None):
@@ -65,14 +86,17 @@ def start_api(state_manager=None):
     __setup_logging()
     __setup_db()
 
-    control_api = falcon.API(request_type=api_base.DeckhandRequest)
+    control_api = falcon.API(
+        request_type=base.DeckhandRequest,
+        middleware=[middleware.ContextMiddleware(_get_routing_map())])
 
     v1_0_routes = [
-        ('documents', documents.DocumentsResource()),
+        ('bucket/{bucket_name}/documents', buckets.BucketsResource()),
         ('revisions', revisions.RevisionsResource()),
         ('revisions/{revision_id}', revisions.RevisionsResource()),
         ('revisions/{revision_id}/documents',
          revision_documents.RevisionDocumentsResource()),
+        # TODO(fmontei): remove in follow-up commit.
         ('secrets', secrets.SecretsResource())
     ]
 

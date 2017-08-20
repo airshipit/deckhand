@@ -17,14 +17,14 @@ schema = {
     'properties': {
         'schema': {
             'type': 'string',
-            'pattern': '^(deckhand/ValidationPolicy/v[1]{1}\.[0]{1})$'
+            'pattern': '^(deckhand/ValidationPolicy/v[1]{1}(\.[0]{1}){0,1})$'
         },
         'metadata': {
             'type': 'object',
             'properties': {
                 'schema': {
                     'type': 'string',
-                    'pattern': '^(metadata/Control/v[1]{1}\.[0]{1})$'
+                    'pattern': '^(metadata/Control/v[1]{1}(\.[0]{1}){0,1})$'
                 },
                 'name': {'type': 'string'}
             },

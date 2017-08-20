@@ -15,14 +15,21 @@
 import falcon
 
 from deckhand.control import base as api_base
+from deckhand.control import common
+from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 
 
 class RevisionDocumentsResource(api_base.BaseResource):
-    """API resource for realizing CRUD endpoints for Document Revisions."""
+    """API resource for realizing CRUD endpoints for revision documents."""
 
-    def on_get(self, req, resp, revision_id):
+    view_builder = document_view.ViewBuilder()
+
+    @common.sanitize_params([
+        'schema', 'metadata.name', 'metadata.layeringDefinition.abstract',
+        'metadata.layeringDefinition.layer', 'metadata.label'])
+    def on_get(self, req, resp, sanitized_params, revision_id):
         """Returns all documents for a `revision_id`.
 
         Returns a multi-document YAML response containing all the documents
@@ -30,12 +37,12 @@ class RevisionDocumentsResource(api_base.BaseResource):
         documents will be as originally posted with no substitutions or
         layering applied.
         """
-        params = req.params
         try:
-            documents = db_api.revision_get_documents(revision_id, **params)
-        except errors.RevisionNotFound as e:
-            return self.return_error(resp, falcon.HTTP_404, message=e)
+            documents = db_api.revision_get_documents(
+                revision_id, **sanitized_params)
+        except errors.RevisionNotFound:
+            raise falcon.HTTPNotFound()
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(documents)
+        resp.body = self.to_yaml_body(self.view_builder.list(documents))

@@ -40,7 +40,7 @@ class MultidocJsonpaths(gabbi.handlers.jsonhandler.JSONHandler):
 
     @staticmethod
     def loads(string):
-        return {'documents': list(yaml.safe_load_all(string))}
+        return list(yaml.safe_load_all(string))
 
 
 def load_tests(loader, tests, pattern):

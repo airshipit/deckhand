@@ -66,7 +66,6 @@ class TestDocumentValidationNegative(
         self._read_data('sample_document')
         properties_to_remove = self.BASIC_ATTRS + (
             'metadata.layeringDefinition',
-            'metadata.layeringDefinition.abstract',
             'metadata.layeringDefinition.layer',
             'metadata.layeringDefinition.actions.0.method',
             'metadata.layeringDefinition.actions.0.path',

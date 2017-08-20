@@ -1,0 +1,60 @@
+# Tests the following:
+#
+# 1) Creation of a single document
+# 2) Implicit creation of a revision
+# 3) Verify revision was created
+# 4) Delete the revision
+# 5) Verify the revision was deleted
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+      content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+
+    # Validates whether creating a revision works.
+    # Required parameters:
+    # body: Any document payload.
+    # Asserts that status code and response headers are correct.
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample.yaml
+
+    # Validates whether revision was created.
+    # Required parameters:
+    # path: revision_id.
+    # Asserts that status code and response headers are correct.
+  - name: verify_revision_created
+    desc: Verify that revision was created for document above
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']
+    status: 200
+
+    # Validates whether revision deletion works.
+    # Required parameters:
+    # path: revision_id.
+  - name: purge_created_revision
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+
+    # Validates whether revision was deleted.
+    # Required parameters:
+    # path: revision_id.
+    # Asserts that 404 is thrown when trying to retrieve deleted revision.
+  - name: verify_revision_deleted
+    desc: Verify that the revision was deleted
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
+    status: 404
+
+    response_headers:
+      # Deckhand exceptions return the following content-type header by
+      # default. TODO(fmontei): Override that later.
+      content-type: 'application/json; charset=UTF-8'

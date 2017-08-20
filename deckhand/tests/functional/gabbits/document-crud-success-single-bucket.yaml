@@ -43,65 +43,60 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    skip: Not implemented.
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/bucket/mop/documents
-    status: 201
+    status: 200
     data: <@resources/design-doc-layering-sample.yaml
-    skip: Not implemented.
 
   - name: verify_initial
     desc: Verify initial document count and revisions
-    GET: /api/v1.0/revisions/$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - global-1234
         - region-1234
         - site-1234
-      $.documents[*].status.revision:
-        - "$RESPONSE['$.documents[0].revision']"
-        - "$RESPONSE['$.documents[0].revision']"
-        - "$RESPONSE['$.documents[0].revision']"
-        - "$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
-    skip: Not implemented.
 
   - name: ignore_duplicate
     desc: Push a duplicate bucket of documents
     PUT: /api/v1.0/bucket/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample.yaml
-    skip: Not implemented.
 
   - name: verify_ignore
     desc: Verify duplicate documents were ignored
-    GET: /api/v1.0/revisions/$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - global-1234
         - region-1234
         - site-1234
-      $.documents[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
-    skip: Not implemented.
 
   - name: update_single_document
     desc: Update a single document, ignore other documents in the bucket
@@ -112,48 +107,48 @@ tests:
 
   - name: verify_update
     desc: Verify updated document count and revisions
-    GET: /api/v1.0/revisions/$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - global-1234
         - region-1234
         - site-1234
-      $.documents[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$RESPONSE['$.[0].revision']"
+      $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
-      $.documents[3].data.b: 5
+      $.[3].data.b: 5
     skip: Not implemented.
 
   - name: verify_initial_documents_preserved_after_update
     desc: Verify initial documents count and revisions preserved after update
-    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - global-1234
         - region-1234
         - site-1234
-      $.documents[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+      $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
-      $.documents[3].data.b: 4
+      $.[3].data.b: 4
     skip: Not implemented.
 
   - name: delete_document
@@ -165,66 +160,66 @@ tests:
 
   - name: verify_delete
     desc: Verify document deletion
-    GET: /api/v1.0/revisions/$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['update_with_ignore'].$RESPONSE['$.documents[0].revision']"
-      $.documents[*].metadata.name:
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['update_with_ignore'].$RESPONSE['$.[0].revision']"
+      $.[*].metadata.name:
         - layering-policy
         - global-1234
         - site-1234
-      $.documents[*].status.bucket:
+      $.[*].status.bucket:
         - mop
         - mop
         - mop
-      $.documents[2].data.b: 5
+      $.[2].data.b: 5
     skip: Not implemented.
 
   - name: verify_initial_documents_preserved_after_delete
     desc: Verify initial documents count and revisions
-    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - global-1234
         - region-1234
         - site-1234
-      $.documents[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+      $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
-      $.documents[3].data.b: 4
+      $.[3].data.b: 4
     skip: Not implemented.
 
   - name: verify_updated_documents_preserved_after_delete
     desc: Verify updated documents count and revisions preserved after delete
-    GET: /api/v1.0/revisions/$HISTORY['update_with_ignore'].$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$HISTORY['update_with_ignore'].$RESPONSE['$.[0].revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - global-1234
         - region-1234
         - site-1234
-      $.documents[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['update_with_ignore'].$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['update_with_ignore'].$RESPONSE['$.[0].revision']"
+      $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
-      $.documents[3].data.b: 5
+      $.[3].data.b: 5
     skip: Not implemented.

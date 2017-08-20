@@ -12,64 +12,71 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
 
 class TestDocuments(base.TestDbBase):
 
-    def test_create_and_get_document(self):
+    def test_create_and_show_bucket(self):
         payload = base.DocumentFixture.get_minimal_fixture()
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(bucket_name, payload)
 
         self.assertIsInstance(documents, list)
         self.assertEqual(1, len(documents))
 
-        retrieved_document = self._get_document(id=documents[0]['id'])
+        retrieved_document = self.show_document(id=documents[0]['id'])
         self.assertEqual(documents[0], retrieved_document)
 
-    def test_create_document_again_with_no_changes(self):
+    def test_create_document_conflict(self):
         payload = base.DocumentFixture.get_minimal_fixture()
-        self._create_documents(payload)
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name, payload)
+        documents = self.create_documents(bucket_name, payload)
 
         self.assertIsInstance(documents, list)
         self.assertEmpty(documents)
 
-    def test_create_document_and_get_revision(self):
+    def test_create_document_and_show_revision(self):
         payload = base.DocumentFixture.get_minimal_fixture()
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(bucket_name, payload)
 
         self.assertIsInstance(documents, list)
         self.assertEqual(1, len(documents))
 
         for document in documents:
-            revision = self._get_revision(document['revision_id'])
-            self._validate_revision(revision)
+            revision = self.show_revision(document['revision_id'])
+            self.validate_revision(revision)
             self.assertEqual(document['revision_id'], revision['id'])
 
-    def test_get_documents_by_revision_id(self):
+    def test_list_documents_by_revision_id(self):
         payload = base.DocumentFixture.get_minimal_fixture()
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(bucket_name, payload)
 
-        revision = self._get_revision(documents[0]['revision_id'])
+        revision = self.show_revision(documents[0]['revision_id'])
         self.assertEqual(1, len(revision['documents']))
         self.assertEqual(documents[0], revision['documents'][0])
 
-    def test_get_multiple_documents_by_revision_id(self):
+    def test_list_multiple_documents_by_revision_id(self):
         payload = base.DocumentFixture.get_minimal_multi_fixture(count=3)
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(bucket_name, payload)
 
         self.assertIsInstance(documents, list)
         self.assertEqual(3, len(documents))
 
         for document in documents:
-            revision = self._get_revision(document['revision_id'])
-            self._validate_revision(revision)
+            revision = self.show_revision(document['revision_id'])
+            self.validate_revision(revision)
             self.assertEqual(document['revision_id'], revision['id'])
 
-    def test_get_documents_by_revision_id_and_filters(self):
+    def test_list_documents_by_revision_id_and_filters(self):
         payload = base.DocumentFixture.get_minimal_fixture()
-        document = self._create_documents(payload)[0]
+        bucket_name = test_utils.rand_name('bucket')
+        document = self.create_documents(bucket_name, payload)[0]
         filters = {
             'schema': document['schema'],
             'metadata.name': document['metadata']['name'],
@@ -80,7 +87,7 @@ class TestDocuments(base.TestDbBase):
             'metadata.label': document['metadata']['label']
         }
 
-        documents = self._get_revision_documents(
+        documents = self.list_revision_documents(
             document['revision_id'], **filters)
         self.assertEqual(1, len(documents))
         self.assertEqual(document, documents[0])

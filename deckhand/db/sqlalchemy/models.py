@@ -52,7 +52,7 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
     deleted_at = Column(DateTime, nullable=True)
     deleted = Column(Boolean, nullable=False, default=False)
 
-    def delete(self, session=None):
+    def safe_delete(self, session=None):
         """Delete this object."""
         self.deleted = True
         self.deleted_at = timeutils.utcnow()
@@ -81,14 +81,14 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         if 'deleted_at' not in d:
             d.setdefault('deleted_at', None)
 
-        for k in ["created_at", "updated_at", "deleted_at", "deleted"]:
+        for k in ["created_at", "updated_at", "deleted_at"]:
             if k in d and d[k]:
                 d[k] = d[k].isoformat()
 
         # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``_metadata``
         # must be used to store document metadata information in the DB.
         if not raw_dict and '_metadata' in self.keys():
-            d['metadata'] = d['_metadata']
+            d['metadata'] = d.pop('_metadata')
 
         return d
 
@@ -98,6 +98,13 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         for field in fields:
             constraint_name = constraint_name + '_%s' % field
         return schema.UniqueConstraint(*fields, name=constraint_name)
+
+
+class Bucket(BASE, DeckhandBase):
+    __tablename__ = 'buckets'
+
+    name = Column(String(36), primary_key=True)
+    documents = relationship("Document")
 
 
 class Revision(BASE, DeckhandBase):
@@ -130,25 +137,19 @@ class DocumentMixin(object):
     data = Column(oslo_types.JsonEncodedDict(), nullable=False)
 
     @declarative.declared_attr
+    def bucket_id(cls):
+        return Column(Integer, ForeignKey('buckets.name', ondelete='CASCADE'),
+                      nullable=False)
+
+    @declarative.declared_attr
     def revision_id(cls):
-        return Column(Integer, ForeignKey('revisions.id'), nullable=False)
+        return Column(Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
+                      nullable=False)
 
 
 class Document(BASE, DeckhandBase, DocumentMixin):
     UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
     __tablename__ = 'documents'
-    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
-
-    id = Column(String(36), primary_key=True,
-                default=lambda: str(uuid.uuid4()))
-
-
-class LayeringPolicy(BASE, DeckhandBase, DocumentMixin):
-
-    # NOTE(fmontei): Only one layering policy can exist per revision, so
-    # enforce this constraint at the DB level.
-    UNIQUE_CONSTRAINTS = ('revision_id',)
-    __tablename__ = 'layering_policies'
     __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
 
     id = Column(String(36), primary_key=True,
@@ -167,13 +168,13 @@ class ValidationPolicy(BASE, DeckhandBase, DocumentMixin):
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""
-    models = [Document, Revision, LayeringPolicy, ValidationPolicy]
+    models = [Bucket, Document, Revision, ValidationPolicy]
     for model in models:
         model.metadata.create_all(engine)
 
 
 def unregister_models(engine):
     """Drop database tables for all models with the given engine."""
-    models = [Document, Revision, LayeringPolicy, ValidationPolicy]
+    models = [Bucket, Document, Revision, ValidationPolicy]
     for model in models:
         model.metadata.drop_all(engine)

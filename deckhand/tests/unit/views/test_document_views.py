@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from oslo_utils import uuidutils
-
 from deckhand.control.views import document
 from deckhand import factories
+from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
 
@@ -31,17 +30,19 @@ class TestRevisionViews(base.TestDbBase):
         # created specified by `count`.
         payload = [base.DocumentFixture.get_minimal_fixture()
                    for _ in range(count)]
-        created_documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        created_documents = self.create_documents(bucket_name, payload)
         document_view = self.view_builder.list(created_documents)
 
-        expected_attrs = ('revision_id', 'documents')
-        for attr in expected_attrs:
-            self.assertIn(attr, document_view)
+        self.assertIsInstance(document_view, list)
+        self.assertEqual(count, len(document_view))
 
-        self.assertTrue(uuidutils.is_uuid_like(document_view['revision_id']))
-        self.assertEqual(count, len(document_view['documents']))
-        for doc_id in document_view['documents']:
-            self.assertTrue(uuidutils.is_uuid_like(doc_id))
+        expected_attrs = ('id', 'status', 'metadata', 'data', 'schema')
+        for idx in range(count):
+            for attr in expected_attrs:
+                self.assertIn(attr, document_view[idx])
+            for attr in ('bucket', 'revision'):
+                self.assertIn(attr, document_view[idx]['status'])
 
     def test_create_single_document(self):
         self._test_document_creation_view(1)

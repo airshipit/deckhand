@@ -29,8 +29,9 @@ class TestRevisionViews(base.TestDbBase):
     def test_list_revisions_with_multiple_documents(self):
         payload = [base.DocumentFixture.get_minimal_fixture()
                    for _ in range(4)]
-        self._create_documents(payload)
-        revisions = self._list_revisions()
+        bucket_name = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name, payload)
+        revisions = self.list_revisions()
         revisions_view = self.view_builder.list(revisions)
 
         expected_attrs = ('results', 'count')
@@ -51,8 +52,9 @@ class TestRevisionViews(base.TestDbBase):
 
             payload = [base.DocumentFixture.get_minimal_fixture()
                        for _ in range(doc_count)]
-            self._create_documents(payload)
-            revisions = self._list_revisions()
+            bucket_name = test_utils.rand_name('bucket')
+            self.create_documents(bucket_name, payload)
+            revisions = self.list_revisions()
         revisions_view = self.view_builder.list(revisions)
 
         expected_attrs = ('results', 'count')
@@ -71,13 +73,14 @@ class TestRevisionViews(base.TestDbBase):
     def test_show_revision(self):
         payload = [base.DocumentFixture.get_minimal_fixture()
                    for _ in range(4)]
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(bucket_name, payload)
 
         # Validate that each document points to the same revision.
         revision_ids = set([d['revision_id'] for d in documents])
         self.assertEqual(1, len(revision_ids))
 
-        revision = self._get_revision(documents[0]['revision_id'])
+        revision = self.show_revision(documents[0]['revision_id'])
         revision_view = self.view_builder.show(revision)
 
         expected_attrs = ('id', 'url', 'createdAt', 'validationPolicies',
@@ -96,9 +99,10 @@ class TestRevisionViews(base.TestDbBase):
         validation_policy = self.factory.gen(types.DECKHAND_SCHEMA_VALIDATION,
                                              status='success')
         payload.append(validation_policy)
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(bucket_name, payload)
 
-        revision = self._get_revision(documents[0]['revision_id'])
+        revision = self.show_revision(documents[0]['revision_id'])
         revision_view = self.view_builder.show(revision)
 
         expected_attrs = ('id', 'url', 'createdAt', 'validationPolicies',
@@ -123,9 +127,10 @@ class TestRevisionViews(base.TestDbBase):
         validation_policy = self.factory.gen(types.DECKHAND_SCHEMA_VALIDATION,
                                              status='failed')
         payload.append(validation_policy)
-        documents = self._create_documents(payload)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(bucket_name, payload)
 
-        revision = self._get_revision(documents[0]['revision_id'])
+        revision = self.show_revision(documents[0]['revision_id'])
         revision_view = self.view_builder.show(revision)
 
         expected_attrs = ('id', 'url', 'createdAt', 'validationPolicies',

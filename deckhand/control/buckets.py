@@ -28,18 +28,16 @@ from deckhand import errors as deckhand_errors
 LOG = logging.getLogger(__name__)
 
 
-class DocumentsResource(api_base.BaseResource):
-    """API resource for realizing CRUD endpoints for Documents."""
+class BucketsResource(api_base.BaseResource):
+    """API resource for realizing CRUD operations for buckets."""
 
-    def on_post(self, req, resp):
-        """Create a document. Accepts YAML data only."""
-        if req.content_type != 'application/x-yaml':
-            LOG.warning('Requires application/yaml payload.')
+    view_builder = document_view.ViewBuilder()
 
+    def on_put(self, req, resp, bucket_name=None):
         document_data = req.stream.read(req.content_length or 0)
 
         try:
-            documents = [d for d in yaml.safe_load_all(document_data)]
+            documents = list(yaml.safe_load_all(document_data))
         except yaml.YAMLError as e:
             error_msg = ("Could not parse the document into YAML data. "
                          "Details: %s." % e)
@@ -51,22 +49,19 @@ class DocumentsResource(api_base.BaseResource):
         try:
             validation_policies = document_validation.DocumentValidation(
                 documents).validate_all()
-        except (deckhand_errors.InvalidDocumentFormat,
-                deckhand_errors.UnknownDocumentFormat) as e:
+        except (deckhand_errors.InvalidDocumentFormat) as e:
             return self.return_error(resp, falcon.HTTP_400, message=e)
 
         try:
             created_documents = db_api.documents_create(
-                documents, validation_policies)
+                bucket_name, documents, validation_policies)
         except db_exc.DBDuplicateEntry as e:
-            return self.return_error(resp, falcon.HTTP_409, message=e)
+            raise falcon.HTTPConflict()
         except Exception as e:
-            return self.return_error(resp, falcon.HTTP_500, message=e)
+            raise falcon.HTTPInternalServerError()
 
         if created_documents:
-            resp.status = falcon.HTTP_201
-            resp.append_header('Content-Type', 'application/x-yaml')
-            resp_body = document_view.ViewBuilder().list(created_documents)
-            resp.body = self.to_yaml_body(resp_body)
-        else:
-            resp.status = falcon.HTTP_204
+            resp.body = self.to_yaml_body(
+                self.view_builder.list(created_documents))
+        resp.status = falcon.HTTP_200
+        resp.append_header('Content-Type', 'application/x-yaml')

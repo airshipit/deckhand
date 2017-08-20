@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from deckhand import errors
+from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
 
@@ -19,7 +21,8 @@ class TestDocumentsNegative(base.TestDbBase):
 
     def test_get_documents_by_revision_id_and_wrong_filters(self):
         payload = base.DocumentFixture.get_minimal_fixture()
-        document = self._create_documents(payload)[0]
+        bucket_name = test_utils.rand_name('bucket')
+        document = self.create_documents(bucket_name, payload)[0]
         filters = {
             'schema': 'fake_schema',
             'metadata.name': 'fake_meta_name',
@@ -29,11 +32,17 @@ class TestDocumentsNegative(base.TestDbBase):
             'metadata.label': 'fake_label'
         }
 
-        documents = self._get_revision_documents(
+        documents = self.list_revision_documents(
             document['revision_id'], **filters)
         self.assertEmpty(documents)
 
         for filter_key, filter_val in filters.items():
-            documents = self._get_revision_documents(
+            documents = self.list_revision_documents(
                 document['revision_id'], filter_key=filter_val)
             self.assertEmpty(documents)
+
+    def test_delete_document_invalid_id(self):
+        self.assertRaises(errors.DocumentNotFound,
+                          self.show_document,
+                          do_validation=False,
+                          document_id=test_utils.rand_uuid_hex())

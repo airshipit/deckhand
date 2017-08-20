@@ -62,7 +62,6 @@ class ViewBuilder(common.ViewBuilder):
             'id': revision.get('id'),
             'createdAt': revision.get('created_at'),
             'url': self._gen_url(revision),
-            # TODO(fmontei): Not yet implemented.
             'validationPolicies': validation_policies,
             'status': success_status
         }

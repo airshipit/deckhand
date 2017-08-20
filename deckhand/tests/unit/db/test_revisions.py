@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from deckhand import errors
 from deckhand import factories
+from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 from deckhand import types
 
@@ -22,9 +24,10 @@ class TestRevisions(base.TestDbBase):
     def test_list(self):
         documents = [base.DocumentFixture.get_minimal_fixture()
                      for _ in range(4)]
-        self._create_documents(documents)
+        bucket_name = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name, documents)
 
-        revisions = self._list_revisions()
+        revisions = self.list_revisions()
         self.assertIsInstance(revisions, list)
         self.assertEqual(1, len(revisions))
         self.assertEqual(4, len(revisions[0]['documents']))
@@ -35,10 +38,40 @@ class TestRevisions(base.TestDbBase):
         vp_factory = factories.ValidationPolicyFactory()
         validation_policy = vp_factory.gen(types.DECKHAND_SCHEMA_VALIDATION,
                                            'success')
-        self._create_documents(documents, [validation_policy])
+        bucket_name = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name, documents, [validation_policy])
 
-        revisions = self._list_revisions()
+        revisions = self.list_revisions()
         self.assertIsInstance(revisions, list)
         self.assertEqual(1, len(revisions))
         self.assertEqual(4, len(revisions[0]['documents']))
         self.assertEqual(1, len(revisions[0]['validation_policies']))
+
+    def test_delete_all(self):
+        all_created_documents = []
+        all_revision_ids = []
+
+        for _ in range(3):
+            document_payload = [base.DocumentFixture.get_minimal_fixture()
+                                for _ in range(3)]
+            bucket_name = test_utils.rand_name('bucket')
+            created_documents = self.create_documents(
+                bucket_name, document_payload)
+            all_created_documents.extend(created_documents)
+            revision_id = created_documents[0]['revision_id']
+            all_revision_ids.append(revision_id)
+
+        self.delete_revisions()
+
+        # Validate that all revisions were deleted.
+        for revision_id in all_revision_ids:
+            error_re = 'The requested revision %s was not found.' % revision_id
+            self.assertRaisesRegex(errors.RevisionNotFound, error_re,
+                                   self.show_revision, revision_id)
+
+        # Validate that the documents (children) were deleted.
+        for doc in created_documents:
+            filters = {'id': doc['id']}
+            error_re = 'The requested document %s was not found.' % filters
+            self.assertRaisesRegex(errors.DocumentNotFound, error_re,
+                                   self.show_document, **filters)

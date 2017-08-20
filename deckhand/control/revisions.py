@@ -23,6 +23,8 @@ from deckhand import errors
 class RevisionsResource(api_base.BaseResource):
     """API resource for realizing CRUD operations for revisions."""
 
+    view_builder = revision_view.ViewBuilder()
+
     def on_get(self, req, resp, revision_id=None):
         """Returns list of existing revisions.
 
@@ -43,18 +45,23 @@ class RevisionsResource(api_base.BaseResource):
         """
         try:
             revision = db_api.revision_get(revision_id)
-        except errors.RevisionNotFound as e:
-            return self.return_error(resp, falcon.HTTP_404, message=e)
+        except errors.RevisionNotFound:
+            raise falcon.HTTPNotFound()
 
-        revision_resp = revision_view.ViewBuilder().show(revision)
+        revision_resp = self.view_builder.show(revision)
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.to_yaml_body(revision_resp)
 
     def _list_revisions(self, req, resp):
         revisions = db_api.revision_get_all()
-        revisions_resp = revision_view.ViewBuilder().list(revisions)
+        revisions_resp = self.view_builder.list(revisions)
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.to_yaml_body(revisions_resp)
+
+    def on_delete(self, req, resp):
+        db_api.revision_delete_all()
+        resp.append_header('Content-Type', 'application/x-yaml')
+        resp.status = falcon.HTTP_204

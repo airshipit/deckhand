@@ -87,7 +87,8 @@ def drop_db():
     models.unregister_models(get_engine())
 
 
-def documents_create(documents, validation_policies, session=None):
+def documents_create(bucket_name, documents, validation_policies,
+                     session=None):
     session = session or get_session()
 
     documents_created = _documents_create(documents, session)
@@ -95,9 +96,12 @@ def documents_create(documents, validation_policies, session=None):
     all_docs_created = documents_created + val_policies_created
 
     if all_docs_created:
+        bucket = bucket_get_or_create(bucket_name)
         revision = revision_create()
+
         for doc in all_docs_created:
             with session.begin():
+                doc['bucket_id'] = bucket['name']
                 doc['revision_id'] = revision['id']
                 doc.save(session=session)
 
@@ -128,9 +132,7 @@ def _documents_create(values_list, session=None):
         return False
 
     def _get_model(schema):
-        if schema == types.LAYERING_POLICY_SCHEMA:
-            return models.LayeringPolicy()
-        elif schema == types.VALIDATION_POLICY_SCHEMA:
+        if schema == types.VALIDATION_POLICY_SCHEMA:
             return models.ValidationPolicy()
         else:
             return models.Document()
@@ -149,7 +151,7 @@ def _documents_create(values_list, session=None):
             existing_document = document_get(
                 raw_dict=True,
                 **{c: values[c] for c in filters if c != 'revision_id'})
-        except db_exception.DBError:
+        except errors.DocumentNotFound:
             # Ignore bad data at this point. Allow creation to bubble up the
             # error related to bad data.
             existing_document = None
@@ -169,8 +171,36 @@ def _documents_create(values_list, session=None):
 
 def document_get(session=None, raw_dict=False, **filters):
     session = session or get_session()
-    document = session.query(models.Document).filter_by(**filters).first()
-    return document.to_dict(raw_dict=raw_dict) if document else {}
+    if 'document_id' in filters:
+        filters['id'] = filters.pop('document_id')
+
+    try:
+        document = session.query(models.Document)\
+            .filter_by(**filters)\
+            .one()
+    except sa_orm.exc.NoResultFound:
+        raise errors.DocumentNotFound(document=filters)
+
+    return document.to_dict(raw_dict=raw_dict)
+
+
+####################
+
+
+def bucket_get_or_create(bucket_name, session=None):
+    session = session or get_session()
+
+    try:
+        bucket = session.query(models.Bucket)\
+            .filter_by(name=bucket_name)\
+            .one()
+    except sa_orm.exc.NoResultFound:
+        bucket = models.Bucket()
+        with session.begin():
+            bucket.update({'name': bucket_name})
+            bucket.save(session=session)
+
+    return bucket.to_dict()
 
 
 ####################
@@ -178,6 +208,7 @@ def document_get(session=None, raw_dict=False, **filters):
 
 def revision_create(session=None):
     session = session or get_session()
+
     revision = models.Revision()
     with session.begin():
         revision.save(session=session)
@@ -193,12 +224,13 @@ def revision_get(revision_id, session=None):
     session = session or get_session()
 
     try:
-        revision = session.query(models.Revision).filter_by(
-            id=revision_id).one().to_dict()
+        revision = session.query(models.Revision)\
+            .filter_by(id=revision_id)\
+            .one()
     except sa_orm.exc.NoResultFound:
         raise errors.RevisionNotFound(revision=revision_id)
 
-    return revision
+    return revision.to_dict()
 
 
 def revision_get_all(session=None):
@@ -208,27 +240,43 @@ def revision_get_all(session=None):
     return [r.to_dict() for r in revisions]
 
 
+def revision_delete_all(session=None):
+    """Delete all revisions."""
+    session = session or get_session()
+    session.query(models.Revision)\
+        .delete(synchronize_session=False)
+
+
 def revision_get_documents(revision_id, session=None, **filters):
     """Return the documents that match filters for the specified `revision_id`.
+
+    Deleted documents are not included unless deleted=True is provided in
+    ``filters``.
 
     :raises: RevisionNotFound if the revision was not found.
     """
     session = session or get_session()
     try:
-        revision = session.query(models.Revision).filter_by(
-            id=revision_id).one().to_dict()
+        revision = session.query(models.Revision)\
+            .filter_by(id=revision_id)\
+            .one()\
+            .to_dict()
     except sa_orm.exc.NoResultFound:
         raise errors.RevisionNotFound(revision=revision_id)
 
+    if 'deleted' not in filters:
+        filters.update({'deleted': False})
+
     filtered_documents = _filter_revision_documents(
         revision['documents'], **filters)
+
     return filtered_documents
 
 
 def _filter_revision_documents(documents, **filters):
     """Return the list of documents that match filters.
 
-    :returns: list of documents that match specified filters.
+    :returns: List of documents that match specified filters.
     """
     # TODO(fmontei): Implement this as an sqlalchemy query.
     filtered_documents = []
@@ -240,7 +288,7 @@ def _filter_revision_documents(documents, **filters):
             actual_val = utils.multi_getattr(filter_key, document)
 
             if (isinstance(actual_val, bool)
-                and isinstance(filter_val, six.text_type)):
+                and isinstance(filter_val, six.string_types)):
                 try:
                     filter_val = ast.literal_eval(filter_val.title())
                 except ValueError:
