@@ -673,6 +673,9 @@ Supported query string parameters:
 * `metadata.label` - string, optional, repeatable - Uses the format
   `metadata.label=key=value`. Repeating this parameter indicates all
   requested labels must apply (AND not OR).
+* `sort` - string, optional, repeatable - Defines the sort order for returning
+  results.  Default is `metadata.name`.  Repeating this parameter indicates use
+  of multi-column sort with the most significant sorting column applied first.
 * `status.bucket` - string, optional, repeatable - Used to select documents
   only from a particular bucket.  Repeating this parameter indicates documents
   from any of the specified buckets should be returned.
@@ -1027,3 +1030,11 @@ HTTP/1.1 204 No Content
 ```
 
 This endpoint uses the `delete_tag` action.
+
+### POST `/rollback/{target_revision_id}`
+
+Creates a new revision that contains exactly the same set of documents as the
+revision specified by `target_revision_id`.
+
+This endpoint uses the `write_cleartext_document` and
+`write_encrypted_document` actions.

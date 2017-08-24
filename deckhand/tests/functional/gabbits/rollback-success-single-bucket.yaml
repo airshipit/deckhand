@@ -1,0 +1,143 @@
+# Test success path for rollback with a single bucket.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Creates some initial documents (creates revision 1)
+# 3. Modifies a document (creates revision 2)
+# 3. Deletes a document (creates revision 3)
+# 4. Executes rollback to revision 1 (creates revision 4)
+# 5. Verifies correctness of history
+#    - initial documents (revision 1)
+#    - modified document (revision 2)
+#    - deleted document (revision 3)
+#    - rollback contains original documents from revision 1 (revision 4)
+
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    skip: Not implemented.
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample.yaml
+    skip: Not implemented.
+
+  - name: update_single_document
+    desc: Update a single document, ignore other documents in the bucket
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample-with-update.yaml
+    skip: Not implemented.
+
+  - name: delete_document
+    desc: Delete a single document
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample-with-delete.yaml
+    skip: Not implemented.
+
+  - name: rollback
+    desc: Rollback to revision 1
+    POST: /api/v1.0/rollback/$HISTORY.$RESPONSE['$.documents[0].status.revision']
+    status: 201
+    skip: Not implemented.
+
+  # Verify document history
+  - name: verify_revision_1
+    desc: Verify initial document count and revisions
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[*].metadata.name:
+        - global-1234
+        - layering-policy
+        - region-1234
+        - site-1234
+      $.[*].status.revision:
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
+        - mop
+        - mop
+        - mop
+        - mop
+      $.[3].data.b: 4
+    skip: Not implemented.
+
+  - name: verify_revision_2
+    desc: Verify updated document count and revisions
+    GET: /api/v1.0/revisions/$HISTORY['update_single_document'].$RESPONSE['$.[0].status.revision']/documents
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[*].metadata.name:
+        - global-1234
+        - layering-policy
+        - region-1234
+        - site-1234
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
+        - mop
+        - mop
+        - mop
+        - mop
+      $.[3].data.b: 5
+    skip: Not implemented.
+
+  - name: verify_revision_3
+    desc: Verify document deletion
+    GET: /api/v1.0/revisions/$HISTORY['delete_document'].$RESPONSE['$.[0].status.revision']/documents
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[*].metadata.name:
+        - global-1234
+        - layering-policy
+        - site-1234
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['update_single_document'].$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
+        - mop
+        - mop
+        - mop
+      $.[2].data.b: 5
+    skip: Not implemented.
+
+  - name: verify_revision_4
+    desc: Verify rollback revision
+    GET: /api/v1.0/revisions/$HISTORY['rollback'].$RESPONSE['$.[0].status.revision']/documents
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[*].metadata.name:
+        - global-1234
+        - layering-policy
+        - region-1234
+        - site-1234
+      $.[*].status.revision:
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['rollback'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['rollback'].$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
+        - mop
+        - mop
+        - mop
+        - mop
+      $.[3].data.b: 4
+    skip: Not implemented.
