@@ -1,0 +1,51 @@
+---
+schema: deckhand/Certificate/v1
+metadata:
+  name: example-cert
+  storagePolicy: cleartext
+  layeringDefinition:
+    layer: site
+data: |
+  CERTIFICATE DATA
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  name: example-password
+  storagePolicy: encrypted
+  layeringDefinition:
+    layer: site
+data: my-secret-password
+---
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  storagePolicy: cleartext
+  layeringDefinition:
+    layer: region
+  substitutions:
+    - dest:
+        path: .chart.values.tls.certificate
+      src:
+        schema: deckhand/Certificate/v1
+        name: example-cert
+        path: .
+    - dest:
+        path: .chart.values.tls.key
+      src:
+        schema: deckhand/CertificateKey/v1
+        name: example-key
+        path: .
+    - dest:
+        path: .chart.values.some_url
+        pattern: INSERT_[A-Z]+_HERE
+      src:
+        schema: deckhand/Passphrase/v1
+        name: example-password
+        path: .
+data:
+  chart:
+    details:
+      data: here
+    values:
+      some_url: http://admin:INSERT_PASSWORD_HERE@service-name:8080/v1
+...
