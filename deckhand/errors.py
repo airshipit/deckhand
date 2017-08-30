@@ -111,5 +111,17 @@ class DocumentNotFound(DeckhandException):
 
 
 class RevisionNotFound(DeckhandException):
-    msg_fmt = ("The requested revision %(revision)s was not found.")
+    msg_fmt = "The requested revision %(revision)s was not found."
     code = 404
+
+
+class RevisionTagNotFound(DeckhandException):
+    msg_fmt = ("The requested tag %(tag)s for revision %(revision)s was not "
+               "found.")
+    code = 404
+
+
+class RevisionTagBadFormat(DeckhandException):
+    msg_fmt = ("The requested tag data %(data)s must either be null or "
+               "dictionary.")
+    code = 400

@@ -1,0 +1,100 @@
+# Test success paths for revision tag create, read, update and delete.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Adds a document to a bucket to create a revision needed by these tests.
+# 3. Creates a tag "foo" for the created revision.
+# 4. Verifies: 
+#    - Tag "foo" was created for the revision
+# 5. Creates a tag "bar" with associated data for the same revision.
+# 6. Verifies:
+#    - Tag "bar" was created with expected data.
+# 7. Delete tag "foo" and verify that only tag "bar" is listed afterward.
+# 8. Delete all tags and verify that no tags are listed.
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+
+    # Create a revision implicitly by creating a document.
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample.yaml
+
+  - name: create_tag
+    desc: Create a tag for the revision
+    POST: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/tags/foo
+    status: 201
+
+    response_multidoc_jsonpaths:
+      $[0].data: {}
+      $[0].tag: foo
+
+  - name: show_tag
+    desc: Verify showing created tag works
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
+    status: 200
+
+    response_multidoc_jsonpaths:
+      $[0].data: {}
+      $[0].tag: foo
+
+  - name: create_tag_with_data
+    desc: Create a tag with data for the revision
+    POST: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/bar
+    status: 201
+    data: <@resources/sample-tag-data.yaml
+
+    response_multidoc_jsonpaths:
+      $[0].tag: bar
+      $[0].data.last: good
+      $[0].data.random: data
+
+  - name: list_tags
+    desc: Verify listing tags contains created tag
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
+    status: 200
+
+    response_multidoc_jsonpaths:
+      $.[0].tag: bar
+      $.[0].data.last: good
+      $.[0].data.random: data
+      $.[1].tag: foo
+      $.[1].data: {}
+
+  - name: delete_tag
+    desc: Verify deleting tag works
+    DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
+    status: 204
+
+  - name: verify_tag_delete
+    desc: Verify listing tags contains non-deleted tag
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
+    status: 200
+
+    response_multidoc_jsonpaths:
+      $.[0].tag: bar
+      $.[0].data.last: good
+      $.[0].data.random: data
+
+  - name: delete_all_tags
+    desc: Verify deleting tag works
+    DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
+    status: 204
+
+  - name: verify_tag_delete_all
+    desc: Verify all tags have been deleted
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
+    status: 200
+
+    response_multidoc_jsonpaths:
+      $: null

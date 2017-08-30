@@ -34,8 +34,11 @@ class DeckhandTestCase(testtools.TestCase):
         CONF.set_override(name, override, group)
         self.addCleanup(CONF.clear_override, name, group)
 
-    def assertEmpty(self, list):
-        self.assertEqual(0, len(list))
+    def assertEmpty(self, collection):
+        if isinstance(collection, list):
+            self.assertEqual(0, len(collection))
+        elif isinstance(collection, dict):
+            self.assertEqual(0, len(collection.keys()))
 
 
 class DeckhandWithDBTestCase(DeckhandTestCase):

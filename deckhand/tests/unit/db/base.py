@@ -21,8 +21,7 @@ from deckhand.tests.unit import base
 BASE_EXPECTED_FIELDS = ("created_at", "updated_at", "deleted_at", "deleted")
 DOCUMENT_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
     "id", "schema", "name", "metadata", "data", "revision_id", "bucket_id")
-REVISION_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
-    "id", "documents", "validation_policies")
+REVISION_EXPECTED_FIELDS = ("id", "documents", "validation_policies", "tags")
 
 
 # TODO(fmontei): Move this into a separate module called `fixtures`.
@@ -81,8 +80,13 @@ class TestDbBase(base.DeckhandWithDBTestCase):
 
         return doc
 
-    def delete_document(self, document_id):
-        return db_api.document_delete(document_id)
+    def create_revision(self):
+        # Implicitly creates a revision and returns it.
+        documents = [DocumentFixture.get_minimal_fixture()]
+        bucket_name = test_utils.rand_name('bucket')
+        revision_id = self.create_documents(bucket_name, documents)[0][
+            'revision_id']
+        return revision_id
 
     def show_revision(self, revision_id):
         revision = db_api.revision_get(revision_id)

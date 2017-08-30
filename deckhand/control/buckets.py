@@ -42,7 +42,7 @@ class BucketsResource(api_base.BaseResource):
             error_msg = ("Could not parse the document into YAML data. "
                          "Details: %s." % e)
             LOG.error(error_msg)
-            return self.return_error(resp, falcon.HTTP_400, message=error_msg)
+            raise falcon.HTTPBadRequest(description=e.format_message())
 
         # All concrete documents in the payload must successfully pass their
         # JSON schema validations. Otherwise raise an error.
@@ -50,15 +50,16 @@ class BucketsResource(api_base.BaseResource):
             validation_policies = document_validation.DocumentValidation(
                 documents).validate_all()
         except (deckhand_errors.InvalidDocumentFormat) as e:
-            return self.return_error(resp, falcon.HTTP_400, message=e)
+            raise falcon.HTTPBadRequest(description=e.format_message())
 
         try:
             created_documents = db_api.documents_create(
                 bucket_name, documents, validation_policies)
         except db_exc.DBDuplicateEntry as e:
-            raise falcon.HTTPConflict()
+            raise falcon.HTTPConflict(description=e.format_message())
         except Exception as e:
-            raise falcon.HTTPInternalServerError()
+            raise falcon.HTTPInternalServerError(
+                description=e.format_message())
 
         if created_documents:
             resp.body = self.to_yaml_body(
