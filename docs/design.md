@@ -777,6 +777,79 @@ of `expired` indicates that the validation had succeeded, but the
 
 This endpoint uses the `read_revision` action.
 
+### GET `/revisions/{{revision_id}}/diff/{{comparison_revision_id}}`
+
+This endpoint provides a basic comparison of revisions in terms of how the
+buckets involved have changed.  Only buckets with existing documents in either
+of the two revisions in question will be reported; buckets with documents that
+are only present in revisions between the two being compared are omitted from
+this report.
+
+The response will contain a status of `created`, `deleted`, `modified`, or
+`unmodified` for each bucket.
+
+The ordering of the two revision ids is not important.
+
+For the purposes of diffing, the `revision_id` "0" is treated as a revision
+with no documents, so queries comparing revision "0" to any other revision will
+report "created" for each bucket in the compared revision.
+
+Diffing a revision against itself will respond with the each of the buckets in
+the revision as `unmodified`.
+
+Diffing revision "0" against itself results in an empty dictionary as the response.
+
+#### Examples
+A response for a typical case, `GET /api/v1.0/revisions/6/diff/3` (or
+equivalently `GET /api/v1.0/revisions/3/diff/6`).
+
+```yaml
+---
+bucket_a: created
+bucket_b: deleted
+bucket_c: modified
+bucket_d: unmodified
+...
+```
+
+A response for diffing against an empty revision, `GET /api/v1.0/revisions/0/diff/6`:
+
+```yaml
+---
+bucket_a: created
+bucket_c: created
+bucket_d: created
+...
+```
+
+A response for diffing a revision against itself, `GET /api/v1.0/revisions/6/diff/6`:
+
+```yaml
+---
+bucket_a: unmodified
+bucket_c: unmodified
+bucket_d: unmodified
+...
+```
+
+Diffing two revisions that contain the same documents, `GET /api/v1.0/revisions/8/diff/11`:
+
+```yaml
+---
+bucket_e: unmodified
+bucket_f: unmodified
+bucket_d: unmodified
+...
+```
+
+Diffing revision zero with itself, `GET /api/v1.0/revisions/0/diff/0`:
+
+```yaml
+---
+{}
+...
+```
+
 ### POST `/revisions/{{revision_id}}/validations/{{name}}`
 
 Add the results of a validation for a particular revision.
