@@ -1,15 +1,27 @@
 # Test success paths for revision tag create, read, update and delete.
 #
-# 1. Purges existing data to ensure test isolation
-# 2. Adds a document to a bucket to create a revision needed by these tests.
-# 3. Creates a tag "foo" for the created revision.
-# 4. Verifies: 
-#    - Tag "foo" was created for the revision
-# 5. Creates a tag "bar" with associated data for the same revision.
-# 6. Verifies:
-#    - Tag "bar" was created with expected data.
-# 7. Delete tag "foo" and verify that only tag "bar" is listed afterward.
-# 8. Delete all tags and verify that no tags are listed.
+#  1. Purges existing data to ensure test isolation
+#  2. Adds a document to a bucket to create a revision needed by these tests.
+#  3. Creates a tag "foo" for the created revision.
+#  4. Verifies:
+#     - Revision tags endpoint shows "foo" was created for the revision
+#     - Revision details show tag "foo"
+#     - Revision list shows tag "foo"
+#  5. Creates a tag "bar" with associated data for the same revision.
+#  6. Verifies:
+#     - Revision tags endpoints show "bar" with expected data.
+#     - Revision details show tags "foo" and "bar"
+#     - Revision list shows tags "foo" and "bar"
+#  7. Deletes tag "foo"
+#  8. Verifies:
+#     - Only tag "bar" is listed afterward.
+#     - Revision details show only tag "bar"
+#     - Revision list shows only tag "bar"
+#  8. Delete all tags
+# 10. Verifies:
+#     - Revision tags endpoint shows no tags.
+#     - Revision details show no tags.
+#     - Revision list shows no tags.
 
 defaults:
   request_headers:
@@ -48,6 +60,22 @@ tests:
       $[0].data: {}
       $[0].tag: foo
 
+  - name: verify_revision_detail_foo
+    desc: Verify showing created tag on revision detail
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags.foo.name: foo
+    skip: Not implemented.
+
+  - name: verify_revision_list_foo
+    desc: Verify showing created tag on revision list
+    GET: /api/v1.0/revisions
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags [foo]
+    skip: Not implemented.
+
   - name: create_tag_with_data
     desc: Create a tag with data for the revision
     POST: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/bar
@@ -71,6 +99,23 @@ tests:
       $.[1].tag: foo
       $.[1].data: {}
 
+  - name: verify_revision_detail_bar
+    desc: Verify showing created tag on revision detail
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags.bar.name: bar
+      $.[0].tags.foo.name: foo
+    skip: Not implemented.
+
+  - name: verify_revision_list_bar
+    desc: Verify showing created tag on revision list
+    GET: /api/v1.0/revisions
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags [bar, foo]
+    skip: Not implemented.
+
   - name: delete_tag
     desc: Verify deleting tag works
     DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
@@ -86,10 +131,42 @@ tests:
       $.[0].data.last: good
       $.[0].data.random: data
 
+  - name: verify_revision_detail_deleted_foo
+    desc: Verify not showing deleted tag on revision detail
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags.bar.name: bar
+    skip: Not implemented.
+
+  - name: verify_revision_list_deleted_foo
+    desc: Verify not showing deleted tag on revision list
+    GET: /api/v1.0/revisions
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags [bar]
+    skip: Not implemented.
+
   - name: delete_all_tags
     desc: Verify deleting tag works
     DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
     status: 204
+
+  - name: verify_revision_detail_deleted_all
+    desc: Verify empty tags on revision detail
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags: {}
+    skip: Not implemented.
+
+  - name: verify_revision_list_deleted_all
+    desc: Verify empty tags on revision list
+    GET: /api/v1.0/revisions
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].tags []
+    skip: Not implemented.
 
   - name: verify_tag_delete_all
     desc: Verify all tags have been deleted

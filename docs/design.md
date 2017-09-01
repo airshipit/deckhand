@@ -710,15 +710,19 @@ count: 7
 next: https://deckhand/api/v1.0/revisions?limit=2&offset=2
 prev: null
 results:
-  - id: 0
-    url: https://deckhand/api/v1.0/revisions/0
+  - id: 1
+    url: https://deckhand/api/v1.0/revisions/1
     createdAt: 2017-07-14T21:23Z
+    buckets: [mop]
+    tags: [a, b, c]
     validationPolicies:
       site-deploy-validation:
         status: failed
-  - id: 1
-    url: https://deckhand/api/v1.0/revisions/1
+  - id: 2
+    url: https://deckhand/api/v1.0/revisions/2
     createdAt: 2017-07-16T01:15Z
+    buckets: [flop, mop]
+    tags: [b]
     validationPolicies:
       site-deploy-validation:
         status: succeeded
@@ -748,24 +752,29 @@ Sample response:
 
 ```yaml
 ---
-id: 0
-url: https://deckhand/api/v1.0/revisions/0
+id: 1
+url: https://deckhand/api/v1.0/revisions/1
 createdAt: 2017-07-14T021:23Z
+buckets: [mop]
+tags:
+  a:
+    name: a
+    url: https://deckhand/api/v1.0/revisions/1/tags/a
 validationPolicies:
   site-deploy-validation:
-    url: https://deckhand/api/v1.0/revisions/0/documents?schema=deckhand/ValidationPolicy/v1&name=site-deploy-validation
+    url: https://deckhand/api/v1.0/revisions/1/documents?schema=deckhand/ValidationPolicy/v1&name=site-deploy-validation
     status: failed
     validations:
       - name: deckhand-schema-validation
-        url: https://deckhand/api/v1.0/revisions/0/validations/deckhand-schema-validation/0
+        url: https://deckhand/api/v1.0/revisions/1/validations/deckhand-schema-validation/0
         status: success
       - name: drydock-site-validation
         status: missing
       - name: promenade-site-validation
-        url: https://deckhand/api/v1.0/revisions/0/validations/promenade-site-validation/0
+        url: https://deckhand/api/v1.0/revisions/1/validations/promenade-site-validation/0
         status: expired
       - name: armada-deployability-validation
-        url: https://deckhand/api/v1.0/revisions/0/validations/armada-deployability-validation/0
+        url: https://deckhand/api/v1.0/revisions/1/validations/armada-deployability-validation/0
         status: failed
 ...
 ```
