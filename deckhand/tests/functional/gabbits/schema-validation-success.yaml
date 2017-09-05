@@ -1,0 +1,119 @@
+# Test success path for rollback with a single bucket.
+#
+#  1. Purges existing data to ensure test isolation
+#  2. Creates a DataSchema
+#  3. Checks that schema validation for the DataSchema passes
+#  4. Puts a valid document
+#  5. Checks that the document passes schema validation
+#  6. Puts an invalid document
+#  7. Checks that the document fails schema validation
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+
+  - name: create_schema
+    desc: Add example schema
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/sample-schema.yaml
+    skip: Not Implemented.
+
+  - name: verify_schema_is_valid
+    desc: Check schema validation of the added schema
+    GET: /api/v1.0/revisions/$HISTORY['create_schema'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].status: success
+    skip: Not Implemented.
+
+  - name: verify_schema_validation_in_list_view
+    desc: Check schema validation success shows in list view
+    GET: /api/v1.0/revisions/$HISTORY['create_schema'].$RESPONSE['$.[0].status.revision']/validations
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].name: deckhand-schema-validation
+      $.[0].results[0].status: success
+    skip: Not Implemented.
+
+  - name: add_valid_document
+    desc: Add a document that follows the schema
+    PUT: /api/v1.0/bucket/good/documents
+    status: 200
+    data: |-
+      schema: example/Doc/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: good
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        a: this-one-is-required
+        b: 77
+    skip: Not Implemented.
+
+  - name: verify_document_is_valid
+    desc: Check schema validation of the added document
+    GET: /api/v1.0/revisions/$HISTORY['add_valid_document'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].status: success
+    skip: Not Implemented.
+
+  - name: verify_document_validation_success_in_list_view
+    desc: Check document validation success shows in list view
+    GET: /api/v1.0/revisions/$HISTORY['add_valid_document'].$RESPONSE['$.[0].status.revision']/validations
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].name: deckhand-schema-validation
+      $.[0].results[0].status: success
+    skip: Not Implemented.
+
+  - name: add_invalid_document
+    desc: Add a document that does not follow the schema
+    PUT: /api/v1.0/bucket/bad/documents
+    status: 200
+    data: |-
+      schema: example/Doc/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: bad
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        a: this-one-is-required-and-can-be-different
+        b: 177
+    skip: Not Implemented.
+
+  - name: verify_document_is_not_valid
+    desc: Check failure of schema validation of the added document
+    GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].status: failure
+    skip: Not Implemented.
+
+  - name: verify_document_validation_failure_in_list_view
+    desc: Check document validation failure shows in list view
+    GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/validations
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].name: deckhand-schema-validation
+      $.[0].results[0].status: failure
+    skip: Not Implemented.
