@@ -39,23 +39,19 @@ tests:
     response_multidoc_jsonpaths:
       $.[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
       $.[0].buckets: [mop]
-      $.[0].tags: []
-    skip: Not implemented.
+      $.[0].tags: {}
 
     # Validates whether revision was created.
-    # Required parameters:
-    # path: revision_id.
     # Asserts that status code and response headers are correct.
   - name: verify_revision_list
     desc: Verify that revision was created for document above
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']
+    GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
       $.[0].count: 1
       $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
       $.[0].results[0].buckets: [mop]
       $.[0].results[0].tags: []
-    skip: Not implemented.
 
     # Validates whether revision deletion works.
     # Required parameters:

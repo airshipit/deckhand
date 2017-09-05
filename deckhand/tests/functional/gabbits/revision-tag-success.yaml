@@ -66,15 +66,13 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.[0].tags.foo.name: foo
-    skip: Not implemented.
 
   - name: verify_revision_list_foo
     desc: Verify showing created tag on revision list
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.[0].tags [foo]
-    skip: Not implemented.
+      $.[0].results[0].tags: [foo]
 
   - name: create_tag_with_data
     desc: Create a tag with data for the revision
@@ -106,15 +104,13 @@ tests:
     response_multidoc_jsonpaths:
       $.[0].tags.bar.name: bar
       $.[0].tags.foo.name: foo
-    skip: Not implemented.
 
   - name: verify_revision_list_bar
     desc: Verify showing created tag on revision list
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.[0].tags [bar, foo]
-    skip: Not implemented.
+      $.[0].results[0].tags: [bar, foo]
 
   - name: delete_tag
     desc: Verify deleting tag works
@@ -137,15 +133,13 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.[0].tags.bar.name: bar
-    skip: Not implemented.
 
   - name: verify_revision_list_deleted_foo
     desc: Verify not showing deleted tag on revision list
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.[0].tags [bar]
-    skip: Not implemented.
+      $.[0].results[0].tags: [bar]
 
   - name: delete_all_tags
     desc: Verify deleting tag works
@@ -158,15 +152,13 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.[0].tags: {}
-    skip: Not implemented.
 
   - name: verify_revision_list_deleted_all
     desc: Verify empty tags on revision list
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.[0].tags []
-    skip: Not implemented.
+      $.[0].results[0].tags: []
 
   - name: verify_tag_delete_all
     desc: Verify all tags have been deleted

@@ -34,15 +34,11 @@ class TestRevisionViews(base.TestDbBase):
         revisions = self.list_revisions()
         revisions_view = self.view_builder.list(revisions)
 
-        expected_attrs = ('results', 'count')
-        for attr in expected_attrs:
-            self.assertIn(attr, revisions_view)
+        self.assertIn('results', revisions_view)
         # Validate that only 1 revision was returned.
         self.assertEqual(1, revisions_view['count'])
         # Validate that the first revision has 4 documents.
         self.assertIn('id', revisions_view['results'][0])
-        self.assertIn('count', revisions_view['results'][0])
-        self.assertEqual(4, revisions_view['results'][0]['count'])
 
     def test_list_multiple_revisions(self):
         docs_count = []
@@ -57,18 +53,13 @@ class TestRevisionViews(base.TestDbBase):
             revisions = self.list_revisions()
         revisions_view = self.view_builder.list(revisions)
 
-        expected_attrs = ('results', 'count')
-        for attr in expected_attrs:
-            self.assertIn(attr, revisions_view)
+        self.assertIn('results', revisions_view)
         # Validate that only 1 revision was returned.
         self.assertEqual(3, revisions_view['count'])
 
         # Validate that each revision has correct number of documents.
         for idx, doc_count in enumerate(docs_count):
-            self.assertIn('count', revisions_view['results'][idx])
             self.assertIn('id', revisions_view['results'][idx])
-            self.assertEqual(doc_count, revisions_view['results'][idx][
-                'count'])
 
     def test_show_revision(self):
         payload = [base.DocumentFixture.get_minimal_fixture()
