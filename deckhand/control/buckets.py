@@ -53,8 +53,9 @@ class BucketsResource(api_base.BaseResource):
             raise falcon.HTTPBadRequest(description=e.format_message())
 
         try:
+            documents.extend(validation_policies)
             created_documents = db_api.documents_create(
-                bucket_name, documents, validation_policies)
+                bucket_name, documents)
         except db_exc.DBDuplicateEntry as e:
             raise falcon.HTTPConflict(description=e.format_message())
         except Exception as e:

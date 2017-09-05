@@ -111,14 +111,11 @@ class Revision(BASE, DeckhandBase):
     id = Column(String(36), primary_key=True,
                 default=lambda: str(uuid.uuid4()))
     documents = relationship("Document")
-    validation_policies = relationship("ValidationPolicy")
     tags = relationship("RevisionTag")
 
     def to_dict(self):
         d = super(Revision, self).to_dict()
         d['documents'] = [doc.to_dict() for doc in self.documents]
-        d['validation_policies'] = [
-            vp.to_dict() for vp in self.validation_policies]
         d['tags'] = [tag.to_dict() for tag in self.tags]
         return d
 
@@ -135,11 +132,13 @@ class RevisionTag(BASE, DeckhandBase):
         nullable=False)
 
 
-class DocumentMixin(object):
-    """Mixin class for sharing common columns across all document resources
-    such as documents themselves, layering policies and validation policies.
-    """
+class Document(BASE, DeckhandBase):
+    UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
+    __tablename__ = 'documents'
+    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
 
+    id = Column(String(36), primary_key=True,
+                default=lambda: str(uuid.uuid4()))
     name = Column(String(64), nullable=False)
     schema = Column(String(64), nullable=False)
     # NOTE: Do not define a maximum length for these JSON data below. However,
@@ -148,45 +147,23 @@ class DocumentMixin(object):
     _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
     data = Column(oslo_types.JsonEncodedDict(), nullable=False)
 
-    @declarative.declared_attr
-    def bucket_id(cls):
-        return Column(Integer, ForeignKey('buckets.name', ondelete='CASCADE'),
-                      nullable=False)
+    bucket_id = Column(Integer, ForeignKey('buckets.name', ondelete='CASCADE'),
+                       nullable=False)
 
-    @declarative.declared_attr
-    def revision_id(cls):
-        return Column(Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
-                      nullable=False)
-
-
-class Document(BASE, DeckhandBase, DocumentMixin):
-    UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
-    __tablename__ = 'documents'
-    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
-
-    id = Column(String(36), primary_key=True,
-                default=lambda: str(uuid.uuid4()))
-
-
-class ValidationPolicy(BASE, DeckhandBase, DocumentMixin):
-
-    UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
-    __tablename__ = 'validation_policies'
-    __table_args__ = (DeckhandBase.gen_unqiue_contraint(*UNIQUE_CONSTRAINTS),)
-
-    id = Column(String(36), primary_key=True,
-                default=lambda: str(uuid.uuid4()))
+    revision_id = Column(
+        Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
+                            nullable=False)
 
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""
-    models = [Bucket, Document, Revision, ValidationPolicy]
+    models = [Bucket, Document, Revision]
     for model in models:
         model.metadata.create_all(engine)
 
 
 def unregister_models(engine):
     """Drop database tables for all models with the given engine."""
-    models = [Bucket, Document, Revision, ValidationPolicy]
+    models = [Bucket, Document, Revision]
     for model in models:
         model.metadata.drop_all(engine)

@@ -101,13 +101,12 @@ tests:
   - name: update_single_document
     desc: Update a single document, ignore other documents in the bucket
     PUT: /api/v1.0/bucket/mop/documents
-    status: 201
+    status: 200
     data: <@resources/design-doc-layering-sample-with-update.yaml
-    skip: Not implemented.
 
   - name: verify_update
     desc: Verify updated document count and revisions
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].revision']/documents
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
       $.[*].metadata.name:
@@ -116,21 +115,20 @@ tests:
         - region-1234
         - site-1234
       $.[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
-        - "$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
       $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
       $.[3].data.b: 5
-    skip: Not implemented.
 
   - name: verify_initial_documents_preserved_after_update
     desc: Verify initial documents count and revisions preserved after update
-    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].revision']/documents
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
       $.[*].metadata.name:
@@ -139,17 +137,16 @@ tests:
         - region-1234
         - site-1234
       $.[*].status.revision:
-        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
-        - "$HISTORY['initialize'].$RESPONSE['$.[0].revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
       $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
       $.[3].data.b: 4
-    skip: Not implemented.
 
   - name: delete_document
     desc: Delete a single document

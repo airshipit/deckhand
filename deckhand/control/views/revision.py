@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from deckhand.control import common
+from deckhand import types
 
 
 class ViewBuilder(common.ViewBuilder):
@@ -43,7 +44,8 @@ class ViewBuilder(common.ViewBuilder):
         validation_policies = []
         success_status = 'success'
 
-        for vp in revision['validation_policies']:
+        for vp in [d for d in revision['documents']
+                   if d['schema'] == types.VALIDATION_POLICY_SCHEMA]:
             validation_policy = {}
             validation_policy['name'] = vp.get('name')
             validation_policy['url'] = self._gen_url(vp)

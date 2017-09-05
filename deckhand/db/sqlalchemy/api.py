@@ -88,19 +88,15 @@ def drop_db():
     models.unregister_models(get_engine())
 
 
-def documents_create(bucket_name, documents, validation_policies,
-                     session=None):
+def documents_create(bucket_name, documents, session=None):
     session = session or get_session()
-
     documents_created = _documents_create(documents, session)
-    val_policies_created = _documents_create(validation_policies, session)
-    all_docs_created = documents_created + val_policies_created
 
-    if all_docs_created:
+    if documents_created:
         bucket = bucket_get_or_create(bucket_name)
         revision = revision_create()
 
-        for doc in all_docs_created:
+        for doc in documents_created:
             with session.begin():
                 doc['bucket_id'] = bucket['name']
                 doc['revision_id'] = revision['id']
@@ -120,10 +116,11 @@ def _documents_create(values_list, session=None):
     """
     values_list = copy.deepcopy(values_list)
     session = session or get_session()
-    filters = models.Document.UNIQUE_CONSTRAINTS
+    filters = [c for c in models.Document.UNIQUE_CONSTRAINTS
+               if c != 'revision_id']
 
-    do_create = False
-    documents_created = []
+    documents_to_change = []
+    changed_documents = []
 
     def _document_changed(existing_document):
         # The document has changed if at least one value in ``values`` differs.
@@ -132,14 +129,8 @@ def _documents_create(values_list, session=None):
                 return True
         return False
 
-    def _get_model(schema):
-        if schema == types.VALIDATION_POLICY_SCHEMA:
-            return models.ValidationPolicy()
-        else:
-            return models.Document()
-
     def _document_create(values):
-        document = _get_model(values['schema'])
+        document = models.Document()
         with session.begin():
             document.update(values)
         return document
@@ -150,24 +141,23 @@ def _documents_create(values_list, session=None):
 
         try:
             existing_document = document_get(
-                raw_dict=True,
-                **{c: values[c] for c in filters if c != 'revision_id'})
+                raw_dict=True, **{c: values[c] for c in filters})
         except errors.DocumentNotFound:
             # Ignore bad data at this point. Allow creation to bubble up the
             # error related to bad data.
             existing_document = None
 
         if not existing_document:
-            do_create = True
+            documents_to_change.append(values)
         elif existing_document and _document_changed(existing_document):
-            do_create = True
+            documents_to_change.append(values)
 
-    if do_create:
-        for values in values_list:
+    if documents_to_change:
+        for values in documents_to_change:
             doc = _document_create(values)
-            documents_created.append(doc)
+            changed_documents.append(doc)
 
-    return documents_created
+    return changed_documents
 
 
 def document_get(session=None, raw_dict=False, **filters):
@@ -272,16 +262,20 @@ def revision_get_documents(revision_id, session=None, **filters):
     try:
         revision = session.query(models.Revision)\
             .filter_by(id=revision_id)\
-            .one()\
-            .to_dict()
+            .one()
+        older_revisions = session.query(models.Revision)\
+            .filter(models.Revision.created_at < revision.created_at)\
+            .order_by(models.Revision.created_at)\
+            .all()
     except sa_orm.exc.NoResultFound:
         raise errors.RevisionNotFound(revision=revision_id)
 
-    if 'deleted' not in filters:
-        filters.update({'deleted': False})
+    document_history = []
+    for rev in ([revision] + older_revisions):
+        document_history.extend(rev.to_dict()['documents'])
 
     filtered_documents = _filter_revision_documents(
-        revision['documents'], **filters)
+        document_history, **filters)
 
     return filtered_documents
 
@@ -292,9 +286,15 @@ def _filter_revision_documents(documents, **filters):
     :returns: List of documents that match specified filters.
     """
     # TODO(fmontei): Implement this as an sqlalchemy query.
-    filtered_documents = []
+    filtered_documents = {}
+    unique_filters = [c for c in models.Document.UNIQUE_CONSTRAINTS
+                      if c != 'revision_id']
 
     for document in documents:
+        # NOTE(fmontei): Only want to include non-validation policy documents
+        # for this endpoint.
+        if document['schema'] in types.VALIDATION_POLICY_SCHEMA:
+            continue
         match = True
 
         for filter_key, filter_val in filters.items():
@@ -313,9 +313,13 @@ def _filter_revision_documents(documents, **filters):
                 match = False
 
         if match:
-            filtered_documents.append(document)
+            # Filter out redundant documents from previous revisions, i.e.
+            # documents schema and metadata.name are repeated.
+            unique_key = tuple([document[filter] for filter in unique_filters])
+            if unique_key not in filtered_documents:
+                filtered_documents[unique_key] = document
 
-    return filtered_documents
+    return sorted(filtered_documents.values(), key=lambda d: d['created_at'])
 
 
 ####################
