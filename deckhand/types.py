@@ -13,10 +13,16 @@
 # limitations under the License.
 
 DOCUMENT_SCHEMA_TYPES = (
+    CERTIFICATE_SCHEMA,
+    CERTIFICATE_KEY_SCHEMA,
     LAYERING_POLICY_SCHEMA,
+    PASSPHRASE_SCHEMA,
     VALIDATION_POLICY_SCHEMA,
 ) = (
+    'deckhand/Certificate/v1',
+    'deckhand/CertificateKey/v1',
     'deckhand/LayeringPolicy/v1',
+    'deckhand/Passphrase/v1',
     'deckhand/ValidationPolicy/v1',
 )
 

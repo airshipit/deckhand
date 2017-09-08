@@ -3,5 +3,6 @@ schema: deckhand/Passphrase/v1
 metadata:
   schema: metadata/Document/v1
   name: my-passphrase
+  storagePolicy: cleartext
 data: not-a-real-password
 ...

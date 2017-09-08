@@ -54,13 +54,11 @@ class BucketsResource(api_base.BaseResource):
 
         try:
             documents.extend(validation_policies)
-            created_documents = db_api.documents_create(
-                bucket_name, documents)
+            created_documents = db_api.documents_create(bucket_name, documents)
         except db_exc.DBDuplicateEntry as e:
             raise falcon.HTTPConflict(description=e.format_message())
         except Exception as e:
-            raise falcon.HTTPInternalServerError(
-                description=e.format_message())
+            raise falcon.HTTPInternalServerError(description=e)
 
         if created_documents:
             resp.body = self.to_yaml_body(

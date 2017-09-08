@@ -29,7 +29,7 @@ schema = {
                 'name': {'type': 'string'},
                 'storagePolicy': {
                     'type': 'string',
-                    'pattern': '^(encrypted)$'
+                    'enum': ['encrypted', 'cleartext']
                 }
             },
             'additionalProperties': False,

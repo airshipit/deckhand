@@ -24,78 +24,72 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    skip: Not implemented.
 
   - name: create_a
     desc: Create documents in one bucket (a)
     PUT: /api/v1.0/bucket/a/documents
-    status: 201
+    status: 200
     data: <@resources/layering-needs-substitution-source.yaml
-    skip: Not implemented.
 
   - name: verify_first_bucket
     desc: Verify document count and revisions
-    GET: /api/v1.0/revisions/$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - abstract-1234
         - concrete-1234
-      $.documents[*].status.revision:
-        - "$RESPONSE['$.documents[0].revision']"
-        - "$RESPONSE['$.documents[0].revision']"
-        - "$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
         - a
         - a
         - a
-    skip: Not implemented.
 
   - name: create_b
     desc: Create documents in a second bucket (b)
     PUT: /api/v1.0/bucket/b/documents
-    status: 201
+    status: 200
     data: <@resources/passphrase.yaml
-    skip: Not implemented.
 
   - name: verify_second_bucket
     desc: Verify document count and revisions
-    GET: /api/v1.0/revisions/$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - abstract-1234
         - concrete-1234
         - my-passphrase
-      $.documents[*].status.revision:
-        - "$HISTORY['create_a'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['create_a'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['create_a'].$RESPONSE['$.documents[0].revision']"
-        - "$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']"
+        - "$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
         - a
         - a
         - a
         - b
-    skip: Not implemented.
 
   - name: verify_first_revision_unchanged
     desc: Verify initial revision is unchanged
-    GET: /api/v1.0/revisions/$HISTORY['create_a'].$RESPONSE['$.documents[0].revision']/documents
+    GET: /api/v1.0/revisions/$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
-      $.documents[*].metadata.name:
+      $.[*].metadata.name:
         - layering-policy
         - abstract-1234
         - concrete-1234
-      $.documents[*].status.revision:
-        - "$HISTORY['create_a'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['create_a'].$RESPONSE['$.documents[0].revision']"
-        - "$HISTORY['create_a'].$RESPONSE['$.documents[0].revision']"
-      $.documents[*].status.bucket:
+      $.[*].status.revision:
+        - "$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']"
+      $.[*].status.bucket:
         - a
         - a
         - a
-    skip: Not implemented.

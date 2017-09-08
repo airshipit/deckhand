@@ -139,6 +139,14 @@ def _documents_create(values_list, session=None):
         values['_metadata'] = values.pop('metadata')
         values['name'] = values['_metadata']['name']
 
+        # NOTE(fmontei): Database requires that the 'data' column be a dict, so
+        # coerce the secret into a dictionary if it already isn't one.
+        if values['schema'] in (types.CERTIFICATE_SCHEMA,
+                                types.CERTIFICATE_KEY_SCHEMA,
+                                types.PASSPHRASE_SCHEMA):
+            if not isinstance(values['data'], dict):
+                values['data'] = {'secret': values['data']}
+
         try:
             existing_document = document_get(
                 raw_dict=True, **{c: values[c] for c in filters})

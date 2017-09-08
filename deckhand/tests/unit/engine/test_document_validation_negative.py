@@ -94,19 +94,6 @@ class TestDocumentValidationNegative(
         properties_to_remove = self.BASIC_ATTRS + ('metadata.storagePolicy',)
         self._test_missing_required_sections(properties_to_remove)
 
-    def test_passphrase_with_incorrect_storage_policy(self):
-        self._read_data('sample_passphrase')
-        expected_err = (
-            "The provided deckhand/Passphrase/v1.0 YAML failed schema "
-            "validation. Details: 'cleartext' does not match '^(encrypted)$'")
-        wrong_data = self._corrupt_data('metadata.storagePolicy', 'cleartext',
-                                        op='replace')
-
-        doc_validation = document_validation.DocumentValidation(wrong_data)
-        e = self.assertRaises(errors.InvalidDocumentFormat,
-                              doc_validation.validate_all)
-        self.assertIn(expected_err, str(e))
-
     def test_validation_policy_missing_required_sections(self):
         self._read_data('sample_validation_policy')
         properties_to_remove = self.BASIC_ATTRS + (
