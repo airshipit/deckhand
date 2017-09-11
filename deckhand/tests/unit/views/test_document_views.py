@@ -18,10 +18,10 @@ from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
 
-class TestRevisionViews(base.TestDbBase):
+class TestDocumentViews(base.TestDbBase):
 
     def setUp(self):
-        super(TestRevisionViews, self).setUp()
+        super(TestDocumentViews, self).setUp()
         self.view_builder = document.ViewBuilder()
         self.factory = factories.ValidationPolicyFactory()
 
@@ -52,3 +52,15 @@ class TestRevisionViews(base.TestDbBase):
 
     def test_create_many_documents(self):
         self._test_document_creation_view(4)
+
+    def test_delete_all_documents(self):
+        payload = base.DocumentFixture.get_minimal_fixture()
+        bucket_name = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name, payload)
+        deleted_documents = self.create_documents(
+            bucket_name, [], do_validation=False)
+
+        document_view = self.view_builder.list(deleted_documents)
+        self.assertEqual(1, len(document_view))
+        self.assertEqual({'status': {'bucket': bucket_name, 'revision': 2}},
+                         document_view[0])

@@ -45,4 +45,20 @@ class TestDocumentsNegative(base.TestDbBase):
         self.assertRaises(errors.DocumentNotFound,
                           self.show_document,
                           do_validation=False,
-                          document_id=test_utils.rand_uuid_hex())
+                          id=test_utils.rand_uuid_hex())
+
+    def test_create_bucket_conflict(self):
+        # Create the document in one bucket.
+        payload = base.DocumentFixture.get_minimal_fixture()
+        bucket_name = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name, payload)
+
+        # Verify that the document cannot be created in another bucket.
+        alt_bucket_name = test_utils.rand_name('bucket')
+        error_re = ("Document with schema %s and metadata.name "
+                    "%s already exists in bucket %s." % (
+                        payload['schema'], payload['metadata']['name'],
+                        bucket_name))
+        self.assertRaisesRegex(
+            errors.DocumentExists, error_re, self.create_documents,
+            alt_bucket_name, payload)

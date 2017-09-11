@@ -13,12 +13,15 @@
 # limitations under the License.
 
 import falcon
+from oslo_log import log as logging
 
 from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
+
+LOG = logging.getLogger(__name__)
 
 
 class RevisionDocumentsResource(api_base.BaseResource):
