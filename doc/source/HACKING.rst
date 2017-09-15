@@ -1,0 +1,4 @@
+=======
+Hacking
+=======
+.. include:: ../../HACKING.rst
