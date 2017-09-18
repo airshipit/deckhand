@@ -69,7 +69,7 @@ class TestDbBase(base.DeckhandWithDBTestCase):
         if do_validation:
             for idx, doc in enumerate(docs):
                 self.validate_document(expected=documents[idx], actual=doc)
-                self.assertEqual(bucket_name, doc['bucket_id'])
+                self.assertEqual(bucket_name, doc['bucket_name'])
 
         return docs
 

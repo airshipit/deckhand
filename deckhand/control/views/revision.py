@@ -37,7 +37,7 @@ class ViewBuilder(common.ViewBuilder):
 
             body['tags'].update([t['tag'] for t in revision['tags']])
             body['buckets'].update(
-                [d['bucket_id'] for d in rev_documents])
+                [d['bucket_name'] for d in rev_documents])
 
             body['tags'] = sorted(body['tags'])
             body['buckets'] = sorted(body['buckets'])
@@ -77,7 +77,8 @@ class ViewBuilder(common.ViewBuilder):
         for tag in revision['tags']:
             tags.setdefault(tag['tag'], {'name': tag['tag']})
 
-        buckets = sorted(set([d['bucket_id'] for d in revision['documents']]))
+        buckets = sorted(
+            set([d['bucket_name'] for d in revision['documents']]))
 
         return {
             'id': revision.get('id'),

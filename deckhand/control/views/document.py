@@ -34,7 +34,7 @@ class ViewBuilder(common.ViewBuilder):
         # need to return bucket_id and revision_id.
         if len(documents) == 1 and documents[0]['deleted']:
             resp_obj = {'status': {}}
-            resp_obj['status']['bucket'] = documents[0]['bucket_id']
+            resp_obj['status']['bucket'] = documents[0]['bucket_name']
             resp_obj['status']['revision'] = documents[0]['revision_id']
             return [resp_obj]
 
@@ -47,7 +47,7 @@ class ViewBuilder(common.ViewBuilder):
 
             resp_obj = {x: document[x] for x in attrs}
             resp_obj.setdefault('status', {})
-            resp_obj['status']['bucket'] = document['bucket_id']
+            resp_obj['status']['bucket'] = document['bucket_name']
             resp_obj['status']['revision'] = document['revision_id']
             resp_list.append(resp_obj)
 

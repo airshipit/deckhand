@@ -114,7 +114,7 @@ def documents_create(bucket_name, documents, session=None):
     # `documents`: the difference between the former and the latter.
     document_history = [(d['schema'], d['name'])
                         for d in revision_get_documents(
-                            bucket_id=bucket_name)]
+                            bucket_name=bucket_name)]
     documents_to_delete = [
         h for h in document_history if h not in
         [(d['schema'], d['metadata']['name']) for d in documents]]
@@ -136,7 +136,7 @@ def documents_create(bucket_name, documents, session=None):
                 doc['name'] = d[1]
                 doc['data'] = {}
                 doc['_metadata'] = {}
-                doc['bucket_id'] = bucket['name']
+                doc['bucket_id'] = bucket['id']
                 doc['revision_id'] = revision['id']
 
                 # Save and mark the document as `deleted` in the database.
@@ -151,9 +151,10 @@ def documents_create(bucket_name, documents, session=None):
                   [(d['schema'], d['name']) for d in documents_to_create])
         for doc in documents_to_create:
             with session.begin():
-                doc['bucket_id'] = bucket['name']
+                doc['bucket_id'] = bucket['id']
                 doc['revision_id'] = revision['id']
                 doc.save(session=session)
+
         # NOTE(fmontei): The orig_revision_id is not copied into the
         # revision_id for each created document, because the revision_id here
         # should reference the just-created revision. In case the user needs
@@ -200,12 +201,12 @@ def _documents_create(bucket_name, values_list, session=None):
             # If the document already exists in another bucket, raise an error.
             # Ignore redundant validation policies as they are allowed to exist
             # in multiple buckets.
-            if (existing_document['bucket_id'] != bucket_name and
+            if (existing_document['bucket_name'] != bucket_name and
                 existing_document['schema'] != types.VALIDATION_POLICY_SCHEMA):
                 raise errors.DocumentExists(
                     schema=existing_document['schema'],
                     name=existing_document['name'],
-                    bucket=existing_document['bucket_id'])
+                    bucket=existing_document['bucket_name'])
 
             if not _document_changed(existing_document):
                 # Since the document has not changed, reference the original
