@@ -36,10 +36,11 @@ class TestApi(test_base.DeckhandTestCase):
             setattr(self, '%s_resource' % resource_name, resource_obj)
 
     @mock.patch.object(api, 'db_api', autospec=True)
-    @mock.patch.object(api, 'config', autospec=True)
+    @mock.patch.object(api, 'logging', autospec=True)
+    @mock.patch.object(api, 'CONF', autospec=True)
     @mock.patch.object(api, 'falcon', autospec=True)
-    def test_start_api(self, mock_falcon,
-                       mock_config, mock_db_api):
+    def test_start_api(self, mock_falcon, mock_config, mock_logging,
+                       mock_db_api):
         mock_falcon_api = mock_falcon.API.return_value
 
         result = api.start_api()
@@ -60,5 +61,6 @@ class TestApi(test_base.DeckhandTestCase):
             mock.call('/api/v1.0/revisions/{revision_id}/tags/{tag}',
                       self.revision_tags_resource())
         ])
-        mock_config.parse_args.assert_called_once_with()
+
+        mock_db_api.drop_db.assert_called_once_with()
         mock_db_api.setup_db.assert_called_once_with()

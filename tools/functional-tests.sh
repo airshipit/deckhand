@@ -40,25 +40,30 @@ POSTGRES_PORT=$(
             $POSTGRES_ID
 )
 
+log_section Creating config file
+CONF_DIR=$(mktemp -d)
 
 export DECKHAND_TEST_URL=http://localhost:9000
 export DATABASE_URL=postgres://deckhand:password@$POSTGRES_IP:$POSTGRES_PORT/deckhand
+# Used by Deckhand's initialization script to search for config files.
+export OS_DECKHAND_CONFIG_DIR=$CONF_DIR
 
-log_section Creating config file
-CONF_DIR=$(mktemp -d)
+cp etc/deckhand/logging.conf.sample $CONF_DIR/logging.conf
 
 cat <<EOCONF > $CONF_DIR/deckhand.conf
 [DEFAULT]
 debug = true
+log_config_append = $CONF_DIR/logging.conf
+log_file = deckhand.log
+log_dir = .
 use_stderr = true
-[barbican]
 
+[barbican]
 
 [database]
 # XXX For now, connection to postgres is not setup.
 #connection = $DATABASE_URL
 connection = sqlite://
-
 
 [keystone_authtoken]
 EOCONF

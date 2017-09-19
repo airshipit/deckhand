@@ -18,7 +18,6 @@ import falcon
 from oslo_config import cfg
 from oslo_log import log as logging
 
-from deckhand.conf import config
 from deckhand.control import base
 from deckhand.control import buckets
 from deckhand.control import middleware
@@ -28,35 +27,17 @@ from deckhand.control import revisions
 from deckhand.db.sqlalchemy import api as db_api
 
 CONF = cfg.CONF
-LOG = None
+logging.register_options(CONF)
+
+# TODO(fmontei): Include deckhand-paste.ini later.
+CONFIG_FILES = ['deckhand.conf']
 
 
-def __setup_logging():
-    global LOG
-
-    logging.register_options(CONF)
-    config.parse_args()
-
-    current_path = os.path.dirname(os.path.realpath(__file__))
-    root_path = os.path.abspath(os.path.join(current_path, os.pardir,
-                                             os.pardir))
-    logging_cfg_path = "%s/etc/deckhand/logging.conf" % root_path
-
-    # If logging conf is in place we need to set log_config_append. Only do so
-    # if the log path already exists.
-    if ((not hasattr(CONF, 'log_config_append') or
-        CONF.log_config_append is None) and
-        os.path.isfile(logging_cfg_path)):
-        CONF.log_config_append = logging_cfg_path
-
-    logging.setup(CONF, 'deckhand')
-    LOG = logging.getLogger(__name__, 'deckhand')
-    LOG.debug('Initiated Deckhand logging.')
-
-
-def __setup_db():
-    db_api.drop_db()
-    db_api.setup_db()
+def _get_config_files(env=None):
+    if env is None:
+        env = os.environ
+    dirname = env.get('OS_DECKHAND_CONFIG_DIR', '/etc/deckhand').strip()
+    return [os.path.join(dirname, config_file) for config_file in CONFIG_FILES]
 
 
 def _get_routing_map():
@@ -86,8 +67,15 @@ def start_api(state_manager=None):
 
     Create routes for the v1.0 API and sets up logging.
     """
-    __setup_logging()
-    __setup_db()
+    config_files = _get_config_files()
+    CONF([], project='deckhand', default_config_files=config_files)
+    logging.setup(CONF, "deckhand")
+
+    LOG = logging.getLogger(__name__)
+    LOG.info('Initiated Deckhand logging.')
+
+    db_api.drop_db()
+    db_api.setup_db()
 
     control_api = falcon.API(
         request_type=base.DeckhandRequest,
