@@ -16,18 +16,19 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    skip: Not implemented.
 
   - name: create
     desc: Create initial documents
     PUT: /api/v1.0/bucket/a/documents
-    status: 201
-    data: <@resources/sample-document.yaml
-    skip: Not implemented.
+    status: 200
+    data: <@resources/sample-doc.yaml
 
   - name: error
     desc: Trigger error case
     PUT: /api/v1.0/bucket/b/documents
     status: 409
-    data: <@resources/sample-document.yaml
-    skip: Not implemented.
+    data: <@resources/sample-doc.yaml
+    # Deckhand exceptions return the following content-type header by
+    # default. TODO(fmontei): Override that later.
+    response_headers:
+      content-type: 'application/json; charset=UTF-8'

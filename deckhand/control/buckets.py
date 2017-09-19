@@ -15,8 +15,6 @@
 import yaml
 
 import falcon
-
-from oslo_db import exception as db_exc
 from oslo_log import log as logging
 
 from deckhand.control import base as api_base
@@ -51,7 +49,7 @@ class BucketsResource(api_base.BaseResource):
         try:
             validation_policies = document_validation.DocumentValidation(
                 documents).validate_all()
-        except (deckhand_errors.InvalidDocumentFormat) as e:
+        except deckhand_errors.InvalidDocumentFormat as e:
             raise falcon.HTTPBadRequest(description=e.format_message())
 
         for document in documents:
@@ -63,7 +61,7 @@ class BucketsResource(api_base.BaseResource):
         try:
             documents.extend(validation_policies)
             created_documents = db_api.documents_create(bucket_name, documents)
-        except db_exc.DBDuplicateEntry as e:
+        except deckhand_errors.DocumentExists as e:
             raise falcon.HTTPConflict(description=e.format_message())
         except Exception as e:
             raise falcon.HTTPInternalServerError(description=e)

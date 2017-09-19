@@ -16,23 +16,39 @@ from deckhand.control import common
 
 
 class ViewBuilder(common.ViewBuilder):
-    """Model document API responses as a python dictionary."""
+    """Model document API responses as a python dictionary.
+
+    There are 2 cases for rendering the response body below.
+
+    1. Treat the case where all documents in a bucket have been deleted as a
+    special case. The response body must still include the revision_id and
+    bucket_id. It is not meaningful to include other data about the deleted
+    documents as technically they don't exist.
+    2. Add all non-deleted documents to the response body.
+    """
 
     _collection_name = 'documents'
 
     def list(self, documents):
+        # Edge case for when all documents are deleted from a bucket. Still
+        # need to return bucket_id and revision_id.
+        if len(documents) == 1 and documents[0]['deleted']:
+            resp_obj = {'status': {}}
+            resp_obj['status']['bucket'] = documents[0]['bucket_id']
+            resp_obj['status']['revision'] = documents[0]['revision_id']
+            return [resp_obj]
+
         resp_list = []
+        attrs = ['id', 'metadata', 'data', 'schema']
 
         for document in documents:
-            attrs = ['id', 'metadata', 'data', 'schema']
             if document['deleted']:
-                attrs.append('deleted')
+                continue
 
             resp_obj = {x: document[x] for x in attrs}
             resp_obj.setdefault('status', {})
             resp_obj['status']['bucket'] = document['bucket_id']
             resp_obj['status']['revision'] = document['revision_id']
-
             resp_list.append(resp_obj)
 
         return resp_list
