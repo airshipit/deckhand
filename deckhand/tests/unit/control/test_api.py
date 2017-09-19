@@ -21,6 +21,8 @@ from deckhand.control import revision_diffing
 from deckhand.control import revision_documents
 from deckhand.control import revision_tags
 from deckhand.control import revisions
+from deckhand.control import rollback
+from deckhand.control import versions
 from deckhand.tests.unit import base as test_base
 
 
@@ -29,7 +31,7 @@ class TestApi(test_base.DeckhandTestCase):
     def setUp(self):
         super(TestApi, self).setUp()
         for resource in (buckets, revision_diffing, revision_documents,
-                         revision_tags, revisions):
+                         revision_tags, revisions, rollback, versions):
             resource_name = resource.__name__.split('.')[-1]
             resource_obj = mock.patch.object(
                 resource, '%sResource' % resource_name.title().replace(
@@ -63,7 +65,10 @@ class TestApi(test_base.DeckhandTestCase):
             mock.call('/api/v1.0/revisions/{revision_id}/tags',
                       self.revision_tags_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/tags/{tag}',
-                      self.revision_tags_resource())
+                      self.revision_tags_resource()),
+            mock.call('/api/v1.0/rollback/{revision_id}',
+                      self.rollback_resource()),
+            mock.call('/versions', self.versions_resource())
         ])
 
         mock_db_api.drop_db.assert_called_once_with()

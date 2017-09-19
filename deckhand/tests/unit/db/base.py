@@ -101,6 +101,9 @@ class TestDbBase(base.DeckhandWithDBTestCase):
     def list_revisions(self):
         return db_api.revision_get_all()
 
+    def rollback_revision(self, revision_id):
+        return db_api.revision_rollback(revision_id)
+
     def _validate_object(self, obj):
         for attr in BASE_EXPECTED_FIELDS:
             if attr.endswith('_at'):

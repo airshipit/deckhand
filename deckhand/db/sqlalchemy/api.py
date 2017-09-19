@@ -144,8 +144,7 @@ def documents_create(bucket_name, documents, session=None):
                 doc.save(session=session)
                 doc.safe_delete(session=session)
                 deleted_documents.append(doc)
-
-        resp.extend([d.to_dict() for d in deleted_documents])
+            resp.append(doc.to_dict())
 
     if documents_to_create:
         LOG.debug('Creating documents: %s.',
@@ -155,12 +154,11 @@ def documents_create(bucket_name, documents, session=None):
                 doc['bucket_id'] = bucket['id']
                 doc['revision_id'] = revision['id']
                 doc.save(session=session)
-
-        # NOTE(fmontei): The orig_revision_id is not copied into the
-        # revision_id for each created document, because the revision_id here
-        # should reference the just-created revision. In case the user needs
-        # the original revision_id, that is returned as well.
-        resp.extend([d.to_dict() for d in documents_to_create])
+            resp.append(doc.to_dict())
+    # NOTE(fmontei): The orig_revision_id is not copied into the
+    # revision_id for each created document, because the revision_id here
+    # should reference the just-created revision. In case the user needs
+    # the original revision_id, that is returned as well.
 
     return resp
 
@@ -180,6 +178,13 @@ def _documents_create(bucket_name, values_list, session=None):
     for values in values_list:
         values['_metadata'] = values.pop('metadata')
         values['name'] = values['_metadata']['name']
+
+        # Hash the combination of the document's metadata and data to later
+        # efficiently check whether those data have changed.
+        dict_to_hash = values['_metadata'].copy()
+        dict_to_hash.update(values['data'])
+        values['hash'] = utils.make_hash(dict_to_hash)
+
         values['is_secret'] = 'secret' in values['data']
         # Hash the combination of the document's metadata and data to later
         # efficiently check whether those data have changed.
@@ -302,6 +307,7 @@ def revision_create(session=None):
 def revision_get(revision_id, session=None):
     """Return the specified `revision_id`.
 
+    :param revision_id: The ID corresponding to the ``Revision`` object.
     :param session: Database session object.
     :returns: Dictionary representation of retrieved revision.
     :raises: RevisionNotFound if the revision was not found.
@@ -333,6 +339,17 @@ def require_revision_exists(f):
             revision_get(revision_id)
         return f(revision_id, *args, **kwargs)
     return wrapper
+
+
+def _update_revision_history(documents):
+    # Since documents that are unchanged across revisions need to be saved for
+    # each revision, we need to ensure that the original revision is shown
+    # for the document's `revision_id` to maintain the correct revision
+    # history.
+    for doc in documents:
+        if doc['orig_revision_id']:
+            doc['revision_id'] = doc['orig_revision_id']
+    return documents
 
 
 def revision_get_all(session=None):
@@ -417,17 +434,6 @@ def revision_get_documents(revision_id=None, include_history=True,
         revision_documents, unique_only, **filters)
 
     return filtered_documents
-
-
-def _update_revision_history(documents):
-    # Since documents that are unchanged across revisions need to be saved for
-    # each revision, we need to ensure that the original revision is shown
-    # for the document's `revision_id` to maintain the correct revision
-    # history.
-    for doc in documents:
-        if doc['orig_revision_id']:
-            doc['revision_id'] = doc['orig_revision_id']
-    return documents
 
 
 def _filter_revision_documents(documents, unique_only, **filters):
@@ -725,3 +731,81 @@ def revision_tag_delete_all(revision_id, session=None):
     session.query(models.RevisionTag)\
         .filter_by(revision_id=revision_id)\
         .delete(synchronize_session=False)
+
+
+####################
+
+
+@require_revision_exists
+def revision_rollback(revision_id, session=None):
+    """Rollback the latest revision to revision specified by ``revision_id``.
+
+    Rolls back the latest revision to the revision specified by ``revision_id``
+    thereby creating a new, carbon-copy revision.
+
+    :param revision_id: Revision ID to which to rollback.
+    :returns: The newly created revision.
+    """
+    session = session or get_session()
+
+    # We know that the last revision exists, since require_revision_exists
+    # ensures revision_id exists, which at the very least is the last revision.
+    latest_revision = session.query(models.Revision)\
+        .order_by(models.Revision.created_at.desc())\
+        .first()
+    latest_revision_hashes = [d['hash'] for d in latest_revision['documents']]
+
+    # If the rollback revision is the same as the latest revision, then there's
+    # no point in rolling back.
+    if latest_revision['id'] == revision_id:
+        raise errors.InvalidRollback(revision_id=revision_id)
+
+    orig_revision = revision_get(revision_id, session=session)
+
+    # A mechanism for determining whether a particular document has changed
+    # between revisions. Keyed with the document_id, the value is True if
+    # it has changed, else False.
+    doc_diff = {}
+    for orig_doc in orig_revision['documents']:
+        if orig_doc['hash'] not in latest_revision_hashes:
+            doc_diff[orig_doc['id']] = True
+        else:
+            doc_diff[orig_doc['id']] = False
+
+    # If no changges have been made between the target revision to rollback to
+    # and the latest revision, raise an exception.
+    if set(doc_diff.values()) == set([False]):
+        raise errors.InvalidRollback(revision_id=revision_id)
+
+    # Create the new revision,
+    new_revision = models.Revision()
+    with session.begin():
+        new_revision.save(session=session)
+
+    # Create the documents for the revision.
+    for orig_document in orig_revision['documents']:
+        orig_document['revision_id'] = new_revision['id']
+        orig_document['_metadata'] = orig_document.pop('metadata')
+
+        new_document = models.Document()
+        new_document.update({x: orig_document[x] for x in (
+            'name', '_metadata', 'data', 'hash', 'schema', 'bucket_id')})
+
+        new_document['revision_id'] = new_revision['id']
+
+        # If the document has changed, then use the revision_id of the new
+        # revision, otherwise use the original revision_id to preserve the
+        # revision history.
+        if doc_diff[orig_document['id']]:
+            new_document['orig_revision_id'] = new_revision['id']
+        else:
+            new_document['orig_revision_id'] = orig_revision['id']
+
+        with session.begin():
+            new_document.save(session=session)
+
+    new_revision = new_revision.to_dict()
+    new_revision['documents'] = _update_revision_history(
+        new_revision['documents'])
+
+    return new_revision

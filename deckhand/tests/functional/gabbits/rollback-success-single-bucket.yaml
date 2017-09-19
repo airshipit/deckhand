@@ -23,34 +23,29 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    skip: Not implemented.
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/bucket/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample.yaml
-    skip: Not implemented.
 
   - name: update_single_document
     desc: Update a single document, ignore other documents in the bucket
     PUT: /api/v1.0/bucket/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample-with-update.yaml
-    skip: Not implemented.
 
   - name: delete_document
     desc: Delete a single document
     PUT: /api/v1.0/bucket/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample-with-delete.yaml
-    skip: Not implemented.
 
   - name: rollback
     desc: Rollback to revision 1
-    POST: /api/v1.0/rollback/$HISTORY.$RESPONSE['$.documents[0].status.revision']
+    POST: /api/v1.0/rollback/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 201
-    skip: Not implemented.
 
   # Verify document history
   - name: verify_revision_1
@@ -59,22 +54,21 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.[*].metadata.name:
-        - global-1234
         - layering-policy
+        - global-1234
         - region-1234
         - site-1234
       $.[*].status.revision:
-        - "$RESPONSE['$.[0].status.revision']"
-        - "$RESPONSE['$.[0].status.revision']"
-        - "$RESPONSE['$.[0].status.revision']"
-        - "$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
       $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
       $.[3].data.b: 4
-    skip: Not implemented.
 
   - name: verify_revision_2
     desc: Verify updated document count and revisions
@@ -82,22 +76,21 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.[*].metadata.name:
-        - global-1234
         - layering-policy
+        - global-1234
         - region-1234
         - site-1234
       $.[*].status.revision:
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
-        - "$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['update_single_document'].$RESPONSE['$.[0].status.revision']"
       $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
       $.[3].data.b: 5
-    skip: Not implemented.
 
   - name: verify_revision_3
     desc: Verify document deletion
@@ -105,8 +98,8 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.[*].metadata.name:
-        - global-1234
         - layering-policy
+        - global-1234
         - site-1234
       $.[*].status.revision:
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
@@ -117,27 +110,25 @@ tests:
         - mop
         - mop
       $.[2].data.b: 5
-    skip: Not implemented.
 
   - name: verify_revision_4
     desc: Verify rollback revision
-    GET: /api/v1.0/revisions/$HISTORY['rollback'].$RESPONSE['$.[0].status.revision']/documents
+    GET: /api/v1.0/revisions/$HISTORY['rollback'].$RESPONSE['$.[0].id']/documents
     status: 200
     response_multidoc_jsonpaths:
       $.[*].metadata.name:
-        - global-1234
         - layering-policy
+        - global-1234
         - region-1234
         - site-1234
       $.[*].status.revision:
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
-        - "$HISTORY['rollback'].$RESPONSE['$.[0].status.revision']"
-        - "$HISTORY['rollback'].$RESPONSE['$.[0].status.revision']"
+        - "$HISTORY['rollback'].$RESPONSE['$.[0].id']"
+        - "$HISTORY['rollback'].$RESPONSE['$.[0].id']"
       $.[*].status.bucket:
         - mop
         - mop
         - mop
         - mop
       $.[3].data.b: 4
-    skip: Not implemented.
