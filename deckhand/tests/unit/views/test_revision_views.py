@@ -49,7 +49,7 @@ class TestRevisionViews(base.TestDbBase):
             payload = [base.DocumentFixture.get_minimal_fixture()
                        for _ in range(doc_count)]
             bucket_name = test_utils.rand_name('bucket')
-            self.create_documents(bucket_name, payload, do_validation=False)
+            self.create_documents(bucket_name, payload)
             revisions = self.list_revisions()
         revisions_view = self.view_builder.list(revisions)
 

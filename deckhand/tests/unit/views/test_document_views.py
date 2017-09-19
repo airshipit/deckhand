@@ -57,8 +57,7 @@ class TestDocumentViews(base.TestDbBase):
         payload = base.DocumentFixture.get_minimal_fixture()
         bucket_name = test_utils.rand_name('bucket')
         self.create_documents(bucket_name, payload)
-        deleted_documents = self.create_documents(
-            bucket_name, [], do_validation=False)
+        deleted_documents = self.create_documents(bucket_name, [])
 
         document_view = self.view_builder.list(deleted_documents)
         self.assertEqual(1, len(document_view))

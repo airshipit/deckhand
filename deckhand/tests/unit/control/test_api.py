@@ -17,6 +17,7 @@ import mock
 from deckhand.control import api
 from deckhand.control import base
 from deckhand.control import buckets
+from deckhand.control import revision_diffing
 from deckhand.control import revision_documents
 from deckhand.control import revision_tags
 from deckhand.control import revisions
@@ -27,8 +28,8 @@ class TestApi(test_base.DeckhandTestCase):
 
     def setUp(self):
         super(TestApi, self).setUp()
-        for resource in (buckets, revision_documents, revision_tags,
-                         revisions):
+        for resource in (buckets, revision_diffing, revision_documents,
+                         revision_tags, revisions):
             resource_name = resource.__name__.split('.')[-1]
             resource_obj = mock.patch.object(
                 resource, '%sResource' % resource_name.title().replace(
@@ -54,6 +55,9 @@ class TestApi(test_base.DeckhandTestCase):
             mock.call('/api/v1.0/revisions', self.revisions_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}',
                       self.revisions_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}/diff/'
+                      '{comparison_revision_id}',
+                      self.revision_diffing_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/documents',
                       self.revision_documents_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/tags',

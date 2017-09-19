@@ -44,7 +44,6 @@ class TestDocumentsNegative(base.TestDbBase):
     def test_delete_document_invalid_id(self):
         self.assertRaises(errors.DocumentNotFound,
                           self.show_document,
-                          do_validation=False,
                           id=test_utils.rand_uuid_hex())
 
     def test_create_bucket_conflict(self):

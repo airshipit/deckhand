@@ -42,7 +42,7 @@ class TestRevisions(base.TestDbBase):
         # Update the last document.
         documents[-1]['data'] = {'foo': 'bar'}
         updated_documents = self.create_documents(
-            bucket_name, documents, do_validation=False)
+            bucket_name, documents)
         new_revision_id = updated_documents[0]['revision_id']
 
         # 4 documents should be returned: the updated doc along with the other
@@ -136,7 +136,7 @@ class TestRevisions(base.TestDbBase):
                                 for _ in range(3)]
             bucket_name = test_utils.rand_name('bucket')
             created_documents = self.create_documents(
-                bucket_name, document_payload, do_validation=False)
+                bucket_name, document_payload)
             all_created_documents.extend(created_documents)
             revision_id = created_documents[0]['revision_id']
             all_revision_ids.append(revision_id)
@@ -164,7 +164,7 @@ class TestRevisions(base.TestDbBase):
 
         created_documents = self.create_documents(bucket_name, documents)
         alt_created_documents = self.create_documents(
-            alt_bucket_name, alt_documents, do_validation=False)
+            alt_bucket_name, alt_documents)
 
         alt_revision_docs = self.list_revision_documents(
             alt_created_documents[0]['revision_id'])

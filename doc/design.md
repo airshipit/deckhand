@@ -792,7 +792,9 @@ This endpoint provides a basic comparison of revisions in terms of how the
 buckets involved have changed.  Only buckets with existing documents in either
 of the two revisions in question will be reported; buckets with documents that
 are only present in revisions between the two being compared are omitted from
-this report.
+this report. That is, buckets with documents that were accidentally created
+(and then deleted to rectify the mistake) that are not directly present in
+the two revisions being compared are omitted.
 
 The response will contain a status of `created`, `deleted`, `modified`, or
 `unmodified` for each bucket.

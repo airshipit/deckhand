@@ -95,6 +95,7 @@ class TestDocuments(base.TestDbBase):
 
         documents = self.list_revision_documents(
             document['revision_id'], **filters)
+
         self.assertEqual(1, len(documents))
         self.assertIsNone(documents[0].pop('orig_revision_id'))
         self.assertEqual(document, documents[0])
@@ -198,7 +199,7 @@ class TestDocuments(base.TestDbBase):
         bucket_name = test_utils.rand_name('bucket')
         self.create_documents(bucket_name, payload)
 
-        documents = self.create_documents(bucket_name, [], do_validation=False)
+        documents = self.create_documents(bucket_name, [])
         self.assertEqual(1, len(documents))
         self.assertTrue(documents[0]['deleted'])
         self.assertTrue(documents[0]['deleted_at'])
@@ -215,7 +216,7 @@ class TestDocuments(base.TestDbBase):
         self.assertIsInstance(documents, list)
         self.assertEqual(3, len(documents))
 
-        documents = self.create_documents(bucket_name, [], do_validation=False)
+        documents = self.create_documents(bucket_name, [])
 
         for idx in range(3):
             self.assertTrue(documents[idx]['deleted'])
@@ -234,8 +235,7 @@ class TestDocuments(base.TestDbBase):
 
         # Create the document in payload[0] but create a new document for
         # payload[1].
-        documents = self.create_documents(bucket_name, payload[1],
-                                          do_validation=False)
+        documents = self.create_documents(bucket_name, payload[1])
         # Information about the deleted and created document should've been
         # returned. The 1st document is the deleted one and the 2nd document
         # is the created one.
@@ -261,8 +261,7 @@ class TestDocuments(base.TestDbBase):
 
         # Create the document in payload[0] but create a new document for
         # payload[1].
-        documents = self.create_documents(bucket_name, payload[0],
-                                          do_validation=False)
+        documents = self.create_documents(bucket_name, payload[0])
         # The first document will be first, followed by the two deleted docs.
         documents = sorted(documents, key=lambda d: d['deleted'])
         # Information about the deleted and created document should've been

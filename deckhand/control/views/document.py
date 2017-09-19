@@ -42,6 +42,7 @@ class ViewBuilder(common.ViewBuilder):
         attrs = ['id', 'metadata', 'data', 'schema']
 
         for document in documents:
+            # Never return deleted documents to the user.
             if document['deleted']:
                 continue
 
@@ -49,6 +50,18 @@ class ViewBuilder(common.ViewBuilder):
             resp_obj.setdefault('status', {})
             resp_obj['status']['bucket'] = document['bucket_name']
             resp_obj['status']['revision'] = document['revision_id']
+            resp_list.append(resp_obj)
+
+        # In the case where no documents are passed to PUT
+        # buckets/{{bucket_name}}/documents, we need to mangle the response
+        # body a bit. The revision_id and buckete_id should be returned, as
+        # at the very least the revision_id will be needed by the user.
+        if not resp_list and documents:
+            resp_obj = {}
+            resp_obj.setdefault('status', {})
+            resp_obj['status']['bucket'] = documents[0]['bucket_id']
+            resp_obj['status']['revision'] = documents[0]['revision_id']
+
             resp_list.append(resp_obj)
 
         return resp_list

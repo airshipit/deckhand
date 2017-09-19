@@ -20,7 +20,8 @@ from deckhand.tests.unit import base
 
 BASE_EXPECTED_FIELDS = ("created_at", "updated_at", "deleted_at", "deleted")
 DOCUMENT_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
-    "id", "schema", "name", "metadata", "data", "revision_id", "bucket_id")
+    "id", "schema", "name", "metadata", "data", "hash", "revision_id",
+    "bucket_id")
 REVISION_EXPECTED_FIELDS = ("id", "documents", "tags")
 
 
@@ -54,7 +55,7 @@ class DocumentFixture(object):
 class TestDbBase(base.DeckhandWithDBTestCase):
 
     def create_documents(self, bucket_name, documents,
-                         validation_policies=None, do_validation=True):
+                         validation_policies=None):
         if not validation_policies:
             validation_policies = []
 
@@ -66,18 +67,12 @@ class TestDbBase(base.DeckhandWithDBTestCase):
         docs = db_api.documents_create(
             bucket_name, documents, validation_policies)
 
-        if do_validation:
-            for idx, doc in enumerate(docs):
-                self.validate_document(expected=documents[idx], actual=doc)
-                self.assertEqual(bucket_name, doc['bucket_name'])
-
         return docs
 
-    def show_document(self, do_validation=True, **fields):
+    def show_document(self, **fields):
         doc = db_api.document_get(**fields)
 
-        if do_validation:
-            self.validate_document(actual=doc)
+        self.validate_document(actual=doc)
 
         return doc
 
@@ -125,12 +120,6 @@ class TestDbBase(base.DeckhandWithDBTestCase):
         self.assertIsInstance(actual, dict)
         for field in expected_fields:
             self.assertIn(field, actual)
-
-        if expected:
-            # Validate that the expected values are equivalent to actual
-            # values.
-            for key, val in expected.items():
-                self.assertEqual(val, actual[key])
 
     def validate_revision(self, revision):
         self._validate_object(revision)

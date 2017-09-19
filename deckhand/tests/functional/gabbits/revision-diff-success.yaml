@@ -6,12 +6,14 @@
 #     - Each of the 4 initial document PUTs vs null
 #     - null vs itself
 #  4. Modify bucket c
-#  5. Delete bucket b
-#  6. Create bucket f
-#  7. Remove bucket f
-#  8. Create bucket e
-#  9. Verify diff between create_d and create_e
-# 10. Verify diff of final state with null
+#  5. Verify diff between create_d and update_c
+#  6. Delete bucket b
+#  7. Create bucket "mistake"
+#  8. Remove bucket "mistake"
+#  9. Verify diff between creating and deleting bucket "mistake"
+#  10. Create bucket e
+#  11. Verify diff between create_d and create_e
+#  12. Verify diff of final state with null
 
 defaults:
   request_headers:
@@ -100,7 +102,6 @@ tests:
     response_multidoc_jsonpaths:
       $.[0]:
         bucket_a: created
-    skip: Not implemented.
 
   - name: verify_null_second_revision
     desc: Validates response for null diff for second revision
@@ -110,7 +111,6 @@ tests:
       $.[0]:
         bucket_a: created
         bucket_b: created
-    skip: Not implemented.
 
   - name: verify_null_third_revision
     desc: Validates response for null diff for third revision
@@ -121,7 +121,6 @@ tests:
         bucket_a: created
         bucket_b: created
         bucket_c: created
-    skip: Not implemented.
 
   - name: verify_null_fourth_revision
     desc: Validates response for null diff for fourth revision
@@ -133,7 +132,6 @@ tests:
         bucket_b: created
         bucket_c: created
         bucket_d: created
-    skip: Not implemented.
 
   - name: verify_null_self
     desc: Validates response for null diff for fourth revision
@@ -141,7 +139,6 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.[0]: {}
-    skip: Not implemented.
 
   - name: update_c
     desc: Update document in bucket c
@@ -159,39 +156,57 @@ tests:
       data:
         new_value: 7
       ...
-    skip: Not implemented.
+
+  - name: verify_diff_between_initial_4_buckets_and_single_update
+    desc: Validates response for null diff between the first 4 buckets and single update
+    GET: /api/v1.0/revisions/$HISTORY['create_d'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['update_c'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0]:
+        bucket_a: unmodified
+        bucket_b: unmodified
+        bucket_c: modified
+        bucket_d: unmodified
 
   - name: delete_b
     desc: Delete documents from bucket b
     PUT: /api/v1.0/bucket/bucket_b/documents
     status: 200
     data: ""
-    skip: Not implemented.
 
-  - name: create_f
-    desc: Create documents in bucket f
-    PUT: /api/v1.0/bucket/bucket_e/documents
+  - name: create_mistake
+    desc: Create documents in bucket mistake
+    PUT: /api/v1.0/bucket/bucket_mistake/documents
     status: 200
     data: |-
       ---
       schema: example/Kind/v1
       metadata:
         schema: metadata/Document/v1
-        name: doc-f
+        name: doc-m
         layeringDefinition:
           abstract: false
           layer: site
       data:
-        value: 5
+        value: mistake
       ...
-    skip: Not implemented.
 
-  - name: delete_f
-    desc: Delete documents from bucket b
-    PUT: /api/v1.0/bucket/bucket_f/documents
+  - name: delete_mistake
+    desc: Delete documents from bucket mistake
+    PUT: /api/v1.0/bucket/bucket_mistake/documents
     status: 200
     data: ""
-    skip: Not implemented.
+
+  - name: verify_diff_between_created_and_deleted_mistake
+    desc: Validates response for deletion between the last 2 revisions
+    GET: /api/v1.0/revisions/$HISTORY['create_mistake'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['delete_mistake'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0]:
+        bucket_a: unmodified
+        bucket_c: unmodified
+        bucket_d: unmodified
+        bucket_mistake: deleted
 
   - name: create_e
     desc: Create documents in bucket e
@@ -209,7 +224,6 @@ tests:
       data:
         value: 6
       ...
-    skip: Not implemented.
 
   - name: verify_diff_between_initial_4_buckets_and_present
     desc: Validates response for null diff between the first 4 buckets and now
@@ -222,4 +236,14 @@ tests:
         bucket_c: modified
         bucket_d: unmodified
         bucket_e: created
-    skip: Not implemented.
+
+  - name: verify_diff_between_null_and_present
+    desc: Validates response for null diff and now
+    GET: /api/v1.0/revisions/0/diff/$HISTORY['create_e'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0]:
+        bucket_a: created
+        bucket_c: created
+        bucket_d: created
+        bucket_e: created
