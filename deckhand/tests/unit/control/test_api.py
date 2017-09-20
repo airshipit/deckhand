@@ -47,7 +47,7 @@ class TestApi(test_base.DeckhandTestCase):
         self.assertEqual(mock_falcon_api, result)
 
         mock_falcon.API.assert_called_once_with(
-            request_type=base.DeckhandRequest, middleware=[mock.ANY])
+            request_type=base.DeckhandRequest)
         mock_falcon_api.add_route.assert_has_calls([
             mock.call('/api/v1.0/bucket/{bucket_name}/documents',
                       self.buckets_resource()),

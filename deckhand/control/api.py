@@ -20,10 +20,10 @@ from oslo_log import log as logging
 
 from deckhand.control import base
 from deckhand.control import buckets
-from deckhand.control import middleware
 from deckhand.control import revision_documents
 from deckhand.control import revision_tags
 from deckhand.control import revisions
+from deckhand.control import versions
 from deckhand.db.sqlalchemy import api as db_api
 
 CONF = cfg.CONF
@@ -38,28 +38,6 @@ def _get_config_files(env=None):
         env = os.environ
     dirname = env.get('OS_DECKHAND_CONFIG_DIR', '/etc/deckhand').strip()
     return [os.path.join(dirname, config_file) for config_file in CONFIG_FILES]
-
-
-def _get_routing_map():
-    ROUTING_MAP = {
-        '/api/v1.0/bucket/[A-za-z0-9\-]+/documents': ['PUT'],
-        '/api/v1.0/revisions': ['GET', 'DELETE'],
-        '/api/v1.0/revisions/[A-za-z0-9\-]+': ['GET'],
-        '/api/v1.0/revisions/[A-za-z0-9\-]+/tags': ['GET', 'DELETE'],
-        '/api/v1.0/revisions/[A-za-z0-9\-]+/tags/[A-za-z0-9\-]+': [
-            'GET', 'POST', 'DELETE'],
-        '/api/v1.0/revisions/[A-za-z0-9\-]+/documents': ['GET']
-    }
-
-    for route in ROUTING_MAP.keys():
-        # Denote the start of the regex with "^".
-        route_re = '^.*' + route
-        # Debite the end of the regex with "$". Allow for an optional "/" at
-        # the end of each request uri.
-        route_re = route_re + '[/]{0,1}$'
-        ROUTING_MAP[route_re] = ROUTING_MAP.pop(route)
-
-    return ROUTING_MAP
 
 
 def start_api(state_manager=None):
@@ -77,9 +55,7 @@ def start_api(state_manager=None):
     db_api.drop_db()
     db_api.setup_db()
 
-    control_api = falcon.API(
-        request_type=base.DeckhandRequest,
-        middleware=[middleware.ContextMiddleware(_get_routing_map())])
+    control_api = falcon.API(request_type=base.DeckhandRequest)
 
     v1_0_routes = [
         ('bucket/{bucket_name}/documents', buckets.BucketsResource()),
@@ -94,5 +70,7 @@ def start_api(state_manager=None):
 
     for path, res in v1_0_routes:
         control_api.add_route(os.path.join('/api/v1.0', path), res)
+
+    control_api.add_route('/versions', versions.VersionsResource())
 
     return control_api

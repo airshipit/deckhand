@@ -172,13 +172,13 @@ class Document(BASE, DeckhandBase):
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""
-    models = [Bucket, Document, Revision]
+    models = [Bucket, Document, Revision, RevisionTag]
     for model in models:
         model.metadata.create_all(engine)
 
 
 def unregister_models(engine):
     """Drop database tables for all models with the given engine."""
-    models = [Bucket, Document, Revision]
+    models = [Bucket, Document, Revision, RevisionTag]
     for model in models:
         model.metadata.drop_all(engine)

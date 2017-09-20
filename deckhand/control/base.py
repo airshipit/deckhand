@@ -16,9 +16,6 @@ import yaml
 
 import falcon
 from oslo_context import context
-from oslo_log import log as logging
-
-LOG = logging.getLogger(__name__)
 
 
 class BaseResource(object):
@@ -26,6 +23,7 @@ class BaseResource(object):
 
     def on_options(self, req, resp):
         self_attrs = dir(self)
+
         methods = ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH']
         allowed_methods = []
 
@@ -39,7 +37,7 @@ class BaseResource(object):
     def to_yaml_body(self, dict_body):
         """Converts JSON body into YAML response body.
 
-        :dict_body: response body to be converted to YAML.
+        :param dict_body: response body to be converted to YAML.
         :returns: YAML encoding of `dict_body`.
         """
         if isinstance(dict_body, dict):
