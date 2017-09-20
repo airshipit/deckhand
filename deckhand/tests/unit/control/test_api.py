@@ -32,7 +32,7 @@ class TestApi(test_base.DeckhandTestCase):
             resource_name = resource.__name__.split('.')[-1]
             resource_obj = mock.patch.object(
                 resource, '%sResource' % resource_name.title().replace(
-                    '_', '')).start()
+                    '_', ''), autospec=True).start()
             setattr(self, '%s_resource' % resource_name, resource_obj)
 
     @mock.patch.object(api, 'db_api', autospec=True)
