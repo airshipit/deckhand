@@ -21,6 +21,7 @@ from deckhand.control import base as api_base
 from deckhand.control.views import revision_tag as revision_tag_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
+from deckhand import policy
 
 LOG = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ LOG = logging.getLogger(__name__)
 class RevisionTagsResource(api_base.BaseResource):
     """API resource for realizing CRUD for revision tags."""
 
+    @policy.authorize('deckhand:create_tag')
     def on_post(self, req, resp, revision_id, tag=None):
         """Creates a revision tag."""
         body = req.stream.read(req.content_length or 0)
@@ -59,6 +61,7 @@ class RevisionTagsResource(api_base.BaseResource):
         else:
             self._list_all_tags(req, resp, revision_id)
 
+    @policy.authorize('deckhand:show_tag')
     def _show_tag(self, req, resp, revision_id, tag):
         """Retrieve details for a specified tag."""
         try:
@@ -72,6 +75,7 @@ class RevisionTagsResource(api_base.BaseResource):
         resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.to_yaml_body(resp_body)
 
+    @policy.authorize('deckhand:list_tags')
     def _list_all_tags(self, req, resp, revision_id):
         """List all tags for a revision."""
         try:
@@ -91,6 +95,7 @@ class RevisionTagsResource(api_base.BaseResource):
         else:
             self._delete_all_tags(req, resp, revision_id)
 
+    @policy.authorize('deckhand:delete_tag')
     def _delete_tag(self, req, resp, revision_id, tag):
         """Delete a specified tag."""
         try:
@@ -102,6 +107,7 @@ class RevisionTagsResource(api_base.BaseResource):
         resp.append_header('Content-Type', 'application/x-yaml')
         resp.status = falcon.HTTP_204
 
+    @policy.authorize('deckhand:delete_tags')
     def _delete_all_tags(self, req, resp, revision_id):
         """Delete all tags for a revision."""
         try:

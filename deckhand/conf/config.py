@@ -49,24 +49,4 @@ def list_opts():
     return opts
 
 
-def parse_args(args=None, usage=None, default_config_files=None):
-    CONF(args=args,
-         project='deckhand',
-         usage=usage,
-         default_config_files=default_config_files)
-
-
-def parse_cache_args(args=None):
-    # Look for Deckhand config files in the following directories::
-    #
-    #  ~/.${project}/
-    #  ~/
-    #  /etc/${project}/
-    #  /etc/
-    #  ${SNAP}/etc/${project}
-    #  ${SNAP_COMMON}/etc/${project}
-    config_files = cfg.find_config_files(project='deckhand')
-    parse_args(args=args, default_config_files=config_files)
-
-
 register_opts(CONF)

@@ -20,6 +20,7 @@ from deckhand.control import common
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
+from deckhand import policy
 
 LOG = logging.getLogger(__name__)
 
@@ -41,9 +42,24 @@ class RevisionDocumentsResource(api_base.BaseResource):
         documents will be as originally posted with no substitutions or
         layering applied.
         """
+        include_cleartext = policy.conditional_authorize(
+            'deckhand:list_cleartext_documents', req.context, do_raise=False)
+        include_encrypted = policy.conditional_authorize(
+            'deckhand:list_encrypted_documents', req.context, do_raise=False)
+
+        filters = sanitized_params.copy()
+        filters['metadata.storagePolicy'] = []
+        if include_cleartext:
+            filters['metadata.storagePolicy'].append('cleartext')
+        if include_encrypted:
+            filters['metadata.storagePolicy'].append('encrypted')
+
+        # Never return deleted documents to user.
+        filters['deleted'] = False
+
         try:
             documents = db_api.revision_get_documents(
-                revision_id, **sanitized_params)
+                revision_id, **filters)
         except errors.RevisionNotFound as e:
             raise falcon.HTTPNotFound(description=e.format_message())
 

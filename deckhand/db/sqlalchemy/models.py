@@ -135,9 +135,8 @@ class Document(BASE, DeckhandBase):
     id = Column(Integer, primary_key=True)
     name = Column(String(64), nullable=False)
     schema = Column(String(64), nullable=False)
-    # NOTE: Do not define a maximum length for these JSON data below. However,
-    # this approach is not compatible with all database types.
-    # "metadata" is reserved, so use "_metadata" instead.
+    # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``_metadata``
+    # must be used to store document metadata information in the DB.
     _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
     data = Column(oslo_types.JsonEncodedDict(), nullable=True)
     data_hash = Column(String, nullable=False)
@@ -175,8 +174,6 @@ class Document(BASE, DeckhandBase):
         d = super(Document, self).to_dict()
         d['bucket_name'] = self.bucket_name
 
-        # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``_metadata``
-        # must be used to store document metadata information in the DB.
         if not raw_dict:
             d['metadata'] = d.pop('_metadata')
 

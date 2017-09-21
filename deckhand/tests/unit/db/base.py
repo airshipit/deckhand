@@ -102,7 +102,8 @@ class TestDbBase(base.DeckhandWithDBTestCase):
         return db_api.revision_get_all()
 
     def rollback_revision(self, revision_id):
-        return db_api.revision_rollback(revision_id)
+        latest_revision = db_api.revision_get_latest()
+        return db_api.revision_rollback(revision_id, latest_revision)
 
     def _validate_object(self, obj):
         for attr in BASE_EXPECTED_FIELDS:

@@ -137,3 +137,8 @@ class BarbicanException(DeckhandException):
 
     def __init__(self, message, code):
         super(BarbicanException, self).__init__(message=message, code=code)
+
+
+class PolicyNotAuthorized(DeckhandException):
+    msg_fmt = "Policy doesn't allow %(action)s to be performed."
+    code = 403

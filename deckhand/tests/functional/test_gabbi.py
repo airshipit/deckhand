@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import yaml
+
 import gabbi.driver
 import gabbi.handlers.jsonhandler
 import gabbi.json_parser
-import os
-import yaml
 
 TESTS_DIR = 'gabbits'
 
@@ -48,11 +49,11 @@ class MultidocJsonpaths(gabbi.handlers.jsonhandler.JSONHandler):
 def load_tests(loader, tests, pattern):
     test_dir = os.path.join(os.path.dirname(__file__), TESTS_DIR)
     return gabbi.driver.build_tests(test_dir, loader,
-            # NOTE(fmontei): When there are multiple handlers listed that
-            # accept the same content-type, the one that is earliest in the
-            # list will be used. Thus, we cannot specify multiple content
-            # handlers for handling list/dictionary responses from the server
-            # using different handlers.
-            content_handlers=[MultidocJsonpaths],
-            verbose=True,
-            url=os.environ['DECKHAND_TEST_URL'])
+        # NOTE(fmontei): When there are multiple handlers listed that
+        # accept the same content-type, the one that is earliest in the
+        # list will be used. Thus, we cannot specify multiple content
+        # handlers for handling list/dictionary responses from the server
+        # using different handlers.
+        content_handlers=[MultidocJsonpaths],
+        verbose=True,
+        url=os.environ['DECKHAND_TEST_URL'])

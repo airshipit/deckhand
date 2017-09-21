@@ -32,11 +32,25 @@ The service understands a variety of document formats, the combination of which
 describe the manner in which Deckhand renders finalized documents for
 consumption by other UCP services.
 
+User's Guide
+============
+
+.. toctree::
+   :maxdepth: 2
+
+   policy-enforcement
+
+Developer's Guide
+=================
+
 .. toctree::
    :maxdepth: 2
 
    HACKING
    testing
+
+Glossary
+========
 
 .. toctree::
    :maxdepth: 1

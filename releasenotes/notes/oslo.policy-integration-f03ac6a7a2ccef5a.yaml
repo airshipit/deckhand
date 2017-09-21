@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    The ``oslo.policy`` framework has been integrated into Deckhand. All
+    currently supported endpoints are covered by RBAC enforcement. All
+    default policy rules are admin-only by default. The defaults can be
+    overriden via a custom ``policy.yaml`` file.

@@ -42,10 +42,6 @@ class ViewBuilder(common.ViewBuilder):
         attrs = ['id', 'metadata', 'data', 'schema']
 
         for document in documents:
-            # Never return deleted documents to the user.
-            if document['deleted']:
-                continue
-
             resp_obj = {x: document[x] for x in attrs}
             resp_obj.setdefault('status', {})
             resp_obj['status']['bucket'] = document['bucket_name']

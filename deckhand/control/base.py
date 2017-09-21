@@ -15,7 +15,8 @@
 import yaml
 
 import falcon
-from oslo_context import context
+
+from deckhand import context
 
 
 class BaseResource(object):
@@ -50,9 +51,10 @@ class BaseResource(object):
 
 class DeckhandRequest(falcon.Request):
 
-    def __init__(self, env, options=None):
+    def __init__(self, env, options=None, policy_enforcer=None):
         super(DeckhandRequest, self).__init__(env, options)
-        self.context = context.RequestContext.from_environ(self.env)
+        self.context = context.RequestContext.from_environ(
+            self.env, policy_enforcer=policy_enforcer)
 
     @property
     def project_id(self):
