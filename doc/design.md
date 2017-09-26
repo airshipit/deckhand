@@ -674,7 +674,7 @@ Supported query string parameters:
   `metadata.label=key=value`. Repeating this parameter indicates all
   requested labels must apply (AND not OR).
 * `sort` - string, optional, repeatable - Defines the sort order for returning
-  results.  Default is `metadata.name`.  Repeating this parameter indicates use
+  results.  Default is by creation date.  Repeating this parameter indicates use
   of multi-column sort with the most significant sorting column applied first.
 * `status.bucket` - string, optional, repeatable - Used to select documents
   only from a particular bucket.  Repeating this parameter indicates documents

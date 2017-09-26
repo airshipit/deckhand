@@ -20,8 +20,8 @@ from deckhand.tests.unit import base
 
 BASE_EXPECTED_FIELDS = ("created_at", "updated_at", "deleted_at", "deleted")
 DOCUMENT_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
-    "id", "schema", "name", "metadata", "data", "hash", "revision_id",
-    "bucket_id")
+    "id", "schema", "name", "metadata", "data", "data_hash", "metadata_hash",
+    "revision_id", "bucket_id")
 REVISION_EXPECTED_FIELDS = ("id", "documents", "tags")
 
 

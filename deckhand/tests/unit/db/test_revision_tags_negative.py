@@ -14,7 +14,6 @@
 
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
-from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
 
@@ -22,25 +21,20 @@ class TestRevisionTagsNegative(base.TestDbBase):
 
     def test_create_tag_revision_not_found(self):
         self.assertRaises(
-            errors.RevisionNotFound, db_api.revision_tag_create,
-            test_utils.rand_uuid_hex())
+            errors.RevisionNotFound, db_api.revision_tag_create, -1)
 
     def test_show_tag_revision_not_found(self):
         self.assertRaises(
-            errors.RevisionNotFound, db_api.revision_tag_get,
-            test_utils.rand_uuid_hex())
+            errors.RevisionNotFound, db_api.revision_tag_get, -1)
 
     def test_delete_tag_revision_not_found(self):
         self.assertRaises(
-            errors.RevisionNotFound, db_api.revision_tag_delete,
-            test_utils.rand_uuid_hex())
+            errors.RevisionNotFound, db_api.revision_tag_delete, -1)
 
     def test_list_tags_revision_not_found(self):
         self.assertRaises(
-            errors.RevisionNotFound, db_api.revision_tag_get_all,
-            test_utils.rand_uuid_hex())
+            errors.RevisionNotFound, db_api.revision_tag_get_all, -1)
 
     def test_delete_all_tags_revision_not_found(self):
         self.assertRaises(
-            errors.RevisionNotFound, db_api.revision_tag_delete_all,
-            test_utils.rand_uuid_hex())
+            errors.RevisionNotFound, db_api.revision_tag_delete_all, -1)

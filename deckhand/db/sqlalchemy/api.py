@@ -18,6 +18,7 @@
 import ast
 import copy
 import functools
+import hashlib
 import threading
 
 from oslo_config import cfg
@@ -25,6 +26,7 @@ from oslo_db import exception as db_exception
 from oslo_db import options
 from oslo_db.sqlalchemy import session
 from oslo_log import log as logging
+from oslo_serialization import jsonutils as json
 import six
 import sqlalchemy.orm as sa_orm
 
@@ -136,7 +138,8 @@ def documents_create(bucket_name, documents, session=None):
                 doc['name'] = d[1]
                 doc['data'] = {}
                 doc['_metadata'] = {}
-                doc['hash'] = utils.make_hash({})
+                doc['data_hash'] = _make_hash({})
+                doc['metadata_hash'] = _make_hash({})
                 doc['bucket_id'] = bucket['id']
                 doc['revision_id'] = revision['id']
 
@@ -178,19 +181,12 @@ def _documents_create(bucket_name, values_list, session=None):
     for values in values_list:
         values['_metadata'] = values.pop('metadata')
         values['name'] = values['_metadata']['name']
-
-        # Hash the combination of the document's metadata and data to later
-        # efficiently check whether those data have changed.
-        dict_to_hash = values['_metadata'].copy()
-        dict_to_hash.update(values['data'])
-        values['hash'] = utils.make_hash(dict_to_hash)
-
         values['is_secret'] = 'secret' in values['data']
-        # Hash the combination of the document's metadata and data to later
-        # efficiently check whether those data have changed.
-        dict_to_hash = values['_metadata'].copy()
-        dict_to_hash.update(values['data'])
-        values['hash'] = utils.make_hash(dict_to_hash)
+
+        # Hash the document's metadata and data to later  efficiently check
+        # whether those data have changed.
+        values['data_hash'] = _make_hash(values['data'])
+        values['metadata_hash'] = _make_hash(values['_metadata'])
 
         try:
             existing_document = document_get(
@@ -211,7 +207,8 @@ def _documents_create(bucket_name, values_list, session=None):
                     name=existing_document['name'],
                     bucket=existing_document['bucket_name'])
 
-            if existing_document['hash'] == values['hash']:
+            if (existing_document['data_hash'] == values['data_hash'] and
+                existing_document['metadata_hash'] == values['metadata_hash']):
                 # Since the document has not changed, reference the original
                 # revision in which it was created. This is necessary so that
                 # the correct revision history is maintained.
@@ -229,6 +226,11 @@ def _documents_create(bucket_name, values_list, session=None):
         changed_documents.append(doc)
 
     return changed_documents
+
+
+def _make_hash(data):
+    return hashlib.sha256(
+        json.dumps(data, sort_keys=True).encode('utf-8')).hexdigest()
 
 
 def document_get(session=None, raw_dict=False, **filters):
@@ -482,6 +484,7 @@ def _filter_revision_documents(documents, unique_only, **filters):
             if unique_key not in filtered_documents:
                 filtered_documents[unique_key] = document
 
+    # TODO(fmontei): Sort by user-specified parameter.
     return sorted(filtered_documents.values(), key=lambda d: d['created_at'])
 
 
@@ -586,8 +589,8 @@ def revision_diff(revision_id, comparison_revision_id):
 
     def _compare_buckets(b1, b2):
         # Checks whether buckets' documents are identical.
-        return (sorted([d['hash'] for d in b1]) ==
-                sorted([d['hash'] for d in b2]))
+        return (sorted([(d['data_hash'], d['metadata_hash']) for d in b1]) ==
+                sorted([(d['data_hash'], d['metadata_hash']) for d in b2]))
 
     # If the list of documents for each bucket is indentical, then the result
     # is "unmodified", else "modified".
@@ -753,7 +756,9 @@ def revision_rollback(revision_id, session=None):
     latest_revision = session.query(models.Revision)\
         .order_by(models.Revision.created_at.desc())\
         .first()
-    latest_revision_hashes = [d['hash'] for d in latest_revision['documents']]
+    latest_revision_hashes = [
+        (d['data_hash'], d['metadata_hash'])
+        for d in latest_revision['documents']]
 
     # If the rollback revision is the same as the latest revision, then there's
     # no point in rolling back.
@@ -767,12 +772,13 @@ def revision_rollback(revision_id, session=None):
     # it has changed, else False.
     doc_diff = {}
     for orig_doc in orig_revision['documents']:
-        if orig_doc['hash'] not in latest_revision_hashes:
+        if ((orig_doc['data_hash'], orig_doc['metadata_hash'])
+            not in latest_revision_hashes):
             doc_diff[orig_doc['id']] = True
         else:
             doc_diff[orig_doc['id']] = False
 
-    # If no changges have been made between the target revision to rollback to
+    # If no changes have been made between the target revision to rollback to
     # and the latest revision, raise an exception.
     if set(doc_diff.values()) == set([False]):
         raise errors.InvalidRollback(revision_id=revision_id)
@@ -789,8 +795,8 @@ def revision_rollback(revision_id, session=None):
 
         new_document = models.Document()
         new_document.update({x: orig_document[x] for x in (
-            'name', '_metadata', 'data', 'hash', 'schema', 'bucket_id')})
-
+            'name', '_metadata', 'data', 'data_hash', 'metadata_hash',
+            'schema', 'bucket_id')})
         new_document['revision_id'] = new_revision['id']
 
         # If the document has changed, then use the revision_id of the new

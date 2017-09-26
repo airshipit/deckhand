@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 import fixtures
 import mock
 from oslo_config import cfg
@@ -76,6 +78,8 @@ class DeckhandWithDBTestCase(DeckhandTestCase):
 
     def setUp(self):
         super(DeckhandWithDBTestCase, self).setUp()
-        self.override_config('connection', "sqlite://", group='database')
+        self.override_config(
+            'connection', os.environ.get('PIFPAF_URL', 'sqlite://'),
+            group='database')
         db_api.setup_db()
         self.addCleanup(db_api.drop_db)
