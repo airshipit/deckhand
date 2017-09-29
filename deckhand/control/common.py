@@ -34,15 +34,53 @@ def sanitize_params(allowed_params):
 
     :param allowed_params: The request's query string parameters.
     """
+    # A mapping between the filter keys users provide and the actual DB
+    # representation of the filter.
+    _mapping = {
+        # Mappings for revision documents.
+        'status.bucket': 'bucket_name',
+        'metadata.label': 'metadata.labels',
+        # Mappings for revisions.
+        'tag': 'tags.[*].tag'
+    }
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(self, req, *func_args, **func_kwargs):
             req_params = req.params or {}
             sanitized_params = {}
 
-            for key in req_params.keys():
+            def _convert_to_dict(sanitized_params, filter_key, filter_val):
+                # Key-value pairs like metadata.label=foo=bar need to be
+                # converted to {'metadata.label': {'foo': 'bar'}} because
+                # 'metadata.labels' in a document is a dictionary. Later,
+                # we can check whether the filter dict is a subset of the
+                # actual dict for metadata labels.
+                for val in list(filter_val):
+                    if '=' in val:
+                        sanitized_params.setdefault(filter_key, {})
+                        pair = val.split('=')
+                        try:
+                            sanitized_params[filter_key][pair[0]] = pair[1]
+                        except IndexError:
+                            pass
+
+            for key, val in req_params.items():
+                if not isinstance(val, list):
+                    val = [val]
+                is_key_val_pair = '=' in val[0]
                 if key in allowed_params:
-                    sanitized_params[key] = req_params[key]
+                    if key in _mapping:
+                        if is_key_val_pair:
+                            _convert_to_dict(
+                                sanitized_params, _mapping[key], val)
+                        else:
+                            sanitized_params[_mapping[key]] = req_params[key]
+                    else:
+                        if is_key_val_pair:
+                            _convert_to_dict(sanitized_params, key, val)
+                        else:
+                            sanitized_params[key] = req_params[key]
 
             func_args = func_args + (sanitized_params,)
             return func(self, req, *func_args, **func_kwargs)

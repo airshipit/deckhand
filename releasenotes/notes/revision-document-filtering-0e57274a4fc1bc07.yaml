@@ -1,0 +1,17 @@
+---
+features:
+  - |
+    Deckhand now supports the following filter arguments for filtering revision
+    documents:
+
+        * schema
+        * metadata.name
+        * metadata.label
+        * metadata.layeringDefinition.abstract
+        * metadata.layeringDefinition.layer
+        * status.bucket
+
+    Deckhand now supports the following filter arguments for filtering
+    revisions:
+
+        * tag

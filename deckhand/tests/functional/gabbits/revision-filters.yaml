@@ -1,0 +1,65 @@
+# 1. Test success paths for filtering revisions for the following filters:
+#   * tag
+# 2. Test failure paths for filtering revisions for the following filters:
+#   * tag
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample.yaml
+
+  - name: create_tag
+    desc: Create a tag for testing filtering a revision by tag
+    POST: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/tags/foo
+    status: 201
+
+  - name: create_another_tag
+    desc: Create another tag for testing filtering a revision by many tags
+    POST: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/bar
+    status: 201
+
+  - name: verify_revision_list_for_one_valid_filter
+    desc: Verify that revision is returned for filter tag="foo"
+    GET: /api/v1.0/revisions?tag=foo
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
+      $.[0].results[0].buckets: [mop]
+      $.[0].results[0].tags:
+        # Tags are sorted alphabetically.
+        - bar
+        - foo
+
+  - name: verify_revision_list_for_many_valid_filters
+    desc: Verify that revision is returned for filter tag="foo" or tag="bar"
+    GET: /api/v1.0/revisions?tag=foo&tag=bar
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 1
+      $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
+      $.[0].results[0].buckets: [mop]
+      $.[0].results[0].tags:
+        - bar
+        - foo
+
+  - name: verify_revision_list_for_invalid_filter
+    desc: Verify that no revisions are returned for tag="baz"
+    GET: /api/v1.0/revisions?tag=baz
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].count: 0
+      $.[0].results: []

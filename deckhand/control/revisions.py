@@ -15,6 +15,7 @@
 import falcon
 
 from deckhand.control import base as api_base
+from deckhand.control import common
 from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
@@ -53,8 +54,9 @@ class RevisionsResource(api_base.BaseResource):
         resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.to_yaml_body(revision_resp)
 
-    def _list_revisions(self, req, resp):
-        revisions = db_api.revision_get_all()
+    @common.sanitize_params(['tag'])
+    def _list_revisions(self, req, resp, sanitized_params):
+        revisions = db_api.revision_get_all(**sanitized_params)
         revisions_resp = self.view_builder.list(revisions)
 
         resp.status = falcon.HTTP_200

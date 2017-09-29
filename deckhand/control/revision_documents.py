@@ -31,7 +31,8 @@ class RevisionDocumentsResource(api_base.BaseResource):
 
     @common.sanitize_params([
         'schema', 'metadata.name', 'metadata.layeringDefinition.abstract',
-        'metadata.layeringDefinition.layer', 'metadata.label'])
+        'metadata.layeringDefinition.layer', 'metadata.label',
+        'status.bucket'])
     def on_get(self, req, resp, sanitized_params, revision_id):
         """Returns all documents for a `revision_id`.
 

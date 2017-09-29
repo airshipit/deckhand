@@ -1,0 +1,88 @@
+# 1. Test success paths for filtering revision documents for the following filters:
+#   * schema
+#   * metadata.name
+#   * metadata.label
+#   * metadata.layeringDefinition.abstract
+#   * metadata.layeringDefinition.layer
+#   * status.bucket
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/bucket/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample.yaml
+
+  - name: filter_by_schema
+    desc: Verify revision documents filtered by schema
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?schema=deckhand/LayeringPolicy/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].metadata.name: layering-policy
+      $.[0].schema: deckhand/LayeringPolicy/v1
+
+  - name: filter_by_metadata_name
+    desc: Verify revision documents filtered by metadata.name
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.name=layering-policy
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].metadata.name: layering-policy
+
+  - name: filter_by_metadata_label
+    desc: Verify revision documents filtered by metadata.name
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.label=key1=value1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[*].metadata.name:
+        - global-1234
+        - region-1234
+      $.[*].metadata.labels:
+        - key1: value1
+        - key1: value1
+
+  - name: filter_by_metadata_layeringdefinition_abstract
+    desc: Verify revision documents filtered by metadata.layeringDefinition.abstract
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.layeringDefinition.abstract=true
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[*].metadata.name:
+        - global-1234
+        - region-1234
+      $.[*].metadata.layeringDefinition.abstract:
+        - true
+        - true
+
+  - name: filter_by_metadata_layeringdefinition_layer
+    desc: Verify revision documents filtered by metadata.layeringDefinition.layer
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.layeringDefinition.layer=site
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].metadata.name: site-1234
+      $.[0].metadata.layeringDefinition.layer: site
+
+  - name: filter_by_bucket_name
+    desc: Verify revision documents filtered by status.bucket
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?status.bucket=mop
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[*].metadata.name:
+        - layering-policy
+        - global-1234
+        - region-1234
+        - site-1234
+      $.[*].status.bucket:
+        - mop
+        - mop
+        - mop
+        - mop

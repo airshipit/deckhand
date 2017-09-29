@@ -45,6 +45,9 @@ schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
   name: site-1234
+  labels:
+    foo: bar
+    baz: qux
   layeringDefinition:
     layer: site
     parentSelector:

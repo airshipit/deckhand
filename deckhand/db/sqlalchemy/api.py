@@ -179,8 +179,7 @@ def _documents_create(bucket_name, values_list, session=None):
         return document
 
     for values in values_list:
-        values['_metadata'] = values.pop('metadata')
-        values['name'] = values['_metadata']['name']
+        values = _fill_in_metadata_defaults(values)
         values['is_secret'] = 'secret' in values['data']
 
         # Hash the document's metadata and data to later  efficiently check
@@ -226,6 +225,20 @@ def _documents_create(bucket_name, values_list, session=None):
         changed_documents.append(doc)
 
     return changed_documents
+
+
+def _fill_in_metadata_defaults(values):
+    values['_metadata'] = values.pop('metadata')
+    values['name'] = values['_metadata']['name']
+
+    if not values['_metadata'].get('storagePolicy', None):
+        values['_metadata']['storagePolicy'] = 'cleartext'
+
+    if ('layeringDefinition' in values['_metadata']
+        and 'abstract' not in values['_metadata']['layeringDefinition']):
+        values['_metadata']['layeringDefinition']['abstract'] = False
+
+    return values
 
 
 def _make_hash(data):
@@ -291,6 +304,7 @@ def bucket_get_or_create(bucket_name, session=None):
 
 ####################
 
+
 def revision_create(session=None):
     """Create a revision.
 
@@ -354,7 +368,63 @@ def _update_revision_history(documents):
     return documents
 
 
-def revision_get_all(session=None):
+def _apply_filters(dct, **filters):
+    """Apply filters to ``dct``.
+
+    Apply filters in ``filters`` to the dictionary ``dct``.
+
+    :param dct: The dictionary to check against all the ``filters``.
+    :param filters: Dictionary of key-value pairs used for filtering out
+        unwanted results.
+    :return: True if the dictionary satisfies all the filters, else False.
+    """
+    def _transform_filter_bool(actual_val, filter_val):
+        # Transform boolean values into string literals.
+        if (isinstance(actual_val, bool)
+            and isinstance(filter_val, six.string_types)):
+            try:
+                filter_val = ast.literal_eval(filter_val.title())
+            except ValueError:
+                # If not True/False, set to None to avoid matching
+                # `actual_val` which is always boolean.
+                filter_val = None
+        return filter_val
+
+    match = True
+
+    for filter_key, filter_val in filters.items():
+        actual_val = utils.jsonpath_parse(dct, filter_key)
+
+        # If the filter is a list of possibilities, e.g. ['site', 'region']
+        # for metadata.layeringDefinition.layer, check whether the actual
+        # value is present.
+        if isinstance(filter_val, (list, tuple)):
+            if actual_val not in [_transform_filter_bool(actual_val, x)
+                                  for x in filter_val]:
+                match = False
+                break
+        else:
+            # Else if both the filter value and the actual value in the doc
+            # are dictionaries, check whether the filter dict is a subset
+            # of the actual dict.
+            if (isinstance(actual_val, dict)
+                and isinstance(filter_val, dict)):
+                is_subset = set(
+                    filter_val.items()).issubset(set(actual_val.items()))
+                if not is_subset:
+                    match = False
+                    break
+            else:
+                # Else both filters are string literals.
+                if actual_val != _transform_filter_bool(
+                        actual_val, filter_val):
+                    match = False
+                    break
+
+    return match
+
+
+def revision_get_all(session=None, **filters):
     """Return list of all revisions.
 
     :param session: Database session object.
@@ -364,11 +434,15 @@ def revision_get_all(session=None):
     revisions = session.query(models.Revision)\
         .all()
 
-    revisions_dict = [r.to_dict() for r in revisions]
-    for revision in revisions_dict:
-        revision['documents'] = _update_revision_history(revision['documents'])
+    result = []
+    for revision in revisions:
+        revision_dict = revision.to_dict()
+        if _apply_filters(revision_dict, **filters):
+            revision_dict['documents'] = _update_revision_history(
+                revision_dict['documents'])
+            result.append(revision_dict)
 
-    return revisions_dict
+    return result
 
 
 def revision_delete_all(session=None):
@@ -380,6 +454,39 @@ def revision_delete_all(session=None):
     session = session or get_session()
     session.query(models.Revision)\
         .delete(synchronize_session=False)
+
+
+def _filter_revision_documents(documents, unique_only, **filters):
+    """Return the list of documents that match filters.
+
+    :param unique_only: Return only unique documents if ``True``.
+    :param filters: Dictionary attributes (including nested) used to filter
+        out revision documents.
+    :returns: List of documents that match specified filters.
+    """
+    # TODO(fmontei): Implement this as an sqlalchemy query.
+    filtered_documents = {}
+    unique_filters = ('name', 'schema')
+
+    for document in documents:
+        # NOTE(fmontei): Only want to include non-validation policy documents
+        # for this endpoint.
+        if document['schema'] == types.VALIDATION_POLICY_SCHEMA:
+            continue
+
+        if _apply_filters(document, **filters):
+            # Filter out redundant documents from previous revisions, i.e.
+            # documents schema and metadata.name are repeated.
+            if unique_only:
+                unique_key = tuple(
+                    [document[filter] for filter in unique_filters])
+            else:
+                unique_key = document['id']
+            if unique_key not in filtered_documents:
+                filtered_documents[unique_key] = document
+
+    # TODO(fmontei): Sort by user-specified parameter.
+    return sorted(filtered_documents.values(), key=lambda d: d['created_at'])
 
 
 @require_revision_exists
@@ -436,56 +543,6 @@ def revision_get_documents(revision_id=None, include_history=True,
         revision_documents, unique_only, **filters)
 
     return filtered_documents
-
-
-def _filter_revision_documents(documents, unique_only, **filters):
-    """Return the list of documents that match filters.
-
-    :param unique_only: Return only unique documents if ``True``.
-    :param filters: Dictionary attributes (including nested) used to filter
-        out revision documents.
-    :returns: List of documents that match specified filters.
-    """
-    # TODO(fmontei): Implement this as an sqlalchemy query.
-    filtered_documents = {}
-    unique_filters = [c for c in models.Document.UNIQUE_CONSTRAINTS
-                      if c != 'revision_id']
-
-    for document in documents:
-        # NOTE(fmontei): Only want to include non-validation policy documents
-        # for this endpoint.
-        if document['schema'] == types.VALIDATION_POLICY_SCHEMA:
-            continue
-        match = True
-
-        for filter_key, filter_val in filters.items():
-            actual_val = utils.multi_getattr(filter_key, document)
-
-            if (isinstance(actual_val, bool)
-                and isinstance(filter_val, six.string_types)):
-                try:
-                    filter_val = ast.literal_eval(filter_val.title())
-                except ValueError:
-                    # If not True/False, set to None to avoid matching
-                    # `actual_val` which is always boolean.
-                    filter_val = None
-
-            if actual_val != filter_val:
-                match = False
-
-        if match:
-            # Filter out redundant documents from previous revisions, i.e.
-            # documents schema and metadata.name are repeated.
-            if unique_only:
-                unique_key = tuple(
-                    [document[filter] for filter in unique_filters])
-            else:
-                unique_key = document['id']
-            if unique_key not in filtered_documents:
-                filtered_documents[unique_key] = document
-
-    # TODO(fmontei): Sort by user-specified parameter.
-    return sorted(filtered_documents.values(), key=lambda d: d['created_at'])
 
 
 # NOTE(fmontei): No need to include `@require_revision_exists` decorator as

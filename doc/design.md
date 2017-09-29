@@ -702,6 +702,11 @@ Lists existing revisions and reports basic details including a summary of
 validation status for each `deckhand/ValidationPolicy` that is part of that
 revision.
 
+Supported query string parameters:
+
+* `tag` - string, optional, repeatable - Used to select revisions that have
+  been tagged with particular tags.
+
 Sample response:
 
 ```yaml
