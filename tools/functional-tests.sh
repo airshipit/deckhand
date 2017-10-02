@@ -19,7 +19,7 @@ POSTGRES_ID=$(
         -e POSTGRES_DB=deckhand \
         -e POSTGRES_USER=deckhand \
         -e POSTGRES_PASSWORD=password \
-            postgres:10
+            postgres:9.5
 )
 
 function cleanup {
