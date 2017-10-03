@@ -15,18 +15,16 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    skip: Not implemented.
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/bucket/mop/documents
     status: 200
-    data: <@resources/design-doc-substition-sample.yaml
-    skip: Not implemented.
+    data: <@resources/design-doc-substitution-sample.yaml
 
   - name: verify_substitutions
     desc: Check for expected substitutions
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].revision']/rendered-documents?schema=armada/Chart/v1
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents?schema=armada/Chart/v1
     status: 200
     response_multidoc_jsonpaths:
       $.[*].metadata.name: example-chart-01
@@ -41,4 +39,3 @@ tests:
               key: |
                 KEY DATA
             some_url: http://admin:my-secret-password@service-name:8080/v1
-    skip: Not implemented.

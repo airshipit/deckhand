@@ -34,12 +34,10 @@ class RollbackResource(api_base.BaseResource):
             raise falcon.HTTPNotFound(description=e.format_message())
 
         for document in latest_revision['documents']:
-            if document['metadata'].get('storagePolicy') == 'cleartext':
-                policy.conditional_authorize(
-                    'deckhand:create_cleartext_documents', req.context)
-            elif document['metadata'].get('storagePolicy') == 'encrypted':
+            if document['metadata'].get('storagePolicy') == 'encrypted':
                 policy.conditional_authorize(
                     'deckhand:create_encrypted_documents', req.context)
+                break
 
         try:
             rollback_revision = db_api.revision_rollback(

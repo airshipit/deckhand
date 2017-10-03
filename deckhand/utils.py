@@ -17,6 +17,8 @@ import string
 
 import jsonpath_ng
 
+from deckhand import errors
+
 
 def to_camel_case(s):
     """Convert string to camel case."""
@@ -30,30 +32,114 @@ def to_snake_case(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def jsonpath_parse(document, jsonpath):
-    """Parse value given JSON path in the document.
+def jsonpath_parse(data, jsonpath):
+    """Parse value in the data for the given ``jsonpath``.
 
-    Retrieve the value corresponding to document[jsonpath] where ``jsonpath``
-    is a multi-part key. A multi-key is a series of keys and nested keys
-    concatenated together with ".". For exampple, ``jsonpath`` of
-    ".foo.bar.baz" should mean that ``document`` has the format:
+    Retrieve the nested entry corresponding to ``data[jsonpath]``. For
+    example, a ``jsonpath`` of ".foo.bar.baz" means that the data section
+    should conform to:
 
     .. code-block:: yaml
 
-       ---
-       foo:
-           bar:
-               baz: <data_to_be_extracted_here>
+        ---
+        foo:
+            bar:
+                baz: <data_to_be_extracted_here>
 
-    :param document: Dictionary used for extracting nested entry.
-    :param jsonpath: A multi-part key that references nested data in a
-        dictionary.
-    :returns: Nested entry in ``document`` if present, else None.
+    :param data: The `data` section of a document.
+    :param jsonpath: A multi-part key that references a nested path in
+        ``data``.
+    :returns: Entry that corresponds to ``data[jsonpath]`` if present,
+        else None.
+
+    Example::
+
+        src_name = sub['src']['name']
+        src_path = sub['src']['path']
+        src_doc = db_api.document_get(schema=src_schema, name=src_name)
+        src_secret = utils.jsonpath_parse(src_doc['data'], src_path)
+        # Do something with the extracted secret from the source document.
     """
     if jsonpath.startswith('.'):
         jsonpath = '$' + jsonpath
 
     p = jsonpath_ng.parse(jsonpath)
-    matches = p.find(document)
+    matches = p.find(data)
     if matches:
         return matches[0].value
+
+
+def jsonpath_replace(data, value, jsonpath, pattern=None):
+    """Update value in ``data`` at the path specified by ``jsonpath``.
+
+    If the nested path corresponding to ``jsonpath`` isn't found in ``data``,
+    the path is created as an empty ``{}`` for each sub-path along the
+    ``jsonpath``.
+
+    :param data: The `data` section of a document.
+    :param value: The new value for ``data[jsonpath]``.
+    :param jsonpath: A multi-part key that references a nested path in
+        ``data``.
+    :param pattern: A regular expression pattern.
+    :returns: Updated value at ``data[jsonpath]``.
+    :raises: MissingDocumentPattern if ``pattern`` is not None and
+        ``data[jsonpath]`` doesn't exist.
+
+    Example::
+
+        doc = {
+            'data': {
+                'some_url': http://admin:INSERT_PASSWORD_HERE@svc-name:8080/v1
+            }
+        }
+        secret = 'super-duper-secret'
+        path = '$.some_url'
+        pattern = 'INSERT_[A-Z]+_HERE'
+        replaced_data = utils.jsonpath_replace(
+            doc['data'], secret, path, pattern)
+        # The returned URL will look like:
+        # http://admin:super-duper-secret@svc-name:8080/v1
+        doc['data'].update(replaced_data)
+    """
+    data = data.copy()
+    if jsonpath.startswith('.'):
+        jsonpath = '$' + jsonpath
+
+    def _do_replace():
+        p = jsonpath_ng.parse(jsonpath)
+        p_to_change = p.find(data)
+
+        if p_to_change:
+            _value = value
+            if pattern:
+                to_replace = p_to_change[0].value
+                # value represents the value to inject into to_replace that
+                # matches the pattern.
+                try:
+                    _value = re.sub(pattern, value, to_replace)
+                except TypeError:
+                    _value = None
+            return p.update(data, _value)
+
+    result = _do_replace()
+    if result:
+        return result
+
+    # A pattern requires us to look up the data located at data[jsonpath]
+    # and then figure out what re.match(data[jsonpath], pattern) is (in
+    # pseudocode). But raise an exception in case the path isn't present in the
+    # data and a pattern has been provided since it is impossible to do the
+    # look up.
+    if pattern:
+        raise errors.MissingDocumentPattern(
+            data=data, path=jsonpath, pattern=pattern)
+
+    # However, Deckhand should be smart enough to create the nested keys in the
+    # data if they don't exist and a pattern isn't required.
+    d = data
+    for path in jsonpath.split('.')[1:]:
+        if path not in d:
+            d.setdefault(path, {})
+        d = d.get(path)
+
+    return _do_replace()

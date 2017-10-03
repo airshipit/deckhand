@@ -40,7 +40,8 @@ class DocumentFixture(object):
                 'layeringDefinition': {
                     'abstract': test_utils.rand_bool(),
                     'layer': test_utils.rand_name('layer')
-                }
+                },
+                'storagePolicy': test_utils.rand_name('storage_policy')
             },
             'schema': test_utils.rand_name('schema')}
         fixture.update(kwargs)

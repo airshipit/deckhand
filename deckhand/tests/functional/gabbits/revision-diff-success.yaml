@@ -196,6 +196,10 @@ tests:
     PUT: /api/v1.0/bucket/bucket_mistake/documents
     status: 200
     data: ""
+    # Verification for whether a bucket_name was returned even though all the
+    # documents for this bucket were deleted.
+    response_multidoc_jsonpaths:
+      $.[*].status.bucket: bucket_mistake
 
   - name: verify_diff_between_created_and_deleted_mistake
     desc: Validates response for deletion between the last 2 revisions

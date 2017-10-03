@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from deckhand.control import common
+from deckhand import types
 
 
 class ViewBuilder(common.ViewBuilder):
@@ -30,34 +31,30 @@ class ViewBuilder(common.ViewBuilder):
     _collection_name = 'documents'
 
     def list(self, documents):
-        # Edge case for when all documents are deleted from a bucket. Still
-        # need to return bucket_id and revision_id.
-        if len(documents) == 1 and documents[0]['deleted']:
-            resp_obj = {'status': {}}
-            resp_obj['status']['bucket'] = documents[0]['bucket_name']
-            resp_obj['status']['revision'] = documents[0]['revision_id']
-            return [resp_obj]
-
         resp_list = []
         attrs = ['id', 'metadata', 'data', 'schema']
 
         for document in documents:
+            if document['deleted']:
+                continue
+            if document['schema'].startswith(types.VALIDATION_POLICY_SCHEMA):
+                continue
             resp_obj = {x: document[x] for x in attrs}
             resp_obj.setdefault('status', {})
             resp_obj['status']['bucket'] = document['bucket_name']
             resp_obj['status']['revision'] = document['revision_id']
             resp_list.append(resp_obj)
 
-        # In the case where no documents are passed to PUT
-        # buckets/{{bucket_name}}/documents, we need to mangle the response
-        # body a bit. The revision_id and buckete_id should be returned, as
-        # at the very least the revision_id will be needed by the user.
+        # Edge case for when all documents are deleted from a bucket. To detect
+        # the edge case, check whether ``resp_list`` is empty and whether there
+        # are still documents to be returned. This means that all the documents
+        # are either deleted or validation policies. Either way, we still need
+        # to return bucket_id and revision_id, which should be the same
+        # across all the documents in ``documents``.
         if not resp_list and documents:
-            resp_obj = {}
-            resp_obj.setdefault('status', {})
-            resp_obj['status']['bucket'] = documents[0]['bucket_id']
+            resp_obj = {'status': {}}
+            resp_obj['status']['bucket'] = documents[0]['bucket_name']
             resp_obj['status']['revision'] = documents[0]['revision_id']
-
-            resp_list.append(resp_obj)
+            return [resp_obj]
 
         return resp_list

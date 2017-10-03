@@ -26,7 +26,11 @@ schema = {
                     'type': 'string',
                     'pattern': '^(metadata/Control/v[1]{1}(\.[0]{1}){0,1})$'
                 },
-                'name': {'type': 'string'}
+                'name': {'type': 'string'},
+                'storagePolicy': {
+                    'type': 'string',
+                    'enum': ['encrypted', 'cleartext']
+                }
             },
             'additionalProperties': False,
             'required': ['schema', 'name']

@@ -72,6 +72,9 @@ class Document(object):
     def get_labels(self):
         return self._inner['metadata']['labels']
 
+    def get_substitutions(self):
+        return self._inner['metadata'].get('substitutions', None)
+
     def get_actions(self):
         try:
             return self._inner['metadata']['layeringDefinition']['actions']
@@ -118,4 +121,7 @@ class Document(object):
         return not self.__contains__(k)
 
     def __repr__(self):
-        return repr(self._inner)
+        return '(%s, %s)' % (self.get_schema(), self.get_name())
+
+    def __str__(self):
+        return str(self._inner)

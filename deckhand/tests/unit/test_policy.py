@@ -14,12 +14,10 @@ import falcon
 import mock
 from oslo_policy import policy as common_policy
 
-from deckhand.conf import config
 from deckhand.control import base as api_base
-from deckhand import policy
+import deckhand.policy
 from deckhand.tests.unit import base as test_base
-
-CONF = config.CONF
+from deckhand.tests.unit import policy_fixture
 
 
 class PolicyBaseTestCase(test_base.DeckhandTestCase):
@@ -33,18 +31,18 @@ class PolicyBaseTestCase(test_base.DeckhandTestCase):
             "deckhand:create_cleartext_documents": [['@']],
             "deckhand:list_cleartext_documents": [['rule:admin_api']]
         }
-        self.policy_enforcer = common_policy.Enforcer(CONF)
+
+        self.policy = self.useFixture(policy_fixture.RealPolicyFixture())
         self._set_rules()
 
     def _set_rules(self):
-        rules = common_policy.Rules.from_dict(self.rules)
-        self.policy_enforcer.set_rules(rules)
-        self.addCleanup(self.policy_enforcer.clear)
+        these_rules = common_policy.Rules.from_dict(self.rules)
+        deckhand.policy._ENFORCER.set_rules(these_rules)
 
     def _enforce_policy(self, action):
         api_args = self._get_args()
 
-        @policy.authorize(action)
+        @deckhand.policy.authorize(action)
         def noop(*args, **kwargs):
             pass
 
@@ -53,8 +51,7 @@ class PolicyBaseTestCase(test_base.DeckhandTestCase):
     def _get_args(self):
         # Returns the first two arguments that would be passed to any falcon
         # on_{HTTP_VERB} method: (self (which is mocked), falcon Request obj).
-        falcon_req = api_base.DeckhandRequest(
-            mock.MagicMock(), policy_enforcer=self.policy_enforcer)
+        falcon_req = api_base.DeckhandRequest(mock.MagicMock())
         return (mock.Mock(), falcon_req)
 
 

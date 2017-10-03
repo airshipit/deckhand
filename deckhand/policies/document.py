@@ -24,10 +24,7 @@ document_policies = [
         """Create a batch of documents specified in the request body, whereby
 a new revision is created. Also, roll back a revision to a previous one in the
 revision history, whereby the target revision's documents are re-created for
-the new revision.
-
-Conditionally enforced for the endpoints below if the any of the documents in
-the request body have a `metadata.storagePolicy` of "cleartext".""",
+the new revision.""",
         [
             {
                 'method': 'PUT',
@@ -46,8 +43,10 @@ a new revision is created. Also, roll back a revision to a previous one in the
 history, whereby the target revision's documents are re-created for the new
 revision.
 
+Only enforced after ``create_cleartext_documents`` passes.
+
 Conditionally enforced for the endpoints below if the any of the documents in
-the request body have a `metadata.storagePolicy` of "encrypted".""",
+the request body have a ``metadata.storagePolicy`` of "encrypted".""",
         [
             {
                 'method': 'PUT',
@@ -63,11 +62,7 @@ the request body have a `metadata.storagePolicy` of "encrypted".""",
         base.RULE_ADMIN_API,
         """List cleartext documents for a revision (with no layering or
 substitution applied) as well as fully layered and substituted concrete
-documents.
-
-Conditionally enforced for the endpoints below if the any of the documents in
-the request body have a `metadata.storagePolicy` of "cleartext". If policy
-enforcement fails, cleartext documents are omitted.""",
+documents.""",
         [
             {
                 'method': 'GET',
@@ -81,13 +76,15 @@ enforcement fails, cleartext documents are omitted.""",
     policy.DocumentedRuleDefault(
         base.POLICY_ROOT % 'list_encrypted_documents',
         base.RULE_ADMIN_API,
-        """List cleartext documents for a revision (with no layering or
+        """List encrypted documents for a revision (with no layering or
 substitution applied) as well as fully layered and substituted concrete
 documents.
 
-Conditionally enforced for the endpoints below if the any of the documents in
-the request body have a `metadata.storagePolicy` of "encrypted". If policy
-enforcement fails, encrypted documents are omitted.""",
+Only enforced after ``list_cleartext_documents`` passes.
+
+Conditionally enforced for the endpoints below if any of the documents in the
+request body have a ``metadata.storagePolicy`` of "encrypted". If policy
+enforcement fails, encrypted documents are exluded from the response.""",
         [
             {
                 'method': 'GET',

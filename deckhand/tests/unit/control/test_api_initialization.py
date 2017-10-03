@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import mock
 
 from deckhand.control import api
@@ -24,6 +25,7 @@ from deckhand.control import revisions
 from deckhand.control import rollback
 from deckhand.control import versions
 from deckhand.tests.unit import base as test_base
+from deckhand import utils
 
 
 class TestApi(test_base.DeckhandTestCase):
@@ -32,11 +34,16 @@ class TestApi(test_base.DeckhandTestCase):
         super(TestApi, self).setUp()
         for resource in (buckets, revision_diffing, revision_documents,
                          revision_tags, revisions, rollback, versions):
-            resource_name = resource.__name__.split('.')[-1]
-            resource_obj = self.patchobject(
-                resource, '%sResource' % resource_name.title().replace(
-                    '_', ''), autospec=True)
-            setattr(self, '%s_resource' % resource_name, resource_obj)
+            class_names = self._get_module_class_names(resource)
+            for class_name in class_names:
+                resource_obj = self.patchobject(
+                    resource, class_name, autospec=True)
+                setattr(self, utils.to_snake_case(class_name), resource_obj)
+
+    def _get_module_class_names(self, module):
+        class_names = [obj.__name__ for name, obj in inspect.getmembers(module)
+                       if inspect.isclass(obj)]
+        return class_names
 
     @mock.patch.object(api, 'db_api', autospec=True)
     @mock.patch.object(api, 'logging', autospec=True)
@@ -62,6 +69,8 @@ class TestApi(test_base.DeckhandTestCase):
                       self.revision_diffing_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/documents',
                       self.revision_documents_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}/rendered-documents',
+                      self.rendered_documents_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/tags',
                       self.revision_tags_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/tags/{tag}',

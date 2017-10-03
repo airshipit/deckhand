@@ -23,18 +23,11 @@ class DeckhandException(Exception):
     code = 500
 
     def __init__(self, message=None, **kwargs):
-        self.kwargs = kwargs
-
-        if 'code' not in self.kwargs:
-            try:
-                self.kwargs['code'] = self.code
-            except AttributeError:
-                pass
+        kwargs.setdefault('code', DeckhandException.code)
 
         if not message:
             try:
                 message = self.msg_fmt % kwargs
-
             except Exception:
                 message = self.msg_fmt
 
@@ -56,15 +49,6 @@ class InvalidDocumentFormat(DeckhandException):
             self.msg_fmt = self.alt_msg_fmt
             kwargs.update({'document_type': document_type})
         super(InvalidDocumentFormat, self).__init__(**kwargs)
-
-
-# TODO(fmontei): Remove this in a future commit.
-class ApiError(Exception):
-    pass
-
-
-class InvalidFormat(ApiError):
-    """The YAML file is incorrectly formatted and cannot be read."""
 
 
 class DocumentExists(DeckhandException):
@@ -98,6 +82,12 @@ class MissingDocumentParent(DeckhandException):
 class MissingDocumentKey(DeckhandException):
     msg_fmt = ("Missing document key %(key)s from either parent or child. "
                "Parent: %(parent)s. Child: %(child)s.")
+
+
+class MissingDocumentPattern(DeckhandException):
+    msg_fmt = ("Substitution pattern %(pattern)s could not be found for the "
+               "JSON path %(path)s in the destination document data %(data)s.")
+    code = 400
 
 
 class UnsupportedActionMethod(DeckhandException):

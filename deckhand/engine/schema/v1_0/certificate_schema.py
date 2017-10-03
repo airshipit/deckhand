@@ -27,6 +27,13 @@ schema = {
                     'pattern': '^(metadata/Document/v[1]{1}(\.[0]{1}){0,1})$',
                 },
                 'name': {'type': 'string'},
+                # Not strictly needed for secrets.
+                'layeringDefinition': {
+                    'type': 'object',
+                    'properties': {
+                        'layer': {'type': 'string'}
+                    }
+                },
                 'storagePolicy': {
                     'type': 'string',
                     'enum': ['encrypted', 'cleartext']

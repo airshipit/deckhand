@@ -14,9 +14,6 @@
 
 from oslo_config import cfg
 from oslo_context import context
-from oslo_policy import policy as common_policy
-
-from deckhand import policy
 
 CONF = cfg.CONF
 
@@ -28,12 +25,10 @@ class RequestContext(context.RequestContext):
     accesses the system, as well as additional request information.
     """
 
-    def __init__(self, policy_enforcer=None, project=None, **kwargs):
+    def __init__(self, project=None, **kwargs):
         if project:
             kwargs['tenant'] = project
         self.project = project
-        self.policy_enforcer = policy_enforcer or common_policy.Enforcer(CONF)
-        policy.register_rules(self.policy_enforcer)
         super(RequestContext, self).__init__(**kwargs)
 
     def to_dict(self):

@@ -16,6 +16,7 @@ from falcon import testing as falcon_testing
 
 from deckhand.control import api
 from deckhand.tests.unit import base as test_base
+from deckhand.tests.unit import policy_fixture
 
 
 class BaseControllerTest(test_base.DeckhandWithDBTestCase,
@@ -25,3 +26,4 @@ class BaseControllerTest(test_base.DeckhandWithDBTestCase,
     def setUp(self):
         super(BaseControllerTest, self).setUp()
         self.app = falcon_testing.TestClient(api.start_api())
+        self.policy = self.useFixture(policy_fixture.RealPolicyFixture())

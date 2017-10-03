@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import itertools
 import yaml
 
 import falcon
@@ -37,6 +36,7 @@ class BucketsResource(api_base.BaseResource):
     view_builder = document_view.ViewBuilder()
     secrets_mgr = secrets_manager.SecretsManager()
 
+    @policy.authorize('deckhand:create_cleartext_documents')
     def on_put(self, req, resp, bucket_name=None):
         document_data = req.stream.read(req.content_length or 0)
         try:
@@ -47,10 +47,34 @@ class BucketsResource(api_base.BaseResource):
             LOG.error(error_msg)
             raise falcon.HTTPBadRequest(description=six.text_type(e))
 
+        # NOTE: Must validate documents before doing policy enforcement,
+        # because we expect certain formatting of the documents while doing
+        # policy enforcement.
+        validation_policies = self._create_validation_policies(documents)
+
+        for document in documents:
+            if document['metadata'].get('storagePolicy') == 'encrypted':
+                policy.conditional_authorize(
+                    'deckhand:create_encrypted_documents', req.context)
+                break
+
+        self._prepare_secret_documents(documents)
+
+        # Save all the documents, including validation policies.
+        documents_to_create = documents + validation_policies
+        created_documents = self._create_revision_documents(
+            bucket_name, list(documents_to_create))
+
+        if created_documents:
+            resp.body = self.to_yaml_body(
+                self.view_builder.list(created_documents))
+        resp.status = falcon.HTTP_200
+        resp.append_header('Content-Type', 'application/x-yaml')
+
+    def _create_validation_policies(self, documents):
+        # All concrete documents in the payload must successfully pass their
+        # JSON schema validations. Otherwise raise an error.
         try:
-            # NOTE: Must validate documents before doing policy enforcement,
-            # because we expect certain formatting of the documents while doing
-            # policy enforcement.
             validation_policies = document_validation.DocumentValidation(
                 documents).validate_all()
         except deckhand_errors.InvalidDocumentFormat as e:
@@ -58,42 +82,25 @@ class BucketsResource(api_base.BaseResource):
             # validation policy in the DB for future debugging, and only
             # afterward raise an exception.
             raise falcon.HTTPBadRequest(description=e.format_message())
+        return validation_policies
 
-        cleartext_documents = []
-        secret_documents = []
-
-        for document in documents:
-            if any([document['schema'].startswith(t)
-                    for t in types.DOCUMENT_SECRET_TYPES]):
-                secret_documents.append(document)
-            else:
-                cleartext_documents.append(document)
-
-        if secret_documents and any(
-                [d['metadata'].get('storagePolicy') == 'encrypted'
-                for d in secret_documents]):
-            policy.conditional_authorize('deckhand:create_encrypted_documents',
-                                         req.context)
-        if cleartext_documents:
-            policy.conditional_authorize('deckhand:create_cleartext_documents',
-                                         req.context)
-
+    def _prepare_secret_documents(self, secret_documents):
+        # Encrypt data for secret documents, if any.
         for document in secret_documents:
-            secret_data = self.secrets_mgr.create(document)
-            document['data'] = secret_data
+            # TODO(fmontei): Move all of this to document validation directly.
+            if document['metadata'].get('storagePolicy') == 'encrypted':
+                secret_data = self.secrets_mgr.create(document)
+                document['data'] = secret_data
+            elif any([document['schema'].startswith(t)
+                      for t in types.DOCUMENT_SECRET_TYPES]):
+                document['data'] = {'secret': document['data']}
 
+    def _create_revision_documents(self, bucket_name, documents):
         try:
-            documents_to_create = itertools.chain(
-                cleartext_documents, secret_documents, validation_policies)
-            created_documents = db_api.documents_create(
-                bucket_name, list(documents_to_create))
+            created_documents = db_api.documents_create(bucket_name, documents)
         except deckhand_errors.DocumentExists as e:
             raise falcon.HTTPConflict(description=e.format_message())
         except Exception as e:
             raise falcon.HTTPInternalServerError(description=six.text_type(e))
 
-        if created_documents:
-            resp.body = self.to_yaml_body(
-                self.view_builder.list(created_documents))
-        resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
+        return created_documents

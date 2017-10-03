@@ -25,22 +25,54 @@ from deckhand import policies
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
+_ENFORCER = None
+
+
+def reset():
+    global _ENFORCER
+    if _ENFORCER:
+        _ENFORCER.clear()
+        _ENFORCER = None
+
+
+def init(policy_file=None, rules=None, default_rule=None, use_conf=True):
+    """Init an Enforcer class.
+
+    :param policy_file: Custom policy file to use, if none is specified,
+        ``CONF.policy_file`` will be used.
+    :param rules: Default dictionary / Rules to use. It will be
+        considered just in the first instantiation.
+    :param default_rule: Default rule to use; ``CONF.default_rule`` will
+        be used if none is specified.
+    :param use_conf: Whether to load rules from config file.
+    """
+
+    global _ENFORCER
+
+    if not _ENFORCER:
+        _ENFORCER = policy.Enforcer(CONF,
+                                    policy_file=policy_file,
+                                    rules=rules,
+                                    default_rule=default_rule,
+                                    use_conf=use_conf)
+        register_rules(_ENFORCER)
 
 
 def _do_enforce_rbac(action, context, do_raise=True):
-    policy_enforcer = context.policy_enforcer
+    init()
+
     credentials = context.to_policy_values()
     target = {'project_id': context.project_id,
               'user_id': context.user_id}
     exc = errors.PolicyNotAuthorized
 
     try:
-        # oslo.policy supports both enforce and authorize. authorize is
+        # `oslo.policy` supports both enforce and authorize. authorize is
         # stricter because it'll raise an exception if the policy action is
         # not found in the list of registered rules. This means that attempting
         # to enforce anything not found in ``deckhand.policies`` will error out
         # with a 'Policy not registered' message.
-        return policy_enforcer.authorize(
+        return _ENFORCER.authorize(
             action, target, context.to_dict(), do_raise=do_raise,
             exc=exc, action=action)
     except policy.PolicyNotRegistered as e:

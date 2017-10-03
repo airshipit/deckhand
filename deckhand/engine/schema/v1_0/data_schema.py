@@ -33,6 +33,10 @@ schema = {
                 # Labels are optional.
                 'labels': {
                     'type': 'object'
+                },
+                'storagePolicy': {
+                    'type': 'string',
+                    'enum': ['encrypted', 'cleartext']
                 }
             },
             'additionalProperties': False,

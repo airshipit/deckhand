@@ -84,6 +84,10 @@ schema = {
                 'substitutions': {
                     'type': 'array',
                     'items': substitution_schema
+                },
+                'storagePolicy': {
+                    'type': 'string',
+                    'enum': ['encrypted', 'cleartext']
                 }
             },
             'additionalProperties': False,

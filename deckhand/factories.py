@@ -61,7 +61,6 @@ class DocumentFactory(DeckhandFactory):
             "layeringDefinition": {
                 "abstract": False,
                 "layer": "",
-                "parentSelector": "",
                 "actions": []
             },
             "name": "",
@@ -92,7 +91,7 @@ class DocumentFactory(DeckhandFactory):
             ]
 
         :param num_layers: Total number of layers. Only supported values
-            include 2 or 3.
+            include 1, 2 or 3.
         :type num_layers: integer
         :param docs_per_layer: The number of documents to be included per
             layer. For example, if ``num_layers`` is 3, then ``docs_per_layer``
@@ -105,12 +104,14 @@ class DocumentFactory(DeckhandFactory):
             compatible with ``docs_per_layer``.
         """
         # Set up the layering definition's layerOrder.
-        if num_layers == 2:
+        if num_layers == 1:
+            layer_order = ["global"]
+        elif num_layers == 2:
             layer_order = ["global", "site"]
         elif num_layers == 3:
             layer_order = ["global", "region", "site"]
         else:
-            raise ValueError("'num_layers' must either be 2 or 3.")
+            raise ValueError("'num_layers' must be a value between 1 - 3.")
         self.LAYERING_DEFINITION['data']['layerOrder'] = layer_order
 
         if not isinstance(docs_per_layer, (list, tuple)):
@@ -225,14 +226,30 @@ class DocumentFactory(DeckhandFactory):
                 data_key = "_%s_DATA_%d_" % (layer_name.upper(), count + 1)
                 actions_key = "_%s_ACTIONS_%d_" % (
                     layer_name.upper(), count + 1)
+                sub_key = "_%s_SUBSTITUTIONS_%d_" % (
+                    layer_name.upper(), count + 1)
 
                 try:
                     layer_template['data'] = mapping[data_key]['data']
+                except KeyError as e:
+                    LOG.debug('Could not map %s because it was not found in '
+                              'the `mapping` dict.', e.args[0])
+                    pass
+
+                try:
                     layer_template['metadata']['layeringDefinition'][
                         'actions'] = mapping[actions_key]['actions']
                 except KeyError as e:
-                    LOG.warning('Could not map %s because it was not found in '
-                                'the `mapping` dict.', e.args[0])
+                    LOG.debug('Could not map %s because it was not found in '
+                              'the `mapping` dict.', e.args[0])
+                    pass
+
+                try:
+                    layer_template['metadata']['substitutions'] = mapping[
+                        sub_key]
+                except KeyError as e:
+                    LOG.debug('Could not map %s because it was not found in '
+                              'the `mapping` dict.', e.args[0])
                     pass
 
                 rendered_template.append(layer_template)

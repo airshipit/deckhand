@@ -67,6 +67,8 @@ def start_api():
             revision_diffing.RevisionDiffingResource()),
         ('revisions/{revision_id}/documents',
             revision_documents.RevisionDocumentsResource()),
+        ('revisions/{revision_id}/rendered-documents',
+            revision_documents.RenderedDocumentsResource()),
         ('revisions/{revision_id}/tags', revision_tags.RevisionTagsResource()),
         ('revisions/{revision_id}/tags/{tag}',
             revision_tags.RevisionTagsResource()),

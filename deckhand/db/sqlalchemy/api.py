@@ -261,18 +261,29 @@ def document_get(session=None, raw_dict=False, **filters):
     """
     session = session or get_session()
 
-    # Retrieve the most recently created version of a document. Documents with
-    # the same metadata.name and schema can exist across different revisions,
-    # so it is necessary to use `first` instead of `one` to avoid errors.
-    document = session.query(models.Document)\
+    # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
+    # JSON fields via sqlalchemy. For now, filter the documents using all
+    # "regular" filters via sqlalchemy and all nested filters via Python.
+    nested_filters = {}
+    for f in filters.copy():
+        if '.' in f:
+            nested_filters.setdefault(f, filters.pop(f))
+
+    # Documents with the the same metadata.name and schema can exist across
+    # different revisions, so it is necessary to order documents by creation
+    # date, then return the first document that matches all desired filters.
+    documents = session.query(models.Document)\
         .filter_by(**filters)\
         .order_by(models.Document.created_at.desc())\
-        .first()
+        .all()
 
-    if not document:
-        raise errors.DocumentNotFound(document=filters)
+    for doc in documents:
+        d = doc.to_dict(raw_dict=raw_dict)
+        if _apply_filters(d, **nested_filters):
+            return d
 
-    return document.to_dict(raw_dict=raw_dict)
+    filters.update(nested_filters)
+    raise errors.DocumentNotFound(document=filters)
 
 
 ####################

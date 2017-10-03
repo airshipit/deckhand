@@ -290,7 +290,7 @@ layer example above, which includes `global`, `region` and `site` layers, a
 document in the `region` layer could insert data from a document in the
 `site` layer.
 
-Here is a sample set of documents demonstrating subistution:
+Here is a sample set of documents demonstrating substitution:
 
 ```yaml
 ---

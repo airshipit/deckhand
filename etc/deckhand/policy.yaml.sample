@@ -7,10 +7,6 @@
 # revision history, whereby the target revision's documents are re-
 # created for
 # the new revision.
-#
-# Conditionally enforced for the endpoints below if the any of the
-# documents in
-# the request body have a `metadata.storagePolicy` of "cleartext".
 # PUT  /api/v1.0/bucket/{bucket_name}/documents
 # POST  /api/v1.0/rollback/{target_revision_id}
 #"deckhand:create_cleartext_documents": "rule:admin_api"
@@ -22,9 +18,11 @@
 # the new
 # revision.
 #
+# Only enforced after ``create_cleartext_documents`` passes.
+#
 # Conditionally enforced for the endpoints below if the any of the
 # documents in
-# the request body have a `metadata.storagePolicy` of "encrypted".
+# the request body have a ``metadata.storagePolicy`` of "encrypted".
 # PUT  /api/v1.0/bucket/{bucket_name}/documents
 # POST  /api/v1.0/rollback/{target_revision_id}
 #"deckhand:create_encrypted_documents": "rule:admin_api"
@@ -33,31 +31,28 @@
 # substitution applied) as well as fully layered and substituted
 # concrete
 # documents.
-#
-# Conditionally enforced for the endpoints below if the any of the
-# documents in
-# the request body have a `metadata.storagePolicy` of "cleartext". If
-# policy
-# enforcement fails, cleartext documents are omitted.
 # GET  api/v1.0/revisions/{revision_id}/documents
 # GET  api/v1.0/revisions/{revision_id}/rendered-documents
 #"deckhand:list_cleartext_documents": "rule:admin_api"
 
-# List cleartext documents for a revision (with no layering or
+# List encrypted documents for a revision (with no layering or
 # substitution applied) as well as fully layered and substituted
 # concrete
 # documents.
 #
-# Conditionally enforced for the endpoints below if the any of the
-# documents in
-# the request body have a `metadata.storagePolicy` of "encrypted". If
+# Only enforced after ``list_cleartext_documents`` passes.
+#
+# Conditionally enforced for the endpoints below if any of the
+# documents in the
+# request body have a ``metadata.storagePolicy`` of "encrypted". If
 # policy
-# enforcement fails, encrypted documents are omitted.
+# enforcement fails, encrypted documents are exluded from the
+# response.
 # GET  api/v1.0/revisions/{revision_id}/documents
 # GET  api/v1.0/revisions/{revision_id}/rendered-documents
 #"deckhand:list_encrypted_documents": "rule:admin_api"
 
-# Show details for a revision tag.
+# Show details for a revision.
 # GET  /api/v1.0/revisions/{revision_id}
 #"deckhand:show_revision": "rule:admin_api"
 
