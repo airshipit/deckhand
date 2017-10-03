@@ -648,9 +648,7 @@ def revision_tag_create(revision_id, tag, data=None, session=None):
     session = session or get_session()
     tag_model = models.RevisionTag()
 
-    try:
-        assert not data or isinstance(data, dict)
-    except AssertionError:
+    if data and not isinstance(data, dict):
         raise errors.RevisionTagBadFormat(data=data)
 
     try:
