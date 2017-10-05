@@ -189,7 +189,7 @@ class DocumentFactory(DeckhandFactory):
                 # Set name.
                 layer_template = copy.deepcopy(layer_template)
                 layer_template['metadata']['name'] = "%s%d" % (
-                        layer_name, count + 1)
+                    layer_name, count + 1)
 
                 # Set layer.
                 layer_template['metadata']['layeringDefinition'][

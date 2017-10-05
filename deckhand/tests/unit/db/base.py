@@ -108,7 +108,7 @@ class TestDbBase(base.DeckhandWithDBTestCase):
         for attr in BASE_EXPECTED_FIELDS:
             if attr.endswith('_at'):
                 self.assertThat(obj[attr], matchers.MatchesAny(
-                        matchers.Is(None), matchers.IsInstance(str)))
+                    matchers.Is(None), matchers.IsInstance(str)))
             else:
                 self.assertIsInstance(obj[attr], bool)
 
