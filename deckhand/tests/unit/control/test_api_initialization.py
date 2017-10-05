@@ -33,9 +33,9 @@ class TestApi(test_base.DeckhandTestCase):
         for resource in (buckets, revision_diffing, revision_documents,
                          revision_tags, revisions, rollback, versions):
             resource_name = resource.__name__.split('.')[-1]
-            resource_obj = mock.patch.object(
+            resource_obj = self.patchobject(
                 resource, '%sResource' % resource_name.title().replace(
-                    '_', ''), autospec=True).start()
+                    '_', ''), autospec=True)
             setattr(self, '%s_resource' % resource_name, resource_obj)
 
     @mock.patch.object(api, 'db_api', autospec=True)

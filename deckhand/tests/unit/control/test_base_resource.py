@@ -15,21 +15,20 @@
 import mock
 
 from deckhand.control import base as api_base
-from deckhand.tests.unit import base as test_base
+from deckhand.tests.unit.control import base as test_base
 
 
-class TestBaseResource(test_base.DeckhandTestCase):
+class TestBaseResource(test_base.BaseControllerTest):
 
     def setUp(self):
         super(TestBaseResource, self).setUp()
         self.base_resource = api_base.BaseResource()
 
-    def test_on_options(self):
-        # Override `dir` so that ``dir(self)`` returns `methods`.
-        expected_methods = ['on_get', 'on_heat', 'on_post', 'on_put',
-                            'on_delete', 'on_patch']
-        api_base.BaseResource.__dir__ = lambda x: expected_methods
-
+    @mock.patch.object(api_base, 'dir')  # noqa
+    def test_on_options(self, mock_dir):
+        expected_methods = ['on_get', 'on_post', 'on_put', 'on_delete',
+                            'on_patch']
+        mock_dir.return_value = expected_methods
         mock_resp = mock.Mock(headers={})
         self.base_resource.on_options(None, mock_resp)
 

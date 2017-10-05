@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Deckhand will no longer throw an ``AttributeError`` after a
+    ``yaml.scanner.ScannerError`` is raised when attempting to parse a
+    malformed YAML document. Deckhand should now correctly raise a
+    "400 Bad Request" instead.

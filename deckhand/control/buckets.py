@@ -16,6 +16,7 @@ import yaml
 
 import falcon
 from oslo_log import log as logging
+import six
 
 from deckhand.control import base as api_base
 from deckhand.control.views import document as document_view
@@ -42,7 +43,7 @@ class BucketsResource(api_base.BaseResource):
             error_msg = ("Could not parse the document into YAML data. "
                          "Details: %s." % e)
             LOG.error(error_msg)
-            raise falcon.HTTPBadRequest(description=e.format_message())
+            raise falcon.HTTPBadRequest(description=six.text_type(e))
 
         # All concrete documents in the payload must successfully pass their
         # JSON schema validations. Otherwise raise an error.
