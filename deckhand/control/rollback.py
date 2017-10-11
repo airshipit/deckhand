@@ -48,4 +48,4 @@ class RollbackResource(api_base.BaseResource):
         revision_resp = self.view_builder.show(rollback_revision)
         resp.status = falcon.HTTP_201
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(revision_resp)
+        resp.body = revision_resp

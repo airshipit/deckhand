@@ -62,7 +62,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(self.view_builder.list(documents))
+        resp.body = self.view_builder.list(documents)
 
 
 class RenderedDocumentsResource(api_base.BaseResource):
@@ -109,5 +109,4 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(
-            self.view_builder.list(rendered_documents))
+        resp.body = self.view_builder.list(rendered_documents)

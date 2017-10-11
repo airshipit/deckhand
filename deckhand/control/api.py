@@ -12,27 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging as py_logging
 import os
 
-import falcon
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_policy import policy
+from paste import deploy
 
-from deckhand.control import base
-from deckhand.control import buckets
-from deckhand.control import revision_diffing
-from deckhand.control import revision_documents
-from deckhand.control import revision_tags
-from deckhand.control import revisions
-from deckhand.control import rollback
-from deckhand.control import versions
 from deckhand.db.sqlalchemy import api as db_api
 
 CONF = cfg.CONF
-logging.register_options(CONF)
 
-# TODO(fmontei): Include deckhand-paste.ini later.
-CONFIG_FILES = ['deckhand.conf']
+logging.register_options(CONF)
+LOG = logging.getLogger(__name__)
+
+CONFIG_FILES = ['deckhand.conf', 'deckhand-paste.ini']
 
 
 def _get_config_files(env=None):
@@ -42,46 +37,38 @@ def _get_config_files(env=None):
     return [os.path.join(dirname, config_file) for config_file in CONFIG_FILES]
 
 
-def start_api():
+def setup_logging(conf):
+    # Add additional dependent libraries that have unhelp bug levels
+    extra_log_level_defaults = []
+
+    logging.set_defaults(default_log_levels=logging.get_default_log_levels() +
+                         extra_log_level_defaults)
+    logging.setup(conf, 'deckhand')
+    py_logging.captureWarnings(True)
+
+
+def init_application():
     """Main entry point for initializing the Deckhand API service.
 
     Create routes for the v1.0 API and sets up logging.
     """
     config_files = _get_config_files()
-    CONF([], project='deckhand', default_config_files=config_files)
-    logging.setup(CONF, "deckhand")
+    paste_file = config_files[-1]
 
-    LOG = logging.getLogger(__name__)
-    LOG.info('Initiated Deckhand logging.')
+    CONF([], project='deckhand', default_config_files=config_files)
+    setup_logging(CONF)
+
+    policy.Enforcer(CONF)
+
+    LOG.debug('Starting WSGI application using %s configuration file.',
+              paste_file)
 
     db_api.drop_db()
     db_api.setup_db()
 
-    control_api = falcon.API(request_type=base.DeckhandRequest)
-
-    v1_0_routes = [
-        ('bucket/{bucket_name}/documents', buckets.BucketsResource()),
-        ('revisions', revisions.RevisionsResource()),
-        ('revisions/{revision_id}', revisions.RevisionsResource()),
-        ('revisions/{revision_id}/diff/{comparison_revision_id}',
-            revision_diffing.RevisionDiffingResource()),
-        ('revisions/{revision_id}/documents',
-            revision_documents.RevisionDocumentsResource()),
-        ('revisions/{revision_id}/rendered-documents',
-            revision_documents.RenderedDocumentsResource()),
-        ('revisions/{revision_id}/tags', revision_tags.RevisionTagsResource()),
-        ('revisions/{revision_id}/tags/{tag}',
-            revision_tags.RevisionTagsResource()),
-        ('rollback/{revision_id}', rollback.RollbackResource())
-    ]
-
-    for path, res in v1_0_routes:
-        control_api.add_route(os.path.join('/api/v1.0', path), res)
-
-    control_api.add_route('/versions', versions.VersionsResource())
-
-    return control_api
+    app = deploy.loadapp('config:%s' % paste_file, name='deckhand_api')
+    return app
 
 
 if __name__ == '__main__':
-    start_api()
+    init_application()

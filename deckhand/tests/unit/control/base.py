@@ -14,9 +14,9 @@
 
 from falcon import testing as falcon_testing
 
-from deckhand.control import api
+from deckhand import service
 from deckhand.tests.unit import base as test_base
-from deckhand.tests.unit import policy_fixture
+from deckhand.tests.unit import fixtures
 
 
 class BaseControllerTest(test_base.DeckhandWithDBTestCase,
@@ -25,5 +25,9 @@ class BaseControllerTest(test_base.DeckhandWithDBTestCase,
 
     def setUp(self):
         super(BaseControllerTest, self).setUp()
-        self.app = falcon_testing.TestClient(api.start_api())
-        self.policy = self.useFixture(policy_fixture.RealPolicyFixture())
+        self.app = falcon_testing.TestClient(
+            service.deckhand_app_factory(None))
+        self.policy = self.useFixture(fixtures.RealPolicyFixture())
+        # NOTE: allow_anonymous_access allows these unit tests to get around
+        # Keystone authentication.
+        self.useFixture(fixtures.ConfPatcher(allow_anonymous_access=True))

@@ -54,7 +54,7 @@ class RevisionsResource(api_base.BaseResource):
         revision_resp = self.view_builder.show(revision)
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(revision_resp)
+        resp.body = revision_resp
 
     @policy.authorize('deckhand:list_revisions')
     @common.sanitize_params(['tag'])
@@ -64,7 +64,7 @@ class RevisionsResource(api_base.BaseResource):
 
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = self.to_yaml_body(revisions_resp)
+        resp.body = revisions_resp
 
     @policy.authorize('deckhand:delete_revisions')
     def on_delete(self, req, resp):

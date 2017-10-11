@@ -43,3 +43,12 @@ class RequestContext(context.RequestContext):
     @classmethod
     def from_dict(cls, values):
         return cls(**values)
+
+
+def get_context():
+    """A helper method to get a blank context (useful for tests)."""
+    return RequestContext(user_id=None,
+                          project_id=None,
+                          roles=[],
+                          is_admin=False,
+                          overwrite=False)

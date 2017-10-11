@@ -66,8 +66,7 @@ class BucketsResource(api_base.BaseResource):
             bucket_name, list(documents_to_create))
 
         if created_documents:
-            resp.body = self.to_yaml_body(
-                self.view_builder.list(created_documents))
+            resp.body = self.view_builder.list(created_documents)
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
 

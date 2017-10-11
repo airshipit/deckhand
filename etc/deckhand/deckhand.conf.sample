@@ -1,6 +1,25 @@
 [DEFAULT]
 
 #
+# From deckhand.conf
+#
+
+#
+# Allow limited access to unauthenticated users.
+#
+# Assign a boolean to determine API access for unathenticated
+# users. When set to False, the API cannot be accessed by
+# unauthenticated users. When set to True, unauthenticated users can
+# access the API with read-only privileges. This however only applies
+# when using ContextMiddleware.
+#
+# Possible values:
+#     * True
+#     * False
+#  (boolean value)
+#allow_anonymous_access = false
+
+#
 # From oslo.log
 #
 

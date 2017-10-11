@@ -17,7 +17,7 @@ from oslo_policy import policy as common_policy
 from deckhand.control import base as api_base
 import deckhand.policy
 from deckhand.tests.unit import base as test_base
-from deckhand.tests.unit import policy_fixture
+from deckhand.tests.unit import fixtures
 
 
 class PolicyBaseTestCase(test_base.DeckhandTestCase):
@@ -32,7 +32,7 @@ class PolicyBaseTestCase(test_base.DeckhandTestCase):
             "deckhand:list_cleartext_documents": [['rule:admin_api']]
         }
 
-        self.policy = self.useFixture(policy_fixture.RealPolicyFixture())
+        self.policy = self.useFixture(fixtures.RealPolicyFixture())
         self._set_rules()
 
     def _set_rules(self):

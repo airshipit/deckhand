@@ -47,6 +47,9 @@ function gen_config {
 
     cp etc/deckhand/logging.conf.sample $CONF_DIR/logging.conf
 
+# NOTE: allow_anonymous_access allows these functional tests to get around
+# Keystone authentication, but the context that is provided has zero privileges
+# so we must also override the policy file for authorization to pass.
 cat <<EOCONF > $CONF_DIR/deckhand.conf
 [DEFAULT]
 debug = true
@@ -54,6 +57,7 @@ log_config_append = $CONF_DIR/logging.conf
 log_file = deckhand.log
 log_dir = .
 use_stderr = true
+allow_anonymous_access = true
 
 [oslo_policy]
 policy_file = policy.yaml
@@ -64,6 +68,15 @@ policy_file = policy.yaml
 connection = $DATABASE_URL
 
 [keystone_authtoken]
+# Populate keystone_authtoken with values like the following should Keystone
+# integration be needed here.
+# project_domain_name = Default
+# project_name = admin
+# user_domain_name = Default
+# password = devstack
+# username = admin
+# auth_url = http://127.0.0.1/identity
+# auth_type = password
 EOCONF
 
     echo $CONF_DIR/deckhand.conf 1>&2
@@ -71,6 +84,14 @@ EOCONF
 
     log_section Starting server
     rm -f deckhand.log
+}
+
+function gen_paste {
+    log_section Creating paste config without [filter:authtoken]
+    # NOTE(fmontei): Since this script does not currently support Keystone
+    # integration, we remove ``filter:authtoken`` from the ``deckhand_api``
+    # pipeline to avoid any kind of auth issues.
+    sed 's/authtoken api/api/' etc/deckhand/deckhand-paste.ini &> $CONF_DIR/deckhand-paste.ini
 }
 
 function gen_policy {
@@ -92,6 +113,7 @@ function gen_policy {
 }
 
 gen_config
+gen_paste
 gen_policy
 
 uwsgi \

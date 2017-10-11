@@ -69,7 +69,3 @@ tests:
     desc: Verify that the revision was deleted
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 404
-    # Deckhand exceptions return the following content-type header by
-    # default. TODO(fmontei): Override that later.
-    response_headers:
-      content-type: 'application/json; charset=UTF-8'

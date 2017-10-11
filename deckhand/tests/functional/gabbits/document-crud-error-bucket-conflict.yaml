@@ -28,7 +28,3 @@ tests:
     PUT: /api/v1.0/bucket/b/documents
     status: 409
     data: <@resources/sample-doc.yaml
-    # Deckhand exceptions return the following content-type header by
-    # default. TODO(fmontei): Override that later.
-    response_headers:
-      content-type: 'application/json; charset=UTF-8'

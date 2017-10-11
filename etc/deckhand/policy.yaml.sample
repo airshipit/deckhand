@@ -60,7 +60,8 @@
 # GET  /api/v1.0/revisions
 #"deckhand:list_revisions": "rule:admin_api"
 
-# Delete all revisions.
+# Delete all revisions. Warning: this is equivalent to purging the
+# database.
 # DELETE  /api/v1.0/revisions
 #"deckhand:delete_revisions": "rule:admin_api"
 

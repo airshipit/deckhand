@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import yaml
-
 import falcon
 
 from deckhand import context
@@ -35,25 +33,9 @@ class BaseResource(object):
         resp.headers['Allow'] = ','.join(allowed_methods)
         resp.status = falcon.HTTP_200
 
-    def to_yaml_body(self, dict_body):
-        """Converts JSON body into YAML response body.
-
-        :param dict_body: response body to be converted to YAML.
-        :returns: YAML encoding of `dict_body`.
-        """
-        if isinstance(dict_body, dict):
-            return yaml.safe_dump(dict_body)
-        elif isinstance(dict_body, list):
-            return yaml.safe_dump_all(dict_body)
-        raise TypeError('Unrecognized dict_body type when converting response '
-                        'body to YAML format.')
-
 
 class DeckhandRequest(falcon.Request):
-
-    def __init__(self, env, options=None):
-        super(DeckhandRequest, self).__init__(env, options)
-        self.context = context.RequestContext.from_environ(self.env)
+    context_type = context.RequestContext
 
     @property
     def project_id(self):

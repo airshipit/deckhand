@@ -16,7 +16,6 @@ import inspect
 import mock
 
 from deckhand.control import api
-from deckhand.control import base
 from deckhand.control import buckets
 from deckhand.control import revision_diffing
 from deckhand.control import revision_documents
@@ -45,19 +44,17 @@ class TestApi(test_base.DeckhandTestCase):
                        if inspect.isclass(obj)]
         return class_names
 
+    @mock.patch.object(api, 'policy', autospec=True)
     @mock.patch.object(api, 'db_api', autospec=True)
     @mock.patch.object(api, 'logging', autospec=True)
     @mock.patch.object(api, 'CONF', autospec=True)
-    @mock.patch.object(api, 'falcon', autospec=True)
-    def test_start_api(self, mock_falcon, mock_config, mock_logging,
-                       mock_db_api):
+    @mock.patch('deckhand.service.falcon', autospec=True)
+    def test_init_application(self, mock_falcon, mock_config, mock_logging,
+                              mock_db_api, _):
         mock_falcon_api = mock_falcon.API.return_value
 
-        result = api.start_api()
-        self.assertEqual(mock_falcon_api, result)
+        api.init_application()
 
-        mock_falcon.API.assert_called_once_with(
-            request_type=base.DeckhandRequest)
         mock_falcon_api.add_route.assert_has_calls([
             mock.call('/api/v1.0/bucket/{bucket_name}/documents',
                       self.buckets_resource()),
