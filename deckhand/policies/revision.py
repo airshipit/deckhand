@@ -21,7 +21,7 @@ revision_policies = [
     policy.DocumentedRuleDefault(
         base.POLICY_ROOT % 'show_revision',
         base.RULE_ADMIN_API,
-        "Show details for a revision tag.",
+        "Show details for a revision.",
         [
             {
                 'method': 'GET',
@@ -41,7 +41,8 @@ revision_policies = [
     policy.DocumentedRuleDefault(
         base.POLICY_ROOT % 'delete_revisions',
         base.RULE_ADMIN_API,
-        "Delete all revisions.",
+        """Delete all revisions. Warning: this is equivalent to purging the
+database.""",
         [
             {
                 'method': 'DELETE',

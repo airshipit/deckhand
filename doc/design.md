@@ -605,16 +605,24 @@ Here is a list of internal validations:
 Deckhand will use standard OpenStack Role Based Access Control using the
 following actions:
 
-- `purge_database` - Remove all documents and revisions from the database.
-- `read_cleartext_document` - Read unencrypted documents.
-- `read_encrypted_document` - Read (including substitution and layering)
+- `deckhand:list_cleartext_documents` - Read unencrypted documents.
+- `deckhand:list_encrypted_documents` - Read (including substitution and layering)
   encrypted documents.
-- `read_revision` - Read details about revisions.
-- `read_validation` - Read validation policy status, and validation results,
+- `deckhand:list_validations` - Read validation policy status, and validation results,
+- `deckhand:create_validation` - Write validation results.
   including error messages.
-- `write_cleartext_document` - Create, update or delete unencrypted documents.
-- `write_encrypted_document` - Create, update or delete encrypted documents.
-- `write_validation` - Write validation results.
+- `deckhand:create_cleartext_documents` - Create, update or delete unencrypted documents.
+- `deckhand:create_encrypted_documents` - Create, update or delete encrypted documents.
+- `deckhand:show_revision` - Show revision details.
+- `deckhand:list_revisions` - List all revisions.
+- `deckhand:delete_revisions` - Delete all revisions. Equivalent to effectively
+  purging all data from the database.
+- `deckhand:show_revision_diff` - Show revision diff for two revisions.
+- `deckhand:create_tag` - Create a revision tag.
+- `deckhand:show_tag` - Show revision tag details.
+- `deckhand:list_tags` - List all revision tags.
+- `deckhand:delete_tag` - Delete a revision tag.
+- `deckhand:delete_tags` - Delete all revision tags.
 
 ## API
 
@@ -647,8 +655,8 @@ If no changes are detected, a new revision should not be created. This allows
 services to periodically re-register their schemas without creating
 unnecessary revisions.
 
-This endpoint uses the `write_cleartext_document` and
-`write_encrypted_document` actions.
+This endpoint uses the `deckhand:list_cleartext_documents` and
+`deckhand:list_encrypted_documents` actions.
 
 ### GET `/revisions/{revision_id}/documents`
 
@@ -680,8 +688,8 @@ Supported query string parameters:
   only from a particular bucket.  Repeating this parameter indicates documents
   from any of the specified buckets should be returned.
 
-This endpoint uses the `read_cleartext_document` and
-`read_encrypted_document` actions.
+This endpoint uses the `deckhand:list_cleartext_documents` and
+`deckhand:list_encrypted_documents` actions.
 
 ### GET `/revisions/{revision_id}/rendered-documents`
 
@@ -693,8 +701,8 @@ Valid query parameters are the same as for
 `/revisions/{revision_id}/documents`, minus the paremters in
 `metadata.layeringDetinition`, which are not supported.
 
-This endpoint uses the `read_cleartext_document` and
-`read_encrypted_document` actions.
+This endpoint uses the `deckhand:list_cleartext_documents` and
+`deckhand:list_encrypted_documents` actions.
 
 ### GET `/revisions`
 
@@ -722,7 +730,7 @@ results:
     tags: [a, b, c]
     validationPolicies:
       site-deploy-validation:
-        status: failed
+        status: failure
   - id: 2
     url: https://deckhand/api/v1.0/revisions/2
     createdAt: 2017-07-16T01:15Z
@@ -730,18 +738,18 @@ results:
     tags: [b]
     validationPolicies:
       site-deploy-validation:
-        status: succeeded
+        status: success
 ...
 ```
 
-This endpoint uses the `read_revision` action.
+This endpoint uses the `deckhand:show_revision` action.
 
 ### DELETE `/revisions`
 
 Permanently delete all documents.  This removes all revisions and resets the
 data store.
 
-This endpoint uses the `purge_database` action.
+This endpoint uses the `deckhand:delete_revisions` action.
 
 ### GET `/revisions/{{revision_id}}`
 
@@ -749,8 +757,8 @@ Get a detailed description of a particular revision. The status of each
 `ValidationPolicy` belonging to the revision is also included. Valid values
 for the status of each validation policy are:
 
-* `succeded` - All validations associated with the policy are `success`.
-* `failed` - Any validation associated with the policy has status `failed`,
+* `success` - All validations associated with the policy are `success`.
+* `failure` - Any validation associated with the policy has status `failure`,
   `expired` or `missing`.
 
 Sample response:
@@ -768,7 +776,7 @@ tags:
 validationPolicies:
   site-deploy-validation:
     url: https://deckhand/api/v1.0/revisions/1/documents?schema=deckhand/ValidationPolicy/v1&name=site-deploy-validation
-    status: failed
+    status: failure
     validations:
       - name: deckhand-schema-validation
         url: https://deckhand/api/v1.0/revisions/1/validations/deckhand-schema-validation/0
@@ -780,7 +788,7 @@ validationPolicies:
         status: expired
       - name: armada-deployability-validation
         url: https://deckhand/api/v1.0/revisions/1/validations/armada-deployability-validation/0
-        status: failed
+        status: failure
 ...
 ```
 
@@ -789,7 +797,7 @@ A status of `missing` indicates that no entries have been created. A status
 of `expired` indicates that the validation had succeeded, but the
 `expiresAfter` limit specified in the `ValidationPolicy` has been exceeded.
 
-This endpoint uses the `read_revision` action.
+This endpoint uses the `deckhand:show_revision` action.
 
 ### GET `/revisions/{{revision_id}}/diff/{{comparison_revision_id}}`
 
@@ -874,7 +882,7 @@ An example `POST` request body indicating validation success:
 
 ```yaml
 ---
-status: succeeded
+status: success
 validator:
   name: promenade
   version: 1.1.2
@@ -888,7 +896,7 @@ POST /api/v1.0/revisions/3/validations/promenade-site-validation
 Content-Type: application/x-yaml
 
 ---
-status: failed
+status: failure
 errors:
   - documents:
       - schema: promenade/Node/v1
@@ -902,7 +910,7 @@ validator:
 ...
 ```
 
-This endpoint uses the `write_validation` action.
+This endpoint uses the `deckhand:create_validation` action.
 
 ### GET `/revisions/{{revision_id}}/validations`
 
@@ -925,7 +933,7 @@ results:
 ...
 ```
 
-This endpoint uses the `read_validation` action.
+This endpoint uses the `deckhand:list_validations` action.
 
 ### GET `/revisions/{{revision_id}}/validations/{{name}}`
 
@@ -945,7 +953,7 @@ results:
 ...
 ```
 
-This endpoint uses the `read_validation` action.
+This endpoint uses the `deckhand:list_validations` action.
 
 ### GET `/revisions/{{revision_id}}/validations/{{name}}/entries/{{entry_id}}`
 
@@ -972,7 +980,7 @@ errors:
 ...
 ```
 
-This endpoint uses the `read_validation` action.
+This endpoint uses the `deckhand:show_validation` action.
 
 ### POST `/revisions/{{revision_id}}/tags/{{tag}}`
 
@@ -1027,7 +1035,7 @@ tag: foobar
 ...
 ```
 
-This endpoint uses the `write_tag` action.
+This endpoint uses the `deckhand:create_tag` action.
 
 ### GET `/revisions/{{revision_id}}/tags`
 
@@ -1055,7 +1063,7 @@ HTTP/1.1 200 OK
 ...
 ```
 
-This endpoint uses the `read_tag` action.
+This endpoint uses the `deckhand:list_tags` action.
 
 ### GET `/revisions/{{revision_id}}/tags/{{tag}}`
 
@@ -1080,7 +1088,7 @@ metadata:
 ...
 ```
 
-This endpoint uses the `read_tag` action.
+This endpoint uses the `deckhand:show_tag` action.
 
 ### DELETE `/revisions/{{revision_id}}/tags/{{tag}}`
 
@@ -1099,7 +1107,7 @@ Content-Type: application/x-yaml
 HTTP/1.1 204 No Content
 ```
 
-This endpoint uses the `delete_tag` action.
+This endpoint uses the `deckhand:delete_tag` action.
 
 ### DELETE `/revisions/{{revision_id}}/tags`
 
@@ -1118,12 +1126,12 @@ Content-Type: application/x-yaml
 HTTP/1.1 204 No Content
 ```
 
-This endpoint uses the `delete_tag` action.
+This endpoint uses the `deckhand:delete_tags` action.
 
 ### POST `/rollback/{target_revision_id}`
 
 Creates a new revision that contains exactly the same set of documents as the
 revision specified by `target_revision_id`.
 
-This endpoint uses the `write_cleartext_document` and
-`write_encrypted_document` actions.
+This endpoint uses the `deckhand:create_cleartext_documents` and
+`deckhand:create_encrypted_documents` actions.
