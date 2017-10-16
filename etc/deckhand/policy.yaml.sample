@@ -89,3 +89,18 @@
 # DELETE  /api/v1.0/revisions/{revision_id}/tags
 #"deckhand:delete_tags": "rule:admin_api"
 
+# Add the results of a validation for a particular revision.
+# POST  /api/v1.0/revisions/{revision_id}/validations
+#"deckhand:create_validation": "rule:admin_api"
+
+# "List all validations that have been reported for a revision. Also
+# lists the validation entries for a particular validation.
+# GET  /api/v1.0/revisions/{revision_id}/validations
+# GET  /api/v1.0/revisions/{revision_id}/validations/{validation_name}
+#"deckhand:list_validations": "rule:admin_api"
+
+# Gets the full details of a particular validation entry, including
+# all posted error details.
+# GET  /api/v1.0/revisions/{revision_id}/validations/{validation_name}/entries/{entry_id}
+#"deckhand:show_validation": "rule:admin_api"
+

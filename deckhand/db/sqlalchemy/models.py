@@ -23,8 +23,8 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy.orm import relationship
-from sqlalchemy import schema
 from sqlalchemy import String
+from sqlalchemy import UniqueConstraint
 
 
 # Declarative base class which maintains a catalog of classes and tables
@@ -82,13 +82,6 @@ class DeckhandBase(models.ModelBase, models.TimestampMixin):
         return d
 
 
-def gen_unique_constraint(table_name, *fields):
-    constraint_name = 'ix_' + table_name.lower()
-    for field in fields:
-        constraint_name = constraint_name + '_%s' % field
-    return schema.UniqueConstraint(*fields, name=constraint_name)
-
-
 class Bucket(BASE, DeckhandBase):
     __tablename__ = 'buckets'
 
@@ -106,6 +99,7 @@ class Revision(BASE, DeckhandBase):
     documents = relationship("Document",
                              primaryjoin="Revision.id==Document.revision_id")
     tags = relationship("RevisionTag")
+    validations = relationship("Validation")
 
     def to_dict(self):
         d = super(Revision, self).to_dict()
@@ -117,8 +111,6 @@ class Revision(BASE, DeckhandBase):
 class RevisionTag(BASE, DeckhandBase):
     UNIQUE_CONSTRAINTS = ('tag', 'revision_id')
     __tablename__ = 'revision_tags'
-    __table_args__ = (
-        gen_unique_constraint(__tablename__, *UNIQUE_CONSTRAINTS),)
 
     tag = Column(String(64), primary_key=True, nullable=False)
     data = Column(oslo_types.JsonEncodedDict(), nullable=True, default={})
@@ -126,11 +118,12 @@ class RevisionTag(BASE, DeckhandBase):
         Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
         nullable=False)
 
+    UniqueConstraint(*UNIQUE_CONSTRAINTS)
+
 
 class Document(BASE, DeckhandBase):
     UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
     __tablename__ = 'documents'
-    __table_args__ = (gen_unique_constraint(*UNIQUE_CONSTRAINTS),)
 
     id = Column(Integer, primary_key=True)
     name = Column(String(64), nullable=False)
@@ -138,7 +131,7 @@ class Document(BASE, DeckhandBase):
     # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``_metadata``
     # must be used to store document metadata information in the DB.
     _metadata = Column(oslo_types.JsonEncodedDict(), nullable=False)
-    data = Column(oslo_types.JsonEncodedDict(), nullable=True)
+    data = Column(oslo_types.JsonEncodedDict(), nullable=True, default={})
     data_hash = Column(String, nullable=False)
     metadata_hash = Column(String, nullable=False)
     is_secret = Column(Boolean, nullable=False, default=False)
@@ -160,6 +153,8 @@ class Document(BASE, DeckhandBase):
         Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
                             nullable=True)
 
+    UniqueConstraint(*UNIQUE_CONSTRAINTS)
+
     @hybrid_property
     def bucket_name(self):
         if hasattr(self, 'bucket') and self.bucket:
@@ -177,18 +172,34 @@ class Document(BASE, DeckhandBase):
         if not raw_dict:
             d['metadata'] = d.pop('_metadata')
 
+        if 'bucket' in d:
+            d.pop('bucket')
+
         return d
+
+
+class Validation(BASE, DeckhandBase):
+    __tablename__ = 'validations'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False)
+    status = Column(String(8), nullable=False)
+    validator = Column(oslo_types.JsonEncodedDict(), nullable=False)
+    errors = Column(oslo_types.JsonEncodedList(), nullable=False, default=[])
+    revision_id = Column(
+        Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
+                            nullable=False)
 
 
 def register_models(engine):
     """Create database tables for all models with the given engine."""
-    models = [Bucket, Document, Revision, RevisionTag]
+    models = [Bucket, Document, Revision, RevisionTag, Validation]
     for model in models:
         model.metadata.create_all(engine)
 
 
 def unregister_models(engine):
     """Drop database tables for all models with the given engine."""
-    models = [Bucket, Document, Revision, RevisionTag]
+    models = [Bucket, Document, Revision, RevisionTag, Validation]
     for model in models:
         model.metadata.drop_all(engine)

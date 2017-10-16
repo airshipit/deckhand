@@ -29,6 +29,7 @@ from oslo_log import log as logging
 from oslo_serialization import jsonutils as json
 import six
 import sqlalchemy.orm as sa_orm
+from sqlalchemy import text
 
 from deckhand.db.sqlalchemy import models
 from deckhand import errors
@@ -90,7 +91,15 @@ def setup_db():
     models.register_models(get_engine())
 
 
-def documents_create(bucket_name, documents, session=None):
+def raw_query(query, **kwargs):
+    """Execute a raw query against the database."""
+    stmt = text(query)
+    stmt = stmt.bindparams(**kwargs)
+    return get_engine().execute(stmt)
+
+
+def documents_create(bucket_name, documents, validations=None,
+                     session=None):
     """Create a set of documents and associated bucket.
 
     If no changes are detected, a new revision will not be created. This
@@ -125,6 +134,10 @@ def documents_create(bucket_name, documents, session=None):
     if any([documents_to_create, documents_to_delete]):
         bucket = bucket_get_or_create(bucket_name)
         revision = revision_create()
+        if validations:
+            for validation in validations:
+                validation_create(revision['id'], validation['name'],
+                                  validation)
 
     if documents_to_delete:
         LOG.debug('Deleting documents: %s.', documents_to_delete)
@@ -179,6 +192,7 @@ def _documents_create(bucket_name, values_list, session=None):
         return document
 
     for values in values_list:
+        values.setdefault('data', {})
         values = _fill_in_metadata_defaults(values)
         values['is_secret'] = 'secret' in values['data']
 
@@ -266,7 +280,7 @@ def document_get(session=None, raw_dict=False, **filters):
     # "regular" filters via sqlalchemy and all nested filters via Python.
     nested_filters = {}
     for f in filters.copy():
-        if '.' in f:
+        if any([x in f for x in ('.', 'schema')]):
             nested_filters.setdefault(f, filters.pop(f))
 
     # Documents with the the same metadata.name and schema can exist across
@@ -284,6 +298,56 @@ def document_get(session=None, raw_dict=False, **filters):
 
     filters.update(nested_filters)
     raise errors.DocumentNotFound(document=filters)
+
+
+def document_get_all(session=None, raw_dict=False, revision_id=None,
+                     **filters):
+    """Retrieve all documents for ``revision_id`` that match ``filters``.
+
+    :param session: Database session object.
+    :param raw_dict: Whether to retrieve the exact way the data is stored in
+        DB if ``True``, else the way users expect the data.
+    :param revision_id: The ID corresponding to the ``Revision`` object. If the
+        ID is ``None``, then retrieve the latest revision, if one exists.
+    :param filters: Dictionary attributes (including nested) used to filter
+        out revision documents.
+    :returns: Dictionary representation of each retrieved document.
+    """
+    session = session or get_session()
+
+    if revision_id is None:
+        # If no revision_id is specified, grab the newest one.
+        revision = session.query(models.Revision)\
+            .order_by(models.Revision.created_at.desc())\
+            .first()
+        if revision:
+            filters['revision_id'] = revision.id
+    else:
+        filters['revision_id'] = revision_id
+
+    # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
+    # JSON fields via sqlalchemy. For now, filter the documents using all
+    # "regular" filters via sqlalchemy and all nested filters via Python.
+    nested_filters = {}
+    for f in filters.copy():
+        if any([x in f for x in ('.', 'schema')]):
+            nested_filters.setdefault(f, filters.pop(f))
+
+    # Retrieve the most recently created documents for the revision, because
+    # documents with the same metadata.name and schema can exist across
+    # different revisions.
+    documents = session.query(models.Document)\
+        .filter_by(**filters)\
+        .order_by(models.Document.created_at.desc())\
+        .all()
+
+    final_documents = []
+    for doc in documents:
+        d = doc.to_dict(raw_dict=raw_dict)
+        if _apply_filters(d, **nested_filters):
+            final_documents.append(d)
+
+    return final_documents
 
 
 ####################
@@ -414,10 +478,9 @@ def _apply_filters(dct, **filters):
         unwanted results.
     :return: True if the dictionary satisfies all the filters, else False.
     """
-    def _transform_filter_bool(actual_val, filter_val):
+    def _transform_filter_bool(filter_val):
         # Transform boolean values into string literals.
-        if (isinstance(actual_val, bool)
-            and isinstance(filter_val, six.string_types)):
+        if isinstance(filter_val, six.string_types):
             try:
                 filter_val = ast.literal_eval(filter_val.title())
             except ValueError:
@@ -426,20 +489,23 @@ def _apply_filters(dct, **filters):
                 filter_val = None
         return filter_val
 
-    match = True
-
     for filter_key, filter_val in filters.items():
-        actual_val = utils.jsonpath_parse(dct, filter_key)
-
         # If the filter is a list of possibilities, e.g. ['site', 'region']
         # for metadata.layeringDefinition.layer, check whether the actual
         # value is present.
         if isinstance(filter_val, (list, tuple)):
-            if actual_val not in [_transform_filter_bool(actual_val, x)
-                                  for x in filter_val]:
-                match = False
-                break
+            actual_val = utils.jsonpath_parse(dct, filter_key, match_all=True)
+            if not actual_val:
+                return False
+
+            if isinstance(actual_val[0], bool):
+                filter_val = [_transform_filter_bool(x) for x in filter_val]
+
+            if not set(actual_val).intersection(set(filter_val)):
+                return False
         else:
+            actual_val = utils.jsonpath_parse(dct, filter_key)
+
             # Else if both the filter value and the actual value in the doc
             # are dictionaries, check whether the filter dict is a subset
             # of the actual dict.
@@ -448,16 +514,20 @@ def _apply_filters(dct, **filters):
                 is_subset = set(
                     filter_val.items()).issubset(set(actual_val.items()))
                 if not is_subset:
-                    match = False
-                    break
+                    return False
             else:
-                # Else both filters are string literals.
-                if actual_val != _transform_filter_bool(
-                        actual_val, filter_val):
-                    match = False
-                    break
+                if isinstance(actual_val, bool):
+                    filter_val = _transform_filter_bool(filter_val)
 
-    return match
+                # Else both filters are string literals.
+                if filter_key in ['metadata.schema', 'schema']:
+                    if not actual_val.startswith(filter_val):
+                        return False
+                else:
+                    if actual_val != filter_val:
+                        return False
+
+    return True
 
 
 def revision_get_all(session=None, **filters):
@@ -914,3 +984,71 @@ def revision_rollback(revision_id, latest_revision, session=None):
         new_revision['documents'])
 
     return new_revision
+
+
+####################
+
+
+@require_revision_exists
+def validation_create(revision_id, val_name, val_data, session=None):
+    session = session or get_session()
+
+    validation_kwargs = {
+        'revision_id': revision_id,
+        'name': val_name,
+        'status': val_data.get('status', None),
+        'validator': val_data.get('validator', None),
+        'errors': val_data.get('errors', []),
+    }
+
+    validation = models.Validation()
+
+    with session.begin():
+        validation.update(validation_kwargs)
+        validation.save(session=session)
+
+    return validation.to_dict()
+
+
+@require_revision_exists
+def validation_get_all(revision_id, session=None):
+    # Query selects only unique combinations of (name, status) from the
+    # `Validations` table and prioritizes 'failure' result over 'success'
+    # result via alphabetical ordering of the status column. Each document
+    # has its own validation but for this query we want to return the result
+    # of the overall validation for the revision. If just 1 document failed
+    # validation, we regard the validation for the whole revision as 'failure'.
+    query = raw_query("""
+        SELECT DISTINCT name, status FROM validations as v1
+            WHERE revision_id = :revision_id AND status = (
+                SELECT status FROM validations as v2
+                    WHERE v2.name = v1.name
+                    ORDER BY status
+                    LIMIT 1
+            )
+            GROUP BY name, status
+            ORDER BY name, status;
+    """, revision_id=revision_id)
+
+    result = query.fetchall()
+    return result
+
+
+@require_revision_exists
+def validation_get_all_entries(revision_id, val_name, session=None):
+    session = session or get_session()
+
+    entries = session.query(models.Validation)\
+        .filter_by(**{'revision_id': revision_id, 'name': val_name})\
+        .order_by(models.Validation.created_at.asc())\
+        .all()
+
+    return [e.to_dict() for e in entries]
+
+
+@require_revision_exists
+def validation_get_entry(revision_id, val_name, entry_id, session=None):
+    session = session or get_session()
+    entries = validation_get_all_entries(
+        revision_id, val_name, session=session)
+    return entries[entry_id]

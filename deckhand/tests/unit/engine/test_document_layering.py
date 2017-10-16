@@ -155,7 +155,7 @@ class TestDocumentLayering2LayersAbstractConcrete(TestDocumentLayering):
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test(mapping, site_abstract=False,
-                                    global_abstract=False)
+                                         global_abstract=False)
 
         site_expected = {'c': 9}
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 9}
@@ -171,7 +171,7 @@ class TestDocumentLayering2LayersAbstractConcrete(TestDocumentLayering):
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test(mapping, site_abstract=True,
-                                    global_abstract=True)
+                                         global_abstract=True)
 
         site_expected = {"a": {"x": 7, "z": 3}, "b": 4}
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 9}

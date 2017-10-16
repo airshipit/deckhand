@@ -32,5 +32,5 @@ schema = {
         'data': {'type': ['string', 'object']}
     },
     'additionalProperties': False,
-    'required': ['schema', 'metadata', 'data']
+    'required': ['schema', 'metadata']
 }

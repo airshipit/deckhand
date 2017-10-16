@@ -24,6 +24,7 @@ from deckhand.control import revision_documents
 from deckhand.control import revision_tags
 from deckhand.control import revisions
 from deckhand.control import rollback
+from deckhand.control import validations
 from deckhand.control import versions
 
 CONF = cfg.CONF
@@ -45,6 +46,12 @@ def configure_app(app, version=''):
         ('revisions/{revision_id}/tags', revision_tags.RevisionTagsResource()),
         ('revisions/{revision_id}/tags/{tag}',
             revision_tags.RevisionTagsResource()),
+        ('revisions/{revision_id}/validations',
+            validations.ValidationsResource()),
+        ('revisions/{revision_id}/validations/{validation_name}',
+            validations.ValidationsResource()),
+        ('revisions/{revision_id}/validations/{validation_name}/{entry_id}',
+            validations.ValidationsResource()),
         ('rollback/{revision_id}', rollback.RollbackResource())
     ]
 

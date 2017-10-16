@@ -16,15 +16,17 @@
 DOCUMENT_SCHEMA_TYPES = (
     CERTIFICATE_SCHEMA,
     CERTIFICATE_KEY_SCHEMA,
+    DATA_SCHEMA_SCHEMA,
     LAYERING_POLICY_SCHEMA,
     PASSPHRASE_SCHEMA,
     VALIDATION_POLICY_SCHEMA,
 ) = (
     'deckhand/Certificate',
     'deckhand/CertificateKey',
-    'deckhand/LayeringPolicy/v1',
+    'deckhand/DataSchema',
+    'deckhand/LayeringPolicy',
     'deckhand/Passphrase',
-    'deckhand/ValidationPolicy/v1',
+    'deckhand/ValidationPolicy',
 )
 
 

@@ -18,10 +18,10 @@ from deckhand.control import base as api_base
 from deckhand.tests.unit.control import base as test_base
 
 
-class TestBaseResource(test_base.BaseControllerTest):
+class TestBaseController(test_base.BaseControllerTest):
 
     def setUp(self):
-        super(TestBaseResource, self).setUp()
+        super(TestBaseController, self).setUp()
         self.base_resource = api_base.BaseResource()
 
     @mock.patch.object(api_base, 'dir')  # noqa

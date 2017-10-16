@@ -24,6 +24,7 @@ from deckhand.control import revision_documents
 from deckhand.control import revision_tags
 from deckhand.control import revisions
 from deckhand.control import rollback
+from deckhand.control import validations
 from deckhand.control import versions
 from deckhand.tests.unit import base as test_base
 from deckhand import utils
@@ -33,8 +34,10 @@ class TestApi(test_base.DeckhandTestCase):
 
     def setUp(self):
         super(TestApi, self).setUp()
+        # Mock the API resources.
         for resource in (buckets, revision_diffing, revision_documents,
-                         revision_tags, revisions, rollback, versions):
+                         revision_tags, revisions, rollback, validations,
+                         versions):
             class_names = self._get_module_class_names(resource)
             for class_name in class_names:
                 resource_obj = self.patchobject(
@@ -88,8 +91,16 @@ class TestApi(test_base.DeckhandTestCase):
                       self.revision_tags_resource()),
             mock.call('/api/v1.0/rollback/{revision_id}',
                       self.rollback_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}/validations',
+                      self.validations_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}/validations/'
+                      '{validation_name}',
+                      self.validations_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}/validations/'
+                      '{validation_name}/{entry_id}',
+                      self.validations_resource()),
             mock.call('/versions', self.versions_resource())
-        ])
+        ], any_order=True)
 
         mock_db_api.drop_db.assert_called_once_with()
         mock_db_api.setup_db.assert_called_once_with()

@@ -119,7 +119,7 @@ schema:
         layer:site
 """
         invalid_payloads = ['garbage', no_colon_spaces]
-        error_re = ['.*The provided YAML failed schema validation.*',
+        error_re = ['.*The provided document YAML failed schema validation.*',
                     '.*mapping values are not allowed here.*']
 
         for idx, payload in enumerate(invalid_payloads):

@@ -105,8 +105,9 @@ class TestRevisionViews(base.TestDbBase):
         self.assertEqual('success', revision_view['status'])
         self.assertIsInstance(revision_view['validationPolicies'], list)
         self.assertEqual(1, len(revision_view['validationPolicies']))
-        self.assertEqual(revision_view['validationPolicies'][0]['name'],
-                         'deckhand-schema-validation')
+        self.assertRegexpMatches(
+            revision_view['validationPolicies'][0]['name'],
+            'deckhand-validation-policy-.*')
         self.assertEqual(revision_view['validationPolicies'][0]['status'],
                          'success')
 
@@ -133,7 +134,8 @@ class TestRevisionViews(base.TestDbBase):
         self.assertEqual('failed', revision_view['status'])
         self.assertIsInstance(revision_view['validationPolicies'], list)
         self.assertEqual(1, len(revision_view['validationPolicies']))
-        self.assertEqual(revision_view['validationPolicies'][0]['name'],
-                         'deckhand-schema-validation')
+        self.assertRegexpMatches(
+            revision_view['validationPolicies'][0]['name'],
+            'deckhand-validation-policy-.*')
         self.assertEqual(revision_view['validationPolicies'][0]['status'],
                          'failed')

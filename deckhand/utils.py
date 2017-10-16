@@ -32,7 +32,7 @@ def to_snake_case(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
-def jsonpath_parse(data, jsonpath):
+def jsonpath_parse(data, jsonpath, match_all=False):
     """Parse value in the data for the given ``jsonpath``.
 
     Retrieve the nested entry corresponding to ``data[jsonpath]``. For
@@ -66,7 +66,8 @@ def jsonpath_parse(data, jsonpath):
     p = jsonpath_ng.parse(jsonpath)
     matches = p.find(data)
     if matches:
-        return matches[0].value
+        result = [m.value for m in matches]
+        return result if match_all else result[0]
 
 
 def jsonpath_replace(data, value, jsonpath, pattern=None):
@@ -113,8 +114,8 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
             _value = value
             if pattern:
                 to_replace = p_to_change[0].value
-                # value represents the value to inject into to_replace that
-                # matches the pattern.
+                # `value` represents the value to inject into `to_replace` that
+                # matches the `pattern`.
                 try:
                     _value = re.sub(pattern, value, to_replace)
                 except TypeError:

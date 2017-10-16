@@ -40,6 +40,51 @@ class DeckhandFactory(object):
         pass
 
 
+class DataSchemaFactory(DeckhandFactory):
+    """Class for auto-generating ``DataSchema`` templates for testing."""
+
+    DATA_SCHEMA_TEMPLATE = {
+        "data": {
+            "$schema": ""
+        },
+        "metadata": {
+            "schema": "metadata/Control/v1",
+            "name": "",
+            "labels": {}
+        },
+        "schema": "deckhand/DataSchema/v1"
+    }
+
+    def __init__(self):
+        """Constructor for ``DataSchemaFactory``.
+
+        Returns a template whose YAML representation is of the form::
+
+            ---
+            schema: deckhand/DataSchema/v1
+            metadata:
+                schema: metadata/Control/v1
+                name: promenade/Node/v1
+                labels:
+                    application: promenade
+            data:
+                $schema: http://blah
+            ...
+        """
+
+    def gen(self):
+        raise NotImplementedError()
+
+    def gen_test(self, metadata_name, data, **metadata_labels):
+        data_schema_template = copy.deepcopy(self.DATA_SCHEMA_TEMPLATE)
+
+        data_schema_template['metadata']['name'] = metadata_name
+        data_schema_template['metadata']['labels'] = metadata_labels
+        data_schema_template['data'] = data
+
+        return data_schema_template
+
+
 class DocumentFactory(DeckhandFactory):
     """Class for auto-generating document templates for testing."""
 
@@ -130,8 +175,7 @@ class DocumentFactory(DeckhandFactory):
         self.docs_per_layer = docs_per_layer
 
     def gen(self):
-        # TODO(fmontei): Implement this if needed later.
-        pass
+        raise NotImplementedError()
 
     def gen_test(self, mapping, site_abstract=True, region_abstract=True,
                  global_abstract=True, site_parent_selectors=None):
@@ -218,7 +262,7 @@ class DocumentFactory(DeckhandFactory):
                 if layer_name == 'region':
                     layer_template['metadata']['layeringDefinition'][
                         'abstract'] = region_abstract
-                elif layer_name == 'global':
+                if layer_name == 'global':
                     layer_template['metadata']['layeringDefinition'][
                         'abstract'] = global_abstract
 
@@ -300,7 +344,7 @@ class DocumentSecretFactory(DeckhandFactory):
         """
 
     def gen(self):
-        pass
+        raise NotImplementedError()
 
     def gen_test(self, schema, storage_policy, data=None):
         if data is None:
@@ -360,7 +404,7 @@ class ValidationPolicyFactory(DeckhandFactory):
             self.VALIDATION_POLICY_TEMPLATE)
 
         validation_policy_template['metadata'][
-            'name'] = validation_type
+            'name'] = test_utils.rand_name('validation-policy')
         validation_policy_template['data']['validations'] = [
             {'name': validation_type, 'status': status}
         ]

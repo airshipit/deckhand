@@ -49,8 +49,15 @@ class BucketsResource(api_base.BaseResource):
 
         # NOTE: Must validate documents before doing policy enforcement,
         # because we expect certain formatting of the documents while doing
-        # policy enforcement.
-        validation_policies = self._create_validation_policies(documents)
+        # policy enforcement. If any documents fail basic schema validaiton
+        # raise an exception immediately.
+        doc_validator = document_validation.DocumentValidation(documents)
+        try:
+            validations = doc_validator.validate_all()
+        except (deckhand_errors.InvalidDocumentFormat,
+                deckhand_errors.InvalidDocumentSchema) as e:
+            LOG.error(e.format_message())
+            raise falcon.HTTPBadRequest(description=e.format_message())
 
         for document in documents:
             if document['metadata'].get('storagePolicy') == 'encrypted':
@@ -60,28 +67,13 @@ class BucketsResource(api_base.BaseResource):
 
         self._prepare_secret_documents(documents)
 
-        # Save all the documents, including validation policies.
-        documents_to_create = documents + validation_policies
         created_documents = self._create_revision_documents(
-            bucket_name, list(documents_to_create))
+            bucket_name, documents, validations)
 
         if created_documents:
             resp.body = self.view_builder.list(created_documents)
         resp.status = falcon.HTTP_200
         resp.append_header('Content-Type', 'application/x-yaml')
-
-    def _create_validation_policies(self, documents):
-        # All concrete documents in the payload must successfully pass their
-        # JSON schema validations. Otherwise raise an error.
-        try:
-            validation_policies = document_validation.DocumentValidation(
-                documents).validate_all()
-        except deckhand_errors.InvalidDocumentFormat as e:
-            # FIXME(fmontei): Save the malformed documents and the failed
-            # validation policy in the DB for future debugging, and only
-            # afterward raise an exception.
-            raise falcon.HTTPBadRequest(description=e.format_message())
-        return validation_policies
 
     def _prepare_secret_documents(self, secret_documents):
         # Encrypt data for secret documents, if any.
@@ -94,9 +86,11 @@ class BucketsResource(api_base.BaseResource):
                       for t in types.DOCUMENT_SECRET_TYPES]):
                 document['data'] = {'secret': document['data']}
 
-    def _create_revision_documents(self, bucket_name, documents):
+    def _create_revision_documents(self, bucket_name, documents,
+                                   validations):
         try:
-            created_documents = db_api.documents_create(bucket_name, documents)
+            created_documents = db_api.documents_create(
+                bucket_name, documents, validations=validations)
         except deckhand_errors.DocumentExists as e:
             raise falcon.HTTPConflict(description=e.format_message())
         except Exception as e:

@@ -1,0 +1,14 @@
+---
+features:
+  - |
+    The Validations API has been introduced to Deckhand, allowing users
+    to register new validation results in Deckhand, as well as query
+    the API for validation results for a revision. The validation results
+    include a list of errors that occurred during document validation.
+
+    The following endpoints have been implemented:
+
+        * /api/v1.0/revisions/{revision_id}/validations
+        * /api/v1.0/revisions/{revision_id}/validations/{validation_name}
+        * /api/v1.0/revisions/{revision_id}/validations/{validation_name}/entries
+        * /api/v1.0/revisions/{revision_id}/validations/{validation_name}/entries/{entry_id}

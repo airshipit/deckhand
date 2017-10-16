@@ -106,6 +106,9 @@ class TestDbBase(base.DeckhandWithDBTestCase):
         latest_revision = db_api.revision_get_latest()
         return db_api.revision_rollback(revision_id, latest_revision)
 
+    def create_validation(self, revision_id, val_name, val_data):
+        return db_api.validation_create(revision_id, val_name, val_data)
+
     def _validate_object(self, obj):
         for attr in BASE_EXPECTED_FIELDS:
             if attr.endswith('_at'):

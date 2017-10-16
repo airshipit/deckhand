@@ -39,16 +39,15 @@ class DeckhandException(Exception):
 
 
 class InvalidDocumentFormat(DeckhandException):
-    msg_fmt = ("The provided YAML failed schema validation. Details: "
+    msg_fmt = ("The provided document YAML failed schema validation. Details: "
                "%(detail)s. Schema: %(schema)s.")
-    alt_msg_fmt = ("The provided %(document_type)s YAML failed schema "
-                   "validation. Details: %(detail)s. Schema: %(schema)s.")
+    code = 400
 
-    def __init__(self, document_type=None, **kwargs):
-        if document_type:
-            self.msg_fmt = self.alt_msg_fmt
-            kwargs.update({'document_type': document_type})
-        super(InvalidDocumentFormat, self).__init__(**kwargs)
+
+class InvalidDocumentSchema(DeckhandException):
+    msg_fmt = ("The provided %(document_schema)s is invalid. Supported "
+               "schemas: %(schema_list)s.")
+    code = 400
 
 
 class DocumentExists(DeckhandException):

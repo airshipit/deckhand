@@ -29,7 +29,11 @@ schema = {
                     'type': 'string',
                     'pattern': '^(metadata/Control/v[1]{1}(\.[0]{1}){0,1})$'
                 },
-                'name': {'type': 'string'},
+                'name': {
+                    'type': 'string',
+                    'pattern': (
+                        '^([A-Za-z]+\/[A-Za-z]+\/v[1]{1}(\.[0]{1}){0,1})$')
+                },
                 # Labels are optional.
                 'labels': {
                     'type': 'object'
@@ -49,7 +53,7 @@ schema = {
                     'type': 'string'
                 }
             },
-            'additionalProperties': False,
+            'additionalProperties': True,
             'required': ['$schema']
         }
     },

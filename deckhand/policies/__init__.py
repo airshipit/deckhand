@@ -18,6 +18,7 @@ from deckhand.policies import base
 from deckhand.policies import document
 from deckhand.policies import revision
 from deckhand.policies import revision_tag
+from deckhand.policies import validation
 
 
 def list_rules():
@@ -25,5 +26,6 @@ def list_rules():
         base.list_rules(),
         document.list_rules(),
         revision.list_rules(),
-        revision_tag.list_rules()
+        revision_tag.list_rules(),
+        validation.list_rules()
     )
