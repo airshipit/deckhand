@@ -1,7 +1,25 @@
+========
 Deckhand
 ========
-A foundational python REST YAML processing engine providing data and secrets
-management to other platform services.
+
+Deckhand is a document-based configuration storage service built with
+auditability and validation in mind.
+
+Core Responsibilities
+=====================
+
+* layering - helps reduce duplication in configuration while maintaining
+  auditability across many sites
+* substitution - provides separation between secret data and other
+  configuration data, while allowing a simple interface for clients
+* revision history - improves auditability and enables services to provide
+  functional validation of a well-defined collection of documents that are
+  meant to operate together
+* validation - allows services to implement and register different kinds of
+  validations and report errors
+
+Getting Started
+===============
 
 To generate a configuration file automatically::
 
@@ -36,3 +54,58 @@ To run locally in a development environment::
 	$ sudo pip install .
 	$ sudo python setup.py install
 	$ uwsgi --http :9000 -w deckhand.cmd --callable deckhand_callable --enable-threads -L
+
+Testing
+-------
+
+Automated Testing
+^^^^^^^^^^^^^^^^^
+
+To run unit tests using sqlite, execute:
+
+::
+
+    $ tox -epy27
+    $ tox -epy35
+
+against a py27- or py35-backed environment, respectively. To run individual
+unit tests, run:
+
+::
+
+    $ tox -e py27 -- deckhand.tests.unit.db.test_revisions
+
+for example.
+
+To run unit tests using postgresql, execute:
+
+::
+
+    $ tox -epy27-postgresql
+    $ tox -epy35-postgresql
+
+To run functional tests:
+
+::
+
+    $ tox -e functional
+
+You can also run a subset of tests via a regex:
+
+::
+
+    $ tox -e functional -- gabbi.suitemaker.test_gabbi_document-crud-success-multi-bucket
+
+Manual Testing
+^^^^^^^^^^^^^^
+
+Document creation can be tested locally using (from root deckhand directory):
+
+.. code-block:: console
+
+    $ curl -i -X PUT localhost:9000/api/v1.0/bucket/{bucket_name}/documents \
+         -H "Content-Type: application/x-yaml" \
+         --data-binary "@deckhand/tests/unit/resources/sample_document.yaml"
+
+    # revision_id copy/pasted from previous response.
+    $ curl -i -X GET localhost:9000/api/v1.0/revisions/1
