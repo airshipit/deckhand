@@ -188,6 +188,14 @@ class DocumentExists(DeckhandException):
     code = 409
 
 
+class SingletonDocumentConflict(DeckhandException):
+    msg_fmt = ("A singleton document by the name %(document)s already "
+               "exists in the system. The new document %(conflict)s cannot be "
+               "created. To create a document with a new name, delete the "
+               "current one first.")
+    code = 409
+
+
 class LayeringPolicyNotFound(DeckhandException):
     msg_fmt = ("LayeringPolicy with schema %(schema)s not found in the "
                "system.")

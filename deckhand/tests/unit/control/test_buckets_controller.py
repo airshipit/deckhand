@@ -19,6 +19,7 @@ from oslo_config import cfg
 
 from deckhand.control import buckets
 from deckhand import factories
+from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
 
 CONF = cfg.CONF
@@ -133,6 +134,32 @@ schema:
                 body=payload)
             self.assertEqual(400, resp.status_code)
             self.assertRegexpMatches(resp.text, error_re[idx])
+
+    def test_put_conflicting_layering_policy(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        payload = factories.DocumentFactory(1, [1]).gen_test({})[0]
+
+        # Create the first layering policy.
+        resp = self.app.simulate_put(
+            '/api/v1.0/bucket/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all([payload]))
+        self.assertEqual(200, resp.status_code)
+
+        # Validate that a layering policy with a different, conflicting name
+        # raises the expected exception.
+        error_re = ('.*A singleton document by the name %s already exists in '
+                    'the system.' % payload['metadata']['name'])
+        payload['metadata']['name'] = test_utils.rand_name('layering-policy')
+        resp = self.app.simulate_put(
+            '/api/v1.0/bucket/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all([payload]))
+        self.assertEqual(409, resp.status_code)
+        resp_error = ' '.join(resp.text.split())
+        self.assertRegexpMatches(resp_error, error_re)
 
 
 class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):

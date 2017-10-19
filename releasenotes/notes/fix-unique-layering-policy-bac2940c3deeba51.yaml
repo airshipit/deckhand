@@ -1,0 +1,7 @@
+---
+fixes:
+  - |
+    Deckhand will allow only one document with the schema ``LayeringPolicy``
+    to exist in the system at a time. To update the existing layering policy,
+    the layerign policy with the same name as the existing one should be
+    passed in. To create a new layering policy, delete the existing one first.

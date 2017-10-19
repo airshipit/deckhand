@@ -93,7 +93,7 @@ class DocumentFactory(DeckhandFactory):
             "layerOrder": []
         },
         "metadata": {
-            "name": "layering-policy",
+            "name": "placeholder",
             "schema": "metadata/Control/v%s" % DeckhandFactory.API_VERSION
         },
         "schema": "deckhand/LayeringPolicy/v%s" % DeckhandFactory.API_VERSION
@@ -157,7 +157,10 @@ class DocumentFactory(DeckhandFactory):
             layer_order = ["global", "region", "site"]
         else:
             raise ValueError("'num_layers' must be a value between 1 - 3.")
-        self.LAYERING_DEFINITION['data']['layerOrder'] = layer_order
+        self.layering_definition = copy.deepcopy(self.LAYERING_DEFINITION)
+        self.layering_definition['metadata']['name'] = test_utils.rand_name(
+            'layering-policy')
+        self.layering_definition['data']['layerOrder'] = layer_order
 
         if not isinstance(docs_per_layer, (list, tuple)):
             raise TypeError("'docs_per_layer' must be a list or tuple "
@@ -223,7 +226,7 @@ class DocumentFactory(DeckhandFactory):
         :type site_parent_selectors: list
         :returns: Rendered template of the form specified above.
         """
-        rendered_template = [self.LAYERING_DEFINITION]
+        rendered_template = [self.layering_definition]
         layer_order = rendered_template[0]['data']['layerOrder']
 
         for layer_idx in range(self.num_layers):

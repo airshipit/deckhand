@@ -98,6 +98,53 @@ def raw_query(query, **kwargs):
     return get_engine().execute(stmt)
 
 
+def require_unique_document_schema(schema=None):
+    """Decorator to enforce only one singleton document exists in the system.
+
+    An example of a singleton document is a ``LayeringPolicy`` document.
+
+    Only one singleton document can exist within the system at any time. It is
+    an error to attempt to insert a new document with the same ``schema`` if it
+    has a different ``metadata.name`` than the existing document.
+
+    A singleton document that already exists can be updated, if the document
+    that is passed in has the same name/schema as the existing one.
+
+    The existing singleton document can be replaced by first deleting it
+    and only then creating a new one.
+
+    :raises SingletonDocumentConflict: if a singleton document in the system
+        already exists and any of the documents to be created has the same
+        ``schema`` but has a ``metadata.name`` that differs from the one
+        already registered.
+    """
+    def decorator(f):
+        if schema not in types.DOCUMENT_SCHEMA_TYPES:
+            raise errors.DeckhandException(
+                'Unrecognized document schema %s.' % schema)
+
+        @functools.wraps(f)
+        def wrapper(bucket_name, documents, *args, **kwargs):
+            existing_documents = revision_get_documents(
+                schema=schema, deleted=False, include_history=False)
+            existing_document_names = [x['name'] for x in existing_documents]
+            # `conflict_names` is calculated by checking whether any documents
+            # in `documents` is a layering policy with a name not found in
+            # `existing_documents`.
+            conflicting_names = [
+                x['metadata']['name'] for x in documents
+                if x['metadata']['name'] not in existing_document_names and
+                   x['schema'].startswith(schema)]
+            if existing_document_names and conflicting_names:
+                raise errors.SingletonDocumentConflict(
+                    document=existing_document_names[0],
+                    conflict=conflicting_names)
+            return f(bucket_name, documents, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
+@require_unique_document_schema(types.LAYERING_POLICY_SCHEMA)
 def documents_create(bucket_name, documents, validations=None,
                      session=None):
     """Create a set of documents and associated bucket.
@@ -203,7 +250,8 @@ def _documents_create(bucket_name, values_list, session=None):
 
         try:
             existing_document = document_get(
-                raw_dict=True, **{x: values[x] for x in filters})
+                raw_dict=True, deleted=False,
+                **{x: values[x] for x in filters})
         except errors.DocumentNotFound:
             # Ignore bad data at this point. Allow creation to bubble up the
             # error related to bad data.
@@ -214,7 +262,8 @@ def _documents_create(bucket_name, values_list, session=None):
             # Ignore redundant validation policies as they are allowed to exist
             # in multiple buckets.
             if (existing_document['bucket_name'] != bucket_name and
-                existing_document['schema'] != types.VALIDATION_POLICY_SCHEMA):
+                not existing_document['schema'].startswith(
+                    types.VALIDATION_POLICY_SCHEMA)):
                 raise errors.DocumentExists(
                     schema=existing_document['schema'],
                     name=existing_document['name'],
@@ -644,7 +693,7 @@ def revision_get_documents(revision_id=None, include_history=True,
                 .filter_by(id=revision_id)\
                 .one()
         else:
-            # If no revision_id is specified, grab the newest one.
+            # If no revision_id is specified, grab the latest one.
             revision = session.query(models.Revision)\
                 .order_by(models.Revision.created_at.desc())\
                 .first()
