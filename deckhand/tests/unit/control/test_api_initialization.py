@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import inspect
+import os
+
 import mock
 
 from deckhand.control import api
@@ -38,6 +40,18 @@ class TestApi(test_base.DeckhandTestCase):
                 resource_obj = self.patchobject(
                     resource, class_name, autospec=True)
                 setattr(self, utils.to_snake_case(class_name), resource_obj)
+
+        # Mock the location of the configuration files for API initialization.
+        curr_path = os.path.dirname(os.path.realpath(__file__))
+        repo_path = os.path.join(
+            curr_path, os.pardir, os.pardir, os.pardir, os.pardir)
+        temp_config_files = [
+            os.path.join(repo_path, 'etc', 'deckhand', 'deckhand.conf.sample'),
+            os.path.join(repo_path, 'etc', 'deckhand', 'deckhand-paste.ini')
+        ]
+        mock_get_config_files = self.patchobject(
+            api, '_get_config_files', autospec=True)
+        mock_get_config_files.return_value = temp_config_files
 
     def _get_module_class_names(self, module):
         class_names = [obj.__name__ for name, obj in inspect.getmembers(module)
