@@ -1,0 +1,83 @@
+{{/*
+Copyright 2017 The Openstack-Helm Authors.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/}}
+
+{{- if .Values.manifests.job_db_sync }}
+{{- $envAll := . }}
+{{- $dependencies := .Values.dependencies.db_sync }}
+{{- $mounts_deckhand_db_sync := .Values.pod.mounts.deckhand_db_sync.deckhand_db_sync }}
+{{- $mounts_deckhand_db_sync_init := .Values.pod.mounts.deckhand_db_sync.init_container }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: deckhand-db-sync
+spec:
+  template:
+    metadata:
+      labels:
+{{ tuple $envAll "deckhand" "db-sync" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      nodeSelector:
+        {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
+      initContainers:
+{{ tuple $envAll $dependencies $mounts_deckhand_db_sync_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      containers:
+        - name: deckhand-db-sync
+          image: {{ .Values.images.db_sync }}
+          imagePullPolicy: {{ .Values.images.pull_policy }}
+{{ tuple $envAll $envAll.Values.pod.resources.jobs.db_sync | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+          env:
+            - name: ROOT_DB_CONNECTION
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.admin }}
+                  key: DB_CONNECTION
+            - name: DECKHAND_CONFIG_FILE
+              value: /etc/deckhand/deckhand.conf
+            - name: DB_NAME
+              value: {{ .Values.database.postgresql.db_name }}
+            - name: DB_USER
+              value: {{ .Values.endpoints.postgresql.auth.user.username }}
+            - name: DB_PASS
+              value: {{ .Values.endpoints.postgresql.auth.user.password }}
+          command:
+            - /tmp/db-sync.sh
+          volumeMounts:
+            - name: deckhand-bin
+              mountPath: /tmp/db-sync.sh
+              subPath: db-sync.sh
+              readOnly: true
+            - name: etc-deckhand
+              mountPath: /etc/deckhand
+            - name: deckhand-etc
+              mountPath: /etc/deckhand/deckhand.conf
+              subPath: deckhand.conf
+              readOnly: true
+{{ if $mounts_deckhand_db_sync.volumeMounts }}{{ toYaml $mounts_deckhand_db_sync.volumeMounts | indent 10 }}{{ end }}
+      volumes:
+        - name: etc-deckhand
+          emptyDir: {}
+        - name: deckhand-etc
+          configMap:
+            name: deckhand-etc
+            defaultMode: 0444
+        - name: deckhand-bin
+          configMap:
+            name: deckhand-bin
+            defaultMode: 0555
+{{ if $mounts_deckhand_db_sync.volumes }}{{ toYaml $mounts_deckhand_db_sync.volumes | indent 6 }}{{ end }}
+{{- end }}

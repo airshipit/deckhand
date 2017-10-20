@@ -1,0 +1,80 @@
+# Copyright 2017 The Openstack-Helm Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{{- if .Values.manifests.deployment }}
+{{- $envAll := . }}
+{{- $dependencies := .Values.dependencies.deckhand }}
+{{- $mounts_deckhand := .Values.pod.mounts.deckhand.deckhand }}
+{{- $mounts_deckhand_init := .Values.pod.mounts.deckhand.init_container }}
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: deckhand
+spec:
+  replicas: {{ .Values.pod.replicas.deckhand }}
+{{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
+  template:
+    metadata:
+      labels:
+{{ tuple $envAll "deckhand-api" "server" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+      annotations:
+        configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
+        configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
+    spec:
+      nodeSelector:
+        {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
+      terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.deckhand.timeout | default "30" }}
+      restartPolicy: Always
+      initContainers:
+{{ tuple $envAll $dependencies $mounts_deckhand_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+      containers:
+        - name: deckhand
+          image: {{ .Values.images.deckhand }}
+          imagePullPolicy: {{ .Values.images.pull_policy }}
+{{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+          ports:
+            - containerPort: {{ .Values.network.port }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.network.port }}
+          volumeMounts:
+            - name: etc-deckhand
+              mountPath: /etc/deckhand
+            - name: deckhand-etc
+              mountPath: /etc/deckhand/deckhand.conf
+              subPath: deckhand.conf
+              readOnly: true
+            - name: deckhand-etc
+              mountPath: /etc/deckhand/logging.conf
+              subPath: logging.conf
+              readOnly: true
+            - name: deckhand-etc
+              mountPath: /etc/deckhand/deckhand-paste.ini
+              subPath: deckhand-paste.ini
+              readOnly: true
+            - name: deckhand-etc
+              mountPath: /etc/deckhand/policy.yaml
+              subPath: policy.yaml
+              readOnly: true
+{{ if $mounts_deckhand.volumeMounts }}{{ toYaml $mounts_deckhand.volumeMounts | indent 12 }}{{ end }}
+      volumes:
+        - name: etc-deckhand
+          emptyDir: {}
+        - name: deckhand-etc
+          configMap:
+            name: deckhand-etc
+            defaultMode: 0444
+{{ if $mounts_deckhand.volumes }}{{ toYaml $mounts_deckhand.volumes | indent 8 }}{{ end }}
+{{- end }}
