@@ -61,7 +61,6 @@ class RevisionDocumentsResource(api_base.BaseResource):
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.view_builder.list(documents)
 
 
@@ -108,5 +107,4 @@ class RenderedDocumentsResource(api_base.BaseResource):
         rendered_documents = secrets_substitution.substitute_all()
 
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.view_builder.list(rendered_documents)

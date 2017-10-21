@@ -20,11 +20,10 @@ from deckhand.control import base as api_base
 class VersionsResource(api_base.BaseResource):
 
     def on_get(self, req, resp):
-        resp.body = self.to_yaml_body({
+        resp.body = {
             'v1.0': {
                 'path': '/api/v1.0',
                 'status': 'stable'
             }
-        })
-        resp.append_header('Content-Type', 'application/x-yaml')
+        }
         resp.status = falcon.HTTP_200

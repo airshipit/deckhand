@@ -40,8 +40,10 @@ class TestBucketsController(test_base.BaseControllerTest):
         }
         payload = documents_factory.gen_test(document_mapping)
 
-        resp = self.app.simulate_put('/api/v1.0/bucket/mop/documents',
-                                     body=yaml.safe_dump_all(payload))
+        resp = self.app.simulate_put(
+            '/api/v1.0/bucket/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)
         created_documents = list(yaml.safe_load_all(resp.text))
         self.assertEqual(3, len(created_documents))
@@ -53,8 +55,10 @@ class TestBucketsController(test_base.BaseControllerTest):
 
     def test_put_bucket_with_secret(self):
         def _do_test(payload):
-            resp = self.app.simulate_put('/api/v1.0/bucket/mop/documents',
-                                         body=yaml.safe_dump_all(payload))
+            resp = self.app.simulate_put(
+                '/api/v1.0/bucket/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=yaml.safe_dump_all(payload))
             self.assertEqual(200, resp.status_code)
             created_documents = list(yaml.safe_load_all(resp.text))
             self.assertEqual(1, len(created_documents))
@@ -123,8 +127,10 @@ schema:
                     '.*mapping values are not allowed here.*']
 
         for idx, payload in enumerate(invalid_payloads):
-            resp = self.app.simulate_put('/api/v1.0/bucket/mop/documents',
-                                         body=payload)
+            resp = self.app.simulate_put(
+                '/api/v1.0/bucket/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=payload)
             self.assertEqual(400, resp.status_code)
             self.assertRegexpMatches(resp.text, error_re[idx])
 
@@ -141,8 +147,10 @@ class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):
         documents_factory = factories.DocumentFactory(2, [1, 1])
         payload = documents_factory.gen_test({})
 
-        resp = self.app.simulate_put('/api/v1.0/bucket/mop/documents',
-                                     body=yaml.safe_dump_all(payload))
+        resp = self.app.simulate_put(
+            '/api/v1.0/bucket/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
         self.assertEqual(403, resp.status_code)
 
     def test_put_bucket_cleartext_secret_except_forbidden(self):
@@ -152,8 +160,10 @@ class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):
         secrets_factory = factories.DocumentSecretFactory()
         payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
 
-        resp = self.app.simulate_put('/api/v1.0/bucket/mop/documents',
-                                     body=yaml.safe_dump_all(payload))
+        resp = self.app.simulate_put(
+            '/api/v1.0/bucket/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
         self.assertEqual(403, resp.status_code)
 
     def test_put_bucket_encrypted_secret_except_forbidden(self):
@@ -163,6 +173,8 @@ class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):
         secrets_factory = factories.DocumentSecretFactory()
         payload = [secrets_factory.gen_test('Certificate', 'encrypted')]
 
-        resp = self.app.simulate_put('/api/v1.0/bucket/mop/documents',
-                                     body=yaml.safe_dump_all(payload))
+        resp = self.app.simulate_put(
+            '/api/v1.0/bucket/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
         self.assertEqual(403, resp.status_code)

@@ -61,8 +61,10 @@ class TestValidationsController(test_base.BaseControllerTest):
         if not payload:
             documents_factory = factories.DocumentFactory(2, [1, 1])
             payload = documents_factory.gen_test({})
-        resp = self.app.simulate_put('/api/v1.0/bucket/mop/documents',
-                                     body=yaml.safe_dump_all(payload))
+        resp = self.app.simulate_put(
+            '/api/v1.0/bucket/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)
         revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
             'revision']
@@ -72,7 +74,7 @@ class TestValidationsController(test_base.BaseControllerTest):
         resp = self.app.simulate_post(
             '/api/v1.0/revisions/%s/validations/%s' % (revision_id,
                                                        validation_name),
-            body=policy)
+            headers={'Content-Type': 'application/x-yaml'}, body=policy)
         return resp
 
     def test_create_validation(self):
@@ -103,7 +105,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         revision_id = self._create_revision()
 
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
         # Validate that the internal deckhand validation was created already.
@@ -132,7 +135,8 @@ class TestValidationsController(test_base.BaseControllerTest):
                                        VALIDATION_RESULT)
 
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
         body = yaml.safe_load(resp.text)
@@ -164,7 +168,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         # /api/v1.0/revisions/1/validations/deckhand-schema-validation
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s' % (
-                revision_id, types.DECKHAND_SCHEMA_VALIDATION))
+                revision_id, types.DECKHAND_SCHEMA_VALIDATION),
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -181,7 +186,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         # Validate that the entry is present.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s' % (revision_id,
-                                                       validation_name))
+                                                       validation_name),
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
         body = yaml.safe_load(resp.text)
@@ -207,7 +213,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         # Validate that the entry is present.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s' % (revision_id,
-                                                       validation_name))
+                                                       validation_name),
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
         body = yaml.safe_load(resp.text)
@@ -224,7 +231,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         # Validate that 2 entries now exist.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s' % (revision_id,
-                                                       validation_name))
+                                                       validation_name),
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -250,7 +258,8 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s' % (revision_id,
-                                                       validation_name))
+                                                       validation_name),
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
         body = yaml.safe_load(resp.text)
@@ -275,7 +284,8 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s/0' % (revision_id,
-                                                         validation_name))
+                                                         validation_name),
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
         body = yaml.safe_load(resp.text)
@@ -329,7 +339,8 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         # Validate that the internal deckhand validation was created.
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -353,7 +364,8 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         # Validate that the validation was created and passed.
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -390,7 +402,8 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         # Validate that the internal deckhand validation was created.
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -414,7 +427,8 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         # Validate that the validation was created and reports failure.
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -451,7 +465,8 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         # Validate that the internal deckhand validation was created.
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -478,7 +493,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         # Validate that the validation reports failure since `fail_doc`
         # should've failed validation.
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id)
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
@@ -509,7 +525,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         # Validate that the entry is present.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s' % (
-                revision_id, types.DECKHAND_SCHEMA_VALIDATION))
+                revision_id, types.DECKHAND_SCHEMA_VALIDATION),
+            headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
         body = yaml.safe_load(resp.text)
