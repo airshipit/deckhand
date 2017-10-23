@@ -1100,4 +1100,9 @@ def validation_get_entry(revision_id, val_name, entry_id, session=None):
     session = session or get_session()
     entries = validation_get_all_entries(
         revision_id, val_name, session=session)
-    return entries[entry_id]
+    try:
+        return entries[entry_id]
+    except IndexError:
+        raise errors.ValidationNotFound(
+            revision_id=revision_id, validation_name=val_name,
+            entry_id=entry_id)

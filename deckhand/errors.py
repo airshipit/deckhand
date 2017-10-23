@@ -196,12 +196,6 @@ class SingletonDocumentConflict(DeckhandException):
     code = 409
 
 
-class LayeringPolicyNotFound(DeckhandException):
-    msg_fmt = ("LayeringPolicy with schema %(schema)s not found in the "
-               "system.")
-    code = 400
-
-
 class LayeringPolicyMalformed(DeckhandException):
     msg_fmt = ("LayeringPolicy with schema %(schema)s is improperly formatted:"
                " %(document)s.")
@@ -239,6 +233,12 @@ class DocumentNotFound(DeckhandException):
     code = 404
 
 
+class LayeringPolicyNotFound(DeckhandException):
+    msg_fmt = ("LayeringPolicy with schema %(schema)s not found in the "
+               "system.")
+    code = 404
+
+
 class RevisionNotFound(DeckhandException):
     msg_fmt = "The requested revision %(revision)s was not found."
     code = 404
@@ -247,6 +247,13 @@ class RevisionNotFound(DeckhandException):
 class RevisionTagNotFound(DeckhandException):
     msg_fmt = ("The requested tag %(tag)s for revision %(revision)s was not "
                "found.")
+    code = 404
+
+
+class ValidationNotFound(DeckhandException):
+    msg_fmt = ("The requested validation entry %(entry_id)s was not found "
+               "for validation name %(validation_name)s and revision ID "
+               "%(revision_id)s.")
     code = 404
 
 

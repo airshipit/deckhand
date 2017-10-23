@@ -80,7 +80,7 @@ class ValidationsResource(api_base.BaseResource):
         try:
             entry = db_api.validation_get_entry(
                 revision_id, validation_name, entry_id)
-        except errors.RevisionNotFound as e:
+        except (errors.RevisionNotFound, errors.ValidationNotFound) as e:
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp_body = self.view_builder.show_entry(entry)

@@ -113,7 +113,8 @@ class DocumentValidation(object):
                 # Can't use `startswith` below to avoid namespace false
                 # positives like `CertificateKey` and `Certificate`.
                 if schema_id == schema['id']:
-                    matching_schemas.append(schema)
+                    if schema not in matching_schemas:
+                        matching_schemas.append(schema)
             return matching_schemas
 
         @classmethod
@@ -201,6 +202,7 @@ class DocumentValidation(object):
             LOG.info('Skipping schema validation for abstract '
                      'document: %s.', raw_dict)
         else:
+
             for schema_to_use in schemas_to_use:
                 try:
                     if isinstance(schema_to_use['schema'], dict):
@@ -217,7 +219,7 @@ class DocumentValidation(object):
                     result['errors'].append({
                         'schema': document.get_schema(),
                         'name': document.get_name(),
-                        'message': e.message.replace('\\', '')
+                        'message': e.message.replace('u\'', '\'')
                     })
 
         if result['errors']:
