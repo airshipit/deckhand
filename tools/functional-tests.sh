@@ -97,8 +97,6 @@ function gen_paste {
 function gen_policy {
     log_section Creating policy file with liberal permissions
 
-    oslopolicy-sample-generator --config-file=etc/deckhand/policy-generator.conf
-
     policy_file='etc/deckhand/policy.yaml.sample'
     policy_pattern="deckhand\:"
 
