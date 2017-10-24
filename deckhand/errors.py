@@ -12,6 +12,138 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import traceback
+import yaml
+
+import falcon
+from oslo_log import log as logging
+import six
+
+LOG = logging.getLogger(__name__)
+
+
+def get_version_from_request(req):
+    """Attempt to extract the API version string."""
+    for part in req.path.split('/'):
+        if '.' in part and part.startswith('v'):
+            return part
+    return 'N/A'
+
+
+def format_error_resp(req,
+                      resp,
+                      status_code=falcon.HTTP_500,
+                      message="",
+                      reason="",
+                      error_type=None,
+                      error_list=None,
+                      info_list=None):
+    """Generate a error message body and throw a Falcon exception to trigger
+    an HTTP status.
+
+    :param req: ``falcon`` request object.
+    :param resp: ``falcon`` response object to update.
+    :param status_code: ``falcon`` status_code constant.
+    :param message: Optional error message to include in the body.
+                    This should be the summary level of the error
+                    message, encompassing an overall result. If
+                    no other messages are passed in the error_list,
+                    this message will be repeated in a generated
+                    message for the output message_list.
+    :param reason: Optional reason code to include in the body
+    :param error_type: If specified, the error type will be used;
+                       otherwise, this will be set to
+                       'Unspecified Exception'.
+    :param error_list: optional list of error dictionaries. Minimally,
+                       the dictionary will contain the 'message' field,
+                       but should also contain 'error': ``True``.
+    :param info_list: optional list of info message dictionaries.
+                      Minimally, the dictionary needs to contain a
+                      'message' field, but should also have a
+                      'error': ``False`` field.
+    """
+
+    if error_type is None:
+        error_type = 'Unspecified Exception'
+
+    # Since we're handling errors here, if error list is None, set up a default
+    # error item. If we have info items, add them to the message list as well.
+    # In both cases, if the error flag is not set, set it appropriately.
+    if error_list is None:
+        error_list = [{'message': 'An error occurred, but was not specified',
+                       'error': True}]
+    else:
+        for error_item in error_list:
+            if 'error' not in error_item:
+                error_item['error'] = True
+
+    if info_list is None:
+        info_list = []
+    else:
+        for info_item in info_list:
+            if 'error' not in info_item:
+                info_item['error'] = False
+
+    message_list = error_list + info_list
+
+    error_response = {
+        'kind': 'status',
+        'apiVersion': get_version_from_request(req),
+        'metadata': {},
+        'status': 'Failure',
+        'message': message,
+        'reason': reason,
+        'details': {
+            'errorType': error_type,
+            'errorCount': len(error_list),
+            'messageList': message_list
+        },
+        'code': status_code,
+        # TODO(fmontei): Make this class-specific later. For now, retry
+        # is set to True only for internal server errors.
+        'retry': True if status_code is falcon.HTTP_500 else False
+    }
+
+    resp.body = yaml.safe_dump(error_response)
+    resp.status = status_code
+
+
+def default_exception_handler(ex, req, resp, params):
+    """Catch-all execption handler for standardized output.
+
+    If this is a standard falcon HTTPError, rethrow it for handling by
+    ``default_exception_serializer`` below.
+    """
+    if isinstance(ex, falcon.HTTPError):
+        # Allow the falcon http errors to bubble up and get handled.
+        raise ex
+    else:
+        # Take care of the uncaught stuff.
+        exc_string = traceback.format_exc()
+        LOG.error('Unhanded Exception being handled: \n%s', exc_string)
+        format_error_resp(
+            req,
+            resp,
+            error_type=ex.__class__.__name__,
+            message="Unhandled Exception raised: %s" % six.text_type(ex)
+        )
+
+
+def default_exception_serializer(req, resp, exception):
+    """Serializes instances of :class:`falcon.HTTPError` into YAML format and
+    formats the error body so it adheres to the UCP error formatting standard.
+    """
+    format_error_resp(
+        req,
+        resp,
+        status_code=exception.status,
+        # TODO(fmontei): Provide an overall error message instead.
+        message=exception.description,
+        reason=exception.title,
+        error_type=exception.__class__.__name__,
+        error_list=[{'message': exception.description, 'error': True}]
+    )
+
 
 class DeckhandException(Exception):
     """Base Deckhand Exception
