@@ -77,7 +77,8 @@ unit tests, run:
 
 for example.
 
-To run unit tests using postgresql, execute:
+To run unit tests using postgresql, postgresql must be installed in your
+environment. Then execute:
 
 ::
 
@@ -96,16 +97,28 @@ You can also run a subset of tests via a regex:
 
     $ tox -e functional -- gabbi.suitemaker.test_gabbi_document-crud-success-multi-bucket
 
-Manual Testing
-^^^^^^^^^^^^^^
 
-Document creation can be tested locally using (from root deckhand directory):
+Intgration Points
+=================
 
-.. code-block:: console
+Deckhand has the following integration points:
 
-    $ curl -i -X PUT localhost:9000/api/v1.0/bucket/{bucket_name}/documents \
-         -H "Content-Type: application/x-yaml" \
-         --data-binary "@deckhand/tests/unit/resources/sample_document.yaml"
+  * `Keystone (OpenStack Identity service) <https://github.com/openstack/keystone>`_
+    provides authentication and support for role based authorization.
+  * `PostgreSQL <https://www.postgresql.org>`_ is used to persist information
+    to correlate workflows with users and history of workflow commands.
 
-    # revision_id copy/pasted from previous response.
-    $ curl -i -X GET localhost:9000/api/v1.0/revisions/1
+Though, being a low-level service, has many other UCP services that integrate
+with it, including:
+
+  * `Drydock <https://github.com/att-comdev/drydock>`_ is orchestrated by
+    Shipyard to perform bare metal node provisioning.
+  * `Promenade <https://github.com/att-comdev/promenade>`_ is indirectly
+    orchestrated by Shipyard to configure and join Kubernetes nodes.
+  * `Armada <https://github.com/att-comdev/armada>`_ is orchestrated by
+    Shipyard to deploy and test Kubernetes workloads.
+
+Further Reading
+===============
+
+`Undercloud Platform (UCP) <https://github.com/att-comdev/ucp-integration>`_.

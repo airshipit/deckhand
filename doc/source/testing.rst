@@ -40,7 +40,8 @@ unit tests, run::
 
 for example.
 
-To run unit tests using postgresql, execute::
+To run unit tests using postgresql, postgresql must be installed in your
+environment. Then execute::
 
     $ tox -epy27-postgresql
     $ tox -epy35-postgresql
