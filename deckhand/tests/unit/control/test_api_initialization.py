@@ -19,6 +19,7 @@ import mock
 
 from deckhand.control import api
 from deckhand.control import buckets
+from deckhand.control import health
 from deckhand.control import revision_diffing
 from deckhand.control import revision_documents
 from deckhand.control import revision_tags
@@ -35,7 +36,7 @@ class TestApi(test_base.DeckhandTestCase):
     def setUp(self):
         super(TestApi, self).setUp()
         # Mock the API resources.
-        for resource in (buckets, revision_diffing, revision_documents,
+        for resource in (buckets, health, revision_diffing, revision_documents,
                          revision_tags, revisions, rollback, validations,
                          versions):
             class_names = self._get_module_class_names(resource)
@@ -75,6 +76,7 @@ class TestApi(test_base.DeckhandTestCase):
         mock_falcon_api.add_route.assert_has_calls([
             mock.call('/api/v1.0/bucket/{bucket_name}/documents',
                       self.buckets_resource()),
+            mock.call('/api/v1.0/health', self.health_resource()),
             mock.call('/api/v1.0/revisions', self.revisions_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}',
                       self.revisions_resource()),

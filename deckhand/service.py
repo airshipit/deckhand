@@ -18,6 +18,7 @@ from oslo_log import log
 
 from deckhand.control import base
 from deckhand.control import buckets
+from deckhand.control import health
 from deckhand.control import middleware
 from deckhand.control import revision_diffing
 from deckhand.control import revision_documents
@@ -35,6 +36,7 @@ def configure_app(app, version=''):
 
     v1_0_routes = [
         ('bucket/{bucket_name}/documents', buckets.BucketsResource()),
+        ('health', health.HealthResource()),
         ('revisions', revisions.RevisionsResource()),
         ('revisions/{revision_id}', revisions.RevisionsResource()),
         ('revisions/{revision_id}/diff/{comparison_revision_id}',
