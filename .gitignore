@@ -47,6 +47,7 @@ coverage.xml
 .hypothesis/
 .testrepository/*
 cover/*
+results/*
 
 # Translations
 *.mo

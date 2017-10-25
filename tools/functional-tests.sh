@@ -127,12 +127,14 @@ sleep 5
 
 log_section Running tests
 
+ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 set +e
 posargs=$@
 if [ ${#posargs} -ge 1 ]; then
-    ostestr --concurrency 1 --regex $1
+    py.test -k $1 -svx $( dirname $ROOTDIR )/deckhand/tests/functional/test_gabbi.py --html=results/index.html
 else
-    ostestr --concurrency 1
+    py.test -svx $( dirname $ROOTDIR )/deckhand/tests/functional/test_gabbi.py --html=results/index.html
 fi
 TEST_STATUS=$?
 set -e

@@ -15,16 +15,16 @@
 import os
 import yaml
 
-import gabbi.driver
-import gabbi.handlers.jsonhandler
-import gabbi.json_parser
+from gabbi import driver
+from gabbi.driver import test_pytest  # noqa
+from gabbi.handlers import jsonhandler
 
 TESTS_DIR = 'gabbits'
 
 
 # This is quite similar to the existing JSONHandler, so use it as the base
-# class instead of gabbi.handlers.base.ContentHandler
-class MultidocJsonpaths(gabbi.handlers.jsonhandler.JSONHandler):
+# class instead of `gabbi.handlers.base.ContentHandler`.
+class MultidocJsonpaths(jsonhandler.JSONHandler):
     test_key_suffix = 'multidoc_jsonpaths'
 
     @staticmethod
@@ -46,14 +46,15 @@ class MultidocJsonpaths(gabbi.handlers.jsonhandler.JSONHandler):
         return list(yaml.safe_load_all(string))
 
 
-def load_tests(loader, tests, pattern):
+def pytest_generate_tests(metafunc):
     test_dir = os.path.join(os.path.dirname(__file__), TESTS_DIR)
-    return gabbi.driver.build_tests(test_dir, loader,
-        # NOTE(fmontei): When there are multiple handlers listed that
-        # accept the same content-type, the one that is earliest in the
-        # list will be used. Thus, we cannot specify multiple content
-        # handlers for handling list/dictionary responses from the server
-        # using different handlers.
-        content_handlers=[MultidocJsonpaths],
-        verbose=True,
-        url=os.environ['DECKHAND_TEST_URL'])
+    # NOTE(fmontei): While only `url` or `host` is needed, strangely both
+    # are needed because we use `pytest-html` which throws an error without
+    # `host`.
+    driver.py_test_generator(
+        test_dir, url=os.environ['DECKHAND_TEST_URL'], host='localhost',
+        # NOTE(fmontei): When there are multiple handlers listed that accept
+        # the same content-type, the one that is earliest in the list will be
+        # used. Thus, we cannot specify multiple content handlers for handling
+        # list/dictionary responses from the server using different handlers.
+        content_handlers=[MultidocJsonpaths], metafunc=metafunc)
