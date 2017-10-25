@@ -51,7 +51,6 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_201
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = resp_body
 
     def on_get(self, req, resp, revision_id, tag=None):
@@ -72,7 +71,6 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = resp_body
 
     @policy.authorize('deckhand:list_tags')
@@ -85,7 +83,6 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().list(resp_tags)
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = resp_body
 
     def on_delete(self, req, resp, revision_id, tag=None):
@@ -104,7 +101,6 @@ class RevisionTagsResource(api_base.BaseResource):
                 errors.RevisionTagNotFound) as e:
             raise falcon.HTTPNotFound(description=e.format_message())
 
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.status = falcon.HTTP_204
 
     @policy.authorize('deckhand:delete_tags')
@@ -115,5 +111,4 @@ class RevisionTagsResource(api_base.BaseResource):
         except errors.RevisionNotFound as e:
             raise falcon.HTTPNotFound(description=e.format_message())
 
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.status = falcon.HTTP_204

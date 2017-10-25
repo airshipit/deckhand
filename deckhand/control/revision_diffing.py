@@ -37,5 +37,4 @@ class RevisionDiffingResource(api_base.BaseResource):
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = resp_body

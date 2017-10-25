@@ -53,7 +53,6 @@ class RevisionsResource(api_base.BaseResource):
 
         revision_resp = self.view_builder.show(revision)
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = revision_resp
 
     @policy.authorize('deckhand:list_revisions')
@@ -63,11 +62,9 @@ class RevisionsResource(api_base.BaseResource):
         revisions_resp = self.view_builder.list(revisions)
 
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = revisions_resp
 
     @policy.authorize('deckhand:delete_revisions')
     def on_delete(self, req, resp):
         db_api.revision_delete_all()
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.status = falcon.HTTP_204
