@@ -129,6 +129,11 @@ log_section Running tests
 
 ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+# Create folder for saving HTML test results.
+if [ ! -d $ROOTDIR/results ]; then
+    mkdir $ROOTDIR/results
+fi
+
 set +e
 posargs=$@
 if [ ${#posargs} -ge 1 ]; then
