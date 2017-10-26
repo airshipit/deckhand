@@ -14,6 +14,8 @@
 
 import yaml
 
+import mock
+
 from deckhand.tests.unit.control import base as test_base
 
 
@@ -38,8 +40,22 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
         self.assertEqual(400, resp.status_code)
 
         expected = {
-            'description': 'The Content-Type header is required.',
-            'title': 'Missing header value'
+            'apiVersion': mock.ANY,
+            'code': '400 Bad Request',
+            'details': {
+                'errorCount': 1,
+                'errorType': 'HTTPMissingHeader',
+                'messageList': [{
+                    'error': True,
+                    'message': "The Content-Type header is required."
+                }]
+            },
+            'kind': 'status',
+            'message': "The Content-Type header is required.",
+            'metadata': {},
+            'reason': 'Missing header value',
+            'retry': False,
+            'status': 'Failure'
         }
         self.assertEqual(expected, yaml.safe_load(resp.content))
 
@@ -49,10 +65,25 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
         self.assertEqual(415, resp.status_code)
 
         expected = {
-            'description': "Unexpected content type: application/json. "
-                           "Expected content types are: "
-                           "['application/x-yaml'].",
-            'title': 'Unsupported media type'
+            'apiVersion': mock.ANY,
+            'code': '415 Unsupported Media Type',
+            'details': {
+                'errorCount': 1,
+                'errorType': 'HTTPUnsupportedMediaType',
+                'messageList': [{
+                    'error': True,
+                    'message': (
+                        "Unexpected content type: application/json. Expected "
+                        "content types are: ['application/x-yaml'].")
+                }]
+            },
+            'kind': 'status',
+            'message': ("Unexpected content type: application/json. Expected "
+                        "content types are: ['application/x-yaml']."),
+            'metadata': {},
+            'reason': 'Unsupported media type',
+            'retry': False,
+            'status': 'Failure'
         }
         self.assertEqual(expected, yaml.safe_load(resp.content))
 
@@ -65,9 +96,24 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
         self.assertEqual(415, resp.status_code)
 
         expected = {
-            'description': "Unexpected content type: application/yaml. "
-                           "Expected content types are: "
-                           "['application/x-yaml'].",
-            'title': 'Unsupported media type'
+            'apiVersion': 'N/A',
+            'code': '415 Unsupported Media Type',
+            'details': {
+                'errorCount': 1,
+                'errorType': 'HTTPUnsupportedMediaType',
+                'messageList': [{
+                    'error': True,
+                    'message': (
+                        "Unexpected content type: application/yaml. Expected "
+                        "content types are: ['application/x-yaml'].")
+                }]
+            },
+            'kind': 'status',
+            'message': ("Unexpected content type: application/yaml. Expected "
+                        "content types are: ['application/x-yaml']."),
+            'metadata': {},
+            'reason': 'Unsupported media type',
+            'retry': False,
+            'status': 'Failure'
         }
         self.assertEqual(expected, yaml.safe_load(resp.content))

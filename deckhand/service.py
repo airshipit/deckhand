@@ -27,6 +27,7 @@ from deckhand.control import revisions
 from deckhand.control import rollback
 from deckhand.control import validations
 from deckhand.control import versions
+from deckhand import errors
 
 CONF = cfg.CONF
 LOG = log.getLogger(__name__)
@@ -60,6 +61,11 @@ def configure_app(app, version=''):
     for path, res in v1_0_routes:
         app.add_route(os.path.join('/api/%s' % version, path), res)
     app.add_route('/versions', versions.VersionsResource())
+
+    # Error handlers (FILO handling).
+    app.add_error_handler(Exception, errors.default_exception_handler)
+    # Built-in error serializer.
+    app.set_error_serializer(errors.default_exception_serializer)
 
     return app
 

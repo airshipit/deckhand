@@ -14,6 +14,7 @@
 
 import falcon
 from oslo_log import log as logging
+import six
 
 from deckhand.control import base as api_base
 from deckhand.control import common
@@ -58,6 +59,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
             documents = db_api.revision_get_documents(
                 revision_id, **filters)
         except errors.RevisionNotFound as e:
+            LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp.status = falcon.HTTP_200
@@ -95,7 +97,8 @@ class RenderedDocumentsResource(api_base.BaseResource):
         try:
             documents = db_api.revision_get_documents(
                 revision_id, **filters)
-        except (errors.RevisionNotFound) as e:
+        except errors.RevisionNotFound as e:
+            LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
 
         # TODO(fmontei): Currently the only phase of rendering that is
@@ -104,7 +107,13 @@ class RenderedDocumentsResource(api_base.BaseResource):
         # a separate module that handles layering alongside substitution once
         # layering has been fully integrated into this endpoint.
         secrets_substitution = secrets_manager.SecretsSubstitution(documents)
-        rendered_documents = secrets_substitution.substitute_all()
+        try:
+            rendered_documents = secrets_substitution.substitute_all()
+        except errors.DocumentNotFound as e:
+            LOG.error('Failed to render the documents because a secret '
+                      'document could not be found.')
+            LOG.exception(six.text_type(e))
+            raise falcon.HTTPNotFound(description=e.format_message())
 
         resp.status = falcon.HTTP_200
         resp.body = self.view_builder.list(rendered_documents)
