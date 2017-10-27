@@ -19,13 +19,13 @@ tests:
 
   - name: add_bucket_a
     desc: Create documents for bucket a
-    PUT: /api/v1.0/bucket/a/documents
+    PUT: /api/v1.0/buckets/a/documents
     status: 200
     data: <@resources/design-doc-substitution-sample-split-bucket-a.yaml
 
   - name: add_bucket_b
     desc: Create documents for bucket b
-    PUT: /api/v1.0/bucket/b/documents
+    PUT: /api/v1.0/buckets/b/documents
     status: 200
     data: <@resources/design-doc-substitution-sample-split-bucket-b.yaml
 

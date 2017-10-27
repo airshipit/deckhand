@@ -17,7 +17,7 @@ tests:
 
   - name: initialize
     desc: Create initial documents
-    PUT: /api/v1.0/bucket/mop/documents
+    PUT: /api/v1.0/buckets/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample.yaml
 

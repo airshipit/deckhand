@@ -74,7 +74,7 @@ class TestApi(test_base.DeckhandTestCase):
         api.init_application()
 
         mock_falcon_api.add_route.assert_has_calls([
-            mock.call('/api/v1.0/bucket/{bucket_name}/documents',
+            mock.call('/api/v1.0/buckets/{bucket_name}/documents',
                       self.buckets_resource()),
             mock.call('/api/v1.0/health', self.health_resource()),
             mock.call('/api/v1.0/revisions', self.revisions_resource()),

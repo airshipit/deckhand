@@ -29,7 +29,7 @@ tests:
 
   - name: create_a
     desc: Create documents in bucket a
-    PUT: /api/v1.0/bucket/bucket_a/documents
+    PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
     data: |-
       ---
@@ -46,7 +46,7 @@ tests:
 
   - name: create_b
     desc: Create documents in bucket b
-    PUT: /api/v1.0/bucket/bucket_b/documents
+    PUT: /api/v1.0/buckets/bucket_b/documents
     status: 200
     data: |-
       ---
@@ -63,7 +63,7 @@ tests:
 
   - name: create_c
     desc: Create documents in bucket c
-    PUT: /api/v1.0/bucket/bucket_c/documents
+    PUT: /api/v1.0/buckets/bucket_c/documents
     status: 200
     data: |-
       ---
@@ -80,7 +80,7 @@ tests:
 
   - name: create_d
     desc: Create documents in bucket d
-    PUT: /api/v1.0/bucket/bucket_d/documents
+    PUT: /api/v1.0/buckets/bucket_d/documents
     status: 200
     data: |-
       ---
@@ -142,7 +142,7 @@ tests:
 
   - name: update_c
     desc: Update document in bucket c
-    PUT: /api/v1.0/bucket/bucket_c/documents
+    PUT: /api/v1.0/buckets/bucket_c/documents
     status: 200
     data: |-
       ---
@@ -170,13 +170,13 @@ tests:
 
   - name: delete_b
     desc: Delete documents from bucket b
-    PUT: /api/v1.0/bucket/bucket_b/documents
+    PUT: /api/v1.0/buckets/bucket_b/documents
     status: 200
     data: ""
 
   - name: create_mistake
     desc: Create documents in bucket mistake
-    PUT: /api/v1.0/bucket/bucket_mistake/documents
+    PUT: /api/v1.0/buckets/bucket_mistake/documents
     status: 200
     data: |-
       ---
@@ -193,7 +193,7 @@ tests:
 
   - name: delete_mistake
     desc: Delete documents from bucket mistake
-    PUT: /api/v1.0/bucket/bucket_mistake/documents
+    PUT: /api/v1.0/buckets/bucket_mistake/documents
     status: 200
     data: ""
     # Verification for whether a bucket_name was returned even though all the
@@ -214,7 +214,7 @@ tests:
 
   - name: create_e
     desc: Create documents in bucket e
-    PUT: /api/v1.0/bucket/bucket_e/documents
+    PUT: /api/v1.0/buckets/bucket_e/documents
     status: 200
     data: |-
       ---

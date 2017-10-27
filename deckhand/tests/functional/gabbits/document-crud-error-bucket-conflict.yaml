@@ -19,12 +19,12 @@ tests:
 
   - name: create
     desc: Create initial documents
-    PUT: /api/v1.0/bucket/a/documents
+    PUT: /api/v1.0/buckets/a/documents
     status: 200
     data: <@resources/sample-doc.yaml
 
   - name: error
     desc: Trigger error case
-    PUT: /api/v1.0/bucket/b/documents
+    PUT: /api/v1.0/buckets/b/documents
     status: 409
     data: <@resources/sample-doc.yaml

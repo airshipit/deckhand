@@ -36,7 +36,7 @@ LOG = log.getLogger(__name__)
 def configure_app(app, version=''):
 
     v1_0_routes = [
-        ('bucket/{bucket_name}/documents', buckets.BucketsResource()),
+        ('buckets/{bucket_name}/documents', buckets.BucketsResource()),
         ('health', health.HealthResource()),
         ('revisions', revisions.RevisionsResource()),
         ('revisions/{revision_id}', revisions.RevisionsResource()),

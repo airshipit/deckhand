@@ -29,8 +29,8 @@ does not provide an official media type for YAML, this API will use
 This is a description of the ``v1.0`` API. Documented paths are considered
 relative to ``/api/v1.0``.
 
-PUT ``/bucket/{bucket_name}/documents``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+PUT ``/buckets/{bucket_name}/documents``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Accepts a multi-document YAML body and creates a new revision that updates the
 contents of the ``bucket_name`` bucket.  Documents from the specified bucket that

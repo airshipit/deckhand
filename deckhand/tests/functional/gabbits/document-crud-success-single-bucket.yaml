@@ -46,7 +46,7 @@ tests:
 
   - name: initialize
     desc: Create initial documents
-    PUT: /api/v1.0/bucket/mop/documents
+    PUT: /api/v1.0/buckets/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample.yaml
 
@@ -73,7 +73,7 @@ tests:
 
   - name: ignore_duplicate
     desc: Push a duplicate bucket of documents
-    PUT: /api/v1.0/bucket/mop/documents
+    PUT: /api/v1.0/buckets/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample.yaml
 
@@ -100,7 +100,7 @@ tests:
 
   - name: update_single_document
     desc: Update a single document, ignore other documents in the bucket
-    PUT: /api/v1.0/bucket/mop/documents
+    PUT: /api/v1.0/buckets/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample-with-update.yaml
 
@@ -150,7 +150,7 @@ tests:
 
   - name: delete_document
     desc: Delete a single document
-    PUT: /api/v1.0/bucket/mop/documents
+    PUT: /api/v1.0/buckets/mop/documents
     status: 200
     data: <@resources/design-doc-layering-sample-with-delete.yaml
 

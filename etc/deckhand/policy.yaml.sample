@@ -7,7 +7,7 @@
 # revision history, whereby the target revision's documents are re-
 # created for
 # the new revision.
-# PUT  /api/v1.0/bucket/{bucket_name}/documents
+# PUT  /api/v1.0/buckets/{bucket_name}/documents
 # POST  /api/v1.0/rollback/{target_revision_id}
 #"deckhand:create_cleartext_documents": "rule:admin_api"
 
@@ -23,7 +23,7 @@
 # Conditionally enforced for the endpoints below if the any of the
 # documents in
 # the request body have a ``metadata.storagePolicy`` of "encrypted".
-# PUT  /api/v1.0/bucket/{bucket_name}/documents
+# PUT  /api/v1.0/buckets/{bucket_name}/documents
 # POST  /api/v1.0/rollback/{target_revision_id}
 #"deckhand:create_encrypted_documents": "rule:admin_api"
 

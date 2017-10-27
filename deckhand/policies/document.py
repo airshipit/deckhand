@@ -28,7 +28,7 @@ the new revision.""",
         [
             {
                 'method': 'PUT',
-                'path': '/api/v1.0/bucket/{bucket_name}/documents'
+                'path': '/api/v1.0/buckets/{bucket_name}/documents'
             },
             {
                 'method': 'POST',
@@ -50,7 +50,7 @@ the request body have a ``metadata.storagePolicy`` of "encrypted".""",
         [
             {
                 'method': 'PUT',
-                'path': '/api/v1.0/bucket/{bucket_name}/documents'
+                'path': '/api/v1.0/buckets/{bucket_name}/documents'
             },
             {
                 'method': 'POST',

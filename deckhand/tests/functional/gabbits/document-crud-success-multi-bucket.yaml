@@ -27,7 +27,7 @@ tests:
 
   - name: create_a
     desc: Create documents in one bucket (a)
-    PUT: /api/v1.0/bucket/a/documents
+    PUT: /api/v1.0/buckets/a/documents
     status: 200
     data: <@resources/layering-needs-substitution-source.yaml
 
@@ -51,7 +51,7 @@ tests:
 
   - name: create_b
     desc: Create documents in a second bucket (b)
-    PUT: /api/v1.0/bucket/b/documents
+    PUT: /api/v1.0/buckets/b/documents
     status: 200
     data: <@resources/passphrase.yaml
 

@@ -35,7 +35,7 @@ class TestErrorFormatting(test_base.BaseControllerTest):
                 as m_enforce_rbac:
             m_enforce_rbac.side_effect = Exception
             resp = self.app.simulate_put(
-                '/api/v1.0/bucket/test/documents',
+                '/api/v1.0/buckets/test/documents',
                 headers={'Content-Type': 'application/x-yaml'}, body=None)
 
         expected = {
@@ -75,7 +75,7 @@ class TestErrorFormatting(test_base.BaseControllerTest):
             m_enforce_rbac.side_effect = falcon.HTTPForbidden(
                 description=expected_msg)
             resp = self.app.simulate_put(
-                '/api/v1.0/bucket/test/documents',
+                '/api/v1.0/buckets/test/documents',
                 headers={'Content-Type': 'application/x-yaml'}, body=None)
 
         expected = {

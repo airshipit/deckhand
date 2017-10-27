@@ -62,7 +62,7 @@ class TestValidationsController(test_base.BaseControllerTest):
             documents_factory = factories.DocumentFactory(2, [1, 1])
             payload = documents_factory.gen_test({})
         resp = self.app.simulate_put(
-            '/api/v1.0/bucket/mop/documents',
+            '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)

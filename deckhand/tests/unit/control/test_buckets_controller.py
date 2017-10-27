@@ -42,7 +42,7 @@ class TestBucketsController(test_base.BaseControllerTest):
         payload = documents_factory.gen_test(document_mapping)
 
         resp = self.app.simulate_put(
-            '/api/v1.0/bucket/mop/documents',
+            '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)
@@ -57,7 +57,7 @@ class TestBucketsController(test_base.BaseControllerTest):
     def test_put_bucket_with_secret(self):
         def _do_test(payload):
             resp = self.app.simulate_put(
-                '/api/v1.0/bucket/mop/documents',
+                '/api/v1.0/buckets/mop/documents',
                 headers={'Content-Type': 'application/x-yaml'},
                 body=yaml.safe_dump_all(payload))
             self.assertEqual(200, resp.status_code)
@@ -129,7 +129,7 @@ schema:
 
         for idx, payload in enumerate(invalid_payloads):
             resp = self.app.simulate_put(
-                '/api/v1.0/bucket/mop/documents',
+                '/api/v1.0/buckets/mop/documents',
                 headers={'Content-Type': 'application/x-yaml'},
                 body=payload)
             self.assertEqual(400, resp.status_code)
@@ -143,7 +143,7 @@ schema:
 
         # Create the first layering policy.
         resp = self.app.simulate_put(
-            '/api/v1.0/bucket/mop/documents',
+            '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all([payload]))
         self.assertEqual(200, resp.status_code)
@@ -154,7 +154,7 @@ schema:
                     'the system.' % payload['metadata']['name'])
         payload['metadata']['name'] = test_utils.rand_name('layering-policy')
         resp = self.app.simulate_put(
-            '/api/v1.0/bucket/mop/documents',
+            '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all([payload]))
         self.assertEqual(409, resp.status_code)
@@ -175,7 +175,7 @@ class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):
         payload = documents_factory.gen_test({})
 
         resp = self.app.simulate_put(
-            '/api/v1.0/bucket/mop/documents',
+            '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(403, resp.status_code)
@@ -188,7 +188,7 @@ class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):
         payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
 
         resp = self.app.simulate_put(
-            '/api/v1.0/bucket/mop/documents',
+            '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(403, resp.status_code)
@@ -201,7 +201,7 @@ class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):
         payload = [secrets_factory.gen_test('Certificate', 'encrypted')]
 
         resp = self.app.simulate_put(
-            '/api/v1.0/bucket/mop/documents',
+            '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(403, resp.status_code)
