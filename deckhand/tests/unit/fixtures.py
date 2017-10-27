@@ -19,6 +19,7 @@ import os
 import yaml
 
 import fixtures
+import mock
 from oslo_config import cfg
 from oslo_policy import opts as policy_opts
 from oslo_policy import policy as oslo_policy
@@ -84,6 +85,51 @@ class RealPolicyFixture(fixtures.Fixture):
         deckhand.policy.reset()
         deckhand.policy.init()
         self.addCleanup(deckhand.policy.reset)
+        self._install_policy_verification_hook()
+
+    def _install_policy_verification_hook(self):
+        """Install policy verification hook for validating RBAC.
+
+        This function's purpose is to guarantee that policy enforcement is
+        happening the way we expect it to. It validates that the policies
+        that are passed to ``self.policy.set_rules`` from within a test that
+        uses this fixture is a subset of the actual policies that are enforced
+        by Deckhand controllers.
+
+        The algorithm is as follows:
+
+            1) Initialize list of actual policy actions to remember.
+            2) Initialize list of expected policy actions to remember.
+            3) Reference a pre-mocked copy of the policy enforcement function
+               that is ultimately called by Deckhand for policy enforcement.
+            4a) Create a hook that stores the actual policy for later.
+            4b) The hook then calls the *real* policy enforcement function
+                using the reference from step 3).
+            5) Mock the policy enforcement function and have it instead call
+               our hook from step 4a).
+            6) Add a clean up to undo the mock from step 5).
+
+        There is a tight coupling between this function and ``set_rules``
+        below.
+
+        The comparison between ``self.expected_policy_actions`` and
+        ``self.actual_policy_actions`` should be done in the ``tearDown``
+        function of the class that uses this fixture.
+        """
+        self.actual_policy_actions = []
+        self.expected_policy_actions = []
+        _do_enforce_rbac = deckhand.policy._do_enforce_rbac
+
+        def enforce_policy_and_remember_actual_rules(
+                action, *a, **k):
+            self.actual_policy_actions.append(action)
+            _do_enforce_rbac(action, *a, **k)
+
+        mock_do_enforce_rbac = mock.patch.object(
+            deckhand.policy, '_do_enforce_rbac', autospec=True).start()
+        mock_do_enforce_rbac.side_effect = (
+            enforce_policy_and_remember_actual_rules)
+        self.addCleanup(mock.patch.stopall)
 
     def add_missing_default_rules(self, rules):
         """Adds default rules and their values to the given rules dict.
@@ -97,8 +143,21 @@ class RealPolicyFixture(fixtures.Fixture):
                 rules[rule.name] = rule.check_str
 
     def set_rules(self, rules, overwrite=True):
+        """Set the custom policy rules to override.
+
+        :param dict rules: Dictionary keyed with policy actions enforced
+            by Deckhand whose values are a custom rule understood by
+            ``oslo.policy`` library.
+
+        This function overrides the default policy rules with the custom rules
+        specified by ``rules``. The ``rules`` passed here are added to
+        ``self.expected_policy_actions`` for later comparison with
+        ``self.actual_policy_actions``.
+        """
         if isinstance(rules, dict):
             rules = oslo_policy.Rules.from_dict(rules)
+
+        self.expected_policy_actions.extend(rules)
 
         policy = deckhand.policy._ENFORCER
         policy.set_rules(rules, overwrite=overwrite)

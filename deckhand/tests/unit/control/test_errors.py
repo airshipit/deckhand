@@ -31,8 +31,9 @@ class TestErrorFormatting(test_base.BaseControllerTest):
         """Verify formatting for an exception class that inherits from
         :class:`Exception`.
         """
-        with mock.patch.object(policy, '_do_enforce_rbac', autospec=True) \
-                as m_enforce_rbac:
+        with mock.patch.object(
+                policy, '_do_enforce_rbac',
+                spec_set=policy._do_enforce_rbac) as m_enforce_rbac:
             m_enforce_rbac.side_effect = Exception
             resp = self.app.simulate_put(
                 '/api/v1.0/buckets/test/documents',
@@ -70,8 +71,9 @@ class TestErrorFormatting(test_base.BaseControllerTest):
         expected_msg = (
             'deckhand:create_cleartext_documents is disallowed by policy')
 
-        with mock.patch.object(policy, '_do_enforce_rbac', autospec=True) \
-                as m_enforce_rbac:
+        with mock.patch.object(
+                policy, '_do_enforce_rbac',
+                spec_set=policy._do_enforce_rbac) as m_enforce_rbac:
             m_enforce_rbac.side_effect = falcon.HTTPForbidden(
                 description=expected_msg)
             resp = self.app.simulate_put(

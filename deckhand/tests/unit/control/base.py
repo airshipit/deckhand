@@ -31,3 +31,19 @@ class BaseControllerTest(test_base.DeckhandWithDBTestCase,
         # NOTE: allow_anonymous_access allows these unit tests to get around
         # Keystone authentication.
         self.useFixture(fixtures.ConfPatcher(allow_anonymous_access=True))
+
+    def tearDown(self):
+        super(BaseControllerTest, self).tearDown()
+        # Validate whether policy enforcement happened the way we expected it
+        # to. This check is really only meaningful if ``self.policy.set_rules``
+        # is used within the context of a test that inherits from this class.
+        self.assertTrue(
+            set(self.policy.expected_policy_actions) ==
+            set(self.policy.actual_policy_actions),
+            'The expected policy actions passed to ``self.policy.set_rules`` '
+            'do not match the policy actions that were actually enforced by '
+            'Deckhand. Set of expected policies %s should be equal to set of '
+            'actual policies: %s. There is either a bug with the test or with '
+            'policy enforcement in the controller.' % (
+                self.policy.expected_policy_actions,
+                self.policy.actual_policy_actions))

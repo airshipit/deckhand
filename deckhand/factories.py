@@ -319,7 +319,7 @@ class DocumentSecretFactory(DeckhandFactory):
         },
         "metadata": {
             "schema": "metadata/Document/v1",
-            "name": "application-api",
+            "name": "",
             "storagePolicy": ""
         },
         "schema": "deckhand/%s/v1"
@@ -349,9 +349,11 @@ class DocumentSecretFactory(DeckhandFactory):
     def gen(self):
         raise NotImplementedError()
 
-    def gen_test(self, schema, storage_policy, data=None):
+    def gen_test(self, schema, storage_policy, data=None, name=None):
         if data is None:
             data = test_utils.rand_password()
+        if name is None:
+            name = test_utils.rand_name('document')
 
         document_secret_template = copy.deepcopy(self.DOCUMENT_SECRET_TEMPLATE)
 
@@ -359,6 +361,7 @@ class DocumentSecretFactory(DeckhandFactory):
         document_secret_template['schema'] = (
             document_secret_template['schema'] % schema)
         document_secret_template['data'] = data
+        document_secret_template['metadata']['name'] = name
 
         return document_secret_template
 

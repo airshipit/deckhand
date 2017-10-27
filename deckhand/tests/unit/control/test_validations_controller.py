@@ -512,7 +512,6 @@ class TestValidationsController(test_base.BaseControllerTest):
         depends on substitution from another document.
         """
         rules = {'deckhand:create_cleartext_documents': '@',
-                 'deckhand:create_validation': '@',
                  'deckhand:list_validations': '@'}
         self.policy.set_rules(rules)
 
