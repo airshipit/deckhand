@@ -56,13 +56,17 @@ class ValidationsResource(api_base.BaseResource):
     def on_get(self, req, resp, revision_id, validation_name=None,
                entry_id=None):
         if all([validation_name, entry_id]):
-            self._show_validation_entry(
+            resp_body = self._show_validation_entry(
                 req, resp, revision_id, validation_name, entry_id)
         elif validation_name:
-            self._list_validation_entries(req, resp, revision_id,
+            resp_body = self._list_validation_entries(req, resp, revision_id,
                                           validation_name)
         else:
-            self._list_all_validations(req, resp, revision_id)
+            resp_body = self._list_all_validations(req, resp, revision_id)
+
+        resp.status = falcon.HTTP_200
+        resp.append_header('Content-Type', 'application/x-yaml')
+        resp.body = resp_body
 
     @policy.authorize('deckhand:show_validation')
     def _show_validation_entry(self, req, resp, revision_id, validation_name,
@@ -80,9 +84,7 @@ class ValidationsResource(api_base.BaseResource):
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp_body = self.view_builder.show_entry(entry)
-        resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = resp_body
+        return resp_body
 
     @policy.authorize('deckhand:list_validations')
     def _list_validation_entries(self, req, resp, revision_id,
@@ -94,9 +96,7 @@ class ValidationsResource(api_base.BaseResource):
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp_body = self.view_builder.list_entries(entries)
-        resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = resp_body
+        return resp_body
 
     @policy.authorize('deckhand:list_validations')
     def _list_all_validations(self, req, resp, revision_id):
@@ -104,8 +104,6 @@ class ValidationsResource(api_base.BaseResource):
             validations = db_api.validation_get_all(revision_id)
         except errors.RevisionNotFound as e:
             raise falcon.HTTPNotFound(description=e.format_message())
-        resp_body = self.view_builder.list(validations)
 
-        resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
-        resp.body = resp_body
+        resp_body = self.view_builder.list(validations)
+        return resp_body

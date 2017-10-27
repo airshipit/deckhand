@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO(fmontei): Make all these version-less.
 DOCUMENT_SCHEMA_TYPES = (
     CERTIFICATE_SCHEMA,
     CERTIFICATE_KEY_SCHEMA,
