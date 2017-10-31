@@ -24,6 +24,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.tgz
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -102,3 +103,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# makefile build/lint artifacts
+/charts/deckhand/*
