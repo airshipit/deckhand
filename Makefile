@@ -38,7 +38,7 @@ dry-run: clean
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
 build_deckhand:
-	docker build -t $(IMAGE_PREFIX)/$(DECKHAND_IMAGE_NAME):$(IMAGE_TAG) images/deckhand/
+	docker build -t $(IMAGE_PREFIX)/$(DECKHAND_IMAGE_NAME):$(IMAGE_TAG) .
 
 .PHONY: clean
 clean:
