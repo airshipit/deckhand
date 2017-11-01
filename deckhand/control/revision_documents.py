@@ -20,6 +20,7 @@ from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand.engine import document_validation
 from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import policy
@@ -115,6 +116,17 @@ class RenderedDocumentsResource(api_base.BaseResource):
                       'document could not be found.')
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
+
+        # Perform schema validation post-rendering to ensure that rendering
+        # and substitution didn't break anything.
+        doc_validator = document_validation.DocumentValidation(documents)
+        try:
+            doc_validator.validate_all()
+        except (errors.InvalidDocumentFormat,
+                errors.InvalidDocumentSchema) as e:
+            LOG.exception(e.format_message())
+            raise falcon.HTTPInternalServerError(
+                description=e.format_message())
 
         resp.status = falcon.HTTP_200
         resp.body = self.view_builder.list(rendered_documents)

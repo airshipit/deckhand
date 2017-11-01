@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
 import re
 
 import jsonschema
@@ -38,9 +39,24 @@ class DocumentValidation(object):
         :param documents: Documents to be validated.
         :type documents: list[dict]
         """
+        self.documents = []
+
         if not isinstance(documents, (list, tuple)):
             documents = [documents]
-        self.documents = [document_wrapper.Document(d) for d in documents]
+
+        try:
+            for document in documents:
+                doc = copy.deepcopy(document)
+                # NOTE(fmontei): Remove extraneous top-level keys so that fully
+                # rendered documents pass schema validation.
+                for key in doc.copy():
+                    if key not in ('metadata', 'schema', 'data'):
+                        doc.pop(key)
+                self.documents.append(document_wrapper.Document(doc))
+        except Exception:
+            raise errors.InvalidDocumentFormat(
+                detail='Document could not be converted into a dictionary',
+                schema='Unknown')
 
     class SchemaType(object):
         """Class for retrieving correct schema for pre-validation on YAML.

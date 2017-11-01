@@ -94,6 +94,9 @@ Valid query parameters are the same as for
 ``/revisions/{revision_id}/documents``, minus the paremters in
 ``metadata.layeringDetinition``, which are not supported.
 
+Raises a 500 Internal Server Error if rendered documents fail schema
+validation.
+
 GET ``/revisions``
 ^^^^^^^^^^^^^^^^^^
 

@@ -51,12 +51,12 @@ class BucketsResource(api_base.BaseResource):
         # because we expect certain formatting of the documents while doing
         # policy enforcement. If any documents fail basic schema validaiton
         # raise an exception immediately.
-        doc_validator = document_validation.DocumentValidation(documents)
         try:
+            doc_validator = document_validation.DocumentValidation(documents)
             validations = doc_validator.validate_all()
         except (deckhand_errors.InvalidDocumentFormat,
                 deckhand_errors.InvalidDocumentSchema) as e:
-            LOG.error(e.format_message())
+            LOG.exception(e.format_message())
             raise falcon.HTTPBadRequest(description=e.format_message())
 
         for document in documents:
