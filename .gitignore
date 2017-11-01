@@ -49,6 +49,7 @@ coverage.xml
 .testrepository/*
 cover/*
 results/*
+.stestr/
 
 # Translations
 *.mo
@@ -66,7 +67,8 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+doc/_build/
+doc/source/_static/
 
 # PyBuilder
 target/
@@ -106,3 +108,6 @@ ENV/
 
 # makefile build/lint artifacts
 /charts/deckhand/*
+
+# git
+Changelog

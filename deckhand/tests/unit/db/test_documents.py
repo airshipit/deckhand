@@ -147,52 +147,55 @@ class TestDocuments(base.TestDbBase):
         rand_secret = {'secret': test_utils.rand_password()}
         bucket_name = test_utils.rand_name('bucket')
 
-        for storage_policy in ('encrypted', 'cleartext'):
+        for expected_len, storage_policy in enumerate(
+                ('encrypted', 'cleartext')):
             secret_doc_payload = self.secrets_factory.gen_test(
                 'Certificate', storage_policy, rand_secret)
             created_documents = self.create_documents(
                 bucket_name, secret_doc_payload)
 
-            self.assertEqual(1, len(created_documents))
-            self.assertIn('Certificate', created_documents[0]['schema'])
-            self.assertEqual(storage_policy, created_documents[0][
+            self.assertEqual(expected_len + 1, len(created_documents))
+            self.assertIn('Certificate', created_documents[-1]['schema'])
+            self.assertEqual(storage_policy, created_documents[-1][
                 'metadata']['storagePolicy'])
-            self.assertTrue(created_documents[0]['is_secret'])
-            self.assertEqual(rand_secret, created_documents[0]['data'])
+            self.assertTrue(created_documents[-1]['is_secret'])
+            self.assertEqual(rand_secret, created_documents[-1]['data'])
 
     def test_create_certificate_key(self):
         rand_secret = {'secret': test_utils.rand_password()}
         bucket_name = test_utils.rand_name('bucket')
 
-        for storage_policy in ('encrypted', 'cleartext'):
+        for expected_len, storage_policy in enumerate(
+                ('encrypted', 'cleartext')):
             secret_doc_payload = self.secrets_factory.gen_test(
                 'CertificateKey', storage_policy, rand_secret)
             created_documents = self.create_documents(
                 bucket_name, secret_doc_payload)
 
-            self.assertEqual(1, len(created_documents))
-            self.assertIn('CertificateKey', created_documents[0]['schema'])
-            self.assertEqual(storage_policy, created_documents[0][
+            self.assertEqual(expected_len + 1, len(created_documents))
+            self.assertIn('CertificateKey', created_documents[-1]['schema'])
+            self.assertEqual(storage_policy, created_documents[-1][
                 'metadata']['storagePolicy'])
-            self.assertTrue(created_documents[0]['is_secret'])
-            self.assertEqual(rand_secret, created_documents[0]['data'])
+            self.assertTrue(created_documents[-1]['is_secret'])
+            self.assertEqual(rand_secret, created_documents[-1]['data'])
 
     def test_create_passphrase(self):
         rand_secret = {'secret': test_utils.rand_password()}
         bucket_name = test_utils.rand_name('bucket')
 
-        for storage_policy in ('encrypted', 'cleartext'):
+        for expected_len, storage_policy in enumerate(
+                ('encrypted', 'cleartext')):
             secret_doc_payload = self.secrets_factory.gen_test(
                 'Passphrase', storage_policy, rand_secret)
             created_documents = self.create_documents(
                 bucket_name, secret_doc_payload)
 
-            self.assertEqual(1, len(created_documents))
-            self.assertIn('Passphrase', created_documents[0]['schema'])
-            self.assertEqual(storage_policy, created_documents[0][
+            self.assertEqual(expected_len + 1, len(created_documents))
+            self.assertIn('Passphrase', created_documents[-1]['schema'])
+            self.assertEqual(storage_policy, created_documents[-1][
                 'metadata']['storagePolicy'])
-            self.assertTrue(created_documents[0]['is_secret'])
-            self.assertEqual(rand_secret, created_documents[0]['data'])
+            self.assertTrue(created_documents[-1]['is_secret'])
+            self.assertEqual(rand_secret, created_documents[-1]['data'])
 
     def test_delete_document(self):
         payload = base.DocumentFixture.get_minimal_fixture()

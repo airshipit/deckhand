@@ -26,7 +26,7 @@ CONF = cfg.CONF
 
 
 class TestBucketsController(test_base.BaseControllerTest):
-    """Test suite for validating positive scenarios for bucket controller."""
+    """Test suite for validating positive scenarios for buckets controller."""
 
     def test_put_bucket(self):
         rules = {'deckhand:create_cleartext_documents': '@'}
@@ -62,6 +62,7 @@ class TestBucketsController(test_base.BaseControllerTest):
                 body=yaml.safe_dump_all(payload))
             self.assertEqual(200, resp.status_code)
             created_documents = list(yaml.safe_load_all(resp.text))
+
             self.assertEqual(1, len(created_documents))
             expected = sorted([(d['schema'], d['metadata']['name'])
                                for d in payload])
@@ -180,21 +181,9 @@ class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):
             body=yaml.safe_dump_all(payload))
         self.assertEqual(403, resp.status_code)
 
-    def test_put_bucket_cleartext_secret_except_forbidden(self):
-        rules = {'deckhand:create_cleartext_documents': 'rule:admin_api'}
-        self.policy.set_rules(rules)
-
-        secrets_factory = factories.DocumentSecretFactory()
-        payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
-
-        resp = self.app.simulate_put(
-            '/api/v1.0/buckets/mop/documents',
-            headers={'Content-Type': 'application/x-yaml'},
-            body=yaml.safe_dump_all(payload))
-        self.assertEqual(403, resp.status_code)
-
-    def test_put_bucket_encrypted_secret_except_forbidden(self):
-        rules = {'deckhand:create_encrypted_documents': 'rule:admin_api'}
+    def test_put_bucket_encrypted_document_except_forbidden(self):
+        rules = {'deckhand:create_encrypted_documents': 'rule:admin_api',
+                 'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
 
         secrets_factory = factories.DocumentSecretFactory()
