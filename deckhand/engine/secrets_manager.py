@@ -106,9 +106,16 @@ class SecretsSubstitution(object):
         """
         if not isinstance(documents, (list, tuple)):
             documents = [documents]
-        substitute_docs = [document_wrapper.Document(d) for d in documents if
-                           'substitutions' in d['metadata']]
-        self.documents = substitute_docs
+
+        self.docs_to_sub = []
+        self.other_docs = []
+
+        for document in documents:
+            doc = document_wrapper.Document(document)
+            if doc.get_substitutions():
+                self.docs_to_sub.append(doc)
+            else:
+                self.other_docs.append(document)
 
     def substitute_all(self):
         """Substitute all documents that have a `metadata.substitutions` field.
@@ -120,10 +127,11 @@ class SecretsSubstitution(object):
 
         :returns: List of fully substituted documents.
         """
-        LOG.debug('Substituting secrets for documents: %s', self.documents)
+        LOG.debug('Substituting secrets for documents: %s',
+                  self.docs_to_sub)
         substituted_docs = []
 
-        for doc in self.documents:
+        for doc in self.docs_to_sub:
             LOG.debug(
                 'Checking for substitutions in schema=%s, metadata.name=%s',
                 doc.get_name(), doc.get_schema())
@@ -152,4 +160,4 @@ class SecretsSubstitution(object):
                 doc['data'].update(substituted_data)
 
             substituted_docs.append(doc.to_dict())
-        return substituted_docs
+        return substituted_docs + self.other_docs

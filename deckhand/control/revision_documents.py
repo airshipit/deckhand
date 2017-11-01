@@ -90,6 +90,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
 
         filters = sanitized_params.copy()
+        filters['metadata.layeringDefinition.abstract'] = False
         filters['metadata.storagePolicy'] = ['cleartext']
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
