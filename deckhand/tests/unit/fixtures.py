@@ -67,8 +67,17 @@ class RealPolicyFixture(fixtures.Fixture):
 
     """
 
-    def setUp(self):
-        super(RealPolicyFixture, self).setUp()
+    def __init__(self, verify=True, *args, **kwargs):
+        """Constructor for ``RealPolicyFixture``.
+
+        :param verify: Whether to verify that expected and actual policies
+            match. True by default.
+        """
+        super(RealPolicyFixture, self).__init__(*args, **kwargs)
+        self.verify = verify
+
+    def _setUp(self):
+        super(RealPolicyFixture, self)._setUp()
         self.policy_dir = self.useFixture(fixtures.TempDir())
         self.policy_file = os.path.join(self.policy_dir.path,
                                         'policy.yaml')
@@ -79,13 +88,33 @@ class RealPolicyFixture(fixtures.Fixture):
             yaml.safe_dump(policy_rules, f)
 
         policy_opts.set_defaults(CONF)
-        CONF.set_override('policy_dirs', [], group='oslo_policy')
-        CONF.set_override('policy_file', self.policy_file, group='oslo_policy')
+        self.useFixture(
+            ConfPatcher(policy_dirs=[], policy_file=self.policy_file,
+                        group='oslo_policy'))
 
         deckhand.policy.reset()
         deckhand.policy.init()
         self.addCleanup(deckhand.policy.reset)
-        self._install_policy_verification_hook()
+
+        if self.verify:
+            self._install_policy_verification_hook()
+
+    def _verify_policies_match(self):
+        """Validate that the expected and actual policies are equivalent.
+        Otherwise an ``AssertionError`` is raised.
+        """
+        if not (set(self.expected_policy_actions) ==
+                set(self.actual_policy_actions)):
+            error_msg = ('The expected policy actions passed to '
+                '`self.policy.set_rules` do not match the policy actions '
+                'that were actually enforced by Deckhand. Set of expected '
+                'policies %s should be equal to set of actual policies: %s. '
+                'There is either a bug with the test or with policy '
+                'enforcement in the controller.' % (
+                    self.expected_policy_actions,
+                    self.actual_policy_actions)
+            )
+            raise AssertionError(error_msg)
 
     def _install_policy_verification_hook(self):
         """Install policy verification hook for validating RBAC.
@@ -113,8 +142,7 @@ class RealPolicyFixture(fixtures.Fixture):
         below.
 
         The comparison between ``self.expected_policy_actions`` and
-        ``self.actual_policy_actions`` should be done in the ``tearDown``
-        function of the class that uses this fixture.
+        ``self.actual_policy_actions`` is performed during clean up.
         """
         self.actual_policy_actions = []
         self.expected_policy_actions = []
@@ -130,6 +158,7 @@ class RealPolicyFixture(fixtures.Fixture):
         mock_do_enforce_rbac.side_effect = (
             enforce_policy_and_remember_actual_rules)
         self.addCleanup(mock.patch.stopall)
+        self.addCleanup(self._verify_policies_match)
 
     def add_missing_default_rules(self, rules):
         """Adds default rules and their values to the given rules dict.
