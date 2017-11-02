@@ -19,6 +19,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
+    response_headers: null
 
   - name: create_schema
     desc: Add example schema

@@ -43,6 +43,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
+    response_headers: null
 
   - name: initialize
     desc: Create initial documents

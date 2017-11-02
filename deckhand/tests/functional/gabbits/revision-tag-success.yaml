@@ -34,6 +34,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
+    response_headers: null
 
     # Create a revision implicitly by creating a document.
   - name: initialize
@@ -116,6 +117,7 @@ tests:
     desc: Verify deleting tag works
     DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
     status: 204
+    response_headers: null
 
   - name: verify_tag_delete
     desc: Verify listing tags contains non-deleted tag
@@ -145,6 +147,7 @@ tests:
     desc: Verify deleting tag works
     DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
     status: 204
+    response_headers: null
 
   - name: verify_revision_detail_deleted_all
     desc: Verify empty tags on revision detail

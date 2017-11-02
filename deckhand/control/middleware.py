@@ -148,7 +148,8 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
 
     def process_response(self, req, resp, resource):
         """Converts responses to ``application/x-yaml`` content type."""
-        resp.set_header('Content-Type', 'application/x-yaml')
+        if resp.status != '204 No Content':
+            resp.set_header('Content-Type', 'application/x-yaml')
 
         for attr in ('body', 'data'):
             if not hasattr(resp, attr):
