@@ -128,9 +128,6 @@ def require_unique_document_schema(schema=None):
             existing_documents = revision_get_documents(
                 schema=schema, deleted=False, include_history=False)
             existing_document_names = [x['name'] for x in existing_documents]
-            # `conflict_names` is calculated by checking whether any documents
-            # in `documents` is a layering policy with a name not found in
-            # `existing_documents`.
             conflicting_names = [
                 x['metadata']['name'] for x in documents
                 if x['metadata']['name'] not in existing_document_names and
@@ -250,7 +247,7 @@ def _documents_create(bucket_name, values_list, session=None):
 
         try:
             existing_document = document_get(
-                raw_dict=True, deleted=False,
+                raw_dict=True, deleted=False, revision_id='latest',
                 **{x: values[x] for x in filters})
         except errors.DocumentNotFound:
             # Ignore bad data at this point. Allow creation to bubble up the
@@ -311,18 +308,29 @@ def _make_hash(data):
         json.dumps(data, sort_keys=True).encode('utf-8')).hexdigest()
 
 
-def document_get(session=None, raw_dict=False, **filters):
-    """Retrieve a document from the DB.
+def document_get(session=None, raw_dict=False, revision_id=None, **filters):
+    """Retrieve the first document for ``revision_id`` that match ``filters``.
 
     :param session: Database session object.
     :param raw_dict: Whether to retrieve the exact way the data is stored in
         DB if ``True``, else the way users expect the data.
+    :param revision_id: The ID corresponding to the ``Revision`` object. If the
+        it is "latest", then retrieve the latest revision, if one exists.
     :param filters: Dictionary attributes (including nested) used to filter
         out revision documents.
     :returns: Dictionary representation of retrieved document.
     :raises: DocumentNotFound if the document wasn't found.
     """
     session = session or get_session()
+
+    if revision_id == 'latest':
+        revision = session.query(models.Revision)\
+            .order_by(models.Revision.created_at.desc())\
+            .first()
+        if revision:
+            filters['revision_id'] = revision.id
+    elif revision_id:
+        filters['revision_id'] = revision_id
 
     # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
     # JSON fields via sqlalchemy. For now, filter the documents using all
@@ -357,21 +365,20 @@ def document_get_all(session=None, raw_dict=False, revision_id=None,
     :param raw_dict: Whether to retrieve the exact way the data is stored in
         DB if ``True``, else the way users expect the data.
     :param revision_id: The ID corresponding to the ``Revision`` object. If the
-        ID is ``None``, then retrieve the latest revision, if one exists.
+        it is "latest", then retrieve the latest revision, if one exists.
     :param filters: Dictionary attributes (including nested) used to filter
         out revision documents.
     :returns: Dictionary representation of each retrieved document.
     """
     session = session or get_session()
 
-    if revision_id is None:
-        # If no revision_id is specified, grab the newest one.
+    if revision_id == 'latest':
         revision = session.query(models.Revision)\
             .order_by(models.Revision.created_at.desc())\
             .first()
         if revision:
             filters['revision_id'] = revision.id
-    else:
+    elif revision_id:
         filters['revision_id'] = revision_id
 
     # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
@@ -452,7 +459,7 @@ def revision_get(revision_id=None, session=None):
     :param revision_id: The ID corresponding to the ``Revision`` object.
     :param session: Database session object.
     :returns: Dictionary representation of retrieved revision.
-    :raises: RevisionNotFound if the revision was not found.
+    :raises RevisionNotFound: if the revision was not found.
     """
     session = session or get_session()
 
@@ -474,7 +481,7 @@ def revision_get_latest(session=None):
 
     :param session: Database session object.
     :returns: Dictionary representation of latest revision.
-    :raises: RevisionNotFound if the latest revision was not found.
+    :raises RevisionNotFound: if the latest revision was not found.
     """
     session = session or get_session()
 
@@ -647,7 +654,7 @@ def _filter_revision_documents(documents, unique_only, **filters):
     for document in documents:
         # NOTE(fmontei): Only want to include non-validation policy documents
         # for this endpoint.
-        if document['schema'] == types.VALIDATION_POLICY_SCHEMA:
+        if document['schema'].startswith(types.VALIDATION_POLICY_SCHEMA):
             continue
 
         if _apply_filters(document, **filters):
@@ -682,7 +689,7 @@ def revision_get_documents(revision_id=None, include_history=True,
     :param filters: Key-value pairs used for filtering out revision documents.
     :returns: All revision documents for ``revision_id`` that match the
         ``filters``, including document revision history if applicable.
-    :raises: RevisionNotFound if the revision was not found.
+    :raises RevisionNotFound: if the revision was not found.
     """
     session = session or get_session()
     revision_documents = []
