@@ -90,13 +90,13 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         documents = self.create_documents(
             bucket_name, secret_documents + [payload[-1]])
 
-        expected_documents = copy.deepcopy([documents[-1]])
-        expected_documents[0]['data'] = expected_data
+        expected_document = copy.deepcopy(documents[-1])
+        expected_document['data'] = expected_data
 
         secret_substitution = secrets_manager.SecretsSubstitution(documents)
         substituted_docs = secret_substitution.substitute_all()
 
-        self.assertEqual(expected_documents, substituted_docs)
+        self.assertIn(expected_document, substituted_docs)
 
     def test_secret_substitution_single_cleartext(self):
         certificate = self.secrets_factory.gen_test(

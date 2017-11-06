@@ -21,13 +21,55 @@ from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
 
 
+class TestRenderedDocumentsController(test_base.BaseControllerTest):
+
+    def test_list_rendered_documents_exclude_abstract(self):
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Create 2 docs: one concrete, one abstract.
+        documents_factory = factories.DocumentFactory(2, [1, 1])
+        payload = documents_factory.gen_test(
+            {}, global_abstract=False, region_abstract=True)[1:]
+        concrete_doc = payload[0]
+
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        # Verify that the concrete document is returned, but not the abstract
+        # one.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+
+        rendered_documents = list(yaml.safe_load_all(resp.text))
+        self.assertEqual(1, len(rendered_documents))
+        is_abstract = rendered_documents[0]['metadata']['layeringDefinition'][
+            'abstract']
+        self.assertFalse(is_abstract)
+        for key, value in concrete_doc.items():
+            if isinstance(value, dict):
+                self.assertDictContainsSubset(value,
+                                              rendered_documents[0][key])
+            else:
+                self.assertEqual(value, rendered_documents[0][key])
+
+
 class TestRenderedDocumentsControllerNegativeRBAC(
         test_base.BaseControllerTest):
     """Test suite for validating negative RBAC scenarios for rendered documents
     controller.
     """
 
-    def test_list_cleartext_revision_documents_insufficient_permissions(self):
+    def test_list_cleartext_rendered_documents_insufficient_permissions(self):
         rules = {'deckhand:list_cleartext_documents': 'rule:admin_api',
                  'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
@@ -49,7 +91,7 @@ class TestRenderedDocumentsControllerNegativeRBAC(
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(403, resp.status_code)
 
-    def test_list_encrypted_revision_documents_insufficient_permissions(self):
+    def test_list_encrypted_rendered_documents_insufficient_permissions(self):
         rules = {'deckhand:list_cleartext_documents': '@',
                  'deckhand:list_encrypted_documents': 'rule:admin_api',
                  'deckhand:create_cleartext_documents': '@',
