@@ -32,7 +32,7 @@ class PolicyBaseTestCase(test_base.DeckhandTestCase):
             "deckhand:list_cleartext_documents": [['rule:admin_api']]
         }
 
-        self.policy = self.useFixture(fixtures.RealPolicyFixture())
+        self.policy = self.useFixture(fixtures.RealPolicyFixture(False))
         self._set_rules()
 
     def _set_rules(self):
