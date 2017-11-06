@@ -118,20 +118,33 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
     def process_request(self, req, resp):
         """Performs content type enforcement on behalf of REST verbs."""
         valid_content_types = ['application/x-yaml']
-        content_type = (req.content_type.split(';', 1)[0].strip()
+
+        # GET and DELETE should never carry a message body, and have
+        # no content type. Check for content-length or
+        # transfer-encoding to determine if a content-type header
+        # is required.
+        requires_content_type = (
+            req.method not in ['GET', 'DELETE'] and (
+                req.content_length is not None or
+                req.get_header('transfer-encoding') is not None
+            )
+        )
+
+        if requires_content_type:
+            content_type = (req.content_type.split(';', 1)[0].strip()
                         if req.content_type else '')
 
-        if not content_type:
-            raise falcon.HTTPMissingHeader('Content-Type')
-        elif content_type not in valid_content_types:
-            message = (
-                "Unexpected content type: {type}. Expected content types "
-                "are: {expected}."
-            ).format(
-                type=six.b(req.content_type).decode('utf-8'),
-                expected=valid_content_types
-            )
-            raise falcon.HTTPUnsupportedMediaType(description=message)
+            if not content_type:
+                raise falcon.HTTPMissingHeader('Content-Type')
+            elif content_type not in valid_content_types:
+                message = (
+                    "Unexpected content type: {type}. Expected content types "
+                    "are: {expected}."
+                ).format(
+                    type=six.b(req.content_type).decode('utf-8'),
+                    expected=valid_content_types
+                )
+                raise falcon.HTTPUnsupportedMediaType(description=message)
 
     def process_response(self, req, resp, resource):
         """Converts responses to ``application/x-yaml`` content type."""

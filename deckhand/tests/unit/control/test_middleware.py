@@ -22,21 +22,85 @@ from deckhand.tests.unit.control import base as test_base
 class TestYAMLTranslator(test_base.BaseControllerTest):
 
     def test_request_with_correct_content_type(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+        self._read_data('sample_document_simple')
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump(self.data),
+        )
+        self.assertEqual(200, resp.status_code)
+
+    def test_request_empty_put_and_content_type(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+        )
+        self.assertEqual(200, resp.status_code)
+
+    def test_request_empty_put_and_no_content_type(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+        )
+        self.assertEqual(200, resp.status_code)
+
+    def test_request_zero_length_put_and_no_content_type(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            body='',
+        )
+        self.assertEqual(200, resp.status_code)
+
+    def test_request_zero_length_put_and_content_type(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body='',
+        )
+        self.assertEqual(200, resp.status_code)
+
+    def test_request_with_no_content_type_on_get(self):
         resp = self.app.simulate_get(
-            '/versions', headers={'Content-Type': 'application/x-yaml'})
+            '/versions',
+            headers={})
+        self.assertEqual(200, resp.status_code)
+
+    def test_request_with_superfluous_content_type_on_get(self):
+        resp = self.app.simulate_get(
+            '/versions',
+            headers={'Content-Type': 'application/x-yaml'},
+        )
         self.assertEqual(200, resp.status_code)
 
     def test_request_with_correct_content_type_plus_encoding(self):
-        resp = self.app.simulate_get(
-            '/versions',
-            headers={'Content-Type': 'application/x-yaml;encoding=utf-8'})
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+        self._read_data('sample_document_simple')
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            headers={'Content-Type': 'application/x-yaml;encoding=utf-8'},
+            body=yaml.safe_dump(self.data),
+        )
         self.assertEqual(200, resp.status_code)
 
 
 class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
 
     def test_request_without_content_type_raises_exception(self):
-        resp = self.app.simulate_get('/versions')
+        self._read_data('sample_document_simple')
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            body=yaml.safe_dump(self.data),
+        )
         self.assertEqual(400, resp.status_code)
 
         expected = {
@@ -60,8 +124,13 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
         self.assertEqual(expected, yaml.safe_load(resp.content))
 
     def test_request_with_invalid_content_type_raises_exception(self):
-        resp = self.app.simulate_get(
-            '/versions', headers={'Content-Type': 'application/json'})
+        self._read_data('sample_document_simple')
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            headers={'Content-Type': 'application/json'},
+            body=yaml.safe_dump(self.data),
+        )
+
         self.assertEqual(415, resp.status_code)
 
         expected = {
@@ -91,12 +160,16 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
         """Only application/x-yaml should be supported, not application/yaml,
         because it hasn't been registered as an official MIME type yet.
         """
-        resp = self.app.simulate_get(
-            '/versions', headers={'Content-Type': 'application/yaml'})
+        self._read_data('sample_document_simple')
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/b1/documents',
+            headers={'Content-Type': 'application/yaml'},
+            body=yaml.safe_dump(self.data),
+        )
         self.assertEqual(415, resp.status_code)
 
         expected = {
-            'apiVersion': 'N/A',
+            'apiVersion': mock.ANY,
             'code': '415 Unsupported Media Type',
             'details': {
                 'errorCount': 1,

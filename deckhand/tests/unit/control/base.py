@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+import yaml
+
 from falcon import testing as falcon_testing
 
 from deckhand import service
@@ -31,3 +34,13 @@ class BaseControllerTest(test_base.DeckhandWithDBTestCase,
         # NOTE: allow_anonymous_access allows these unit tests to get around
         # Keystone authentication.
         self.useFixture(fixtures.ConfPatcher(allow_anonymous_access=True))
+
+    def _read_data(self, file_name):
+        # Reads data from a file in the resources directory
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        test_yaml_path = os.path.abspath(os.path.join(
+            dir_path, os.pardir, 'resources', file_name + '.yaml'))
+
+        with open(test_yaml_path, 'r') as yaml_file:
+            yaml_data = yaml_file.read()
+        self.data = yaml.safe_load(yaml_data)
