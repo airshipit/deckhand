@@ -171,15 +171,15 @@ Sample response:
       status: failure
       validations:
         - name: deckhand-schema-validation
-          url: https://deckhand/api/v1.0/revisions/1/validations/deckhand-schema-validation/0
+          url: https://deckhand/api/v1.0/revisions/1/validations/deckhand-schema-validation/entries/0
           status: success
         - name: drydock-site-validation
           status: missing
         - name: promenade-site-validation
-          url: https://deckhand/api/v1.0/revisions/1/validations/promenade-site-validation/0
+          url: https://deckhand/api/v1.0/revisions/1/validations/promenade-site-validation/entries/0
           status: expired
         - name: armada-deployability-validation
-          url: https://deckhand/api/v1.0/revisions/1/validations/armada-deployability-validation/0
+          url: https://deckhand/api/v1.0/revisions/1/validations/armada-deployability-validation/entries/0
           status: failure
 
 Validation status is always for the most recent entry for a given validation.
@@ -331,7 +331,7 @@ Sample response:
   prev: null
   results:
     - id: 0
-      url: https://deckhand/api/v1.0/revisions/4/validations/promenade-site-validation/0/entries/0
+      url: https://deckhand/api/v1.0/revisions/4/validations/promenade-site-validation/entries/0
       status: failure
 
 GET ``/revisions/{{revision_id}}/validations/{{name}}/entries/{{entry_id}}``

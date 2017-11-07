@@ -283,7 +283,7 @@ class TestValidationsController(test_base.BaseControllerTest):
                                        VALIDATION_RESULT)
 
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s/0' % (revision_id,
+            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (revision_id,
                                                          validation_name),
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
@@ -328,7 +328,7 @@ class TestValidationsController(test_base.BaseControllerTest):
                               validation_name, revision_id))
 
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s/5' % (revision_id,
+            '/api/v1.0/revisions/%s/validations/%s/entries/5' % (revision_id,
                                                          validation_name),
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(404, resp.status_code)
@@ -543,7 +543,7 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         # Validate that fail_doc validation failed for the expected reason.
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s/0' % (
+            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
                 revision_id, types.DECKHAND_SCHEMA_VALIDATION),
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)

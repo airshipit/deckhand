@@ -99,7 +99,7 @@ class TestApi(test_base.DeckhandTestCase):
                       '{validation_name}',
                       self.validations_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/validations/'
-                      '{validation_name}/{entry_id}',
+                      '{validation_name}/entries/{entry_id}',
                       self.validations_resource()),
             mock.call('/versions', self.versions_resource())
         ], any_order=True)

@@ -53,7 +53,8 @@ def configure_app(app, version=''):
             validations.ValidationsResource()),
         ('revisions/{revision_id}/validations/{validation_name}',
             validations.ValidationsResource()),
-        ('revisions/{revision_id}/validations/{validation_name}/{entry_id}',
+        ('revisions/{revision_id}/validations/{validation_name}'
+         '/entries/{entry_id}',
             validations.ValidationsResource()),
         ('rollback/{revision_id}', rollback.RollbackResource())
     ]
