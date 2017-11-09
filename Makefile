@@ -24,6 +24,7 @@ images: build_deckhand
 # Create tgz of the chart
 .PHONY: charts
 charts: clean
+	$(HELM) dep up charts/deckhand
 	$(HELM) package charts/deckhand
 
 # Perform linting
@@ -43,7 +44,7 @@ build_deckhand:
 .PHONY: clean
 clean:
 	rm -rf build
-	helm delete helm-template
+	helm delete helm-template ||:
 
 .PHONY: pep8
 pep8:
