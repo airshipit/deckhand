@@ -85,7 +85,7 @@ class DocumentValidation(object):
             been registered by external services via ``DataSchema`` documents.
             """
             data_schemas = db_api.document_get_all(
-                schema=types.DATA_SCHEMA_SCHEMA)
+                schema=types.DATA_SCHEMA_SCHEMA, revision_id='latest')
 
             for data_schema in data_schemas:
                 if cls.schema_re.match(data_schema['metadata']['name']):

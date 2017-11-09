@@ -142,7 +142,7 @@ class SecretsSubstitution(object):
                 if src_path == '.':
                     src_path = '.secret'
 
-                # TODO(fmontei): Use secrets_manager for this logic. Need to
+                # TODO(fmontei): Use SecretsManager for this logic. Need to
                 # check Barbican for the secret if it has been encrypted.
                 src_doc = db_api.document_get(
                     schema=src_schema, name=src_name, is_secret=True,
