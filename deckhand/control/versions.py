@@ -18,6 +18,12 @@ from deckhand.control import base as api_base
 
 
 class VersionsResource(api_base.BaseResource):
+    """Versions resource
+
+    Returns the list of supported versions of the Deckhand API.
+    Unauthenticated GET.
+    """
+    no_authentication_methods = ['GET']
 
     def on_get(self, req, resp):
         resp.body = {

@@ -29,25 +29,37 @@ LOG = logging.getLogger(__name__)
 
 class ContextMiddleware(object):
 
-    def process_request(self, req, resp):
-        """Convert authentication information into a request context.
+    def process_resource(self, req, resp, resource, params):
+        """Handle the authentication needs of the routed request.
 
-        Generate a ``deckhand.context.RequestContext`` object from the
-        available authentication headers and store in the ``context`` attribute
-        of the ``req`` object.
-
-        :param req: ``falcon`` request object that will be given the context
-            object.
+        :param req: ``falcon`` request object that will be examined for method
+        :param resource: ``falcon`` resource class that will be examined for
+            authentication needs by looking at the no_authentication_methods
+            list of http methods. By default, this will assume that all
+            requests need authentication unless noted in this array.
+            Note that this does not bypass any authorization checks, which will
+            fail if the user is not authenticated.
         :raises: falcon.HTTPUnauthorized: when value of the
             'X-Identity-Status' header is not 'Confirmed' and anonymous access
             is disallowed.
         """
-        if req.headers.get('X-IDENTITY-STATUS') == 'Confirmed':
-            req.context = deckhand.context.RequestContext.from_environ(req.env)
-        elif CONF.allow_anonymous_access:
-            req.context = deckhand.context.get_context()
+        authentication_required = True
+        try:
+            if req.method in resource.no_authentication_methods:
+                authentication_required = False
+        except AttributeError:
+            # assume that authentication is required.
+            pass
+        if authentication_required:
+            if req.headers.get('X-IDENTITY-STATUS') == 'Confirmed':
+                req.context = deckhand.context.RequestContext.from_environ(
+                    req.env)
+            elif CONF.allow_anonymous_access:
+                req.context = deckhand.context.get_context()
+            else:
+                raise falcon.HTTPUnauthorized()
         else:
-            raise falcon.HTTPUnauthorized()
+            req.context = deckhand.context.RequestContext.from_environ(req.env)
 
 
 class HookableMiddlewareMixin(object):

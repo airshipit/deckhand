@@ -20,6 +20,15 @@ from deckhand import context
 class BaseResource(object):
     """Base resource class for implementing API resources."""
 
+    # Shadowing no_authentication_methods and supplying the HTTP method as a
+    # value (e.g. 'GET') allows that method to run without authentication. By
+    # default all require authentication.
+    # Warning: This method of skipping authentication is applied to a HTTP
+    # method, which ultimately maps to a resource's on_ methods.
+    # If a method such as on_get were to service both a list and a single
+    # response, both would share the skipped authentication.
+    no_authentication_methods = []
+
     def on_options(self, req, resp):
         self_attrs = dir(self)
 
