@@ -17,6 +17,8 @@ import yaml
 import mock
 
 from deckhand.control import buckets
+from deckhand.control import revision_documents
+from deckhand import errors
 from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
 
@@ -61,6 +63,43 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
                                               rendered_documents[0][key])
             else:
                 self.assertEqual(value, rendered_documents[0][key])
+
+
+class TestRenderedDocumentsControllerNegative(
+        test_base.BaseControllerTest):
+
+    def test_rendered_documents_fail_schema_validation(self):
+        """Validates that when fully rendered documents fail schema validation,
+        the controller raises a 500 Internal Server Error.
+        """
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a document for a bucket.
+        secrets_factory = factories.DocumentSecretFactory()
+        payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        with mock.patch.object(
+                revision_documents, 'document_validation',
+                autospec=True) as m_doc_validation:
+            (m_doc_validation.DocumentValidation.return_value
+                .validate_all.side_effect) = errors.InvalidDocumentFormat
+            resp = self.app.simulate_get(
+                '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+                headers={'Content-Type': 'application/x-yaml'})
+
+        # Verify that a 500 Internal Server Error is thrown following failed
+        # schema validation.
+        self.assertEqual(500, resp.status_code)
 
 
 class TestRenderedDocumentsControllerNegativeRBAC(
