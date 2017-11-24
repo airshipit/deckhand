@@ -132,8 +132,7 @@ class TestRevisions(base.TestDbBase):
         all_revision_ids = []
 
         for _ in range(3):
-            document_payload = [base.DocumentFixture.get_minimal_fixture()
-                                for _ in range(3)]
+            document_payload = [base.DocumentFixture.get_minimal_fixture()]
             bucket_name = test_utils.rand_name('bucket')
             created_documents = self.create_documents(
                 bucket_name, document_payload)
@@ -155,6 +154,13 @@ class TestRevisions(base.TestDbBase):
             error_re = 'The requested document %s was not found.' % filters
             self.assertRaisesRegex(errors.DocumentNotFound, error_re,
                                    self.show_document, **filters)
+
+        # Validate that the revision/document ID was reset back to 1.
+        bucket_name = test_utils.rand_name('bucket')
+        created_documents = self.create_documents(
+            bucket_name, [base.DocumentFixture.get_minimal_fixture()])
+        self.assertEqual(1, created_documents[0]['revision_id'])
+        self.assertEqual(1, created_documents[0]['id'])
 
     def test_revision_history_multiple_buckets(self):
         documents = base.DocumentFixture.get_minimal_fixture()
