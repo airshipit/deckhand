@@ -53,8 +53,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
         filters['metadata.storagePolicy'] = ['cleartext']
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
-        # Never return deleted documents to user.
-        filters['deleted'] = False
+        filters['deleted'] = False  # Never return deleted documents to user.
 
         try:
             documents = db_api.revision_get_documents(
@@ -93,6 +92,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
         filters = sanitized_params.copy()
         filters['metadata.layeringDefinition.abstract'] = False
         filters['metadata.storagePolicy'] = ['cleartext']
+        filters['deleted'] = False  # Never return deleted documents to user.
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
 
