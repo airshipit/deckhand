@@ -38,6 +38,7 @@ tests:
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
       $.[0].buckets: [mop]
       $.[0].tags: {}
@@ -49,6 +50,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
       $.[0].results[0].buckets: [mop]

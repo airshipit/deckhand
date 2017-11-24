@@ -25,9 +25,12 @@ tests:
 
   - name: verify_substitutions
     desc: Check for expected substitutions
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents?schema=armada/Chart/v1
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      schema: armada/Chart/v1
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[*].metadata.name: example-chart-01
       $.[*].data:
         chart:

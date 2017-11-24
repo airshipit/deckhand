@@ -27,27 +27,40 @@ tests:
 
   - name: filter_by_multiple_different_filters_expect_site
     desc: Verify revision documents filtered by multiple repeated keys that are different
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.layeringDefinition.layer=site&metadata.layeringDefinition.abstract=false
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.layeringDefinition.layer: site
+      metadata.layeringDefinition.abstract: false
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].metadata.name: site-1234
       $.[0].metadata.layeringDefinition.layer: site
       $.[0].metadata.layeringDefinition.abstract: false
 
   - name: filter_by_multiple_different_filters_expect_region
     desc: Verify revision documents filtered by multiple repeated keys that are different
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.layeringDefinition.layer=region&metadata.layeringDefinition.abstract=true
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.layeringDefinition.layer: region
+      metadata.layeringDefinition.abstract: true
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].metadata.name: region-1234
       $.[0].metadata.layeringDefinition.layer: region
       $.[0].metadata.layeringDefinition.abstract: true
 
   - name: filter_by_repeated_metadata_layeringDefinition_layer
     desc: Verify revision documents filtered by multiple repeated keys that are the same
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.layeringDefinition.layer=site&metadata.layeringDefinition.layer=region
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.layeringDefinition.layer:
+        - site
+        - region
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 2
       $.[*].metadata.name:
         - region-1234
         - site-1234
@@ -57,9 +70,14 @@ tests:
 
   - name: filter_by_repeated_metadata_label
     desc: Verify revision documents filtered by multiple repeated keys that are the same
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.label=foo=bar&metadata.label=baz=qux
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.label:
+        - foo=bar
+        - baz=qux
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].metadata.name: site-1234
       $.[0].metadata.labels:
         foo: bar

@@ -49,6 +49,7 @@ tests:
     status: 201
 
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $[0].data: {}
       $[0].tag: foo
 
@@ -58,6 +59,7 @@ tests:
     status: 200
 
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $[0].data: {}
       $[0].tag: foo
 
@@ -66,6 +68,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].tags.foo.name: foo
 
   - name: verify_revision_list_foo
@@ -73,6 +76,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].results[0].tags: [foo]
 
   - name: create_tag_with_data
@@ -82,6 +86,7 @@ tests:
     data: <@resources/sample-tag-data.yaml
 
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $[0].tag: bar
       $[0].data.last: good
       $[0].data.random: data
@@ -92,6 +97,7 @@ tests:
     status: 200
 
     response_multidoc_jsonpaths:
+      $.`len`: 2
       $.[0].tag: bar
       $.[0].data.last: good
       $.[0].data.random: data
@@ -103,6 +109,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].tags.bar.name: bar
       $.[0].tags.foo.name: foo
 
@@ -111,6 +118,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].results[0].tags: [bar, foo]
 
   - name: delete_tag
@@ -125,6 +133,7 @@ tests:
     status: 200
 
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].tag: bar
       $.[0].data.last: good
       $.[0].data.random: data
@@ -134,6 +143,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].tags.bar.name: bar
 
   - name: verify_revision_list_deleted_foo
@@ -141,6 +151,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].results[0].tags: [bar]
 
   - name: delete_all_tags
@@ -154,6 +165,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].tags: {}
 
   - name: verify_revision_list_deleted_all
@@ -161,6 +173,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].results[0].tags: []
 
   - name: verify_tag_delete_all

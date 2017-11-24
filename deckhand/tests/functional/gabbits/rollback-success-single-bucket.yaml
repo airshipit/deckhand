@@ -54,6 +54,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -76,6 +77,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['update_single_document'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -98,6 +100,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['delete_document'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 3
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -117,6 +120,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['rollback'].$RESPONSE['$.[0].id']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234

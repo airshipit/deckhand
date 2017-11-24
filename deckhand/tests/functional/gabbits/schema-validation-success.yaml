@@ -32,6 +32,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['create_schema'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].id: 0
       $.[0].results[0].status: success
@@ -41,6 +42,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['create_schema'].$RESPONSE['$.[0].status.revision']/validations
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].name: deckhand-schema-validation
       $.[0].results[0].status: success
@@ -66,6 +68,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['add_valid_document'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].id: 0
       $.[0].results[0].status: success
@@ -75,6 +78,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['add_valid_document'].$RESPONSE['$.[0].status.revision']/validations
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[*].name: deckhand-schema-validation
       $.[0].results[*].status: success
@@ -100,6 +104,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[*].status: failure
 
@@ -108,6 +113,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/validations
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[*].name: deckhand-schema-validation
       $.[0].results[*].status: failure
