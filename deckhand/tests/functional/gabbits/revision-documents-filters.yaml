@@ -37,6 +37,36 @@ tests:
       $.[0].metadata.name: layering-policy
       $.[0].schema: deckhand/LayeringPolicy/v1
 
+  - name: filter_by_schema_namespace
+    desc: Verify revision documents filtered by schema namespace
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      schema: example
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 3
+      $.[0].metadata.name: global-1234
+      $.[0].schema: example/Kind/v1
+      $.[1].metadata.name: region-1234
+      $.[1].schema: example/Kind/v1
+      $.[2].metadata.name: site-1234
+      $.[2].schema: example/Kind/v1
+
+  - name: filter_by_schema_namespace_and_kind
+    desc: Verify revision documents filtered by schema namespace and kind
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      schema: example/Kind
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 3
+      $.[0].metadata.name: global-1234
+      $.[0].schema: example/Kind/v1
+      $.[1].metadata.name: region-1234
+      $.[1].schema: example/Kind/v1
+      $.[2].metadata.name: site-1234
+      $.[2].schema: example/Kind/v1
+
   - name: filter_by_metadata_name
     desc: Verify revision documents filtered by metadata.name
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents

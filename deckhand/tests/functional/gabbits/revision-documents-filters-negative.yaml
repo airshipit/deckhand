@@ -1,0 +1,47 @@
+# 1. Test invalid cases for the "schema" filter:
+#   * Partial namespace is invalid, e.g.: schema=prom
+#   * Partial kind is invalid, e.g.: schema=promenade/No
+# 2. Test that filtering by wrong version returns no results.
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample.yaml
+
+  - name: filter_by_schema_partial_namespace
+    desc: Verify revision documents do not return results for partial namespace
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      schema: exam
+    status: 200
+    response_multidoc_jsonpaths: null
+
+  - name: filter_by_schema_partial_kind
+    desc: Verify revision documents do not return results for partial kind
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      schema: example/Ki
+    status: 200
+    response_multidoc_jsonpaths: null
+
+  - name: filter_by_schema_incorrect_version
+    desc: Verify revision documents do not return results for incorrect version
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      schema: example/Kind/v2
+    status: 200
+    response_multidoc_jsonpaths: null

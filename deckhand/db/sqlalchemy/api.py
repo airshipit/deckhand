@@ -19,6 +19,7 @@ import ast
 import copy
 import functools
 import hashlib
+import re
 import threading
 
 from oslo_config import cfg
@@ -524,6 +525,16 @@ def _update_revision_history(documents):
     return documents
 
 
+def _add_microversion(value):
+    """Hack for coercing all Deckhand schema fields (``schema`` and
+    ``metadata.schema``) into ending with v1.0 rather than v1, for example.
+    """
+    microversion_re = r'^.*/.*/v[0-9]{1}$'
+    if re.match(value, microversion_re):
+        return value + '.0'
+    return value
+
+
 def _apply_filters(dct, **filters):
     """Apply filters to ``dct``.
 
@@ -571,13 +582,32 @@ def _apply_filters(dct, **filters):
                     filter_val.items()).issubset(set(actual_val.items()))
                 if not is_subset:
                     return False
+            # Else both filters are string literals.
             else:
+                # Filtering by schema must support namespace matching
+                # (e.g. schema=promenade) such that all kind and schema
+                # documents with promenade namespace are returned, or
+                # (e.g. schema=promenade/Node) such that all version
+                # schemas with namespace=schema and kind=Node are returned.
                 if isinstance(actual_val, bool):
                     filter_val = _transform_filter_bool(filter_val)
 
-                # Else both filters are string literals.
-                if filter_key in ['metadata.schema', 'schema']:
-                    if not actual_val.startswith(filter_val):
+                if filter_key in ['schema', 'metadata.schema']:
+                    actual_val = _add_microversion(actual_val)
+                    filter_val = _add_microversion(filter_val)
+                    parts = actual_val.split('/')[:2]
+                    if len(parts) == 2:
+                        actual_namespace, actual_kind = parts
+                    elif len(parts) == 1:
+                        actual_namespace = parts[0]
+                        actual_kind = ''
+                    else:
+                        actual_namespace = actual_kind = ''
+                    actual_minus_version = actual_namespace + '/' + actual_kind
+
+                    if not (filter_val == actual_val or
+                            actual_minus_version == filter_val or
+                            actual_namespace == filter_val):
                         return False
                 else:
                     if actual_val != filter_val:
