@@ -20,12 +20,13 @@ from deckhand.control import buckets
 from deckhand.control import revision_documents
 from deckhand import errors
 from deckhand import factories
+from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
 
 
 class TestRenderedDocumentsController(test_base.BaseControllerTest):
 
-    def test_list_rendered_documents_exclude_abstract(self):
+    def test_list_rendered_documents_exclude_abstract_documents(self):
         rules = {'deckhand:list_cleartext_documents': '@',
                  'deckhand:list_encrypted_documents': '@',
                  'deckhand:create_cleartext_documents': '@'}
@@ -63,6 +64,52 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
                                               rendered_documents[0][key])
             else:
                 self.assertEqual(value, rendered_documents[0][key])
+
+    def test_list_rendered_documents_exclude_deleted_documents(self):
+        """Verifies that documents from previous revisions that have been
+        deleted are excluded from the current revision.
+
+        Put x in bucket a -> revision 1. Put y in bucket a -> revision 2.
+        Verify that only y is returned for revision 2.
+        """
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Create 1st document.
+        documents_factory = factories.DocumentFactory(2, [1, 1])
+        payload = documents_factory.gen_test({}, global_abstract=False)[1:]
+        payload[0]['metadata']['name'] = test_utils.rand_name('document')
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+
+        # Create 2nd document (exclude 1st document).
+        payload = documents_factory.gen_test({}, global_abstract=False)[1:]
+        second_name = test_utils.rand_name('document')
+        payload[0]['metadata']['name'] = second_name
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all([payload[0]]))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        # Verify that only the 2nd is returned for revision_id=2.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+
+        rendered_documents = list(yaml.safe_load_all(resp.text))
+        self.assertEqual(1, len(rendered_documents))
+        self.assertEqual(second_name,
+                         rendered_documents[0]['metadata']['name'])
+        self.assertEqual(2, rendered_documents[0]['status']['revision'])
 
 
 class TestRenderedDocumentsControllerNegative(
