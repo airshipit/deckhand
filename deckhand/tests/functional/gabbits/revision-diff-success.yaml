@@ -101,6 +101,7 @@ tests:
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: created
 
@@ -109,6 +110,7 @@ tests:
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_b'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: created
         bucket_b: created
@@ -118,6 +120,7 @@ tests:
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_c'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: created
         bucket_b: created
@@ -128,6 +131,7 @@ tests:
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_d'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: created
         bucket_b: created
@@ -139,6 +143,7 @@ tests:
     GET: /api/v1.0/revisions/0/diff/0
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]: {}
 
   - name: update_c
@@ -163,6 +168,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['create_d'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['update_c'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: unmodified
         bucket_b: unmodified
@@ -200,6 +206,7 @@ tests:
     # Verification for whether a bucket_name was returned even though all the
     # documents for this bucket were deleted.
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[*].status.bucket: bucket_mistake
 
   - name: verify_diff_between_created_and_deleted_mistake
@@ -207,6 +214,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['create_mistake'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['delete_mistake'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: unmodified
         bucket_c: unmodified
@@ -235,6 +243,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['create_d'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['create_e'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: unmodified
         bucket_b: deleted
@@ -247,6 +256,7 @@ tests:
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_e'].$RESPONSE['$.[0].status.revision']
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0]:
         bucket_a: created
         bucket_c: created

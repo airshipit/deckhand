@@ -27,24 +27,33 @@ tests:
 
   - name: filter_by_schema
     desc: Verify revision documents filtered by schema
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?schema=deckhand/LayeringPolicy/v1
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      schema: deckhand/LayeringPolicy/v1
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].metadata.name: layering-policy
       $.[0].schema: deckhand/LayeringPolicy/v1
 
   - name: filter_by_metadata_name
     desc: Verify revision documents filtered by metadata.name
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.name=layering-policy
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.name: layering-policy
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].metadata.name: layering-policy
 
   - name: filter_by_metadata_label
     desc: Verify revision documents filtered by metadata.name
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.label=key1=value1
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.label: key1=value1
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 2
       $.[*].metadata.name:
         - global-1234
         - region-1234
@@ -54,9 +63,12 @@ tests:
 
   - name: filter_by_metadata_layeringdefinition_abstract
     desc: Verify revision documents filtered by metadata.layeringDefinition.abstract
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.layeringDefinition.abstract=true
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.layeringDefinition.abstract: true
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 2
       $.[*].metadata.name:
         - global-1234
         - region-1234
@@ -66,17 +78,23 @@ tests:
 
   - name: filter_by_metadata_layeringdefinition_layer
     desc: Verify revision documents filtered by metadata.layeringDefinition.layer
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?metadata.layeringDefinition.layer=site
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      metadata.layeringDefinition.layer: site
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].metadata.name: site-1234
       $.[0].metadata.layeringDefinition.layer: site
 
   - name: filter_by_bucket_name
     desc: Verify revision documents filtered by status.bucket
-    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents?status.bucket=mop
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      status.bucket: mop
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234

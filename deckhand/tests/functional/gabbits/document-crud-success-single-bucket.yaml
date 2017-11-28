@@ -56,6 +56,7 @@ tests:
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -83,6 +84,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -110,6 +112,7 @@ tests:
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -132,6 +135,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -160,6 +164,7 @@ tests:
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 3
       $.[*].status.revision:
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
@@ -179,6 +184,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234
@@ -201,6 +207,7 @@ tests:
     GET: /api/v1.0/revisions/$HISTORY['update_single_document'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
         - layering-policy
         - global-1234

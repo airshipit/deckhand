@@ -34,9 +34,12 @@ tests:
 
   - name: verify_revision_list_for_one_valid_filter
     desc: Verify that revision is returned for filter tag="foo"
-    GET: /api/v1.0/revisions?tag=foo
+    GET: /api/v1.0/revisions
+    query_parameters:
+      tag: foo
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
       $.[0].results[0].buckets: [mop]
@@ -47,9 +50,14 @@ tests:
 
   - name: verify_revision_list_for_many_valid_filters
     desc: Verify that revision is returned for filter tag="foo" or tag="bar"
-    GET: /api/v1.0/revisions?tag=foo&tag=bar
+    GET: /api/v1.0/revisions
+    query_parameters:
+      tag:
+        - foo
+        - bar
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
       $.[0].results[0].buckets: [mop]
@@ -59,8 +67,11 @@ tests:
 
   - name: verify_revision_list_for_invalid_filter
     desc: Verify that no revisions are returned for tag="baz"
-    GET: /api/v1.0/revisions?tag=baz
+    GET: /api/v1.0/revisions
+    query_parameters:
+      tag: baz
     status: 200
     response_multidoc_jsonpaths:
+      $.`len`: 1
       $.[0].count: 0
       $.[0].results: []
