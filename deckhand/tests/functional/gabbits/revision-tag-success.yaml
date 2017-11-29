@@ -49,9 +49,8 @@ tests:
     status: 201
 
     response_multidoc_jsonpaths:
-      $.`len`: 1
-      $[0].data: {}
-      $[0].tag: foo
+      $.[0].`len`: 1
+      $[0].foo: {}
 
   - name: show_tag
     desc: Verify showing created tag works
@@ -60,8 +59,7 @@ tests:
 
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $[0].data: {}
-      $[0].tag: foo
+      $[0].foo: {}
 
   - name: verify_revision_detail_foo
     desc: Verify showing created tag on revision detail
@@ -69,7 +67,9 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].tags.foo.name: foo
+      $.[0].tags.`len`: 1
+      $.[0].tags:
+        foo: {}
 
   - name: verify_revision_list_foo
     desc: Verify showing created tag on revision list
@@ -77,6 +77,7 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
+      $.[0].results[0].tags.`len`: 1
       $.[0].results[0].tags: [foo]
 
   - name: create_tag_with_data
@@ -87,9 +88,10 @@ tests:
 
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $[0].tag: bar
-      $[0].data.last: good
-      $[0].data.random: data
+      $.[0].bar.`len`: 2
+      $[0].bar:
+        last: good
+        random: data
 
   - name: list_tags
     desc: Verify listing tags contains created tag
@@ -97,12 +99,13 @@ tests:
     status: 200
 
     response_multidoc_jsonpaths:
-      $.`len`: 2
-      $.[0].tag: bar
-      $.[0].data.last: good
-      $.[0].data.random: data
-      $.[1].tag: foo
-      $.[1].data: {}
+      $.`len`: 1
+      $.[0].`len`: 2
+      $.[0].bar.`len`: 2
+      $[0].bar:
+        last: good
+        random: data
+      $[0].foo: {}
 
   - name: verify_revision_detail_bar
     desc: Verify showing created tag on revision detail
@@ -110,8 +113,11 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].tags.bar.name: bar
-      $.[0].tags.foo.name: foo
+      $.[0].tags.`len`: 2
+      $[0].tags.bar:
+        last: good
+        random: data
+      $[0].tags.foo: {}
 
   - name: verify_revision_list_bar
     desc: Verify showing created tag on revision list
@@ -119,6 +125,7 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
+      $.[0].results[0].tags.`len`: 2
       $.[0].results[0].tags: [bar, foo]
 
   - name: delete_tag
@@ -134,9 +141,10 @@ tests:
 
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].tag: bar
-      $.[0].data.last: good
-      $.[0].data.random: data
+      $.[0].`len`: 1
+      $[0].bar:
+        last: good
+        random: data
 
   - name: verify_revision_detail_deleted_foo
     desc: Verify not showing deleted tag on revision detail
@@ -144,7 +152,10 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].tags.bar.name: bar
+      $.[0].tags.`len`: 1
+      $[0].tags.bar:
+        last: good
+        random: data
 
   - name: verify_revision_list_deleted_foo
     desc: Verify not showing deleted tag on revision list
@@ -152,6 +163,7 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
+      $.[0].results[0].tags.`len`: 1
       $.[0].results[0].tags: [bar]
 
   - name: delete_all_tags
@@ -182,4 +194,5 @@ tests:
     status: 200
 
     response_multidoc_jsonpaths:
-      $: null
+      $.`len`: 1
+      $.[0]: {}
