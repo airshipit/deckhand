@@ -24,6 +24,7 @@ from deckhand.engine import document_validation
 from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import policy
+from deckhand import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -37,7 +38,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
     @common.sanitize_params([
         'schema', 'metadata.name', 'metadata.layeringDefinition.abstract',
         'metadata.layeringDefinition.layer', 'metadata.label',
-        'status.bucket'])
+        'status.bucket', 'order', 'sort'])
     def on_get(self, req, resp, sanitized_params, revision_id):
         """Returns all documents for a `revision_id`.
 
@@ -48,6 +49,12 @@ class RevisionDocumentsResource(api_base.BaseResource):
         """
         include_encrypted = policy.conditional_authorize(
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
+
+        order_by = sort_by = None
+        if 'order' in sanitized_params:
+            order_by = sanitized_params.pop('order')
+        if 'sort' in sanitized_params:
+            sort_by = sanitized_params.pop('sort')
 
         filters = sanitized_params.copy()
         filters['metadata.storagePolicy'] = ['cleartext']
@@ -62,8 +69,10 @@ class RevisionDocumentsResource(api_base.BaseResource):
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
 
+        sorted_documents = utils.multisort(documents, sort_by, order_by)
+
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(documents)
+        resp.body = self.view_builder.list(sorted_documents)
 
 
 class RenderedDocumentsResource(api_base.BaseResource):

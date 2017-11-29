@@ -21,9 +21,8 @@ class TestRevisionDocumentsFiltering(base.TestDbBase):
     def test_document_filtering_by_bucket_name(self):
         document = base.DocumentFixture.get_minimal_fixture()
         bucket_name = test_utils.rand_name('bucket')
-        self.create_documents(bucket_name, document)
-
-        revision_id = self.create_documents(bucket_name, [])[0]['revision_id']
+        revision_id = self.create_documents(bucket_name, [document])[0][
+            'revision_id']
 
         filters = {'bucket_name': bucket_name}
         retrieved_documents = self.list_revision_documents(
@@ -37,7 +36,8 @@ class TestRevisionDocumentsFiltering(base.TestDbBase):
         bucket_name = test_utils.rand_name('bucket')
         self.create_documents(bucket_name, documents)
 
-        revision_id = self.create_documents(bucket_name, [])[0]['revision_id']
+        revision_id = self.create_documents(bucket_name, [])[0][
+            'revision_id']
         retrieved_documents = self.list_revision_documents(
             revision_id, include_history=False, deleted=False)
 
@@ -69,6 +69,8 @@ class TestRevisionDocumentsFiltering(base.TestDbBase):
             retrieved_documents = self.list_revision_documents(
                 created_documents[0]['revision_id'],
                 **{'metadata.storagePolicy': ['cleartext', 'encrypted']})
+            retrieved_documents = sorted(retrieved_documents,
+                                         key=lambda d: d['created_at'])
 
             self.assertEqual([d['id'] for d in all_created_documents],
                              [d['id'] for d in retrieved_documents])

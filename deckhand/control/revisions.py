@@ -20,6 +20,7 @@ from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 from deckhand import policy
+from deckhand import utils
 
 
 class RevisionsResource(api_base.BaseResource):
@@ -56,13 +57,19 @@ class RevisionsResource(api_base.BaseResource):
         resp.body = revision_resp
 
     @policy.authorize('deckhand:list_revisions')
-    @common.sanitize_params(['tag'])
+    @common.sanitize_params(['tag', 'order', 'sort'])
     def _list_revisions(self, req, resp, sanitized_params):
+        order_by = sort_by = None
+        if 'order' in sanitized_params:
+            order_by = sanitized_params.pop('order')
+        if 'sort' in sanitized_params:
+            sort_by = sanitized_params.pop('sort')
+
         revisions = db_api.revision_get_all(**sanitized_params)
-        revisions_resp = self.view_builder.list(revisions)
+        sorted_revisions = utils.multisort(revisions, sort_by, order_by)
 
         resp.status = falcon.HTTP_200
-        resp.body = revisions_resp
+        resp.body = self.view_builder.list(sorted_revisions)
 
     @policy.authorize('deckhand:delete_revisions')
     def on_delete(self, req, resp):

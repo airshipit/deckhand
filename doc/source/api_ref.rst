@@ -76,12 +76,16 @@ Supported query string parameters:
 * ``metadata.label`` - string, optional, repeatable - Uses the format
   ``metadata.label=key=value``. Repeating this parameter indicates all
   requested labels must apply (AND not OR).
-* ``sort`` - string, optional, repeatable - Defines the sort order for returning
-  results.  Default is by creation date.  Repeating this parameter indicates use
-  of multi-column sort with the most significant sorting column applied first.
 * ``status.bucket`` - string, optional, repeatable - Used to select documents
   only from a particular bucket.  Repeating this parameter indicates documents
   from any of the specified buckets should be returned.
+* ``sort`` - string, optional, repeatable - Defines the sort order for returning
+  results.  Default is by creation date.  Repeating this parameter indicates use
+  of multi-column sort with the most significant sorting column applied first.
+* ``order`` - string, optional - Valid values are "asc" and "desc". Default is
+  "asc". Controls the order in which the ``sort`` result is returned: "asc"
+  returns sorted results in ascending order, while "desc" returns results in
+  descending order.
 
 GET ``/revisions/{revision_id}/rendered-documents``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -108,6 +112,13 @@ Supported query string parameters:
 
 * ``tag`` - string, optional, repeatable - Used to select revisions that have
   been tagged with particular tags.
+* ``sort`` - string, optional, repeatable - Defines the sort order for returning
+  results.  Default is by creation date.  Repeating this parameter indicates use
+  of multi-column sort with the most significant sorting column applied first.
+* ``order`` - string, optional - Valid values are "asc" and "desc". Default is
+  "asc". Controls the order in which the ``sort`` result is returned: "asc"
+  returns sorted results in ascending order, while "desc" returns results in
+  descending order.
 
 Sample response:
 

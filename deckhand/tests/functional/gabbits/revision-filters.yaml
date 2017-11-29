@@ -2,6 +2,7 @@
 #   * tag
 # 2. Test failure paths for filtering revisions for the following filters:
 #   * tag
+# 3. Test success paths for sorting and ordering.
 
 defaults:
   request_headers:
@@ -17,14 +18,26 @@ tests:
     response_headers: null
 
   - name: initialize
-    desc: Create initial documents
-    PUT: /api/v1.0/buckets/mop/documents
+    desc: Create first revision for testing
+    PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
     data: <@resources/design-doc-layering-sample.yaml
 
+  - name: initialize_again
+    desc:  Create second revision for testing
+    PUT: /api/v1.0/buckets/bucket_b/documents
+    status: 200
+    data: <@resources/sample-doc.yaml
+
+  - name: initialize_once_again
+    desc:  Create third revision for testing
+    PUT: /api/v1.0/buckets/bucket_c/documents
+    status: 200
+    data: <@resources/sample-schema.yaml
+
   - name: create_tag
     desc: Create a tag for testing filtering a revision by tag
-    POST: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/tags/foo
+    POST: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
     status: 201
 
   - name: create_another_tag
@@ -42,7 +55,7 @@ tests:
       $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
-      $.[0].results[0].buckets: [mop]
+      $.[0].results[0].buckets: [bucket_a]
       $.[0].results[0].tags:
         # Tags are sorted alphabetically.
         - bar
@@ -60,7 +73,7 @@ tests:
       $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
-      $.[0].results[0].buckets: [mop]
+      $.[0].results[0].buckets: [bucket_a]
       $.[0].results[0].tags:
         - bar
         - foo
@@ -75,3 +88,30 @@ tests:
       $.`len`: 1
       $.[0].count: 0
       $.[0].results: []
+
+  - name: verify_sort_by_id
+    desc: Verify revision documents sorted by ID, in ascending order
+    GET: /api/v1.0/revisions
+    query_parameters:
+      sort: id
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].results.`len`: 3
+      $.[0].results[*].id:
+        - 1
+        - 2
+        - 3
+
+  - name: verify_sort_by_id_desc
+    desc: Verify revision documents sorted by ID, in descending order
+    GET: /api/v1.0/revisions
+    query_parameters:
+      sort: id
+      order: desc
+    status: 200
+    response_multidoc_jsonpaths:
+      $.[0].results.`len`: 3
+      $.[0].results[*].id:
+        - 3
+        - 2
+        - 1
