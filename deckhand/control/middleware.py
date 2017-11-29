@@ -137,7 +137,8 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
         # is required.
         requires_content_type = (
             req.method not in ['GET', 'DELETE'] and (
-                req.content_length is not None or
+                (req.content_length is not None and
+                 req.content_length > 0) or
                 req.get_header('transfer-encoding') is not None
             )
         )
