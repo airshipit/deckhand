@@ -112,3 +112,31 @@ Validation Module
 .. autoclass:: deckhand.engine.document_validation.DocumentValidation
    :members:
    :private-members:
+
+.. _schemas:
+
+Validation Schemas
+==================
+
+Below are the schemas deckhand uses to validate documents.
+
+.. automodule:: deckhand.engine.schema.base_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.certificate_key_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.certificate_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.data_schema_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.layering_policy_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.passphrase_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.validation_policy_schema
+  :members: schema

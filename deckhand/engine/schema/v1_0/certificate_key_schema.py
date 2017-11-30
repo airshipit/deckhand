@@ -47,3 +47,18 @@ schema = {
     'additionalProperties': False,
     'required': ['schema', 'metadata', 'data']
 }
+"""JSON schema against which all documents with ``deckhand/CertificateKey/v1``
+``schema`` are validated.
+
+.. literalinclude:: ../../deckhand/engine/schema/v1_0/certificate_key_schema.py
+   :language: python
+   :lines: 15-49
+
+This schema is used to sanity-check all CertificateKey documents that are
+passed to Deckhand. This schema is only enforced after validation for
+:py:data:`~deckhand.engine.schema.base_schema` has passed. Failure to pass
+this schema will result in an error entry being created for the validation
+with name ``deckhand-schema-validation`` corresponding to the created revision.
+"""
+
+__all__ = ['schema']

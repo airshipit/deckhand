@@ -60,3 +60,18 @@ schema = {
     'additionalProperties': False,
     'required': ['schema', 'metadata', 'data']
 }
+"""JSON schema against which all documents with ``deckhand/DataSchema/v1``
+``schema`` are validated.
+
+.. literalinclude:: ../../deckhand/engine/schema/v1_0/data_schema_schema.py
+   :language: python
+   :lines: 15-62
+
+This schema is used to sanity-check all DataSchema documents that are
+passed to Deckhand. This schema is only enforced after validation for
+:py:data:`~deckhand.engine.schema.base_schema` has passed. Failure to pass
+this schema will result in an error entry being created for the validation
+with name ``deckhand-schema-validation`` corresponding to the created revision.
+"""
+
+__all__ = ['schema']
