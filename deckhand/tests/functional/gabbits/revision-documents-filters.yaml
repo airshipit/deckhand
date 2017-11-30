@@ -5,6 +5,7 @@
 #   * metadata.layeringDefinition.abstract
 #   * metadata.layeringDefinition.layer
 #   * status.bucket
+#   * sort
 
 defaults:
   request_headers:
@@ -105,3 +106,73 @@ tests:
         - mop
         - mop
         - mop
+
+  - name: sort_by_metadata_name
+    desc: Verify revision documents sorted by metadata.name
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: metadata.name
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 4
+      $.[*].metadata.name:
+        - global-1234
+        - layering-policy
+        - region-1234
+        - site-1234
+
+  - name: sort_by_schema
+    desc: Verify revision documents sorted by schema
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: schema
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 4
+      $.[*].schema:
+        - deckhand/LayeringPolicy/v1
+        - example/Kind/v1
+        - example/Kind/v1
+        - example/Kind/v1
+
+  - name: sort_by_schema_then_metadata
+    desc: Verify revision documents sorted by (schema, metadata)
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort:
+        - schema
+        - metadata.name
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 4
+      $.[*].schema:
+        - deckhand/LayeringPolicy/v1
+        - example/Kind/v1
+        - example/Kind/v1
+        - example/Kind/v1
+      $.[*].metadata.name:
+        - layering-policy
+        - global-1234
+        - region-1234
+        - site-1234
+
+  - name: sort_by_metadata_then_schema
+    desc: Verify revision documents sorted by (metadata, schema)
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort:
+        - metadata.name
+        - schema
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 4
+      $.[*].metadata.name:
+        - global-1234
+        - layering-policy
+        - region-1234
+        - site-1234
+      $.[*].schema:
+        - example/Kind/v1
+        - deckhand/LayeringPolicy/v1
+        - example/Kind/v1
+        - example/Kind/v1

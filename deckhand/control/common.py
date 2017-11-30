@@ -41,7 +41,9 @@ def sanitize_params(allowed_params):
         'status.bucket': 'bucket_name',
         'metadata.label': 'metadata.labels',
         # Mappings for revisions.
-        'tag': 'tags.[*].tag'
+        'tag': 'tags.[*].tag',
+        # Mappings for sorting.
+        'createdAt': 'created_at'
     }
 
     def decorator(func):

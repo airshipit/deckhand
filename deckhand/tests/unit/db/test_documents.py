@@ -220,6 +220,8 @@ class TestDocuments(base.TestDbBase):
         self.assertEqual(3, len(documents))
 
         documents = self.create_documents(bucket_name, [])
+        documents = sorted(
+            documents, key=lambda d: d['name'])
 
         for idx in range(3):
             self.assertTrue(documents[idx]['deleted'])
@@ -234,7 +236,7 @@ class TestDocuments(base.TestDbBase):
         payload = self.documents_factory.gen_test(self.document_mapping)
         bucket_name = test_utils.rand_name('bucket')
         # Create just 1 document.
-        documents = self.create_documents(bucket_name, payload[0])
+        self.create_documents(bucket_name, payload[0])
 
         # Create the document in payload[0] but create a new document for
         # payload[1].
@@ -260,13 +262,13 @@ class TestDocuments(base.TestDbBase):
         payload = self.documents_factory.gen_test(self.document_mapping)
         bucket_name = test_utils.rand_name('bucket')
         # Create just 1 document.
-        documents = self.create_documents(bucket_name, payload[1:])
+        self.create_documents(bucket_name, payload[1:])
 
         # Create the document in payload[0] but create a new document for
         # payload[1].
         documents = self.create_documents(bucket_name, payload[0])
         # The first document will be first, followed by the two deleted docs.
-        documents = sorted(documents, key=lambda d: d['deleted'])
+        documents = sorted(documents, key=lambda d: (d['deleted'], d['name']))
         # Information about the deleted and created document should've been
         # returned. The 1st document is the deleted one and the 2nd document
         # is the created one.

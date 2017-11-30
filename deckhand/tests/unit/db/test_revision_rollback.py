@@ -42,6 +42,8 @@ class TestRevisionRollback(base.TestDbBase):
 
         rollback_documents = self.list_revision_documents(
             rollback_revision['id'])
+        rollback_documents = sorted(rollback_documents,
+                                    key=lambda d: d['created_at'])
         self.assertEqual([1, 1, 1, 3],
                          [d['revision_id'] for d in rollback_documents])
         self.assertEqual([1, 1, 1, 3],
@@ -75,6 +77,8 @@ class TestRevisionRollback(base.TestDbBase):
 
         rollback_documents = self.list_revision_documents(
             rollback_revision['id'])
+        rollback_documents = sorted(rollback_documents,
+                                    key=lambda d: d['created_at'])
         self.assertEqual([1, 1, 4, 4],
                          [d['revision_id'] for d in rollback_documents])
         self.assertEqual([1, 1, 4, 4],

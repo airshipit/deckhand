@@ -144,3 +144,26 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         d = d.get(path)
 
     return _do_replace()
+
+
+def multisort(data, sort_by=None, order_by=None):
+    """Sort a dictionary by multiple keys.
+
+    The order of the keys is important. The first key takes precedence over
+    the second key, and so forth.
+
+    :param data: Dictionary to be sorted.
+    :param sort_by: list or string of keys to sort ``data`` by.
+    :type sort_by: list or string
+    :returns: Sorted dictionary by each key.
+    """
+    if sort_by is None:
+        sort_by = 'created_at'
+    if order_by not in ['asc', 'desc']:
+        order_by = 'asc'
+    if not isinstance(sort_by, list):
+        sort_by = [sort_by]
+
+    return sorted(data, key=lambda d: [
+        jsonpath_parse(d, sort_key) for sort_key in sort_by],
+        reverse=True if order_by == 'desc' else False)

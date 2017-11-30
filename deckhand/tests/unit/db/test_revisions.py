@@ -55,6 +55,8 @@ class TestRevisions(base.TestDbBase):
 
         revision_documents = self.list_revision_documents(
             updated_documents[0]['revision_id'])
+        revision_documents = sorted(revision_documents,
+                                    key=lambda d: d['created_at'])
         self.assertEqual(4, len(revision_documents))
 
         self.assertEqual([orig_revision_id] * 3 + [new_revision_id],
@@ -174,6 +176,8 @@ class TestRevisions(base.TestDbBase):
 
         alt_revision_docs = self.list_revision_documents(
             alt_created_documents[0]['revision_id'])
+        alt_revision_docs = sorted(alt_revision_docs,
+                                   key=lambda d: d['created_at'])
         self.assertEqual(2, len(alt_revision_docs))
 
         expected_doc_ids = [created_documents[0]['id'],
