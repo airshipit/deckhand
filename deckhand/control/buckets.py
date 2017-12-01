@@ -70,8 +70,7 @@ class BucketsResource(api_base.BaseResource):
         created_documents = self._create_revision_documents(
             bucket_name, documents, validations)
 
-        if created_documents:
-            resp.body = self.view_builder.list(created_documents)
+        resp.body = self.view_builder.list(created_documents)
         resp.status = falcon.HTTP_200
 
     def _prepare_secret_documents(self, secret_documents):

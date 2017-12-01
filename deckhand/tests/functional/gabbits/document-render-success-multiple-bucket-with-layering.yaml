@@ -1,0 +1,45 @@
+# Tests success path for layering involving multiple source buckets.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Adds documents to bucket a
+# 3. Adds documents to bucket b
+# 4. Verifies fully correctly layered document data
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: add_bucket_a
+    desc: Create documents for bucket a
+    PUT: /api/v1.0/buckets/a/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample-split-bucket-a.yaml
+
+  - name: add_bucket_b
+    desc: Create documents for bucket b
+    PUT: /api/v1.0/buckets/b/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample-split-bucket-b.yaml
+
+  - name: verify_layering
+    desc: Check for expected layering
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[*].schema: example/Kind/v1
+      $.[*].metadata.name: site-1234
+      $.[*].metadata.schema: metadata/Document/v1
+      $.[*].data:
+        a:
+          z: 3
+        b: 4

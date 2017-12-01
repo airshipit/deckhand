@@ -214,23 +214,25 @@ class TestDocuments(base.TestDbBase):
     def test_delete_all_documents(self):
         payload = self.documents_factory.gen_test(self.document_mapping)
         bucket_name = test_utils.rand_name('bucket')
-        documents = self.create_documents(bucket_name, payload)
+        created_documents = self.create_documents(bucket_name, payload)
+        self.assertIsInstance(created_documents, list)
+        self.assertEqual(3, len(created_documents))
 
-        self.assertIsInstance(documents, list)
-        self.assertEqual(3, len(documents))
+        deleted_documents = self.create_documents(bucket_name, [])
 
-        documents = self.create_documents(bucket_name, [])
-        documents = sorted(
-            documents, key=lambda d: d['name'])
+        # Verify that all the expected documents were deleted.
+        self.assertEqual(
+            sorted([(d['metadata']['name'], d['schema'])
+                        for d in created_documents]),
+            sorted([(d['name'], d['schema']) for d in deleted_documents]))
 
-        for idx in range(3):
-            self.assertTrue(documents[idx]['deleted'])
-            self.assertTrue(documents[idx]['deleted_at'])
-            self.assertEqual(documents[idx]['schema'], payload[idx]['schema'])
-            self.assertEqual(documents[idx]['name'],
-                             payload[idx]['metadata']['name'])
-            self.assertEmpty(documents[idx]['metadata'])
-            self.assertEmpty(documents[idx]['data'])
+        # Verify that all their attributes have been cleared and that the
+        # deleted/deleted_at attributes have been set to True.
+        for deleted_document in deleted_documents:
+            self.assertTrue(deleted_document['deleted'])
+            self.assertTrue(deleted_document['deleted_at'])
+            self.assertEmpty(deleted_document['metadata'])
+            self.assertEmpty(deleted_document['data'])
 
     def test_delete_and_create_document_in_same_payload(self):
         payload = self.documents_factory.gen_test(self.document_mapping)

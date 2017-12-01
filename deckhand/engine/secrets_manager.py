@@ -99,23 +99,21 @@ class SecretsSubstitution(object):
     def __init__(self, documents):
         """SecretSubstitution constructor.
 
-        :param documents: List of YAML documents in dictionary format that are
-            candidates for secret substitution. This class will automatically
-            detect documents that require substitution; documents need not be
-            filtered prior to being passed to the constructor.
+        :param documents: List of documents that are candidates for secret
+            substitution. This class will automatically detect documents that
+            require substitution; documents need not be filtered prior to being
+            passed to the constructor.
         """
         if not isinstance(documents, (list, tuple)):
             documents = [documents]
 
         self.docs_to_sub = []
-        self.other_docs = []
 
         for document in documents:
-            doc = document_wrapper.Document(document)
-            if doc.get_substitutions():
-                self.docs_to_sub.append(doc)
-            else:
-                self.other_docs.append(document)
+            if not isinstance(document, document_wrapper.Document):
+                document_obj = document_wrapper.Document(document)
+                if document_obj.get_substitutions():
+                    self.docs_to_sub.append(document_obj)
 
     def substitute_all(self):
         """Substitute all documents that have a `metadata.substitutions` field.
@@ -160,4 +158,4 @@ class SecretsSubstitution(object):
                 doc['data'].update(substituted_data)
 
             substituted_docs.append(doc.to_dict())
-        return substituted_docs + self.other_docs
+        return substituted_docs

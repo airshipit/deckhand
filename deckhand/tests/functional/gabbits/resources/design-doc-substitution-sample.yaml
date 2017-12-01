@@ -1,4 +1,13 @@
 ---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - region
+    - site
+---
 schema: deckhand/Certificate/v1
 metadata:
   name: example-cert

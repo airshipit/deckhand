@@ -23,7 +23,7 @@ tests:
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/design-doc-layering-sample.yaml
+    data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: filter_by_multiple_different_filters_expect_site
     desc: Verify revision documents filtered by multiple repeated keys that are different

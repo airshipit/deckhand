@@ -35,8 +35,8 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
         # Create 2 docs: one concrete, one abstract.
         documents_factory = factories.DocumentFactory(2, [1, 1])
         payload = documents_factory.gen_test(
-            {}, global_abstract=False, region_abstract=True)[1:]
-        concrete_doc = payload[0]
+            {}, global_abstract=False, region_abstract=True)
+        concrete_doc = payload[1]
 
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
@@ -78,23 +78,21 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
         self.policy.set_rules(rules)
 
         # Create 1st document.
-        documents_factory = factories.DocumentFactory(2, [1, 1])
+        documents_factory = factories.DocumentFactory(1, [1])
         payload = documents_factory.gen_test({}, global_abstract=False)[1:]
-        payload[0]['metadata']['name'] = test_utils.rand_name('document')
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)
 
-        # Create 2nd document (exclude 1st document).
-        payload = documents_factory.gen_test({}, global_abstract=False)[1:]
-        second_name = test_utils.rand_name('document')
-        payload[0]['metadata']['name'] = second_name
+        # Create 2nd document (exclude 1st document in new payload).
+        payload = documents_factory.gen_test({}, global_abstract=False)
+        new_name = payload[-1]['metadata']['name']
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
-            body=yaml.safe_dump_all([payload[0]]))
+            body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)
         revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
             'revision']
@@ -107,9 +105,36 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
 
         rendered_documents = list(yaml.safe_load_all(resp.text))
         self.assertEqual(1, len(rendered_documents))
-        self.assertEqual(second_name,
-                         rendered_documents[0]['metadata']['name'])
+        self.assertEqual(new_name, rendered_documents[0]['metadata']['name'])
         self.assertEqual(2, rendered_documents[0]['status']['revision'])
+
+    def test_list_rendered_documents_multiple_buckets(self):
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        documents_factory = factories.DocumentFactory(1, [1])
+
+        for idx in range(2):
+            payload = documents_factory.gen_test({})
+            if idx == 0:
+                # Pop off the first entry so that a conflicting layering
+                # policy isn't created during the 1st iteration.
+                payload.pop(0)
+            resp = self.app.simulate_put(
+                '/api/v1.0/buckets/%s/documents' % test_utils.rand_name(
+                    'bucket'),
+                headers={'Content-Type': 'application/x-yaml'},
+                body=yaml.safe_dump_all(payload))
+            self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
 
 
 class TestRenderedDocumentsControllerNegative(
@@ -125,8 +150,8 @@ class TestRenderedDocumentsControllerNegative(
         self.policy.set_rules(rules)
 
         # Create a document for a bucket.
-        secrets_factory = factories.DocumentSecretFactory()
-        payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
+        documents_factory = factories.DocumentFactory(1, [1])
+        payload = documents_factory.gen_test({})
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
@@ -161,8 +186,8 @@ class TestRenderedDocumentsControllerNegativeRBAC(
         self.policy.set_rules(rules)
 
         # Create a document for a bucket.
-        secrets_factory = factories.DocumentSecretFactory()
-        payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
+        documents_factory = factories.DocumentFactory(1, [1])
+        payload = [documents_factory.gen_test({})[0]]
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
@@ -185,8 +210,13 @@ class TestRenderedDocumentsControllerNegativeRBAC(
         self.policy.set_rules(rules)
 
         # Create a document for a bucket.
+        documents_factory = factories.DocumentFactory(1, [1])
+        layering_policy = documents_factory.gen_test({})[0]
         secrets_factory = factories.DocumentSecretFactory()
-        payload = [secrets_factory.gen_test('Certificate', 'encrypted')]
+        encrypted_document = secrets_factory.gen_test('Certificate',
+                                                      'encrypted')
+        payload = [layering_policy, encrypted_document]
+
         with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
                                autospec=True) as mock_secrets_mgr:
             mock_secrets_mgr.create.return_value = {

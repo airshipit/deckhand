@@ -29,7 +29,7 @@ tests:
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/design-doc-layering-sample.yaml
+    data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: update_single_document
     desc: Update a single document, ignore other documents in the bucket

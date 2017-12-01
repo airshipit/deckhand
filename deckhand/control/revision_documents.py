@@ -21,9 +21,10 @@ from deckhand.control import common
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import document_validation
-from deckhand.engine import secrets_manager
+from deckhand.engine import layering
 from deckhand import errors
 from deckhand import policy
+from deckhand import types
 from deckhand import utils
 
 LOG = logging.getLogger(__name__)
@@ -97,35 +98,67 @@ class RenderedDocumentsResource(api_base.BaseResource):
     def on_get(self, req, resp, sanitized_params, revision_id):
         include_encrypted = policy.conditional_authorize(
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
-
-        filters = sanitized_params.copy()
-        filters['metadata.layeringDefinition.abstract'] = False
-        filters['metadata.storagePolicy'] = ['cleartext']
-        filters['deleted'] = False  # Never return deleted documents to user.
+        filters = {
+            'metadata.storagePolicy': ['cleartext'],
+            'deleted': False
+        }
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
 
+        layering_policy = self._retrieve_layering_policy()
+        documents = self._retrieve_documents_for_rendering(revision_id,
+                                                           **filters)
+
+        # Prevent the layering policy from appearing twice.
+        if layering_policy in documents:
+            documents.remove(layering_policy)
+        document_layering = layering.DocumentLayering(layering_policy,
+                                                      documents)
+        rendered_documents = document_layering.render()
+
+        # Filters to be applied post-rendering, because many documents are
+        # involved in rendering. User filters can only be applied once all
+        # documents have been rendered.
+        user_filters = sanitized_params.copy()
+        user_filters['metadata.layeringDefinition.abstract'] = False
+        final_documents = [
+            d for d in rendered_documents if utils.deepfilter(
+                d, **user_filters)]
+
+        resp.status = falcon.HTTP_200
+        resp.body = self.view_builder.list(final_documents)
+        self._post_validate(final_documents)
+
+    def _retrieve_layering_policy(self):
+        try:
+            # NOTE(fmontei): Layering policies exist system-wide, across all
+            # revisions, so no need to filter by revision.
+            layering_policy_filters = {
+                'deleted': False,
+                'schema': types.LAYERING_POLICY_SCHEMA
+            }
+            layering_policy = db_api.document_get(**layering_policy_filters)
+        except errors.DocumentNotFound as e:
+            error_msg = (
+                'No layering policy found in the system so could not render '
+                'the documents.')
+            LOG.error(error_msg)
+            LOG.exception(six.text_type(e))
+            raise falcon.HTTPConflict(description=error_msg)
+        else:
+            return layering_policy
+
+    def _retrieve_documents_for_rendering(self, revision_id, **filters):
         try:
             documents = db_api.revision_get_documents(
                 revision_id, **filters)
         except errors.RevisionNotFound as e:
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
+        else:
+            return documents
 
-        # TODO(fmontei): Currently the only phase of rendering that is
-        # performed is secret substitution, which can be done in any randomized
-        # order. However, secret substitution logic will have to be moved into
-        # a separate module that handles layering alongside substitution once
-        # layering has been fully integrated into this endpoint.
-        secrets_substitution = secrets_manager.SecretsSubstitution(documents)
-        try:
-            rendered_documents = secrets_substitution.substitute_all()
-        except errors.DocumentNotFound as e:
-            LOG.error('Failed to render the documents because a secret '
-                      'document could not be found.')
-            LOG.exception(six.text_type(e))
-            raise falcon.HTTPNotFound(description=e.format_message())
-
+    def _post_validate(self, documents):
         # Perform schema validation post-rendering to ensure that rendering
         # and substitution didn't break anything.
         doc_validator = document_validation.DocumentValidation(documents)
@@ -133,9 +166,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
             doc_validator.validate_all()
         except (errors.InvalidDocumentFormat,
                 errors.InvalidDocumentSchema) as e:
+            LOG.error('Failed to post-validate rendered documents.')
             LOG.exception(e.format_message())
             raise falcon.HTTPInternalServerError(
                 description=e.format_message())
-
-        resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(rendered_documents)

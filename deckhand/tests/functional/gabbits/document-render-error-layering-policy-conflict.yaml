@@ -1,0 +1,29 @@
+# Tests failure paths for layering.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Adds initial documents that do not include a layering policy
+# 3. Verifies that 409 is raised when attempting to layer without a layering policy
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/passphrase.yaml
+
+  - name: verify_missing_layering_policy_raises_conflict
+    desc: Verify that attempting to render documents without a layering policy raises a 409
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    status: 409

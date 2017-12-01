@@ -118,7 +118,7 @@ Validation Module
 Validation Schemas
 ==================
 
-Below are the schemas deckhand uses to validate documents.
+Below are the schemas Deckhand uses to validate documents.
 
 .. automodule:: deckhand.engine.schema.base_schema
   :members: schema
