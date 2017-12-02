@@ -44,10 +44,12 @@ and ``data``.
 * ``schema`` - Defines the name of the JSON schema to be used for validation.
   Must have the form: ``<namespace>/<kind>/<version>``, where the meaning of
   each component is:
-  * ``namespace`` - Identifies the owner of this type of document. The
-  values `deckhand` and `metadata` are reserved for internal use.
+
+  * ``namespace`` - Identifies the owner of this type of document. The values
+    ``deckhand`` and ``metadata`` are reserved for internal use.
   * ``kind`` - Identifies a type of configuration resource in the namespace.
-  * ``version`` - Describe the version of this resource, e.g. "v1".
+  * ``version`` - Describe the version of this resource, e.g. ``v1``.
+
 * ``metadata`` - Defines details that Deckhand will inspect and understand.
   There are multiple schemas for this section as discussed below. All the
   various types of metadata include a `name` field which must be unique for
