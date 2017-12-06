@@ -245,8 +245,8 @@ class RevisionNotFound(DeckhandException):
 
 
 class RevisionTagNotFound(DeckhandException):
-    msg_fmt = ("The requested tag %(tag)s for revision %(revision)s was not "
-               "found.")
+    msg_fmt = ("The requested tag '%(tag)s' for revision %(revision)s was "
+               "not found.")
     code = 404
 
 

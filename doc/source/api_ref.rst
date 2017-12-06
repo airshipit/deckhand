@@ -381,7 +381,8 @@ POST ``/revisions/{{revision_id}}/tags/{{tag}}``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Associate the revision with a collection of metadata, if provided, by way of
-a tag. The tag itself can be used to label the revision.
+a tag. The tag itself can be used to label the revision. If a tag by name
+``tag`` already exists, the tag's associated metadata is updated.
 
 Sample request with body:
 

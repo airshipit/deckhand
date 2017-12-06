@@ -106,12 +106,3 @@ class TestRevisionTags(base.TestDbBase):
         # Validate that deleting all tags without any tags doesn't raise
         # errors.
         db_api.revision_tag_delete_all(self.revision_id)
-
-    def test_create_duplicate_tag(self):
-        tag = test_utils.rand_name(self.__class__.__name__ + '-Tag')
-        # Create the same tag twice and validate that it returns None the
-        # second time.
-
-        db_api.revision_tag_create(self.revision_id, tag)
-        resp = db_api.revision_tag_create(self.revision_id, tag)
-        self.assertIsNone(resp)

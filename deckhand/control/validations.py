@@ -43,6 +43,17 @@ class ValidationsResource(api_base.BaseResource):
             LOG.error(error_msg)
             raise falcon.HTTPBadRequest(description=six.text_type(e))
 
+        if not validation_data:
+            error_msg = 'Validation payload must be provided.'
+            LOG.error(error_msg)
+            raise falcon.HTTPBadRequest(description=error_msg)
+
+        if not all([validation_data.get(x) for x in ('status', 'validator')]):
+            error_msg = 'Validation payload must contain keys: %s.' % (
+                ', '.join(['"status"', '"validator"']))
+            LOG.error(error_msg)
+            raise falcon.HTTPBadRequest(description=error_msg)
+
         try:
             resp_body = db_api.validation_create(
                 revision_id, validation_name, validation_data)
