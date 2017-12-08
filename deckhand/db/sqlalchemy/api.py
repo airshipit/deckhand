@@ -1021,10 +1021,9 @@ def revision_rollback(revision_id, latest_revision, session=None):
         (d['data_hash'], d['metadata_hash'])
         for d in latest_revision['documents']]
 
-    # If the rollback revision is the same as the latest revision, then there's
-    # no point in rolling back.
     if latest_revision['id'] == revision_id:
-        raise errors.InvalidRollback(revision_id=revision_id)
+        LOG.debug('The revision being rolled back to is the current revision.'
+                  'Expect no meaningful changes.')
 
     orig_revision = revision_get(revision_id, session=session)
 
@@ -1039,10 +1038,12 @@ def revision_rollback(revision_id, latest_revision, session=None):
         else:
             doc_diff[orig_doc['id']] = False
 
-    # If no changes have been made between the target revision to rollback to
-    # and the latest revision, raise an exception.
+    # No changes have been made between the target revision to rollback to
+    # and the latest revision.
     if set(doc_diff.values()) == set([False]):
-        raise errors.InvalidRollback(revision_id=revision_id)
+        LOG.debug('The revision being rolled back to has the same documents '
+                  'as that of the current revision. Expect no meaningful '
+                  'changes.')
 
     # Create the new revision,
     new_revision = models.Revision()

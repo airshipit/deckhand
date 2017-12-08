@@ -45,6 +45,31 @@ class DeckhandTestCase(testtools.TestCase):
         elif isinstance(collection, dict):
             self.assertEqual(0, len(collection.keys()))
 
+    def assertDictItemsAlmostEqual(self, first, second, ignore):
+        """Assert that the items in a dictionary or list of dictionaries
+        are equal, except for the keys specified in ``ignore``.
+
+        Both first and second must contain the keys specified in ``ignore``.
+
+        :param first: First dictionary or list of dictionaries to compare.
+        :type first: dict or list[dict]
+        :param second: Second dictionary or list of dictionaries to compare.
+        :type second: dict or list[dict]
+        :param ignore: List of keys to ignore in both dictionaries or list
+            of dictionaries.
+        :type ignore: list or tuple
+        """
+        if not isinstance(first, list):
+            first = [first]
+        if not isinstance(second, list):
+            second = [second]
+        for key in ignore:
+            for item in first:
+                item.pop(key)
+            for item in second:
+                item.pop(key)
+        self.assertEqual(first, second)
+
     def patch(self, target, autospec=True, **kwargs):
         """Returns a started `mock.patch` object for the supplied target.
 

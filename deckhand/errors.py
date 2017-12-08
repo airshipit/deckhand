@@ -263,12 +263,6 @@ class RevisionTagBadFormat(DeckhandException):
     code = 400
 
 
-class InvalidRollback(DeckhandException):
-    msg_fmt = ("The requested rollback for target revision %(revision)s is "
-               "invalid as the latest revision matches the target revision.")
-    code = 400
-
-
 class BarbicanException(DeckhandException):
 
     def __init__(self, message, code):

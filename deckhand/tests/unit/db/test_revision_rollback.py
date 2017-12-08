@@ -83,3 +83,18 @@ class TestRevisionRollback(base.TestDbBase):
                          [d['revision_id'] for d in rollback_documents])
         self.assertEqual([1, 1, 4, 4],
                          [d['orig_revision_id'] for d in rollback_documents])
+
+    def test_rollback_to_revision_same_as_current_revision(self):
+        payload = base.DocumentFixture.get_minimal_multi_fixture(count=4)
+        bucket_name = test_utils.rand_name('bucket')
+        created_documents = self.create_documents(bucket_name, payload)
+        orig_revision_id = created_documents[0]['revision_id']
+        orig_documents = self.list_revision_documents(orig_revision_id)
+
+        rollback_revision = self.rollback_revision(orig_revision_id)
+        self.assertDictItemsAlmostEqual(
+            sorted(orig_documents, key=lambda d: d['created_at']),
+            sorted(rollback_revision['documents'],
+                   key=lambda d: d['created_at']),
+            ignore=['created_at', 'updated_at', 'revision_id',
+                    'orig_revision_id', 'id'])
