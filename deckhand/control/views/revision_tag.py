@@ -21,13 +21,15 @@ class ViewBuilder(common.ViewBuilder):
     _collection_name = 'revisions'
 
     def list(self, tags):
-        return [self._show(tag) for tag in tags]
+        resp = {}
+        for tag in tags:
+            resp.update(self._show(tag))
+        return resp
 
     def show(self, tag):
         return self._show(tag)
 
     def _show(self, tag):
         return {
-            'tag': tag.get('tag', None),
-            'data': tag.get('data', {})
+            tag['tag']: tag.get('data', {})
         }

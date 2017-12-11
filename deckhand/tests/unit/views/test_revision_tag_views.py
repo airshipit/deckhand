@@ -30,7 +30,7 @@ class TestRevisionViews(base.TestDbBase):
         tag = rand_prefix + '-Tag'
         data_key = rand_prefix + '-Key'
         data_val = rand_prefix + '-Val'
-        expected_view = {'tag': tag, 'data': {data_key: data_val}}
+        expected_view = {tag: {data_key: data_val}}
 
         created_tag = db_api.revision_tag_create(
             self.revision_id, tag, {data_key: data_val})
@@ -39,7 +39,7 @@ class TestRevisionViews(base.TestDbBase):
         self.assertEqual(expected_view, actual_view)
 
     def test_revision_tag_list_view(self):
-        expected_view = []
+        expected_view = {}
 
         # Create 2 revision tags for the same revision.
         for _ in range(2):
@@ -51,10 +51,9 @@ class TestRevisionViews(base.TestDbBase):
             db_api.revision_tag_create(
                 self.revision_id, tag, {data_key: data_val})
 
-            expected_view.append({'tag': tag, 'data': {data_key: data_val}})
+            expected_view.update({tag: {data_key: data_val}})
 
         retrieved_tags = db_api.revision_tag_get_all(self.revision_id)
 
         actual_view = self.view_builder.list(retrieved_tags)
-        self.assertEqual(sorted(expected_view, key=lambda t: t['tag']),
-                         actual_view)
+        self.assertEqual(expected_view, actual_view)
