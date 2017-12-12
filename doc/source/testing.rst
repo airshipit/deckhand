@@ -98,3 +98,32 @@ At this time, there are no functional tests for policy enforcement
 verification. Negative tests will be added at a later date to confirm that
 a 403 Forbidden is raised for each endpoint that does policy enforcement
 absent necessary permissions.
+
+CICD
+----
+Since it is important to validate the Deckhand image itself, CICD:
+
+* Generates the Deckhand image from the new patchset
+* Runs functional tests against the just-produced Deckhand image
+
+Deckhand uses the same script -- ``tools/functional-tests.sh`` -- for CICD
+testing. To test Deckhand against a containerized image, run, for example:
+
+::
+
+  export DECKHAND_IMAGE=quay.io/attcomdev/deckhand:latest
+  tox -e functional
+
+Which will result in the following script output:
+
+::
+
+  Running Deckhand via Docker
+  + sleep 5
+  + sudo docker run --rm --net=host -p 9000:9000 -v /opt/stack/deckhand/tmp.oBJ6XScFgC:/etc/deckhand quay.io/attcomdev/deckhand:latest
+
+.. warning::
+
+  For testing dev changes, it is **not** recommended to follow this approach,
+  as the most up-to-date code is located in the repository itself. Running tests
+  against a remote image will likely result in false positives.

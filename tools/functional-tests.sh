@@ -1,5 +1,15 @@
 #!/usr/bin/env bash
 
+# Meant for capturing output of Deckhand image. This requires that logging
+# in the image be set up to pipe everything out to stdout/stderr.
+STDOUT=$(mktemp)
+# NOTE(fmontei): `DECKHAND_IMAGE` should only be specified if the desire is to
+# run Deckhand functional tests against a specific Deckhand image, which is
+# useful for CICD (as validating the image is vital). However, if the
+# `DECKHAND_IMAGE` is not specified, then this implies that the most current
+# version of the code should be used, which is in the repo itself.
+DECKHAND_IMAGE=${DECKHAND_IMAGE:-}
+
 function log_section {
     set +x
     echo 1>&2
@@ -10,10 +20,22 @@ function log_section {
 
 set -ex
 
+function cleanup {
+    sudo docker stop $POSTGRES_ID
+    if [ -n "$DECKHAND_ID" ]; then
+        sudo docker stop $DECKHAND_ID
+    fi
+    rm -rf $CONF_DIR
+    rm -f $LOGFILE
+    kill %1
+}
 
-log_section Starting Postgres
+trap cleanup EXIT
+
+
 POSTGRES_ID=$(
     sudo docker run \
+        --rm \
         --detach \
         --publish :5432 \
         -e POSTGRES_DB=deckhand \
@@ -22,20 +44,15 @@ POSTGRES_ID=$(
             postgres:9.5
 )
 
-function cleanup {
-    sudo docker stop $POSTGRES_ID
-    kill %1
-}
-
-trap cleanup EXIT
-
 POSTGRES_IP=$(
     sudo docker inspect \
         --format='{{ .NetworkSettings.Networks.bridge.IPAddress }}' \
             $POSTGRES_ID
 )
 
-CONF_DIR=$(mktemp -d)
+
+CONF_DIR=$(mktemp -d -p $(pwd))
+sudo chmod 777 -R $CONF_DIR
 
 function gen_config {
     log_section Creating config file
@@ -53,7 +70,6 @@ function gen_config {
 cat <<EOCONF > $CONF_DIR/deckhand.conf
 [DEFAULT]
 debug = true
-log_config_append = $CONF_DIR/logging.conf
 log_file = deckhand.log
 log_dir = .
 use_stderr = true
@@ -114,16 +130,32 @@ gen_config
 gen_paste
 gen_policy
 
-uwsgi \
+log_section Starting Deckhand image
+
+if [ -z "$DECKHAND_IMAGE" ]; then
+    echo "Running Deckhand via uwsgi"
+    uwsgi \
     --http :9000 \
     -w deckhand.cmd \
     --callable deckhand_callable \
     --enable-threads \
     -L \
     --pyargv "--config-file $CONF_DIR/deckhand.conf" &
+else
+    echo "Running Deckhand via Docker"
+    sudo docker run \
+        --rm \
+        --net=host \
+        -p 9000:9000 \
+        -v $CONF_DIR:/etc/deckhand \
+        $DECKHAND_IMAGE &> $STDOUT &
+fi
 
-# Give the server a chance to come up.  Better to poll a health check.
+# Give the server a chance to come up. Better to poll a health check.
 sleep 5
+
+DECKHAND_ID=$(sudo docker ps | grep deckhand | awk '{print $1}')
+echo $DECKHAND_ID
 
 log_section Running tests
 
@@ -149,6 +181,7 @@ if [ "x$TEST_STATUS" = "x0" ]; then
 else
     log_section Deckhand Server Log
     cat deckhand.log
+    cat $STDOUT
     log_section Done FAILURE
     exit $TEST_STATUS
 fi
