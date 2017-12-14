@@ -35,7 +35,6 @@ trap cleanup EXIT
 
 POSTGRES_ID=$(
     sudo docker run \
-        --rm \
         --detach \
         --publish :5432 \
         -e POSTGRES_DB=deckhand \
