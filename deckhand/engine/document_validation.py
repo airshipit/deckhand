@@ -163,7 +163,7 @@ class DocumentValidation(object):
         :results: The validation results generated during document validation.
         :type results: list[dict]
         :returns: List of formatted validation results.
-        :rtype: list[dict]
+        :rtype: `func`:list[dict]
         """
         internal_validator = {
             'name': 'deckhand',
@@ -275,7 +275,7 @@ class DocumentValidation(object):
                later.
 
         :returns: A list of validations (one for each document validated).
-        :rtype: list[dict]
+        :rtype: `func`:list[dict]
         :raises errors.InvalidDocumentFormat: If the document failed schema
             validation and the failure is deemed critical.
         :raises errors.InvalidDocumentSchema: If no JSON schema for could be

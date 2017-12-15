@@ -94,6 +94,17 @@ def setup_db():
 
 def raw_query(query, **kwargs):
     """Execute a raw query against the database."""
+
+    # Cast all the strings that represent integers to integers because type
+    # matters when using ``bindparams``.
+    for key, val in kwargs.items():
+        if key.endswith('_id'):
+            try:
+                val = int(val)
+                kwargs[key] = val
+            except ValueError:
+                pass
+
     stmt = text(query)
     stmt = stmt.bindparams(**kwargs)
     return get_engine().execute(stmt)
@@ -926,7 +937,13 @@ def revision_tag_create(revision_id, tag, data=None, session=None):
             tag_model.save(session=session)
         resp = tag_model.to_dict()
     except db_exception.DBDuplicateEntry:
-        resp = None
+        # Update the revision tag if it already exists.
+        tag_to_update = session.query(models.RevisionTag)\
+            .filter_by(tag=tag, revision_id=revision_id)\
+            .one()
+        tag_to_update.update({'data': data})
+        tag_to_update.save(session=session)
+        resp = tag_to_update.to_dict()
 
     return resp
 
@@ -980,11 +997,10 @@ def revision_tag_delete(revision_id, tag, session=None):
     :param session: Database session object.
     :returns: None
     """
-    session = session or get_session()
-    result = session.query(models.RevisionTag)\
-                .filter_by(tag=tag, revision_id=revision_id)\
-                .delete(synchronize_session=False)
-    if result == 0:
+    query = raw_query(
+        """DELETE FROM revision_tags WHERE tag=:tag AND
+            revision_id=:revision_id;""", tag=tag, revision_id=revision_id)
+    if query.rowcount == 0:
         raise errors.RevisionTagNotFound(tag=tag, revision=revision_id)
 
 
@@ -1111,9 +1127,10 @@ def validation_get_all(revision_id, session=None):
     # has its own validation but for this query we want to return the result
     # of the overall validation for the revision. If just 1 document failed
     # validation, we regard the validation for the whole revision as 'failure'.
+
     query = raw_query("""
         SELECT DISTINCT name, status FROM validations as v1
-            WHERE revision_id = :revision_id AND status = (
+            WHERE revision_id=:revision_id AND status = (
                 SELECT status FROM validations as v2
                     WHERE v2.name = v1.name
                     ORDER BY status

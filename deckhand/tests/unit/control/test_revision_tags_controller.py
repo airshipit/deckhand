@@ -18,6 +18,46 @@ from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
 
 
+class TestRevisionTagsController(test_base.BaseControllerTest):
+
+    def setUp(self):
+        super(TestRevisionTagsController, self).setUp()
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a revision to tag.
+        secrets_factory = factories.DocumentSecretFactory()
+        payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        self.revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+    def test_delete_tag(self):
+        rules = {'deckhand:create_tag': '@',
+                 'deckhand:delete_tag': '@',
+                 'deckhand:show_tag': '@'}
+        self.policy.set_rules(rules)
+
+        resp = self.app.simulate_post(
+            '/api/v1.0/revisions/%s/tags/%s' % (self.revision_id, 'test'),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(201, resp.status_code)
+
+        resp = self.app.simulate_delete(
+            '/api/v1.0/revisions/%s/tags/%s' % (self.revision_id, 'test'),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(204, resp.status_code)
+
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/tags/%s' % (self.revision_id, 'test'),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(404, resp.status_code)
+
+
 class TestRevisionTagsControllerNegativeRBAC(test_base.BaseControllerTest):
     """Test suite for validating negative RBAC scenarios for revision tags
     controller.

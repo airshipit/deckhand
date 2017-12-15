@@ -46,6 +46,7 @@ User's Guide
    layering
    revision_history
    api_ref
+   api_client
 
 Developer's Guide
 =================
