@@ -39,7 +39,26 @@ session:
     sess = session.Session(auth=auth)
     deckhandclient = client.Client(session=sess)
 
-Alternatively, one can use non-session authentication to instantiate the
+You can also instantiate the client via one of Keystone's supported ``auth``
+plugins:
+
+::
+
+    from keystoneauth1.identity import v3
+
+    keystone_auth = {
+        'auth_url': AUTH_URL,
+        'token': TOKEN,
+        'project_id': PROJECT_ID,
+        'project_domain_name': PROJECT_DOMAIN_NAME
+    }
+    auth = v3.Token(**keystone_auth)
+    deckhandclient = client.Client(auth=auth)
+
+Which will allow you to authenticate using a pre-exsting, project-scoped
+token.
+
+Alternatively, you can use non-session authentication to instantiate the
 client, though this approach has been `deprecated`_.
 
 ::
