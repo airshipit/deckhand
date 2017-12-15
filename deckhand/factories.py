@@ -79,7 +79,8 @@ class DataSchemaFactory(DeckhandFactory):
 
         data_schema_template['metadata']['name'] = metadata_name
         data_schema_template['metadata']['labels'] = metadata_labels
-        data_schema_template['data'] = data
+        if data:
+            data_schema_template['data'] = data
 
         return data_schema_template
 

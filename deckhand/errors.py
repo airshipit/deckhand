@@ -171,14 +171,8 @@ class DeckhandException(Exception):
 
 
 class InvalidDocumentFormat(DeckhandException):
-    msg_fmt = ("The provided document YAML failed schema validation. Details: "
-               "%(detail)s. Schema: %(schema)s.")
-    code = 400
-
-
-class InvalidDocumentSchema(DeckhandException):
-    msg_fmt = ("The provided %(document_schema)s is invalid. Supported "
-               "schemas: %(schema_list)s.")
+    msg_fmt = ("The provided document failed schema validation. Details: "
+               "%(details)s")
     code = 400
 
 

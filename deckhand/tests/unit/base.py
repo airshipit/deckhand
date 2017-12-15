@@ -88,14 +88,14 @@ class DeckhandTestCase(testtools.TestCase):
         self.addCleanup(p.stop)
         return m
 
-    def patchobject(self, target, attribute, new=mock.DEFAULT, autospec=True):
+    def patchobject(self, target, attribute, new=mock.DEFAULT, **kwargs):
         """Convenient wrapper around `mock.patch.object`
 
         Returns a started mock that will be automatically stopped after the
         test ran.
         """
 
-        p = mock.patch.object(target, attribute, new, autospec=autospec)
+        p = mock.patch.object(target, attribute, new, **kwargs)
         m = p.start()
         self.addCleanup(p.stop)
         return m

@@ -17,32 +17,33 @@ import mock
 from deckhand.engine import document_validation
 from deckhand.tests.unit.engine import base as engine_test_base
 
+from deckhand import factories
+from deckhand import utils
+
 
 class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
 
     def setUp(self):
         super(TestDocumentValidation, self).setUp()
-        # Mock out DB module (i.e. retrieving DataSchema docs from DB).
-        self.patch('deckhand.db.sqlalchemy.api.document_get_all')
+        self.test_document = self._read_data('sample_document')
+        dataschema_factory = factories.DataSchemaFactory()
+        self.dataschema = dataschema_factory.gen_test(
+            self.test_document['schema'], {})
 
-    def test_init_document_validation(self):
-        self._read_data('sample_document')
-        doc_validation = document_validation.DocumentValidation(
-            self.data)
-        self.assertIsInstance(doc_validation,
-                              document_validation.DocumentValidation)
+        # Stub out the DB call for retrieving DataSchema documents.
+        self.patchobject(document_validation.db_api, 'revision_documents_get',
+                         lambda *a, **k: [])
 
     def test_data_schema_missing_optional_sections(self):
-        self._read_data('sample_data_schema')
         optional_missing_data = [
-            self._corrupt_data('metadata.labels'),
+            self._corrupt_data(self.test_document, 'metadata.labels'),
         ]
 
         for missing_data in optional_missing_data:
-            document_validation.DocumentValidation(missing_data).validate_all()
+            payload = [missing_data, self.dataschema]
+            document_validation.DocumentValidation(payload).validate_all()
 
     def test_document_missing_optional_sections(self):
-        self._read_data('sample_document')
         properties_to_remove = (
             'metadata.layeringDefinition.actions',
             'metadata.layeringDefinition.parentSelector',
@@ -50,21 +51,19 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
             'metadata.substitutions.2.dest.pattern')
 
         for property_to_remove in properties_to_remove:
-            optional_data_removed = self._corrupt_data(property_to_remove)
-            document_validation.DocumentValidation(
-                optional_data_removed).validate_all()
+            missing_data = self._corrupt_data(self.test_document,
+                                              property_to_remove)
+            payload = [missing_data, self.dataschema]
+            document_validation.DocumentValidation(payload).validate_all()
 
     @mock.patch.object(document_validation, 'LOG', autospec=True)
     def test_abstract_document_not_validated(self, mock_log):
-        self._read_data('sample_document')
+        test_document = self._read_data('sample_passphrase')
         # Set the document to abstract.
-        updated_data = self._corrupt_data(
-            'metadata.layeringDefinition.abstract', True, op='replace')
-        # Guarantee that a validation error is thrown by removing a required
-        # property.
-        del updated_data['metadata']['layeringDefinition']['layer']
-
-        document_validation.DocumentValidation(updated_data).validate_all()
+        abstract_document = utils.jsonpath_replace(
+            test_document, True, 'metadata.layeringDefinition.abstract')
+        document_validation.DocumentValidation(
+            abstract_document).validate_all()
         self.assertTrue(mock_log.info.called)
         self.assertIn("Skipping schema validation for abstract document",
                       mock_log.info.mock_calls[0][1][0])

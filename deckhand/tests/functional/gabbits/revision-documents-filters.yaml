@@ -123,12 +123,13 @@ tests:
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     query_parameters:
       status.bucket: mop
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - region-1234
         - site-1234
       $.[*].status.bucket:

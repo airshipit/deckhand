@@ -196,7 +196,6 @@ tests:
           layer: site
       data:
         value: mistake
-      ...
 
   - name: delete_mistake
     desc: Delete documents from bucket mistake

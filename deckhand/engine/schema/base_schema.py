@@ -18,7 +18,7 @@ schema = {
         'schema': {
             'type': 'string',
             # Currently supported versions include v1/v1.0 only.
-            'pattern': '^([A-Za-z]+\/[A-Za-z]+\/v[1]{1}(\.[0]{1}){0,1})$'
+            'pattern': '^[A-Za-z]+\/[A-Za-z]+\/v\d+(.0)?$'
         },
         'metadata': {
             'type': 'object',

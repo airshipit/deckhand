@@ -17,21 +17,22 @@ schema = {
     'properties': {
         'schema': {
             'type': 'string',
-            'pattern': '^(deckhand/Certificate/v[1]{1}(\.[0]{1}){0,1})$'
+            'pattern': '^deckhand/Certificate/v\d+(.0)?$'
         },
         'metadata': {
             'type': 'object',
             'properties': {
                 'schema': {
                     'type': 'string',
-                    'pattern': '^(metadata/Document/v[1]{1}(\.[0]{1}){0,1})$',
+                    'pattern': '^metadata/Document/v\d+(.0)?$',
                 },
                 'name': {'type': 'string'},
                 # Not strictly needed for secrets.
                 'layeringDefinition': {
                     'type': 'object',
                     'properties': {
-                        'layer': {'type': 'string'}
+                        'layer': {'type': 'string'},
+                        'abstract': {'type': 'boolean'}
                     }
                 },
                 'storagePolicy': {
