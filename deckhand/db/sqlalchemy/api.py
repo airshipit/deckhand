@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 """Defines interface for DB access."""
 
-import ast
 import copy
 import functools
 import hashlib
-import re
 import threading
 
 from oslo_config import cfg
@@ -28,7 +25,6 @@ from oslo_db import options
 from oslo_db.sqlalchemy import session
 from oslo_log import log as logging
 from oslo_serialization import jsonutils as json
-import six
 import sqlalchemy.orm as sa_orm
 from sqlalchemy import text
 
@@ -362,7 +358,7 @@ def document_get(session=None, raw_dict=False, revision_id=None, **filters):
 
     for doc in documents:
         d = doc.to_dict(raw_dict=raw_dict)
-        if _apply_filters(d, **nested_filters):
+        if utils.deepfilter(d, **nested_filters):
             return d
 
     filters.update(nested_filters)
@@ -412,7 +408,7 @@ def document_get_all(session=None, raw_dict=False, revision_id=None,
     final_documents = []
     for doc in documents:
         d = doc.to_dict(raw_dict=raw_dict)
-        if _apply_filters(d, **nested_filters):
+        if utils.deepfilter(d, **nested_filters):
             final_documents.append(d)
 
     return final_documents
@@ -536,97 +532,6 @@ def _update_revision_history(documents):
     return documents
 
 
-def _add_microversion(value):
-    """Hack for coercing all Deckhand schema fields (``schema`` and
-    ``metadata.schema``) into ending with v1.0 rather than v1, for example.
-    """
-    microversion_re = r'^.*/.*/v[0-9]{1}$'
-    if re.match(value, microversion_re):
-        return value + '.0'
-    return value
-
-
-def _apply_filters(dct, **filters):
-    """Apply filters to ``dct``.
-
-    Apply filters in ``filters`` to the dictionary ``dct``.
-
-    :param dct: The dictionary to check against all the ``filters``.
-    :param filters: Dictionary of key-value pairs used for filtering out
-        unwanted results.
-    :return: True if the dictionary satisfies all the filters, else False.
-    """
-    def _transform_filter_bool(filter_val):
-        # Transform boolean values into string literals.
-        if isinstance(filter_val, six.string_types):
-            try:
-                filter_val = ast.literal_eval(filter_val.title())
-            except ValueError:
-                # If not True/False, set to None to avoid matching
-                # `actual_val` which is always boolean.
-                filter_val = None
-        return filter_val
-
-    for filter_key, filter_val in filters.items():
-        # If the filter is a list of possibilities, e.g. ['site', 'region']
-        # for metadata.layeringDefinition.layer, check whether the actual
-        # value is present.
-        if isinstance(filter_val, (list, tuple)):
-            actual_val = utils.jsonpath_parse(dct, filter_key, match_all=True)
-            if not actual_val:
-                return False
-
-            if isinstance(actual_val[0], bool):
-                filter_val = [_transform_filter_bool(x) for x in filter_val]
-
-            if not set(actual_val).intersection(set(filter_val)):
-                return False
-        else:
-            actual_val = utils.jsonpath_parse(dct, filter_key)
-
-            # Else if both the filter value and the actual value in the doc
-            # are dictionaries, check whether the filter dict is a subset
-            # of the actual dict.
-            if (isinstance(actual_val, dict)
-                and isinstance(filter_val, dict)):
-                is_subset = set(
-                    filter_val.items()).issubset(set(actual_val.items()))
-                if not is_subset:
-                    return False
-            # Else both filters are string literals.
-            else:
-                # Filtering by schema must support namespace matching
-                # (e.g. schema=promenade) such that all kind and schema
-                # documents with promenade namespace are returned, or
-                # (e.g. schema=promenade/Node) such that all version
-                # schemas with namespace=schema and kind=Node are returned.
-                if isinstance(actual_val, bool):
-                    filter_val = _transform_filter_bool(filter_val)
-
-                if filter_key in ['schema', 'metadata.schema']:
-                    actual_val = _add_microversion(actual_val)
-                    filter_val = _add_microversion(filter_val)
-                    parts = actual_val.split('/')[:2]
-                    if len(parts) == 2:
-                        actual_namespace, actual_kind = parts
-                    elif len(parts) == 1:
-                        actual_namespace = parts[0]
-                        actual_kind = ''
-                    else:
-                        actual_namespace = actual_kind = ''
-                    actual_minus_version = actual_namespace + '/' + actual_kind
-
-                    if not (filter_val == actual_val or
-                            actual_minus_version == filter_val or
-                            actual_namespace == filter_val):
-                        return False
-                else:
-                    if actual_val != filter_val:
-                        return False
-
-    return True
-
-
 def revision_get_all(session=None, **filters):
     """Return list of all revisions.
 
@@ -640,7 +545,7 @@ def revision_get_all(session=None, **filters):
     result = []
     for revision in revisions:
         revision_dict = revision.to_dict()
-        if _apply_filters(revision_dict, **filters):
+        if utils.deepfilter(revision_dict, **filters):
             revision_dict['documents'] = _update_revision_history(
                 revision_dict['documents'])
             result.append(revision_dict)
@@ -707,7 +612,7 @@ def _filter_revision_documents(documents, unique_only, **filters):
         documents = _exclude_deleted_documents(documents)
 
     for document in documents:
-        if _apply_filters(document, **filters):
+        if utils.deepfilter(document, **filters):
             # Filter out redundant documents from previous revisions, i.e.
             # documents schema and metadata.name are repeated.
             if unique_only:

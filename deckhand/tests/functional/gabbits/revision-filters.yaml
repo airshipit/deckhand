@@ -21,7 +21,7 @@ tests:
     desc: Create first revision for testing
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
-    data: <@resources/design-doc-layering-sample.yaml
+    data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: initialize_again
     desc:  Create second revision for testing

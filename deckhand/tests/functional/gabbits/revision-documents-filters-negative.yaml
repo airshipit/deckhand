@@ -20,7 +20,7 @@ tests:
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/design-doc-layering-sample.yaml
+    data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: filter_by_schema_partial_namespace
     desc: Verify revision documents do not return results for partial namespace

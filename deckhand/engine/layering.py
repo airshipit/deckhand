@@ -15,9 +15,15 @@
 import collections
 import copy
 
+from oslo_log import log as logging
+import six
+
 from deckhand.engine import document
+from deckhand.engine import secrets_manager
 from deckhand.engine import utils
 from deckhand import errors
+
+LOG = logging.getLogger(__name__)
 
 
 class DocumentLayering(object):
@@ -25,80 +31,129 @@ class DocumentLayering(object):
 
     Layering is controlled in two places:
 
-    1. The `LayeringPolicy` control document, which defines the valid layers
+    1. The ``LayeringPolicy`` control document, which defines the valid layers
        and their order of precedence.
-    2. In the `metadata.layeringDefinition` section of normal
-       (`metadata.schema=metadata/Document/v1.0`) documents.
+    2. In the ``metadata.layeringDefinition`` section of normal
+       (``metadata.schema=metadata/Document/v1.0``) documents.
 
     .. note::
 
-        Only documents with the same `schema` are allowed to be layered
+        Only documents with the same ``schema`` are allowed to be layered
         together into a fully rendered document.
     """
 
     SUPPORTED_METHODS = ('merge', 'replace', 'delete')
-    LAYERING_POLICY_SCHEMA = 'deckhand/LayeringPolicy/v1.0'
 
-    def __init__(self, documents):
+    def _calc_document_children(self):
+        """Determine each document's children.
+
+        For each document, attempts to find the document's children. Adds a new
+        key called "children" to the document's dictionary.
+
+        .. note::
+
+            A document should only have exactly one parent.
+
+            If a document does not have a parent, then its layer must be
+            the topmost layer defined by the ``layerOrder``.
+
+        :returns: Ordered list of documents that need to be layered. Each
+            document contains a "children" property in addition to original
+            data. List of documents returned is ordered from highest to lowest
+            layer.
+        :rtype: list of deckhand.engine.document.Document objects.
+        :raises IndeterminateDocumentParent: If more than one parent document
+            was found for a document.
+        """
+        layered_docs = list(
+            filter(lambda x: 'layeringDefinition' in x['metadata'],
+                self.documents))
+
+        # ``all_children`` is a counter utility for verifying that each
+        # document has exactly one parent.
+        all_children = collections.Counter()
+
+        def _get_children(doc):
+            children = []
+            doc_layer = doc.get_layer()
+            try:
+                next_layer_idx = self.layer_order.index(doc_layer) + 1
+                children_doc_layer = self.layer_order[next_layer_idx]
+            except IndexError:
+                # The lowest layer has been reached, so no children. Return
+                # empty list.
+                return children
+
+            for other_doc in layered_docs:
+                # Documents with different schemas are never layered together,
+                # so consider only documents with same schema as candidates.
+                is_potential_child = (
+                    other_doc.get_layer() == children_doc_layer and
+                    other_doc.get_schema() == doc.get_schema()
+                )
+                if (is_potential_child):
+                    # A document can have many labels but should only have one
+                    # explicit label for the parentSelector.
+                    parent_sel = other_doc.get_parent_selector()
+                    parent_sel_key = list(parent_sel.keys())[0]
+                    parent_sel_val = list(parent_sel.values())[0]
+                    doc_labels = doc.get_labels()
+
+                    if (parent_sel_key in doc_labels and
+                        parent_sel_val == doc_labels[parent_sel_key]):
+                        children.append(other_doc)
+
+            return children
+
+        for layer in self.layer_order:
+            docs_by_layer = list(filter(
+                (lambda x: x.get_layer() == layer), layered_docs))
+
+            for doc in docs_by_layer:
+                children = _get_children(doc)
+
+                if children:
+                    all_children.update(children)
+                    doc.to_dict().setdefault('children', children)
+
+        all_children_elements = list(all_children.elements())
+        secondary_docs = list(
+            filter(lambda d: d.get_layer() != self.layer_order[0],
+            layered_docs))
+        for doc in secondary_docs:
+            # Unless the document is the topmost document in the
+            # `layerOrder` of the LayeringPolicy, it should be a child document
+            # of another document.
+            if doc not in all_children_elements:
+                LOG.info('Could not find parent for document with name=%s, '
+                         'schema=%s, layer=%s, parentSelector=%s.',
+                         doc.get_name(), doc.get_schema(), doc.get_layer(),
+                         doc.get_parent_selector())
+            # If the document is a child document of more than 1 parent, then
+            # the document has too many parents, which is a validation error.
+            elif all_children[doc] != 1:
+                LOG.info('%d parent documents were found for child document '
+                         'with name=%s, schema=%s, layer=%s, parentSelector=%s'
+                         '. Each document must only have 1 parent.',
+                         all_children[doc], doc.get_name(), doc.get_schema(),
+                         doc.get_layer(), doc.get_parent_selector())
+                raise errors.IndeterminateDocumentParent(document=doc)
+
+        return layered_docs
+
+    def __init__(self, layering_policy, documents):
         """Contructor for ``DocumentLayering``.
 
-        :param documents: List of YAML documents represented as dictionaries.
+        :param layering_policy: The document with schema
+            ``deckhand/LayeringPolicy`` needed for layering.
+        :param documents: List of all other documents to be layered together
+            in accordance with the ``layerOrder`` defined by the
+            LayeringPolicy document.
         """
+        self.layering_policy = document.Document(layering_policy)
         self.documents = [document.Document(d) for d in documents]
-        self._find_layering_policy()
+        self.layer_order = list(self.layering_policy['data']['layerOrder'])
         self.layered_docs = self._calc_document_children()
-
-    def render(self):
-        """Perform layering on the set of `documents`.
-
-        Each concrete document will undergo layering according to the actions
-        defined by its `layeringDefinition`.
-
-        :returns: the list of rendered documents (does not include layering
-            policy document).
-        """
-        # ``rendered_data_by_layer`` agglomerates the set of changes across all
-        # actions across each layer for a specific document.
-        rendered_data_by_layer = {}
-
-        # NOTE(fmontei): ``global_docs`` represents the topmost documents in
-        # the system. It should probably be impossible for more than 1
-        # top-level doc to exist, but handle multiple for now.
-        global_docs = [doc for doc in self.layered_docs
-                       if doc.get_layer() == self.layer_order[0]]
-
-        for doc in global_docs:
-            layer_idx = self.layer_order.index(doc.get_layer())
-            rendered_data_by_layer[layer_idx] = doc.to_dict()
-
-            # Keep iterating as long as a child exists.
-            for child in doc.get_children(nested=True):
-
-                # Retrieve the most up-to-date rendered_data (by
-                # referencing the child's parent's data).
-                child_layer_idx = self.layer_order.index(child.get_layer())
-                rendered_data = rendered_data_by_layer[child_layer_idx - 1]
-
-                # Apply each action to the current document.
-                actions = child.get_actions()
-                for action in actions:
-                    rendered_data = self._apply_action(
-                        action, child.to_dict(), rendered_data)
-
-                # Update the actual document data if concrete.
-                if not child.is_abstract():
-                    self.layered_docs[self.layered_docs.index(child)][
-                        'data'] = rendered_data['data']
-
-                # Update ``rendered_data_by_layer`` for this layer so that
-                # children in deeper layers can reference the most up-to-date
-                # changes.
-                rendered_data_by_layer[child_layer_idx] = rendered_data
-
-            if 'children' in doc:
-                del doc['children']
-
-        return [d.to_dict() for d in self.layered_docs]
 
     def _apply_action(self, action, child_data, overall_data):
         """Apply actions to each layer that is rendered.
@@ -175,121 +230,77 @@ class DocumentLayering(object):
 
         return overall_data
 
-    def _find_layering_policy(self):
-        """Retrieve the current layering policy.
-
-        :raises LayeringPolicyMalformed: If the `layerOrder` could not be
-            found in the LayeringPolicy or if it is not a list.
-        :raises LayeringPolicyNotFound: If system has no layering policy.
-        """
-        # TODO(fmontei): There should be a DB call here to fetch the layering
-        # policy from the DB.
-        for doc in self.documents:
-            if doc.to_dict()['schema'] == self.LAYERING_POLICY_SCHEMA:
-                self.layering_policy = doc
-                break
-
-        if not hasattr(self, 'layering_policy'):
-            raise errors.LayeringPolicyNotFound(
-                schema=self.LAYERING_POLICY_SCHEMA)
-
-        # TODO(fmontei): Rely on schema validation or some such for this.
+    def _apply_substitutions(self, data):
         try:
-            self.layer_order = list(self.layering_policy['data']['layerOrder'])
-        except KeyError:
-            raise errors.LayeringPolicyMalformed(
-                schema=self.LAYERING_POLICY_SCHEMA,
-                document=self.layering_policy)
+            secrets_substitution = secrets_manager.SecretsSubstitution(data)
+            return secrets_substitution.substitute_all()
+        except errors.DocumentNotFound as e:
+            LOG.error('Failed to render the documents because a secret '
+                      'document could not be found.')
+            LOG.exception(six.text_type(e))
 
-        if not isinstance(self.layer_order, list):
-            raise errors.LayeringPolicyMalformed(
-                schema=self.LAYERING_POLICY_SCHEMA,
-                document=self.layering_policy)
+    def render(self):
+        """Perform layering on the list of documents passed to ``__init__``.
 
-    def _calc_document_children(self):
-        """Determine each document's children.
+        Each concrete document will undergo layering according to the actions
+        defined by its ``metadata.layeringDefinition``. Documents are layered
+        with their parents. A parent document's ``schema`` must match that of
+        the child, and its ``metadata.labels`` must much the child's
+        ``metadata.layeringDefinition.parentSelector``.
 
-        For each document, attempts to find the document's children. Adds a new
-        key called "children" to the document's dictionary.
-
-        .. note::
-
-            A document should only have exactly one parent.
-
-            If a document does not have a parent, then its layer must be
-            the topmost layer defined by the `layerOrder`.
-
-        :returns: Ordered list of documents that need to be layered. Each
-            document contains a "children" property in addition to original
-            data. List of documents returned is ordered from highest to lowest
-            layer.
-        :rtype: list of deckhand.engine.document.Document objects.
-        :raises IndeterminateDocumentParent: If more than one parent document
-            was found for a document.
-        :raises MissingDocumentParent: If the parent document could not be
-            found. Only applies documents with `layeringDefinition` property.
+        :returns: The list of rendered documents (does not include layering
+            policy document).
+        :rtype: list[dict]
         """
-        layered_docs = list(
-            filter(lambda x: 'layeringDefinition' in x['metadata'],
-                self.documents))
+        # ``rendered_data_by_layer`` tracks the set of changes across all
+        # actions across each layer for a specific document.
+        rendered_data_by_layer = {}
 
-        # ``all_children`` is a counter utility for verifying that each
-        # document has exactly one parent.
-        all_children = collections.Counter()
+        # NOTE(fmontei): ``global_docs`` represents the topmost documents in
+        # the system. It should probably be impossible for more than 1
+        # top-level doc to exist, but handle multiple for now.
+        global_docs = [doc for doc in self.layered_docs
+                       if doc.get_layer() == self.layer_order[0]]
 
-        def _get_children(doc):
-            children = []
-            doc_layer = doc.get_layer()
-            try:
-                next_layer_idx = self.layer_order.index(doc_layer) + 1
-                children_doc_layer = self.layer_order[next_layer_idx]
-            except IndexError:
-                # The lowest layer has been reached, so no children. Return
-                # empty list.
-                return children
+        for doc in global_docs:
+            layer_idx = self.layer_order.index(doc.get_layer())
+            if doc.get_substitutions():
+                substituted_data = self._apply_substitutions(doc.to_dict())
+                rendered_data_by_layer[layer_idx] = substituted_data[0]
+            else:
+                rendered_data_by_layer[layer_idx] = doc.to_dict()
 
-            for other_doc in layered_docs:
-                # Documents with different schemas are never layered together,
-                # so consider only documents with same schema as candidates.
-                if (other_doc.get_layer() == children_doc_layer
-                    and other_doc.get_schema() == doc.get_schema()):
-                    # A document can have many labels but should only have one
-                    # explicit label for the parentSelector.
-                    parent_sel = other_doc.get_parent_selector()
-                    parent_sel_key = list(parent_sel.keys())[0]
-                    parent_sel_val = list(parent_sel.values())[0]
-                    doc_labels = doc.get_labels()
+            # Keep iterating as long as a child exists.
+            for child in doc.get_children(nested=True):
+                # Retrieve the most up-to-date rendered_data (by
+                # referencing the child's parent's data).
+                child_layer_idx = self.layer_order.index(child.get_layer())
+                rendered_data = rendered_data_by_layer[child_layer_idx - 1]
 
-                    if (parent_sel_key in doc_labels and
-                        parent_sel_val == doc_labels[parent_sel_key]):
-                        children.append(other_doc)
+                # Apply each action to the current document.
+                for action in child.get_actions():
+                    LOG.debug('Applying action %s to child document with '
+                              'name=%s, schema=%s, layer=%s.', action,
+                              child.get_name(), child.get_schema(),
+                              child.get_layer())
+                    rendered_data = self._apply_action(
+                        action, child.to_dict(), rendered_data)
 
-            return children
+                # Update the actual document data if concrete.
+                if not child.is_abstract():
+                    if child.get_substitutions():
+                        rendered_data['metadata'][
+                            'substitutions'] = child.get_substitutions()
+                        self._apply_substitutions(rendered_data)
+                    self.layered_docs[self.layered_docs.index(child)][
+                        'data'] = rendered_data['data']
 
-        for layer in self.layer_order:
-            docs_by_layer = list(filter(
-                (lambda x: x.get_layer() == layer), layered_docs))
+                # Update ``rendered_data_by_layer`` for this layer so that
+                # children in deeper layers can reference the most up-to-date
+                # changes.
+                rendered_data_by_layer[child_layer_idx] = rendered_data
 
-            for doc in docs_by_layer:
-                children = _get_children(doc)
+            if 'children' in doc:
+                del doc['children']
 
-                if children:
-                    all_children.update(children)
-                    doc.to_dict().setdefault('children', children)
-
-        all_children_elements = list(all_children.elements())
-        secondary_docs = list(
-            filter(lambda d: d.get_layer() != self.layer_order[0],
-            layered_docs))
-        for doc in secondary_docs:
-            # Unless the document is the topmost document in the
-            # `layerOrder` of the LayeringPolicy, it should be a child document
-            # of another document.
-            if doc not in all_children_elements:
-                raise errors.MissingDocumentParent(document=doc)
-            # If the document is a child document of more than 1 parent, then
-            # the document has too many parents, which is a validation error.
-            elif all_children[doc] != 1:
-                raise errors.IndeterminateDocumentParent(document=doc)
-
-        return layered_docs
+        return [d.to_dict() for d in self.layered_docs]

@@ -28,6 +28,18 @@ CONF = cfg.CONF
 class TestBucketsController(test_base.BaseControllerTest):
     """Test suite for validating positive scenarios for buckets controller."""
 
+    def test_put_empty_bucket(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all([]))
+        self.assertEqual(200, resp.status_code)
+        created_documents = list(yaml.safe_load_all(resp.text))
+        self.assertEmpty(created_documents)
+
     def test_put_bucket(self):
         rules = {'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)

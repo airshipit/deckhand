@@ -1,0 +1,66 @@
+# Tests success path for basic layering.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Adds initial documents from layering sample of design doc
+# 3. Verifies document data layered correctly (2 layers)
+# 4. Verifies document data layered correctly (3 layers)
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: create_documents_for_validating_2_level_layering
+    desc: Create documents for validating 2 levels of layering (global, site)
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample-2-layers.yaml
+
+  - name: verify_layering_2_layers
+    desc: Check for expected layering with 2 layers
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[*].schema: example/Kind/v1
+      $.[*].metadata.name: site-1234
+      $.[*].metadata.schema: metadata/Document/v1
+      $.[*].data:
+        a:
+          x: 1
+          y: 2
+        b: 5
+
+  - name: purge_again
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: create_documents_for_validating_3_level_layering
+    desc: Create documents for validating 3 levels of layering (global, region, site)
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/design-doc-layering-sample-3-layers.yaml
+
+  - name: verify_layering_3_layers
+    desc: Check for expected layering with 3 layers
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[*].schema: example/Kind/v1
+      $.[*].metadata.name: site-1234
+      $.[*].metadata.schema: metadata/Document/v1
+      $.[*].data:
+        a:
+          z: 3
+        b: 4

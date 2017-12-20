@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ast
 import re
 import string
 
 import jsonpath_ng
+import six
 
 from deckhand import errors
 
@@ -167,3 +169,101 @@ def multisort(data, sort_by=None, order_by=None):
     return sorted(data, key=lambda d: [
         jsonpath_parse(d, sort_key) for sort_key in sort_by],
         reverse=True if order_by == 'desc' else False)
+
+
+def _add_microversion(value):
+    """Hack for coercing all Deckhand schema fields (``schema`` and
+    ``metadata.schema``) into ending with v1.0 rather than v1, for example.
+    """
+    microversion_re = r'^.*/.*/v[0-9]+$'
+    if re.match(value, microversion_re):
+        return value + '.0'
+    return value
+
+
+def deepfilter(dct, **filters):
+    """Match ``dct`` against all the filters in ``filters``.
+
+    Check whether ``dct`` matches all the fitlers in ``filters``. The filters
+    can reference nested attributes, attributes that are contained within
+    other dictionaries within ``dct``.
+
+    Useful for querying whether ``metadata.name`` or
+    ``metadata.layeringDefinition.layerOrder`` match specific values.
+
+    :param dct: The dictionary to check against all the ``filters``.
+    :type dct: dict
+    :param filters: Dictionary of key-value pairs used for filtering out
+        unwanted results.
+    :type filters: dict
+    :returns: True if the dictionary satisfies all the filters, else False.
+    """
+    def _transform_filter_bool(filter_val):
+        # Transform boolean values into string literals.
+        if isinstance(filter_val, six.string_types):
+            try:
+                filter_val = ast.literal_eval(filter_val.title())
+            except ValueError:
+                # If not True/False, set to None to avoid matching
+                # `actual_val` which is always boolean.
+                filter_val = None
+        return filter_val
+
+    for filter_key, filter_val in filters.items():
+        # If the filter is a list of possibilities, e.g. ['site', 'region']
+        # for metadata.layeringDefinition.layer, check whether the actual
+        # value is present.
+        if isinstance(filter_val, (list, tuple)):
+            actual_val = jsonpath_parse(dct, filter_key, match_all=True)
+            if not actual_val:
+                return False
+
+            if isinstance(actual_val[0], bool):
+                filter_val = [_transform_filter_bool(x) for x in filter_val]
+
+            if not set(actual_val).intersection(set(filter_val)):
+                return False
+        else:
+            actual_val = jsonpath_parse(dct, filter_key)
+
+            # Else if both the filter value and the actual value in the doc
+            # are dictionaries, check whether the filter dict is a subset
+            # of the actual dict.
+            if (isinstance(actual_val, dict)
+                and isinstance(filter_val, dict)):
+                is_subset = set(
+                    filter_val.items()).issubset(set(actual_val.items()))
+                if not is_subset:
+                    return False
+            # Else both filters are string literals.
+            else:
+                # Filtering by schema must support namespace matching
+                # (e.g. schema=promenade) such that all kind and schema
+                # documents with promenade namespace are returned, or
+                # (e.g. schema=promenade/Node) such that all version
+                # schemas with namespace=schema and kind=Node are returned.
+                if isinstance(actual_val, bool):
+                    filter_val = _transform_filter_bool(filter_val)
+
+                if filter_key in ['schema', 'metadata.schema']:
+                    actual_val = _add_microversion(actual_val)
+                    filter_val = _add_microversion(filter_val)
+                    parts = actual_val.split('/')[:2]
+                    if len(parts) == 2:
+                        actual_namespace, actual_kind = parts
+                    elif len(parts) == 1:
+                        actual_namespace = parts[0]
+                        actual_kind = ''
+                    else:
+                        actual_namespace = actual_kind = ''
+                    actual_minus_version = actual_namespace + '/' + actual_kind
+
+                    if not (filter_val == actual_val or
+                            actual_minus_version == filter_val or
+                            actual_namespace == filter_val):
+                        return False
+                else:
+                    if actual_val != filter_val:
+                        return False
+
+    return True

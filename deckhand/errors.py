@@ -196,12 +196,6 @@ class SingletonDocumentConflict(DeckhandException):
     code = 409
 
 
-class LayeringPolicyMalformed(DeckhandException):
-    msg_fmt = ("LayeringPolicy with schema %(schema)s is improperly formatted:"
-               " %(document)s.")
-    code = 400
-
-
 class IndeterminateDocumentParent(DeckhandException):
     msg_fmt = ("Too many parent documents found for document %(document)s.")
     code = 400
@@ -217,12 +211,6 @@ class MissingDocumentKey(DeckhandException):
                "Parent: %(parent)s. Child: %(child)s.")
 
 
-class MissingDocumentPattern(DeckhandException):
-    msg_fmt = ("Substitution pattern %(pattern)s could not be found for the "
-               "JSON path %(path)s in the destination document data %(data)s.")
-    code = 400
-
-
 class UnsupportedActionMethod(DeckhandException):
     msg_fmt = ("Method in %(actions)s is invalid for document %(document)s.")
     code = 400
@@ -230,12 +218,6 @@ class UnsupportedActionMethod(DeckhandException):
 
 class DocumentNotFound(DeckhandException):
     msg_fmt = ("The requested document %(document)s was not found.")
-    code = 404
-
-
-class LayeringPolicyNotFound(DeckhandException):
-    msg_fmt = ("LayeringPolicy with schema %(schema)s not found in the "
-               "system.")
     code = 404
 
 

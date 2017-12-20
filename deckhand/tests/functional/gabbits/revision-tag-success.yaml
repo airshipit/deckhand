@@ -41,7 +41,7 @@ tests:
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/design-doc-layering-sample.yaml
+    data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: create_tag
     desc: Create a tag for the revision
