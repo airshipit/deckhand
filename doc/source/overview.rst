@@ -92,6 +92,18 @@ However, documents can be read across different buckets and used together to
 render finalized configuration documents, to be consumed by other services like
 Armada, Drydock, Promenade or Shipyard.
 
+In other words:
+
+* Documents can be **read** from any bucket.
+
+  This is useful so that documents from different buckets can be used together
+  for layering and substitution.
+
+* Documents can only be **written** to by the bucket that owns them.
+
+  This is useful because it offers the concept of ownership to a document in
+  which only the bucket that owns the document can manage it.
+
 .. todo::
 
   Deckhand should offer RBAC (Role-Based Access Control) around buckets. This

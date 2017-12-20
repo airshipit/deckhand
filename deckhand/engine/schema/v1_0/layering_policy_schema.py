@@ -30,6 +30,13 @@ schema = {
                 'storagePolicy': {
                     'type': 'string',
                     'enum': ['encrypted', 'cleartext']
+                },
+                'layeringDefinition': {
+                    'type': 'object',
+                    'properties': {
+                        'abstract': {'type': 'boolean'}
+                    },
+                    'additionalProperties': False
                 }
             },
             'additionalProperties': False,

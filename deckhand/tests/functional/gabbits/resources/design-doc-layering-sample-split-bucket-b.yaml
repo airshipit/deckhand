@@ -20,7 +20,7 @@ data:
 schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
-  name: site-1234
+  name: site-with-merge-action
   labels:
     foo: bar
     baz: qux
@@ -33,4 +33,18 @@ metadata:
         path: .
 data:
   b: 4
+---
+schema: example/Kind/v1
+metadata:
+  schema: metadata/Document/v1
+  name: site-with-delete-action
+  layeringDefinition:
+    layer: site
+    parentSelector:
+      key1: value1
+    actions:
+      - method: delete
+        path: .a
+# No data needed here, since we are deleting, not adding anything.
+data: {}
 ...

@@ -18,6 +18,24 @@ tests:
     status: 204
     response_headers: null
 
+  - name: add_bucket_layering
+    desc: |-
+     Create `layeringPolicy` in bucket layering with 3 layers: global, region
+     and site.
+    PUT: /api/v1.0/buckets/layering/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - global
+          - region
+          - site
+
   - name: add_bucket_a
     desc: Create documents for bucket a
     PUT: /api/v1.0/buckets/a/documents
@@ -33,13 +51,64 @@ tests:
   - name: verify_layering
     desc: Check for expected layering
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort:
+        - schema
+        - metadata.name
     status: 200
     response_multidoc_jsonpaths:
-      $.`len`: 1
-      $.[*].schema: example/Kind/v1
-      $.[*].metadata.name: site-1234
-      $.[*].metadata.schema: metadata/Document/v1
-      $.[*].data:
+      $.`len`: 3
+      $.[0].schema: deckhand/LayeringPolicy/v1
+      $.[1].schema: example/Kind/v1
+      $.[1].metadata.name: site-with-delete-action
+      $.[1].metadata.schema: metadata/Document/v1
+      $.[1].data: {}
+      $.[2].schema: example/Kind/v1
+      $.[2].metadata.name: site-with-merge-action
+      $.[2].metadata.schema: metadata/Document/v1
+      $.[2].data:
         a:
           z: 3
+        b: 4
+
+  - name: update_bucket_layering
+    desc: |-
+      Update `LayeringPolicy` in bucket 'layering', so that it only has 2
+      layers. This validates that, by dropping the middle layer "region",
+      layering is still performed using the global and site documents.
+    PUT: /api/v1.0/buckets/layering/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - global
+          - site
+
+  - name: verify_layering_again
+    desc: Check for expected layering with only global and site layers
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort:
+        - schema
+        - metadata.name
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 3
+      $.[0].schema: deckhand/LayeringPolicy/v1
+      $.[1].schema: example/Kind/v1
+      $.[1].metadata.name: site-with-delete-action
+      $.[1].metadata.schema: metadata/Document/v1
+      $.[1].data: {}
+      $.[2].schema: example/Kind/v1
+      $.[2].metadata.name: site-with-merge-action
+      $.[2].metadata.schema: metadata/Document/v1
+      $.[2].data:
+        a:
+          x: 1
+          y: 2
         b: 4

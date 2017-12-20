@@ -51,11 +51,8 @@ class RevisionDocumentsResource(api_base.BaseResource):
         include_encrypted = policy.conditional_authorize(
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
 
-        order_by = sort_by = None
-        if 'order' in sanitized_params:
-            order_by = sanitized_params.pop('order')
-        if 'sort' in sanitized_params:
-            sort_by = sanitized_params.pop('sort')
+        order_by = sanitized_params.pop('order', None)
+        sort_by = sanitized_params.pop('sort', None)
 
         filters = sanitized_params.copy()
         filters['metadata.storagePolicy'] = ['cleartext']
@@ -70,10 +67,11 @@ class RevisionDocumentsResource(api_base.BaseResource):
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
 
-        sorted_documents = utils.multisort(documents, sort_by, order_by)
+        # Sorts by creation date by default.
+        documents = utils.multisort(documents, sort_by, order_by)
 
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(sorted_documents)
+        resp.body = self.view_builder.list(documents)
 
 
 class RenderedDocumentsResource(api_base.BaseResource):
@@ -94,7 +92,8 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
     @policy.authorize('deckhand:list_cleartext_documents')
     @common.sanitize_params([
-        'schema', 'metadata.name', 'metadata.label', 'status.bucket'])
+        'schema', 'metadata.name', 'metadata.label', 'status.bucket', 'order',
+        'sort'])
     def on_get(self, req, resp, sanitized_params, revision_id):
         include_encrypted = policy.conditional_authorize(
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
@@ -122,15 +121,23 @@ class RenderedDocumentsResource(api_base.BaseResource):
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all
         # documents have been rendered.
+        order_by = sanitized_params.pop('order', None)
+        sort_by = sanitized_params.pop('sort', None)
+
         user_filters = sanitized_params.copy()
         user_filters['metadata.layeringDefinition.abstract'] = False
-        final_documents = [
+
+        rendered_documents = [
             d for d in rendered_documents if utils.deepfilter(
                 d, **user_filters)]
 
+        if sort_by:
+            rendered_documents = utils.multisort(
+                rendered_documents, sort_by, order_by)
+
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(final_documents)
-        self._post_validate(final_documents)
+        resp.body = self.view_builder.list(rendered_documents)
+        self._post_validate(rendered_documents)
 
     def _retrieve_documents_for_rendering(self, revision_id, **filters):
         """Retrieve all necessary documents needed for rendering. If a layering

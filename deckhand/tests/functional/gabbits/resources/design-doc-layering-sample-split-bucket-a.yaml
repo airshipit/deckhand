@@ -1,14 +1,4 @@
 ---
-schema: deckhand/LayeringPolicy/v1
-metadata:
-  schema: metadata/Control/v1
-  name: layering-policy
-data:
-  layerOrder:
-    - global
-    - region
-    - site
----
 schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1

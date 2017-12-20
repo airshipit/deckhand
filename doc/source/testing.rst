@@ -27,6 +27,11 @@ Prerequisites
 postgresql database for unit tests. The DB URL is set up as an environment
 variable via ``PIFPAF_URL`` which is referenced by Deckhand's unit test suite.
 
+When running `pifpaf run postgresql` (implicitly called by unit tests below),
+pifpaf uses `pg_config` which can be installed on Ubuntu via::
+
+  sudo apt-get install libpq-dev -y
+
 Guide
 -----
 
@@ -63,9 +68,18 @@ Functional testing
 
 Prerequisites
 -------------
-Deckhand requires Docker to run its functional tests. A basic installation
-guide for Docker for Ubuntu can be found
-`here <https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/>`_.
+
+* Docker
+
+  Deckhand requires Docker to run its functional tests. A basic installation
+  guide for Docker for Ubuntu can be found
+  `here <https://docs.docker.com/engine/installation/linux/docker-ce/ubuntu/>`_
+
+* uwsgi
+
+  Can be installed on Ubuntu systems via::
+
+    sudo apt-get install uwsgi -y
 
 Overview
 --------
@@ -91,10 +105,15 @@ The command executes ``tools/functional-tests.sh`` which:
     6) An HTML report that visualizes the result of the test run is output to
        ``results/index.html``.
 
-At this time, there are no functional tests for policy enforcement
-verification. Negative tests will be added at a later date to confirm that
-a 403 Forbidden is raised for each endpoint that does policy enforcement
-absent necessary permissions.
+Note that functional tests can be run concurrently; the flags ``--workers``
+and ``--threads`` which are passed to ``uwsgi`` can be > 1.
+
+.. todo::
+
+  At this time, there are no functional tests for policy enforcement
+  verification. Negative tests will be added at a later date to confirm that
+  a 403 Forbidden is raised for each endpoint that does policy enforcement
+  absent necessary permissions.
 
 CICD
 ----

@@ -39,7 +39,7 @@ class Document(object):
         """
         try:
             return self._inner['metadata']['layeringDefinition']['abstract']
-        except KeyError:
+        except Exception:
             return False
 
     def get_schema(self):

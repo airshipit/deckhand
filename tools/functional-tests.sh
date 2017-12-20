@@ -197,14 +197,14 @@ if [ -z "$DECKHAND_IMAGE" ]; then
 
     # Set --workers 2, so that concurrency is always tested.
     uwsgi \
-    --http :9000 \
-    -w deckhand.cmd \
-    --callable deckhand_callable \
-    --enable-threads \
-    --workers 2 \
-    --threads 1 \
-    -L \
-    --pyargv "--config-file $CONF_DIR/deckhand.conf" &> $STDOUT &
+        --http :9000 \
+        -w deckhand.cmd \
+        --callable deckhand_callable \
+        --enable-threads \
+        --workers 2 \
+        --threads 1 \
+        -L \
+        --pyargv "--config-file $CONF_DIR/deckhand.conf" &
 else
     log_section "Running Deckhand via Docker"
     sudo docker run \

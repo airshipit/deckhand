@@ -27,13 +27,16 @@ tests:
   - name: verify_layering_2_layers
     desc: Check for expected layering with 2 layers
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort: schema
     status: 200
     response_multidoc_jsonpaths:
-      $.`len`: 1
-      $.[*].schema: example/Kind/v1
-      $.[*].metadata.name: site-1234
-      $.[*].metadata.schema: metadata/Document/v1
-      $.[*].data:
+      $.`len`: 2
+      $.[0].schema: deckhand/LayeringPolicy/v1
+      $.[1].schema: example/Kind/v1
+      $.[1].metadata.name: site-1234
+      $.[1].metadata.schema: metadata/Document/v1
+      $.[1].data:
         a:
           x: 1
           y: 2
@@ -54,13 +57,16 @@ tests:
   - name: verify_layering_3_layers
     desc: Check for expected layering with 3 layers
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort: schema
     status: 200
     response_multidoc_jsonpaths:
-      $.`len`: 1
-      $.[*].schema: example/Kind/v1
-      $.[*].metadata.name: site-1234
-      $.[*].metadata.schema: metadata/Document/v1
-      $.[*].data:
+      $.`len`: 2
+      $.[0].schema: deckhand/LayeringPolicy/v1
+      $.[1].schema: example/Kind/v1
+      $.[1].metadata.name: site-1234
+      $.[1].metadata.schema: metadata/Document/v1
+      $.[1].data:
         a:
           z: 3
         b: 4

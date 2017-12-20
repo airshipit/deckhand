@@ -22,6 +22,7 @@ from deckhand import errors
 from deckhand import factories
 from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
+from deckhand import types
 
 
 class TestRenderedDocumentsController(test_base.BaseControllerTest):
@@ -54,6 +55,12 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
         self.assertEqual(200, resp.status_code)
 
         rendered_documents = list(yaml.safe_load_all(resp.text))
+        # TODO(fmontei): Implement "negative" filter server-side.
+        rendered_documents = [
+            d for d in rendered_documents
+            if not d['schema'].startswith(types.LAYERING_POLICY_SCHEMA)
+        ]
+
         self.assertEqual(1, len(rendered_documents))
         is_abstract = rendered_documents[0]['metadata']['layeringDefinition'][
             'abstract']
@@ -104,6 +111,12 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
         self.assertEqual(200, resp.status_code)
 
         rendered_documents = list(yaml.safe_load_all(resp.text))
+        # TODO(fmontei): Implement "negative" filter server-side.
+        rendered_documents = [
+            d for d in rendered_documents
+            if not d['schema'].startswith(types.LAYERING_POLICY_SCHEMA)
+        ]
+
         self.assertEqual(1, len(rendered_documents))
         self.assertEqual(new_name, rendered_documents[0]['metadata']['name'])
         self.assertEqual(2, rendered_documents[0]['status']['revision'])
@@ -231,6 +244,55 @@ class TestRenderedDocumentsControllerNegativeRBAC(
         # Verify that the created document was not returned.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
-            headers={'Content-Type': 'application/x-yaml'})
+            headers={'Content-Type': 'application/x-yaml'},
+            params={'schema': encrypted_document['schema']})
         self.assertEqual(200, resp.status_code)
         self.assertEmpty(list(yaml.safe_load_all(resp.text)))
+
+
+class TestRenderedDocumentsControllerSorting(test_base.BaseControllerTest):
+
+    def test_rendered_documents_sorting_metadata_name(self):
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        documents_factory = factories.DocumentFactory(2, [1, 1])
+        documents = documents_factory.gen_test({}, global_abstract=False,
+            region_abstract=False, site_abstract=False)
+        expected_names = ['bar', 'baz', 'foo']
+        for idx in range(len(documents)):
+            documents[idx]['metadata']['name'] = expected_names[idx]
+
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(documents))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        # Test ascending order.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+            params={'sort': 'metadata.name'}, params_csv=False,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        retrieved_documents = list(yaml.safe_load_all(resp.text))
+
+        self.assertEqual(3, len(retrieved_documents))
+        self.assertEqual(expected_names,
+                         [d['metadata']['name'] for d in retrieved_documents])
+
+        # Test descending order.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+            params={'sort': 'metadata.name', 'order': 'desc'},
+            params_csv=False, headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        retrieved_documents = list(yaml.safe_load_all(resp.text))
+
+        self.assertEqual(3, len(retrieved_documents))
+        self.assertEqual(list(reversed(expected_names)),
+                         [d['metadata']['name'] for d in retrieved_documents])

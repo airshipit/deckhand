@@ -16,6 +16,7 @@ from deckhand.engine import layering
 from deckhand import errors
 from deckhand import factories
 from deckhand.tests.unit import base as test_base
+from deckhand import types
 
 
 class TestDocumentLayering(test_base.DeckhandTestCase):
@@ -43,6 +44,9 @@ class TestDocumentLayering(test_base.DeckhandTestCase):
         # should have a metadata.layeringDefinitionn.layer section.
         rendered_documents = document_layering.render()
         for doc in rendered_documents:
+            # No need to validate the LayeringPolicy: it remains unchanged.
+            if doc['schema'].startswith(types.LAYERING_POLICY_SCHEMA):
+                continue
             layer = doc['metadata']['layeringDefinition']['layer']
             if layer == 'site':
                 site_docs.append(doc)

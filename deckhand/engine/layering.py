@@ -322,4 +322,7 @@ class DocumentLayering(object):
             if 'children' in doc:
                 del doc['children']
 
-        return [d.to_dict() for d in self.layered_docs]
+        return (
+            [d.to_dict() for d in self.layered_docs] +
+            [self.layering_policy.to_dict()]
+        )
