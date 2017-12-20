@@ -100,29 +100,30 @@ _code_map = dict((c.http_status, c)
 
 
 def from_response(response, body, url, method=None):
-    """Return an instance of a ``ClientException`` or subclass  based on a
+    """Return an instance of a ``ClientException`` or subclass based on a
     request's response.
-
-    Usage::
-
-        resp, body = requests.request(...)
-        if resp.status_code != 200:
-            raise exception.from_response(resp, rest.text)
     """
     cls = _code_map.get(response.status_code, ClientException)
 
     try:
-        body = yaml.safe_load(body)
+        kwargs = yaml.safe_load(body)
     except yaml.YAMLError as e:
-        body = {}
+        kwargs = None
         LOG.debug('Could not convert error from server into dict: %s',
                   six.text_type(e))
 
-    kwargs = body
-    kwargs.update({
-        'code': response.status_code,
-        'method': method,
-        'url': url,
-    })
+    if isinstance(kwargs, dict):
+        kwargs.update({
+            'code': response.status_code,
+            'method': method,
+            'url': url
+        })
+    else:
+        kwargs = {
+            'code': response.status_code,
+            'method': method,
+            'url': url,
+            'message': response.text
+        }
 
     return cls(**kwargs)
