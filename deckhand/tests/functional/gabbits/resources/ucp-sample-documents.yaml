@@ -1,0 +1,219 @@
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: promenade/KubernetesNetwork/v1
+  labels:
+    application: promenade
+data:
+  $schema: http://json-schema.org/schema#
+  definitions:
+    cidr:
+      type: string
+      pattern: '^(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\/([0-9]|[1-2][0-9]|3[0-2])$'
+    domain_name:
+      type: string
+      pattern: '^([a-z][a-z0-9-]+\.)+[a-z]+\.?$'
+    hostname:
+      type: string
+      pattern: '^([a-z][a-z0-9-]+)(\.+[a-z]+\.)?$'
+    hostname_or_ip_address:
+      type: string
+      pattern: '^(([a-z][a-z0-9-]+)(\.+[a-z]+\.)?|(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5])))$'
+    ip_address:
+      type: string
+      pattern: '^(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))\.(\d|[1-9]\d|1\d\d|2([0-4]\d|5[0-5]))$'
+    url:
+      type: string
+
+  type: object
+  properties:
+    dns:
+      type: object
+      properties:
+        bootstrap_validation_checks:
+          type: array
+          items:
+            $ref: '#/definitions/domain_name'
+        cluster_domain:
+          $ref: '#/definitions/domain_name'
+        service_ip:
+          $ref: '#/definitions/ip_address'
+        upstream_servers:
+          type: array
+          items:
+            $ref: '#/definitions/ip_address'
+      required:
+        - cluster_domain
+        - service_ip
+      additionalProperties: false
+
+    etcd:
+      type: object
+      properties:
+        service_ip:
+          $ref: '#/definitions/ip_address'
+      required:
+        - service_ip
+      additionalProperties: false
+
+    kubernetes:
+      type: object
+      properties:
+        pod_cidr:
+          $ref: '#/definitions/cidr'
+        service_ip:
+          $ref: '#/definitions/ip_address'
+        service_cidr:
+          $ref: '#/definitions/cidr'
+      required:
+        - pod_cidr
+        - service_cidr
+        - service_ip
+      additionalProperties: false
+    hosts_entries:
+      type: array
+      items:
+        type: object
+        properties:
+          ip:
+            $ref: '#/definitions/ip_address'
+          names:
+            type: array
+            items:
+              $ref: '#/definitions/hostname'
+
+    proxy:
+      type: object
+      properties:
+        additional_no_proxy:
+          type: array
+          items:
+            $ref: '#/definitions/hostname_or_ip_address'
+        url:
+          $ref: '#/definitions/url'
+      required:
+        - url
+      additionalFields: false
+
+  required:
+    - dns
+    - kubernetes
+  additionalProperties: false
+---
+schema: 'deckhand/DataSchema/v1'
+metadata:
+  schema: metadata/Control/v1
+  name: drydock/NetworkLink/v1
+  labels:
+    application: drydock
+data:
+  $schema: 'http://json-schema.org/schema#'
+  id: 'http://att.com/att-comdev/drydock/networkLink.yaml'
+  type: 'object'
+  properties:
+    bonding:
+      type: 'object'
+      properties:
+        mode:
+          type: 'string'
+        hash:
+          type: 'string'
+        peer_rate:
+          type: 'string'
+        mon_rate:
+          type: 'number'
+        up_delay:
+          type: 'number'
+        down_delay:
+          type: 'number'
+      additionalProperties: false
+    mtu:
+      type: 'number'
+    linkspeed:
+      type: 'string'
+    trunking:
+      type: 'object'
+      properties:
+        mode:
+          type: 'string'
+        default_network:
+          type: 'string'
+      additionalProperties: false
+    allowed_networks:
+      type: 'array'
+      items:
+        type: 'string'
+    labels:
+      type: 'object'
+      additionalProperties: true
+  additionalProperties: false
+---
+schema: promenade/KubernetesNetwork/v1
+metadata:
+  schema: metadata/Document/v1
+  name: kubernetes-network
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data:
+  dns:
+    cluster_domain: cluster.local
+    service_ip: 10.96.0.10
+    bootstrap_validation_checks:
+      - calico-etcd.kube-system.svc.cluster.local
+      - google.com
+      - kubernetes-etcd.kube-system.svc.cluster.local
+      - kubernetes.default.svc.cluster.local
+    upstream_servers:
+      - 8.8.8.8
+      - 8.8.4.4
+
+  kubernetes:
+    pod_cidr: 10.97.0.0/16
+    service_cidr: 10.96.0.0/16
+    service_ip: 10.96.0.1
+
+  etcd:
+    service_ip: 10.96.0.2
+
+  hosts_entries:
+    - ip: 192.168.77.1
+      names:
+        - registry
+---
+schema: drydock/NetworkLink/v1
+metadata:
+  schema: metadata/Document/v1
+  name: gp
+  storagePolicy: cleartext
+  labels:
+    application: drydock
+  layeringDefinition:
+    abstract: false
+    layer: site
+data:
+  bonding:
+    mode: 802.3ad
+    hash: layer3+4
+    peer_rate: slow
+  mtu: 9000
+  linkspeed: auto
+  trunking:
+    mode: 802.1q
+    default_network: mgmt
+  allowed_networks:
+    - public
+    - mgmt
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+...
