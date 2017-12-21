@@ -123,6 +123,12 @@ Below are the schemas Deckhand uses to validate documents.
 .. automodule:: deckhand.engine.schema.base_schema
   :members: schema
 
+.. automodule:: deckhand.engine.schema.v1_0.certificate_authority_key_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.certificate_authority_schema
+  :members: schema
+
 .. automodule:: deckhand.engine.schema.v1_0.certificate_key_schema
   :members: schema
 
@@ -136,6 +142,12 @@ Below are the schemas Deckhand uses to validate documents.
   :members: schema
 
 .. automodule:: deckhand.engine.schema.v1_0.passphrase_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.private_key_schema
+  :members: schema
+
+.. automodule:: deckhand.engine.schema.v1_0.public_key_schema
   :members: schema
 
 .. automodule:: deckhand.engine.schema.v1_0.validation_policy_schema

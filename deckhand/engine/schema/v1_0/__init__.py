@@ -12,14 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from deckhand.engine.schema.v1_0 import certificate_authority_key_schema
+from deckhand.engine.schema.v1_0 import certificate_authority_schema
 from deckhand.engine.schema.v1_0 import certificate_key_schema
 from deckhand.engine.schema.v1_0 import certificate_schema
 from deckhand.engine.schema.v1_0 import data_schema_schema
 from deckhand.engine.schema.v1_0 import document_schema
 from deckhand.engine.schema.v1_0 import layering_policy_schema
 from deckhand.engine.schema.v1_0 import passphrase_schema
+from deckhand.engine.schema.v1_0 import private_key_schema
+from deckhand.engine.schema.v1_0 import public_key_schema
 from deckhand.engine.schema.v1_0 import validation_policy_schema
 
 __all__ = ['certificate_key_schema', 'certificate_schema',
+           'certificate_authority_key_schema', 'certificate_authority_schema',
+           'private_key_schema', 'public_key_schema',
            'data_schema_schema', 'document_schema', 'layering_policy_schema',
            'passphrase_schema', 'validation_policy_schema']
