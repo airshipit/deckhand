@@ -41,8 +41,7 @@ class TestSecretsManager(test_base.TestDbBase):
         created_secret = self.secrets_manager.create(secret_doc)
 
         if encryption_type == 'cleartext':
-            self.assertIn('secret', created_secret)
-            self.assertEqual(secret_data, created_secret['secret'])
+            self.assertEqual(secret_data, created_secret)
         elif encryption_type == 'encrypted':
             expected_kwargs = {
                 'name': secret_doc['metadata']['name'],
@@ -52,9 +51,7 @@ class TestSecretsManager(test_base.TestDbBase):
             }
             self.mock_barbican_driver.create_secret.assert_called_once_with(
                 **expected_kwargs)
-
-            self.assertIn('secret', created_secret)
-            self.assertEqual(self.secret_ref, created_secret['secret'])
+            self.assertEqual(self.secret_ref, created_secret)
 
     def test_create_cleartext_certificate(self):
         self._test_create_secret('cleartext', 'Certificate')
@@ -100,7 +97,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
 
     def test_secret_substitution_single_cleartext(self):
         certificate = self.secrets_factory.gen_test(
-            'Certificate', 'cleartext', data={'secret': 'CERTIFICATE DATA'})
+            'Certificate', 'cleartext', data='CERTIFICATE DATA')
         certificate['metadata']['name'] = 'example-cert'
 
         document_mapping = {
@@ -130,7 +127,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
 
     def test_secret_substitution_single_cleartext_with_pattern(self):
         passphrase = self.secrets_factory.gen_test(
-            'Passphrase', 'cleartext', data={'secret': 'my-secret-password'})
+            'Passphrase', 'cleartext', data='my-secret-password')
         passphrase['metadata']['name'] = 'example-password'
 
         document_mapping = {
@@ -170,11 +167,11 @@ class TestSecretsSubstitution(test_base.TestDbBase):
 
     def test_secret_substitution_double_cleartext(self):
         certificate = self.secrets_factory.gen_test(
-            'Certificate', 'cleartext', data={'secret': 'CERTIFICATE DATA'})
+            'Certificate', 'cleartext', data='CERTIFICATE DATA')
         certificate['metadata']['name'] = 'example-cert'
 
         certificate_key = self.secrets_factory.gen_test(
-            'CertificateKey', 'cleartext', data={'secret': 'KEY DATA'})
+            'CertificateKey', 'cleartext', data='KEY DATA')
         certificate_key['metadata']['name'] = 'example-key'
 
         document_mapping = {
@@ -215,15 +212,15 @@ class TestSecretsSubstitution(test_base.TestDbBase):
 
     def test_secret_substitution_multiple_cleartext(self):
         certificate = self.secrets_factory.gen_test(
-            'Certificate', 'cleartext', data={'secret': 'CERTIFICATE DATA'})
+            'Certificate', 'cleartext', data='CERTIFICATE DATA')
         certificate['metadata']['name'] = 'example-cert'
 
         certificate_key = self.secrets_factory.gen_test(
-            'CertificateKey', 'cleartext', data={'secret': 'KEY DATA'})
+            'CertificateKey', 'cleartext', data='KEY DATA')
         certificate_key['metadata']['name'] = 'example-key'
 
         passphrase = self.secrets_factory.gen_test(
-            'Passphrase', 'cleartext', data={'secret': 'my-secret-password'})
+            'Passphrase', 'cleartext', data='my-secret-password')
         passphrase['metadata']['name'] = 'example-password'
 
         document_mapping = {

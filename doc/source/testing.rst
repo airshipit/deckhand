@@ -20,6 +20,16 @@ Testing
 Unit testing
 ============
 
+Prerequisites
+-------------
+
+`pifpaf <https://github.com/jd/pifpaf>`_ is used to spin up a temporary
+postgresql database for unit tests. The DB URL is set up as an environment
+variable via ``PIFPAF_URL`` which is referenced by Deckhand's unit test suite.
+
+Guide
+-----
+
 Unit testing currently uses an in-memory sqlite database. Since Deckhand's
 primary function is to serve as the back-end storage for UCP, the majority
 of unit tests perform actual database operations. Mocking is used sparingly
@@ -28,7 +38,7 @@ of a very deep stack; Deckhand only communicates with Keystone and Barbican.
 As such, validating database operations is paramount to correctly testing
 Deckhand.
 
-To run unit tests using sqlite, execute::
+To run unit tests using PostgreSQL, execute::
 
     $ tox -epy27
     $ tox -epy35
@@ -40,24 +50,11 @@ unit tests, run::
 
 for example.
 
-To run unit tests using postgresql, postgresql must be installed in your
-environment. Then execute::
-
-    $ tox -epy27-postgresql
-    $ tox -epy35-postgresql
-
-against a py27- or py35-backed environment, respectively. Individual unit tests
-can be executed the same way as above.
-
-`pifpaf <https://github.com/jd/pifpaf>`_ is used to spin up a temporary
-postgresql database. The URL is set up as an environment variable via
-``PIFPAF_URL``.
-
 .. warning::
 
     It is **not** recommended to run postgresql-backed unit tests concurrently.
     Only run them serially. This is because, to guarantee true test isolation,
-    the DB tables are re-created each test run. Only one instance of postgresql
+    the DB tables are re-created each test run. Only one instance of PostgreSQL
     is created across all threads, thus causing major conflicts if concurrency
     > 1.
 

@@ -144,7 +144,7 @@ class TestDocuments(base.TestDbBase):
             self.assertEqual(document, filtered_documents[0])
 
     def test_create_certificate(self):
-        rand_secret = {'secret': test_utils.rand_password()}
+        rand_secret = test_utils.rand_password()
         bucket_name = test_utils.rand_name('bucket')
 
         for expected_len, storage_policy in enumerate(

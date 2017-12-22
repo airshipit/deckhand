@@ -108,6 +108,10 @@ Deckhand has the following integration points:
   * `PostgreSQL <https://www.postgresql.org>`_ is used to persist information
     to correlate workflows with users and history of workflow commands.
 
+  .. note::
+
+    Currently, other database backends are not supported.
+
 Though, being a low-level service, has many other UCP services that integrate
 with it, including:
 

@@ -94,7 +94,7 @@ schema = {
             'required': ['schema', 'name', 'layeringDefinition']
         },
         'data': {
-            'type': 'object'
+            'type': ['string', 'integer', 'array', 'object']
         }
     },
     'additionalProperties': False,

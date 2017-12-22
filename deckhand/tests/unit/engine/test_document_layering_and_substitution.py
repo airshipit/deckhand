@@ -45,7 +45,7 @@ class TestDocumentLayeringWithSubstitution(
 
         secrets_factory = factories.DocumentSecretFactory()
         certificate = secrets_factory.gen_test(
-            'Certificate', 'cleartext', data={'secret': 'global-secret'},
+            'Certificate', 'cleartext', data='global-secret',
             name='global-cert')
 
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 'global-secret'}
@@ -84,7 +84,7 @@ class TestDocumentLayeringWithSubstitution(
         documents[1]['metadata']['labels'] = {}
         secrets_factory = factories.DocumentSecretFactory()
         certificate = secrets_factory.gen_test(
-            'Certificate', 'cleartext', data={'secret': 'global-secret'},
+            'Certificate', 'cleartext', data='global-secret',
             name='global-cert')
 
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 'global-secret'}
@@ -140,8 +140,7 @@ class TestDocumentLayeringWithSubstitution(
             name = kwargs['name']
             prefix = name.split('-')[0]
             return secrets_factory.gen_test(
-                'Certificate', 'cleartext',
-                data={'secret': '%s-secret' % prefix},
+                'Certificate', 'cleartext', data='%s-secret' % prefix,
                 name='%s' % name)
 
         with mock.patch.object(

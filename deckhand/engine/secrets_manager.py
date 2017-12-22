@@ -71,9 +71,9 @@ class SecretsManager(object):
             resp = self.barbican_driver.create_secret(**kwargs)
 
             secret_ref = resp['secret_href']
-            created_secret = {'secret': secret_ref}
+            created_secret = secret_ref
         elif encryption_type == CLEARTEXT:
-            created_secret = {'secret': secret_doc['data']}
+            created_secret = secret_doc['data']
 
         return created_secret
 
@@ -137,15 +137,21 @@ class SecretsSubstitution(object):
                 src_schema = sub['src']['schema']
                 src_name = sub['src']['name']
                 src_path = sub['src']['path']
-                if src_path == '.':
-                    src_path = '.secret'
 
                 # TODO(fmontei): Use SecretsManager for this logic. Need to
                 # check Barbican for the secret if it has been encrypted.
                 src_doc = db_api.document_get(
                     schema=src_schema, name=src_name, is_secret=True,
                     **{'metadata.layeringDefinition.abstract': False})
-                src_secret = utils.jsonpath_parse(src_doc['data'], src_path)
+
+                # If the data is a dictionary, retrieve the nested secret
+                # via jsonpath_parse, else the secret is the primitive/string
+                # stored in the data section itself.
+                if isinstance(src_doc.get('data'), dict):
+                    src_secret = utils.jsonpath_parse(src_doc.get('data', {}),
+                                                      src_path)
+                else:
+                    src_secret = src_doc['data']
 
                 dest_path = sub['dest']['path']
                 dest_pattern = sub['dest'].get('pattern', None)

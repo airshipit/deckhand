@@ -1,0 +1,98 @@
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: unusual/List/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: array
+  items:
+    type: string
+---
+schema: unusual/List/v1
+metadata:
+  schema: metadata/Document/v1
+  name: unusual-list
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data:
+  - a
+  - b
+  - c
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: unusual/DictWithSecret/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: object
+  properties:
+    secret:
+      type: string
+    public:
+      type: string
+  additionalProperties: false
+  required:
+    - secret
+    - public
+---
+schema: unusual/DictWithSecret/v1
+metadata:
+  schema: metadata/Document/v1
+  name: dict-with-secret
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data:
+  secret: a
+  public: b
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: unusual/String/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string
+---
+schema: unusual/String/v1
+metadata:
+  schema: metadata/Document/v1
+  name: some-label
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data: strings are useful
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: unusual/Integer/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: integer
+---
+schema: unusual/Integer/v1
+metadata:
+  schema: metadata/Document/v1
+  name: MTU
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data: 9000
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site

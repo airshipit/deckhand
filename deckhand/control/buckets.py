@@ -25,7 +25,6 @@ from deckhand.engine import document_validation
 from deckhand.engine import secrets_manager
 from deckhand import errors as deckhand_errors
 from deckhand import policy
-from deckhand import types
 
 LOG = logging.getLogger(__name__)
 
@@ -80,9 +79,6 @@ class BucketsResource(api_base.BaseResource):
             if document['metadata'].get('storagePolicy') == 'encrypted':
                 secret_data = self.secrets_mgr.create(document)
                 document['data'] = secret_data
-            elif any([document['schema'].startswith(t)
-                      for t in types.DOCUMENT_SECRET_TYPES]):
-                document['data'] = {'secret': document['data']}
 
     def _create_revision_documents(self, bucket_name, documents,
                                    validations):

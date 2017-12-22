@@ -219,8 +219,7 @@ class TestRenderedDocumentsControllerNegativeRBAC(
 
         with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
                                autospec=True) as mock_secrets_mgr:
-            mock_secrets_mgr.create.return_value = {
-                'secret': payload[0]['data']}
+            mock_secrets_mgr.create.return_value = payload[0]['data']
             resp = self.app.simulate_put(
                 '/api/v1.0/buckets/mop/documents',
                 headers={'Content-Type': 'application/x-yaml'},

@@ -81,8 +81,7 @@ class TestBucketsController(test_base.BaseControllerTest):
             actual = sorted([(d['schema'], d['metadata']['name'])
                              for d in created_documents])
             self.assertEqual(expected, actual)
-            self.assertEqual(payload[0]['data'],
-                             created_documents[0]['data'])
+            self.assertEqual(payload[0]['data'], created_documents[0]['data'])
 
         # Verify whether creating a cleartext secret works.
         rules = {'deckhand:create_cleartext_documents': '@'}
@@ -102,8 +101,7 @@ class TestBucketsController(test_base.BaseControllerTest):
 
         with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
                                autospec=True) as mock_secrets_mgr:
-            mock_secrets_mgr.create.return_value = {
-                'secret': payload[0]['data']}
+            mock_secrets_mgr.create.return_value = payload[0]['data']
             _do_test(payload)
 
         # Verify whether any document can be encrypted if its
@@ -118,8 +116,7 @@ class TestBucketsController(test_base.BaseControllerTest):
         payload[-1]['metadata']['storagePolicy'] = 'encrypted'
         with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
                                autospec=True) as mock_secrets_mgr:
-            mock_secrets_mgr.create.return_value = {
-                'secret': payload[-1]['data']}
+            mock_secrets_mgr.create.return_value = payload[-1]['data']
             _do_test([payload[-1]])
 
     def test_create_delete_then_recreate_document_in_different_bucket(self):

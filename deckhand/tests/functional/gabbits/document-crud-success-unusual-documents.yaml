@@ -1,0 +1,90 @@
+# Test compatability with some unusual documents.
+#
+#  1. Purges existing data to ensure test isolation.
+#  2. Creates some unusual documents that push on corner cases.
+#  3. Verifies each individual document's content is returned as expected.
+#  4. Verifies that all documents pass schema validation.
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/unusual-documents.yaml
+
+  - name: verity_list_content
+    desc: Verify list content
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=unusual/List/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data:
+        - a
+        - b
+        - c
+
+  - name: verity_dict_with_secret_content
+    desc: Verify DictWithSecret content
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=unusual/DictWithSecret/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data:
+        secret: a
+        public: b
+
+  - name: verity_string_content
+    desc: Verify String content
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=unusual/String/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data: strings are useful
+
+  - name: verity_integer_content
+    desc: Verify Integer content
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=unusual/Integer/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data: 9000
+
+  - name: verify_document_validation_success_in_list_view
+    desc: Check document validation success shows in list view
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/validations
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 1
+      $.[0].results[0].status: success
+
+  - name: verify_document_validation_success_in_details_view
+    desc: Check document validation success shows in detailed view
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 9
+      $.[0].results[*].status:
+        # 9 documents are created in total, including DataSchema documents.
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success

@@ -50,7 +50,7 @@ schema = {
             'type': 'object',
             'properties': {
                 '$schema': {
-                    'type': 'string'
+                    'type': ['string', 'integer', 'array', 'object']
                 }
             },
             'additionalProperties': True,
