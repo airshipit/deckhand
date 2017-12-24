@@ -17,6 +17,8 @@
 {{- $dependencies := .Values.dependencies.deckhand }}
 {{- $mounts_deckhand := .Values.pod.mounts.deckhand.deckhand }}
 {{- $mounts_deckhand_init := .Values.pod.mounts.deckhand.init_container }}
+{{- $serviceAccountName := "deckhand" }}
+{{ tuple $envAll $dependencies $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -33,6 +35,7 @@ spec:
         configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
         configmap-etc-hash: {{ tuple "configmap-etc.yaml" . | include "helm-toolkit.utils.hash" }}
     spec:
+      serviceAccountName: {{ $serviceAccountName }}
       nodeSelector:
         {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.deckhand.timeout | default "30" }}

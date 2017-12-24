@@ -19,6 +19,8 @@ limitations under the License.
 {{- $dependencies := .Values.dependencies.db_init }}
 {{- $mounts_deckhand_db_init := .Values.pod.mounts.deckhand_db_init.deckhand_db_init }}
 {{- $mounts_deckhand_db_init_init := .Values.pod.mounts.deckhand_db_init.init_container }}
+{{- $serviceAccountName := "deckhand-db-init" }}
+{{ tuple $envAll $dependencies $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -30,6 +32,7 @@ spec:
       labels:
 {{ tuple $envAll "deckhand" "db-init" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
     spec:
+      serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
       nodeSelector:
         {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}

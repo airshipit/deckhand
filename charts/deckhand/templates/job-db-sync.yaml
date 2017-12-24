@@ -19,6 +19,8 @@ limitations under the License.
 {{- $dependencies := .Values.dependencies.db_sync }}
 {{- $mounts_deckhand_db_sync := .Values.pod.mounts.deckhand_db_sync.deckhand_db_sync }}
 {{- $mounts_deckhand_db_sync_init := .Values.pod.mounts.deckhand_db_sync.init_container }}
+{{- $serviceAccountName := "deckhand-db-sync" }}
+{{ tuple $envAll $dependencies $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -30,6 +32,7 @@ spec:
       labels:
 {{ tuple $envAll "deckhand" "db-sync" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
     spec:
+      serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
       nodeSelector:
         {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
