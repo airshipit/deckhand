@@ -19,6 +19,7 @@ import jsonschema
 from oslo_log import log as logging
 import six
 
+from deckhand.engine import document_wrapper
 from deckhand.engine.schema import base_schema
 from deckhand.engine.schema import v1_0
 from deckhand import errors
@@ -140,9 +141,9 @@ class SchemaValidator(BaseValidator):
         return matching_schemas
 
     def matches(self, document):
-        if is_abstract(document) is True:
+        if document.is_abstract:
             LOG.info('Skipping schema validation for abstract document [%s]: '
-                     '%s.', document['schema'], document['metadata']['name'])
+                     '%s.', document.schema, document.name)
             return False
         return True
 
@@ -167,7 +168,7 @@ class SchemaValidator(BaseValidator):
         schemas_to_use = self._get_schemas(document)
         if not schemas_to_use and use_fallback_schema:
             LOG.debug('Document schema %s not recognized. Using "fallback" '
-                      'schema.', document['schema'])
+                      'schema.', document.schema)
             schemas_to_use = [SchemaValidator._fallback_schema]
 
         for schema_to_use in schemas_to_use:
@@ -191,8 +192,8 @@ class SchemaValidator(BaseValidator):
                 for error in errors:
                     LOG.error(
                         'Failed schema validation for document [%s] %s. '
-                        'Details: %s.', document['schema'],
-                        document['metadata']['name'], error.message)
+                        'Details: %s.', document.schema, document.name,
+                        error.message)
                     parent_path = root_path + '.'.join(
                         [six.text_type(x) for x in error.path])
                     yield error.message, parent_path
@@ -211,9 +212,9 @@ class DataSchemaValidator(SchemaValidator):
         for data_schema in data_schemas:
             # Ensure that each `DataSchema` document has required properties
             # before they themselves can be used to validate other documents.
-            if 'name' not in data_schema.get('metadata', {}):
+            if 'name' not in data_schema.metadata:
                 continue
-            if self._schema_re.match(data_schema['metadata']['name']) is None:
+            if self._schema_re.match(data_schema.name) is None:
                 continue
             if 'data' not in data_schema:
                 continue
@@ -221,16 +222,16 @@ class DataSchemaValidator(SchemaValidator):
                                                              'metadata.name')
 
             class Schema(object):
-                schema = data_schema['data']
+                schema = data_schema.data
 
             schema_map[schema_version].setdefault(schema_prefix, Schema())
 
         return schema_map
 
     def matches(self, document):
-        if is_abstract(document) is True:
+        if document.is_abstract:
             LOG.info('Skipping schema validation for abstract document [%s]: '
-                     '%s.', document['schema'], document['metadata']['name'])
+                     '%s.', document.schema, document.name)
             return False
         schema_prefix, schema_version = get_schema_parts(document)
         return schema_prefix in self._schema_map.get(schema_version, {})
@@ -257,25 +258,26 @@ class DocumentValidation(object):
             revisions to be used the "data" section of each document in
             ``documents``. Additional ``DataSchema`` documents in ``documents``
             are combined with these.
-        :type existing_data_schemas: List[dict]
+        :type existing_data_schemas: dict or List[dict]
         """
 
         self.documents = []
         existing_data_schemas = existing_data_schemas or []
-        data_schemas = existing_data_schemas[:]
-        db_data_schemas = {d['metadata']['name']: d for d in data_schemas}
+        data_schemas = [document_wrapper.DocumentDict(d)
+                        for d in existing_data_schemas]
+        _data_schema_map = {d.name: d for d in data_schemas}
 
-        if not isinstance(documents, (list, tuple)):
+        if not isinstance(documents, list):
             documents = [documents]
-
         for document in documents:
-            if document.get('schema', '').startswith(types.DATA_SCHEMA_SCHEMA):
+            if not isinstance(document, document_wrapper.DocumentDict):
+                document = document_wrapper.DocumentDict(document)
+            if document.schema.startswith(types.DATA_SCHEMA_SCHEMA):
                 data_schemas.append(document)
                 # If a newer version of the same DataSchema was passed in,
                 # only use the new one and discard the old one.
-                document_name = document.get('metadata', {}).get('name')
-                if document_name in db_data_schemas:
-                    data_schemas.remove(db_data_schemas.pop(document_name))
+                if document.name in _data_schema_map:
+                    data_schemas.remove(_data_schema_map.pop(document.name))
             self.documents.append(document)
 
         # NOTE(fmontei): The order of the validators is important. The
@@ -346,8 +348,8 @@ class DocumentValidation(object):
                 if error_messages:
                     for error_msg, error_path in error_messages:
                         result['errors'].append({
-                            'schema': document['schema'],
-                            'name': document['metadata']['name'],
+                            'schema': document.schema,
+                            'name': document.name,
                             'message': error_msg,
                             'path': error_path
                         })
@@ -416,13 +418,6 @@ class DocumentValidation(object):
 
         validations = self._format_validation_results(validation_results)
         return validations
-
-
-def is_abstract(document):
-    try:
-        return document['metadata']['layeringDefinition']['abstract']
-    except Exception:
-        return False
 
 
 def get_schema_parts(document, schema_key='schema'):
