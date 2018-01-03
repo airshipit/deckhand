@@ -58,7 +58,7 @@ class TestDocumentLayeringWithSubstitution(
                                 global_expected=global_expected)
         mock_document_get.assert_called_once_with(
             schema=certificate['schema'], name=certificate['metadata']['name'],
-            is_secret=True, **{'metadata.layeringDefinition.abstract': False})
+            **{'metadata.layeringDefinition.abstract': False})
 
     def test_layering_and_substitution_no_children(self):
         mapping = {
@@ -97,7 +97,7 @@ class TestDocumentLayeringWithSubstitution(
                                 global_expected=global_expected)
         mock_document_get.assert_called_once_with(
             schema=certificate['schema'], name=certificate['metadata']['name'],
-            is_secret=True, **{'metadata.layeringDefinition.abstract': False})
+            **{'metadata.layeringDefinition.abstract': False})
 
     def test_layering_parent_and_child_undergo_substitution(self):
         mapping = {
@@ -152,10 +152,8 @@ class TestDocumentLayeringWithSubstitution(
         mock_document_get.assert_has_calls([
             mock.call(
                 schema="deckhand/Certificate/v1", name='global-cert',
-                is_secret=True,
                 **{'metadata.layeringDefinition.abstract': False}),
             mock.call(
                 schema="deckhand/CertificateKey/v1", name='site-cert',
-                is_secret=True,
                 **{'metadata.layeringDefinition.abstract': False})
         ])

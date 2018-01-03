@@ -158,7 +158,6 @@ class TestDocuments(base.TestDbBase):
             self.assertIn('Certificate', created_documents[-1]['schema'])
             self.assertEqual(storage_policy, created_documents[-1][
                 'metadata']['storagePolicy'])
-            self.assertTrue(created_documents[-1]['is_secret'])
             self.assertEqual(rand_secret, created_documents[-1]['data'])
 
     def test_create_certificate_key(self):
@@ -176,7 +175,6 @@ class TestDocuments(base.TestDbBase):
             self.assertIn('CertificateKey', created_documents[-1]['schema'])
             self.assertEqual(storage_policy, created_documents[-1][
                 'metadata']['storagePolicy'])
-            self.assertTrue(created_documents[-1]['is_secret'])
             self.assertEqual(rand_secret, created_documents[-1]['data'])
 
     def test_create_passphrase(self):
@@ -194,7 +192,6 @@ class TestDocuments(base.TestDbBase):
             self.assertIn('Passphrase', created_documents[-1]['schema'])
             self.assertEqual(storage_policy, created_documents[-1][
                 'metadata']['storagePolicy'])
-            self.assertTrue(created_documents[-1]['is_secret'])
             self.assertEqual(rand_secret, created_documents[-1]['data'])
 
     def test_delete_document(self):

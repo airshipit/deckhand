@@ -135,7 +135,6 @@ class Document(BASE, DeckhandBase):
     data = Column(JSONB, nullable=True)
     data_hash = Column(String, nullable=False)
     metadata_hash = Column(String, nullable=False)
-    is_secret = Column(Boolean, nullable=False, default=False)
     bucket_id = Column(Integer, ForeignKey('buckets.id', ondelete='CASCADE'),
                        nullable=False)
     revision_id = Column(

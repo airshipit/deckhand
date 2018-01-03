@@ -16,13 +16,23 @@
 
 .. _substitution:
 
-Secret Substitution
-===================
+Document Substitution
+=====================
+
+Document substitution, simply put, allows one document to overwrite *parts* of
+its own data with that of another document. Substitution involves a source
+document sharing data with a destination document, which replaces its own data
+with the shared data.
 
 Substitution is primarily designed as a mechanism for inserting secrets into
 configuration documents, but works for unencrypted source documents as well.
-Substitution is applied at each layer after all merge actions occur. Further,
-substitution is only applied to the ``data`` section of a document.
+Substitution is applied at each layer after all merge actions occur.
+
+.. note::
+
+  Substitution is only applied to the ``data`` section of a document. This is
+  because a document's ``metadata`` and ``schema`` sections should be
+  immutable within the scope of a revision, for obvious reasons.
 
 Concrete (non-abstract) documents can be used as a source of substitution
 into other documents. This substitution is layer-independent, so given the 3
@@ -138,3 +148,6 @@ The rendered document will look like:
           key: |
             KEY DATA
   ...
+
+This substitution is also ``schema`` agnostic, meaning that source and
+destination documents can have a different ``schema``.

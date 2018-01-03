@@ -182,20 +182,6 @@ class InvalidDocumentSchema(DeckhandException):
     code = 400
 
 
-class DocumentExists(DeckhandException):
-    msg_fmt = ("Document with schema %(schema)s and metadata.name "
-               "%(name)s already exists in bucket %(bucket)s.")
-    code = 409
-
-
-class SingletonDocumentConflict(DeckhandException):
-    msg_fmt = ("A singleton document by the name %(document)s already "
-               "exists in the system. The new document %(conflict)s cannot be "
-               "created. To create a document with a new name, delete the "
-               "current one first.")
-    code = 409
-
-
 class IndeterminateDocumentParent(DeckhandException):
     msg_fmt = ("Too many parent documents found for document %(document)s.")
     code = 400
@@ -204,10 +190,17 @@ class IndeterminateDocumentParent(DeckhandException):
 class MissingDocumentKey(DeckhandException):
     msg_fmt = ("Missing document key %(key)s from either parent or child. "
                "Parent: %(parent)s. Child: %(child)s.")
+    code = 400
 
 
 class UnsupportedActionMethod(DeckhandException):
     msg_fmt = ("Method in %(actions)s is invalid for document %(document)s.")
+    code = 400
+
+
+class RevisionTagBadFormat(DeckhandException):
+    msg_fmt = ("The requested tag data %(data)s must either be null or "
+               "dictionary.")
     code = 400
 
 
@@ -227,11 +220,6 @@ class RevisionTagNotFound(DeckhandException):
     code = 404
 
 
-class LayeringPolicyNotFound(DeckhandException):
-    msg_fmt = ("Required LayeringPolicy was not found for layering.")
-    code = 409
-
-
 class ValidationNotFound(DeckhandException):
     msg_fmt = ("The requested validation entry %(entry_id)s was not found "
                "for validation name %(validation_name)s and revision ID "
@@ -239,10 +227,29 @@ class ValidationNotFound(DeckhandException):
     code = 404
 
 
-class RevisionTagBadFormat(DeckhandException):
-    msg_fmt = ("The requested tag data %(data)s must either be null or "
-               "dictionary.")
-    code = 400
+class DocumentExists(DeckhandException):
+    msg_fmt = ("Document with schema %(schema)s and metadata.name "
+               "%(name)s already exists in bucket %(bucket)s.")
+    code = 409
+
+
+class SingletonDocumentConflict(DeckhandException):
+    msg_fmt = ("A singleton document by the name %(document)s already "
+               "exists in the system. The new document %(conflict)s cannot be "
+               "created. To create a document with a new name, delete the "
+               "current one first.")
+    code = 409
+
+
+class LayeringPolicyNotFound(DeckhandException):
+    msg_fmt = ("Required LayeringPolicy was not found for layering.")
+    code = 409
+
+
+class SubstitutionDependencyNotFound(DeckhandException):
+    msg_fmt = ('Failed to find a dependent source document required for '
+               'substitution. Details: %(details)s')
+    code = 409
 
 
 class BarbicanException(DeckhandException):

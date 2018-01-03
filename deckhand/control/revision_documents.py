@@ -115,7 +115,8 @@ class RenderedDocumentsResource(api_base.BaseResource):
                 errors.UnsupportedActionMethod,
                 errors.MissingDocumentKey) as e:
             raise falcon.HTTPBadRequest(description=e.format_message())
-        except errors.LayeringPolicyNotFound as e:
+        except (errors.LayeringPolicyNotFound,
+                errors.SubstitutionDependencyNotFound) as e:
             raise falcon.HTTPConflict(description=e.format_message())
 
         # Filters to be applied post-rendering, because many documents are

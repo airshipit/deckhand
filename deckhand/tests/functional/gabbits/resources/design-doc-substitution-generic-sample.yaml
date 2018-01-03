@@ -1,0 +1,54 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - region
+    - site
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: unusual/DictWithSecret/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: object
+  properties:
+    secret:
+      type: string
+    public:
+      type: string
+  additionalProperties: false
+  required:
+    - secret
+    - public
+---
+schema: unusual/DictWithSecret/v1
+metadata:
+  schema: metadata/Document/v1
+  name: dict-with-secret
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data:
+  secret: secret-from-generic-document
+  public: random
+---
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: region
+  substitutions:
+    - dest:
+        path: .
+      src:
+        schema: unusual/DictWithSecret/v1
+        name: dict-with-secret
+        path: .secret
+data: need secret from unusual/DictWithSecret/v1
+...

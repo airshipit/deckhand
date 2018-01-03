@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import ast
+import copy
 import re
 import string
 
@@ -62,7 +63,9 @@ def jsonpath_parse(data, jsonpath, match_all=False):
         src_secret = utils.jsonpath_parse(src_doc['data'], src_path)
         # Do something with the extracted secret from the source document.
     """
-    if jsonpath.startswith('.'):
+    if jsonpath == '.':
+        jsonpath = '$'
+    elif jsonpath.startswith('.'):
         jsonpath = '$' + jsonpath
 
     p = jsonpath_ng.parse(jsonpath)
@@ -104,8 +107,11 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         # http://admin:super-duper-secret@svc-name:8080/v1
         doc['data'].update(replaced_data)
     """
-    data = data.copy()
-    if jsonpath.startswith('.'):
+    data = copy.copy(data)
+
+    if jsonpath == '.':
+        jsonpath = '$'
+    elif jsonpath.startswith('.'):
         jsonpath = '$' + jsonpath
 
     def _do_replace():

@@ -246,8 +246,6 @@ def _documents_create(bucket_name, values_list, session=None):
     for values in values_list:
         values.setdefault('data', {})
         values = _fill_in_metadata_defaults(values)
-        values['is_secret'] = values['schema'].startswith(
-            types.DOCUMENT_SECRET_TYPES)
 
         # Hash the document's metadata and data to later  efficiently check
         # whether those data have changed.

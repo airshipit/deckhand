@@ -13,10 +13,12 @@
 # limitations under the License.
 
 from oslo_log import log as logging
+import six
 
 from deckhand.barbican import driver
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import document as document_wrapper
+from deckhand import errors
 from deckhand import utils
 
 LOG = logging.getLogger(__name__)
@@ -141,7 +143,7 @@ class SecretsSubstitution(object):
                 # TODO(fmontei): Use SecretsManager for this logic. Need to
                 # check Barbican for the secret if it has been encrypted.
                 src_doc = db_api.document_get(
-                    schema=src_schema, name=src_name, is_secret=True,
+                    schema=src_schema, name=src_name,
                     **{'metadata.layeringDefinition.abstract': False})
 
                 # If the data is a dictionary, retrieve the nested secret
@@ -159,9 +161,18 @@ class SecretsSubstitution(object):
                 LOG.debug('Substituting from schema=%s name=%s src_path=%s '
                           'into dest_path=%s, dest_pattern=%s', src_schema,
                           src_name, src_path, dest_path, dest_pattern)
-                substituted_data = utils.jsonpath_replace(
-                    doc['data'], src_secret, dest_path, dest_pattern)
-                doc['data'].update(substituted_data)
+                try:
+                    substituted_data = utils.jsonpath_replace(
+                        doc['data'], src_secret, dest_path, dest_pattern)
+                    if isinstance(substituted_data, dict):
+                        doc['data'].update(substituted_data)
+                    else:
+                        doc['data'] = substituted_data
+                except Exception as e:
+                    LOG.error('Unexpected exception occurred while attempting '
+                              'secret substitution. %s', six.text_type(e))
+                    raise errors.SubstitutionDependencyNotFound(
+                        details=six.text_type(e))
 
             substituted_docs.append(doc.to_dict())
         return substituted_docs
