@@ -12,31 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
-
 from deckhand.engine import layering
 from deckhand import errors
 from deckhand import factories
 from deckhand.tests.unit import base as test_base
-from deckhand import types
 
 
 class TestDocumentLayering(test_base.DeckhandTestCase):
 
-    def _extract_layering_policy(self, documents):
-        for doc in copy.copy(documents):
-            if doc['schema'].startswith(types.LAYERING_POLICY_SCHEMA):
-                layering_policy = doc
-                documents.remove(doc)
-                return layering_policy
-        return None
-
     def _test_layering(self, documents, site_expected=None,
                        region_expected=None, global_expected=None,
                        exception_expected=None):
-        layering_policy = self._extract_layering_policy(documents)
-        document_layering = layering.DocumentLayering(
-            layering_policy, documents)
+        document_layering = layering.DocumentLayering(documents)
 
         if all([site_expected, region_expected, global_expected,
                 exception_expected]):
