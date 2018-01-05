@@ -181,6 +181,9 @@ database:
     db_root_user: postgres
 
 conf:
+  uwsgi:
+    threads: 1
+    workers: 4
   policy:
     admin_api: role:admin
     deckhand:create_cleartext_documents: rule:admin_api

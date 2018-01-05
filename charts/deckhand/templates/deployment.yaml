@@ -44,6 +44,11 @@ spec:
 {{ tuple $envAll $dependencies $mounts_deckhand_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       containers:
         - name: deckhand
+          env:
+            - name: 'DECKHAND_API_WORKERS'
+              value: {{ .Values.conf.uwsgi.workers | default 4 | quote }}
+            - name: 'DECKHAND_API_THREADS'
+              value: {{ .Values.conf.uwsgi.threads | default 1 | quote }}
           image: {{ .Values.images.tags.deckhand }}
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
