@@ -19,9 +19,9 @@ set -ex
 # Define port
 PORT=${PORT:-9000}
 # Number of uWSGI workers to handle API requests
-DECKHAND_API_WORKERS=${DECKHAND_API_WORKERS:-"1"}
+DECKHAND_API_WORKERS=${DECKHAND_API_WORKERS:-"4"}
 # Threads per worker
-DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"4"}
+DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"1"}
 
 # Start deckhand application
 exec uwsgi \
