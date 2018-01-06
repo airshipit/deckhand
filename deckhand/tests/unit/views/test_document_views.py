@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from deckhand.control.views import document
-from deckhand import factories
 from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
@@ -23,7 +22,6 @@ class TestDocumentViews(base.TestDbBase):
     def setUp(self):
         super(TestDocumentViews, self).setUp()
         self.view_builder = document.ViewBuilder()
-        self.factory = factories.ValidationPolicyFactory()
 
     def _test_document_creation_view(self, count):
         # Test document creation view with the number of documents being

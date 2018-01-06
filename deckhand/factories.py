@@ -19,7 +19,6 @@ import six
 from oslo_log import log as logging
 
 from deckhand.tests import test_utils
-from deckhand import types
 
 LOG = logging.getLogger(__name__)
 
@@ -364,82 +363,3 @@ class DocumentSecretFactory(DeckhandFactory):
         document_secret_template['metadata']['name'] = name
 
         return document_secret_template
-
-
-class ValidationPolicyFactory(DeckhandFactory):
-    """Class for auto-generating validation policy templates for testing."""
-
-    VALIDATION_POLICY_TEMPLATE = {
-        "data": {
-            "validations": []
-        },
-        "metadata": {
-            "schema": "metadata/Control/%s" % DeckhandFactory.API_VERSION,
-            "name": ""
-        },
-        "schema": types.VALIDATION_POLICY_SCHEMA
-    }
-
-    def __init__(self):
-        """Constructor for ``ValidationPolicyFactory``.
-
-        Returns a template whose YAML representation is of the form::
-
-            ---
-            schema: deckhand/ValidationPolicy/v1.0
-            metadata:
-              schema: metadata/Control/v1.0
-              name: site-deploy-ready
-            data:
-              validations:
-                - name: deckhand-schema-validation
-                - name: drydock-site-validation
-                  expiresAfter: P1W
-                - name: promenade-site-validation
-                  expiresAfter: P1W
-                - name: armada-deployability-validation
-            ...
-        """
-
-    def gen(self, validation_type, status):
-        if validation_type not in types.DECKHAND_VALIDATION_TYPES:
-            raise ValueError("The validation type must be in %s."
-                             % types.DECKHAND_VALIDATION_TYPES)
-
-        validation_policy_template = copy.deepcopy(
-            self.VALIDATION_POLICY_TEMPLATE)
-
-        validation_policy_template['metadata'][
-            'name'] = test_utils.rand_name('validation-policy')
-        validation_policy_template['data']['validations'] = [
-            {'name': validation_type, 'status': status}
-        ]
-
-        return validation_policy_template
-
-    def gen_test(self, name=None, num_validations=None):
-        """Generate the test document template.
-
-        Generate the document template based on the arguments passed to
-        the constructor and to this function.
-        """
-        if not(num_validations and isinstance(num_validations, int)
-               and num_validations > 0):
-            raise ValueError('The "num_validations" attribute must be integer '
-                             'value > 1.')
-
-        if not name:
-            name = test_utils.rand_name('validation-policy')
-        if not num_validations:
-            num_validations = 3
-
-        validations = [
-            test_utils.rand_name('validation-name')
-            for _ in range(num_validations)]
-
-        validation_policy_template = copy.deepcopy(
-            self.VALIDATION_POLICY_TEMPLATE)
-        validation_policy_template['metadata']['name'] = name
-        validation_policy_template['data']['validations'] = validations
-
-        return validation_policy_template
