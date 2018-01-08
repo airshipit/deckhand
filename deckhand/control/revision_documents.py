@@ -105,16 +105,18 @@ class RenderedDocumentsResource(api_base.BaseResource):
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
 
-        layering_policy = self._retrieve_layering_policy()
         documents = self._retrieve_documents_for_rendering(revision_id,
                                                            **filters)
 
-        # Prevent the layering policy from appearing twice.
-        if layering_policy in documents:
-            documents.remove(layering_policy)
-        document_layering = layering.DocumentLayering(layering_policy,
-                                                      documents)
-        rendered_documents = document_layering.render()
+        try:
+            document_layering = layering.DocumentLayering(documents)
+            rendered_documents = document_layering.render()
+        except (errors.IndeterminateDocumentParent,
+                errors.UnsupportedActionMethod,
+                errors.MissingDocumentKey) as e:
+            raise falcon.HTTPBadRequest(description=e.format_message())
+        except errors.LayeringPolicyNotFound as e:
+            raise falcon.HTTPConflict(description=e.format_message())
 
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all
@@ -129,34 +131,32 @@ class RenderedDocumentsResource(api_base.BaseResource):
         resp.body = self.view_builder.list(final_documents)
         self._post_validate(final_documents)
 
-    def _retrieve_layering_policy(self):
-        try:
-            # NOTE(fmontei): Layering policies exist system-wide, across all
-            # revisions, so no need to filter by revision.
-            layering_policy_filters = {
-                'deleted': False,
-                'schema': types.LAYERING_POLICY_SCHEMA
-            }
-            layering_policy = db_api.document_get(**layering_policy_filters)
-        except errors.DocumentNotFound as e:
-            error_msg = (
-                'No layering policy found in the system so could not render '
-                'the documents.')
-            LOG.error(error_msg)
-            LOG.exception(six.text_type(e))
-            raise falcon.HTTPConflict(description=error_msg)
-        else:
-            return layering_policy
-
     def _retrieve_documents_for_rendering(self, revision_id, **filters):
+        """Retrieve all necessary documents needed for rendering. If a layering
+        policy isn't found in the current revision, retrieve it in a subsequent
+        call and add it to the list of documents.
+        """
         try:
-            documents = db_api.revision_get_documents(
-                revision_id, **filters)
+            documents = db_api.revision_get_documents(revision_id, **filters)
         except errors.RevisionNotFound as e:
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
-        else:
-            return documents
+
+        if not any([d['schema'].startswith(types.LAYERING_POLICY_SCHEMA)
+                    for d in documents]):
+            try:
+                layering_policy_filters = {
+                    'deleted': False,
+                    'schema': types.LAYERING_POLICY_SCHEMA
+                }
+                layering_policy = db_api.document_get(
+                    **layering_policy_filters)
+            except errors.DocumentNotFound as e:
+                LOG.exception(e.format_message())
+            else:
+                documents.append(layering_policy)
+
+        return documents
 
     def _post_validate(self, documents):
         # Perform schema validation post-rendering to ensure that rendering

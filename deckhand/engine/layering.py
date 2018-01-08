@@ -22,6 +22,7 @@ from deckhand.engine import document
 from deckhand.engine import secrets_manager
 from deckhand.engine import utils
 from deckhand import errors
+from deckhand import types
 
 LOG = logging.getLogger(__name__)
 
@@ -141,7 +142,19 @@ class DocumentLayering(object):
 
         return layered_docs
 
-    def __init__(self, layering_policy, documents):
+    def _extract_layering_policy(self, documents):
+        documents = copy.deepcopy(documents)
+        for doc in documents:
+            if doc['schema'].startswith(types.LAYERING_POLICY_SCHEMA):
+                layering_policy = doc
+                documents.remove(doc)
+                return (
+                    document.Document(layering_policy),
+                    [document.Document(d) for d in documents]
+                )
+        return None, [document.Document(d) for d in documents]
+
+    def __init__(self, documents):
         """Contructor for ``DocumentLayering``.
 
         :param layering_policy: The document with schema
@@ -150,8 +163,14 @@ class DocumentLayering(object):
             in accordance with the ``layerOrder`` defined by the
             LayeringPolicy document.
         """
-        self.layering_policy = document.Document(layering_policy)
-        self.documents = [document.Document(d) for d in documents]
+        self.layering_policy, self.documents = self._extract_layering_policy(
+            documents)
+        if self.layering_policy is None:
+            error_msg = (
+                'No layering policy found in the system so could not reder '
+                'documents.')
+            LOG.error(error_msg)
+            raise errors.LayeringPolicyNotFound()
         self.layer_order = list(self.layering_policy['data']['layerOrder'])
         self.layered_docs = self._calc_document_children()
 

@@ -69,7 +69,7 @@ class TestDocumentLayeringNegative(
     def test_layering_with_broken_layer_order(self, mock_log):
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
-        layering_policy = self._extract_layering_policy(documents)
+        layering_policy = documents[0]
         broken_layer_orders = [
             ['site', 'region', 'global'], ['broken', 'global'], ['broken'],
             ['site', 'broken']]
@@ -77,7 +77,7 @@ class TestDocumentLayeringNegative(
         for broken_layer_order in broken_layer_orders:
             layering_policy['data']['layerOrder'] = broken_layer_order
             # The site will not be able to find a correct parent.
-            layering.DocumentLayering(layering_policy, documents)
+            layering.DocumentLayering(documents)
             self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
                                      'Could not find parent for document .*')
             mock_log.info.reset_mock()
@@ -86,13 +86,12 @@ class TestDocumentLayeringNegative(
     def test_layering_child_with_invalid_parent_selector(self, mock_log):
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
-        layering_policy = self._extract_layering_policy(documents)
 
         for parent_selector in ({'key2': 'value2'}, {'key1': 'value2'}):
             documents[-1]['metadata']['layeringDefinition'][
                 'parentSelector'] = parent_selector
 
-            layering.DocumentLayering(layering_policy, documents)
+            layering.DocumentLayering(documents)
             self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
                                      'Could not find parent for document .*')
             mock_log.info.reset_mock()
@@ -101,13 +100,12 @@ class TestDocumentLayeringNegative(
     def test_layering_unreferenced_parent_label(self, mock_log):
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
-        layering_policy = self._extract_layering_policy(documents)
 
         for parent_label in ({'key2': 'value2'}, {'key1': 'value2'}):
             # Second doc is the global doc, or parent.
-            documents[0]['metadata']['labels'] = [parent_label]
+            documents[1]['metadata']['labels'] = [parent_label]
 
-            layering.DocumentLayering(layering_policy, documents)
+            layering.DocumentLayering(documents)
             self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
                                      'Could not find parent for document .*')
             mock_log.info.reset_mock()
@@ -117,26 +115,22 @@ class TestDocumentLayeringNegative(
         # same unique parent identifier referenced by `parentSelector`.
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
-        layering_policy = self._extract_layering_policy(documents)
-        documents.append(documents[0])  # Copy global layer.
+        documents.append(documents[1])  # Copy global layer.
 
         self.assertRaises(errors.IndeterminateDocumentParent,
-                          layering.DocumentLayering, layering_policy,
-                          documents)
+                          layering.DocumentLayering, documents)
 
     def test_layering_duplicate_parent_selector_3_layer(self):
         # Validate that documents belonging to the same layer cannot have the
         # same unique parent identifier referenced by `parentSelector`.
         doc_factory = factories.DocumentFactory(3, [1, 1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
-        layering_policy = self._extract_layering_policy(documents)
 
-        # 0 is global layer, 1 is region layer.
-        for idx in (0, 1):
+        # 1 is global layer, 2 is region layer.
+        for idx in (1, 2):
             documents.append(documents[idx])
             self.assertRaises(errors.IndeterminateDocumentParent,
-                              layering.DocumentLayering, layering_policy,
-                              documents)
+                              layering.DocumentLayering, documents)
             documents.pop(-1)  # Remove the just-appended duplicate.
 
     @mock.patch.object(layering, 'LOG', autospec=True)
@@ -145,13 +139,12 @@ class TestDocumentLayeringNegative(
         # without an error being raised.
         doc_factory = factories.DocumentFactory(3, [1, 1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
-        layering_policy = self._extract_layering_policy(documents)
         self_ref = {"self": "self"}
         documents[2]['metadata']['labels'] = self_ref
         documents[2]['metadata']['layeringDefinition'][
             'parentSelector'] = self_ref
 
-        layering.DocumentLayering(layering_policy, documents)
+        layering.DocumentLayering(documents)
         self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
                                  'Could not find parent for document .*')
 
@@ -162,7 +155,6 @@ class TestDocumentLayeringNegative(
         """
         doc_factory = factories.DocumentFactory(3, [1, 1, 1])
         documents = doc_factory.gen_test({})
-        layering_policy = self._extract_layering_policy(documents)
 
         # Region and site documents should result in no parent being found
         # since their schemas will not match that of their parent's.
@@ -170,10 +162,16 @@ class TestDocumentLayeringNegative(
             prev_schema = documents[idx]['schema']
             documents[idx]['schema'] = test_utils.rand_name('schema')
 
-            layering.DocumentLayering(layering_policy, documents)
+            layering.DocumentLayering(documents)
             self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
                                      'Could not find parent for document .*')
             mock_log.info.reset_mock()
 
             # Restore schema for next test run.
             documents[idx]['schema'] = prev_schema
+
+    def test_layering_without_layering_policy_raises_exc(self):
+        doc_factory = factories.DocumentFactory(1, [1])
+        documents = doc_factory.gen_test({}, site_abstract=False)[1:]
+        self.assertRaises(errors.LayeringPolicyNotFound,
+                          layering.DocumentLayering, documents)

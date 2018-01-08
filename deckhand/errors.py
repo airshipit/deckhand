@@ -201,11 +201,6 @@ class IndeterminateDocumentParent(DeckhandException):
     code = 400
 
 
-class MissingDocumentParent(DeckhandException):
-    msg_fmt = ("Missing parent document for document %(document)s.")
-    code = 400
-
-
 class MissingDocumentKey(DeckhandException):
     msg_fmt = ("Missing document key %(key)s from either parent or child. "
                "Parent: %(parent)s. Child: %(child)s.")
@@ -230,6 +225,11 @@ class RevisionTagNotFound(DeckhandException):
     msg_fmt = ("The requested tag '%(tag)s' for revision %(revision)s was "
                "not found.")
     code = 404
+
+
+class LayeringPolicyNotFound(DeckhandException):
+    msg_fmt = ("Required LayeringPolicy was not found for layering.")
+    code = 409
 
 
 class ValidationNotFound(DeckhandException):
