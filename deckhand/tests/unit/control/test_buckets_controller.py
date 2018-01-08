@@ -81,7 +81,7 @@ class TestBucketsController(test_base.BaseControllerTest):
             actual = sorted([(d['schema'], d['metadata']['name'])
                              for d in created_documents])
             self.assertEqual(expected, actual)
-            self.assertEqual({'secret': payload[0]['data']},
+            self.assertEqual(payload[0]['data'],
                              created_documents[0]['data'])
 
         # Verify whether creating a cleartext secret works.

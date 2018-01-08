@@ -1,0 +1,270 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+---
+schema: deckhand/CertificateAuthority/v1
+metadata:
+  schema: metadata/Document/v1
+  name: sample
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data: |
+  -----BEGIN CERTIFICATE-----
+  MIIDSDCCAjCgAwIBAgIUbE6kVjWwiqyRoA5vgjvRXYVjI2EwDQYJKoZIhvcNAQEL
+  BQAwKjETMBEGA1UEChMKS3ViZXJuZXRlczETMBEGA1UEAxMKa3ViZXJuZXRlczAe
+  Fw0xNzEyMjAyMTE5MDBaFw0yMjEyMTkyMTE5MDBaMCoxEzARBgNVBAoTCkt1YmVy
+  bmV0ZXMxEzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+  DwAwggEKAoIBAQC7luJIODEDsSmrFoSfLhirs4QMS8Yh5CYukL2qPel6JPvDhHfk
+  cU6dZhuMVy6dGt1sBeVNwuMygoD9nNC++gHQfVGaRMlGNnk+lOEWSZ1Q0iI0waCE
+  6oztLsYvYSOjBbabaNXFpldwutIpocLIuNCUNGzzw8gHyZpsG7wNkmj/u8CAbe5T
+  ElK++CQ15HmbH3VM+01W6TH8yTCjO1Mi6TccwyDpGrhb8pmkO7VjUIamrDhPZxrE
+  Qa7Repw2dImjuJ4nnpw+lijDcGBE73g3gAW7nYwEmemje+cOkNX8i88x47Mejwox
+  dA3Rrl4bdxWWBQjko6CfNPYVenpYxDTLVkcBAgMBAAGjZjBkMA4GA1UdDwEB/wQE
+  AwIBBjASBgNVHRMBAf8ECDAGAQH/AgECMB0GA1UdDgQWBBTK72TvR7JDaRJPOiGD
+  +kRVqQ1d3jAfBgNVHSMEGDAWgBTK72TvR7JDaRJPOiGD+kRVqQ1d3jANBgkqhkiG
+  9w0BAQsFAAOCAQEAfZBhG55T+cK5i0UqnJJI/nKt/92pUU42LnoDN1xM21tHo8Q2
+  ABfzHXCDAVAoKkCdche6zFXa9gBYxZFFQjevUJHOhYGqdWlnxlHn9cI06fvzWhfr
+  IMW2r708okCSHJPBUGXOCPLMfL4PhHh8V7mBllGO6aS0/nk/tYGzE6dN+MGLtNjh
+  DfyZ1KXIWWNxZae2zuSWO7X+/2HEWg4IHCfVtg/9cbmSv6ovK0zI42c4nrREMTix
+  qTSGzQbKegRboJgAjV4U7+F1Ls7NFxIfCxmmjoZ8fLFThpU8+5KdPp2mSnJN0Foc
+  l6NOJ81TpGUvagtwaa5FRVLpb5cPTd9zu7CRrA==
+  -----END CERTIFICATE-----
+---
+schema: deckhand/CertificateAuthorityKey/v1
+metadata:
+  schema: metadata/Document/v1
+  name: sample
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data: |
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEpAIBAAKCAQEAu5biSDgxA7EpqxaEny4Yq7OEDEvGIeQmLpC9qj3peiT7w4R3
+  5HFOnWYbjFcunRrdbAXlTcLjMoKA/ZzQvvoB0H1RmkTJRjZ5PpThFkmdUNIiNMGg
+  hOqM7S7GL2EjowW2m2jVxaZXcLrSKaHCyLjQlDRs88PIB8mabBu8DZJo/7vAgG3u
+  UxJSvvgkNeR5mx91TPtNVukx/MkwoztTIuk3HMMg6Rq4W/KZpDu1Y1CGpqw4T2ca
+  xEGu0XqcNnSJo7ieJ56cPpYow3BgRO94N4AFu52MBJnpo3vnDpDV/IvPMeOzHo8K
+  MXQN0a5eG3cVlgUI5KOgnzT2FXp6WMQ0y1ZHAQIDAQABAoIBAQCSKC9KQa2+yKxE
+  hxjxxUKnlQjPY8KN6WruYQvFttNQvbwDTBT1wmqULFhOcib5dVMLtVRB0BSg6BmE
+  gEgMZFJBlUKdRfbkY9D3t5vgd57At9i67hoZNX5z1jvH8pGHlQ3/7CCTDNWYGZdh
+  pI1VQtoQfwBctTAHEUbl8H4GvQpeJR87tVMvEnEFya+OnjTcTyXAX5TIOn20K2c7
+  3ENqAgsX390yIXvh2VZ2M9Db4oOlwLblyuWY/F0Yx3kvtTW6bYh8BL8ObdGD9xYq
+  h+Xvdo/4YaFrPC7x3m6V9SvIIhxe9XbWSlRAiJ9GlmWDgK8FGWh3HXmYGqzVFzll
+  I9k+5ffZAoGBAOTPc4YiCghB5bxd20AfCinaM+1YXO0YzHV1LDZ3X41RbdXMCQuA
+  QZPVExxdUsb+353UAqKz/RYqfExOpfLGceYe79y2sRU40ghpJVUpGf+3OLTWFnZD
+  2ps77v2SM0WqbOYo6xw/aAYOMJ7e7l4LuCAG5qk9Sup4Cn7ylAqqHBUvAoGBANHh
+  d08m7VFbHejwuUgcjkAcNXS2C9AuxfTefLDjYYeSi5q8+gV6+YbMlxw9EqMltO+4
+  Hf35nfoPJCoRTo6amahp/65RjdJJY8PAU0OjIw5LdRr66AfnVDTEyT4sVEiCMNAh
+  GgZqyb4b69K9Ufd+Ytxo9CQ5tuxC+7x834FXU7rPAoGAKe1dpOGN5w90Mn0cVPab
+  HSovw7kiZgvaQ1eyP1TGfJXEQ538tk/NNHKh6tuq9G31ue0Egp3qrWohlrX+sKru
+  ahWXLGGJt3LPAd2Kir1aV0JSsMheG1O5tiJYW7yzint9MvuigW2Y+SsWe7YsBa2u
+  EqhREgf6N1bBzZtTx1R+it8CgYB2PEYyWQOoqWQYLkSy0yNwCnQy47uT9EWgxRYJ
+  sI7pCS2MZpmTLMwVnHwkdGNjdYKQ6XA7+7t7e7wr1sQiogWeUtivI1J5/M4vINHH
+  cMf27ZtzL5Y3naJad+HHHMH+dxl4pq06oD420xPvDKh4fMLE2HtxTPI39yRJ8y8W
+  dlO9EQKBgQCODuQtLZGlzWGEEsH2wKTKKCJFCOsKG5/MnKX2MQqxTG/Y4OzqgQ3T
+  Ysfvf8NphOhH2KMLUwU8Q1KQTPG9utM2c5vEiH4TkhwqeQ2urTKgV/PBjkNMkqQ/
+  MXyoLzNHi4+zB8fQAcPrct37gxdE694m1Glpzm4AjGZwKSnpmiOAig==
+  -----END RSA PRIVATE KEY-----
+---
+schema: deckhand/Certificate/v1
+metadata:
+  schema: metadata/Document/v1
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+  name: sample
+data: |
+  -----BEGIN CERTIFICATE-----
+  MIID8jCCAtqgAwIBAgIUGBQX+WolO9GAclbqwB4/zgUKdLQwDQYJKoZIhvcNAQEL
+  BQAwKjETMBEGA1UEChMKS3ViZXJuZXRlczETMBEGA1UEAxMKa3ViZXJuZXRlczAe
+  Fw0xNzEyMjAyMTE5MDBaFw0xODEyMjAyMTE5MDBaMBQxEjAQBgNVBAMTCWFwaXNl
+  cnZlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMdStqACFWPgaz3Z
+  lHN9JUgAgYzk4b0CXpQTuuW3ofb2om2mA625KrX5RzQekO/Qhm1qXcyeyjXXy5yD
+  i3W6nviQH/PEA+LIsVe43zs2NRcdMPVI3o5Tl8BbU2z70l6oQXFJH3PKCW9FLgNq
+  fSQc2AvUsxl04zi6z1b1Pbap6UOUqlBLgbO+zkN0e4uN5ls/8S9bY5Rt0yHccji2
+  dmBZ32hyqx0REETjJnbX7Ul6i6x1Gk7Uz4fPHczafnmALxQ9ucSq41e/UUxo2qLP
+  oqLVBE2ldQaJsM2mpZPCmMgjCqKFxu+cXRavNFuT39rPFBw8L3WBvN5bU+YSJP3I
+  SWhJBuUCAwEAAaOCASQwggEgMA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggr
+  BgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUr06Fp8vs
+  NQRhs57HGfIBzXBi9WYwHwYDVR0jBBgwFoAUyu9k70eyQ2kSTzohg/pEVakNXd4w
+  gaAGA1UdEQSBmDCBlYIKa3ViZXJuZXRlc4ISa3ViZXJuZXRlcy5kZWZhdWx0ghZr
+  dWJlcm5ldGVzLmRlZmF1bHQuc3ZjgiRrdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNs
+  dXN0ZXIubG9jYWyCCWxvY2FsaG9zdIIeYXBpc2VydmVyLmt1YmVybmV0ZXMucHJv
+  bWVuYWRlhwR/AAABhwQKYAABMA0GCSqGSIb3DQEBCwUAA4IBAQAvP0w60GHMxsKj
+  L49B2u34ti/C/IQPeM91Vkpasvv7d6bKX/HpCzgN19wjOYMVf+JGqlKB9Ur3Bl0K
+  VVUiuy2c/eBJUNGH9ZU/DiAoqMlVtBjVyE67YCX1rqnlxz2IkHN/UOxdl7tPT9bu
+  3FjXaVRUHCkuGceY5+BFUbCS/L5eEdzYpBe9EQG9ZY7CpHWxymPrbcsO1gBgYyIk
+  5JaMySBhx2B9M31VJFMH0zC1MSaqDUJdmnGe5S7ei9Qr/7KjAMF92QztlJqhZebS
+  NaDsb8ZqNACkX4by9ePv90c3RnqLwKchZP+PgrkWMK0aRdgNRoX9qFzJHmWmDa1C
+  Oc2+WoBP
+  -----END CERTIFICATE-----
+---
+schema: deckhand/CertificateKey/v1
+metadata:
+  schema: metadata/Document/v1
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+  name: sample
+data: |
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEowIBAAKCAQEAx1K2oAIVY+BrPdmUc30lSACBjOThvQJelBO65beh9vaibaYD
+  rbkqtflHNB6Q79CGbWpdzJ7KNdfLnIOLdbqe+JAf88QD4sixV7jfOzY1Fx0w9Uje
+  jlOXwFtTbPvSXqhBcUkfc8oJb0UuA2p9JBzYC9SzGXTjOLrPVvU9tqnpQ5SqUEuB
+  s77OQ3R7i43mWz/xL1tjlG3TIdxyOLZ2YFnfaHKrHREQROMmdtftSXqLrHUaTtTP
+  h88dzNp+eYAvFD25xKrjV79RTGjaos+iotUETaV1Bomwzaalk8KYyCMKooXG75xd
+  Fq80W5Pf2s8UHDwvdYG83ltT5hIk/chJaEkG5QIDAQABAoIBAD7vcfSB0+kuUg48
+  ZjA1ApGCf2VSW6iHV/+fXzLrUXueEllWwvCWd9Lve7kMMa1XBSsFG8rhFG39zi+E
+  JYOtwkYvk7cvXB6+SaiuGeYjTo4WzH+WW5dK865r56KQvLLgo5E2inTQBTyZ9lZj
+  yFGfveO2bDqMerZN3evSEYNckOeiOaH6c/k1t2yDRgxEmv7XuQcwSuTY8O3LelFr
+  hV4I3AH5qP+EKl5qOidEWIy7EXYFGXsezNZaJilObNUKLqIqMt3R2hK5tVdg3khF
+  uFIyVhCGGdYzFssCG/MbMoVJqrwXqaiXB4RAfUH42BX2mFBFMs/8WoyE0aKUjnRv
+  6CoNoIECgYEA4T8H5T2n8AxwETLNT7uvElu+rGd2PMusoCjeNMx3VcP5LO9TUgGk
+  iurmnmJE1g6772020s6C3aeUhXouDBdF57xQUvnEHdonT7rK7RUtcQsRn+MxyeLc
+  8NRyX5aaiw8oCJokWYuEjH4kUdfNd70iizR62T57mRu8kQF0EhLHmaECgYEA4omZ
+  WFlRQ+eJASJY81Dv68SjjkyNnf9vGTka6mCtWk/SWBj3uqSf066Afw0rdq6ablCS
+  eFLs3Hn8JrQj3Avwfwh7IGlqQfHG8mc1QmO+qCtavAIXE4oR7i9L/z17SRU5IJ74
+  g3jbYuObmJEep8E5Jn9D2TWcrNSf92oFZz+pDsUCgYAp0E+g6K8ySrzLFIk0kfzQ
+  BaQB0TsL0it7l9qYJpTIoRaylsL66D8pYq3pHQj2S8nrinSw8ZEtoJxbovDFYdSi
+  Tj0DCkaz2/mMPXrKRDIpWAqvibeGaMznECkjQYvy4J9n6WVyEgpLImePoeYMolm1
+  Scq8ZXMAWzvIF2L6r+3JwQKBgQC2DBG5F/3gbd6BlNKapf5IH3u4TPi5cZ4cTPG+
+  S/bDTsYgmd/qk4UFHYSRlUnKVEIySHmMTEegXj8t8zGmEcowq+YWg+AqIlvYTOxV
+  78Y1arG9yIg24YvLNyMBeKzsbCu+dUIMlUDoVTSjBGv4L6T3tOoXUagYk74Bm6e/
+  8z6uaQKBgH9HEoAUv/7xknhbKlp6mWqcBdUdcvy94OBSvdLVZ9KC0tDCBNipaItB
+  AY1mgkTrYL0tXILBVI5bOWPxbq/GIJcNHco8h4Ico4JrWfwttXtBcV0xeO2l7Mib
+  qxp6H5gu+zOnu4RBsEjOIYmFrA8uZO9Yh0Rz2acXF0UoYkO5a7Qx
+  -----END RSA PRIVATE KEY-----
+---
+schema: deckhand/PublicKey/v1
+metadata:
+  schema: metadata/Document/v1
+  name: sample
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data: |
+  -----BEGIN PUBLIC KEY-----
+  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8Hkst1CWZWKqgajnbWs4
+  3664mjwH0hCdNyC40OVjkbF3ypFZHQi9PECnmvb/VzhEd/aXvXhznxQzJJSMH5+R
+  5otRlq9aQ10bGAFQlCmFhMmz6wi2mU8e78z4O5fzC5JuRJkNGrD9o3zDYYvJLVzF
+  Jzr4E3tjEyTghpqJQ+jo5Z3uzDOHsfp7F6lc/qkuWxavcmHy9rbB3Rveg6iVdhrZ
+  Z2P77bqM+bBVISvBMT8aX05jV/qZi+Ms7tH/ayt4Td7YKb7EtS8QQlkcC39oHItj
+  6002+k8wscS5zwsfSTCpuFS8AXwNVO3wb4HaPVis911SXvT/xlTBwvdohbw8Mrdv
+  0wIDAQAB
+  -----END PUBLIC KEY-----
+---
+schema: deckhand/PrivateKey/v1
+metadata:
+  schema: metadata/Document/v1
+  name: sample
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data: |
+  -----BEGIN RSA PRIVATE KEY-----
+  MIIEpQIBAAKCAQEA8Hkst1CWZWKqgajnbWs43664mjwH0hCdNyC40OVjkbF3ypFZ
+  HQi9PECnmvb/VzhEd/aXvXhznxQzJJSMH5+R5otRlq9aQ10bGAFQlCmFhMmz6wi2
+  mU8e78z4O5fzC5JuRJkNGrD9o3zDYYvJLVzFJzr4E3tjEyTghpqJQ+jo5Z3uzDOH
+  sfp7F6lc/qkuWxavcmHy9rbB3Rveg6iVdhrZZ2P77bqM+bBVISvBMT8aX05jV/qZ
+  i+Ms7tH/ayt4Td7YKb7EtS8QQlkcC39oHItj6002+k8wscS5zwsfSTCpuFS8AXwN
+  VO3wb4HaPVis911SXvT/xlTBwvdohbw8Mrdv0wIDAQABAoIBACtv1/Hs7p21qtLs
+  7ZDIM2fEKbhCa684LQ3OLVQee1PP2LGQe6ZQ8820aBIH16urkEKTGmmxHkF35p0O
+  8BiuPC6Gr+AmIInWgZReeG2q6mFIBeXIlyMuNYpfXd913QMUGjLt6n4NxmMHoEs4
+  cshs33fsoO7z9Lt6h8wIkg7gPWFsQhDB+5YQJVP3ANlQKAkGD9G8cui1j6829qbC
+  GTq3LVDOhXVTukB56z9Vp3FB6SqNfwFyT9A9fD3R4gwWNE8OgqD21+Ip5VKft4q0
+  HLCE+yW4ndzC1thvsG41m6de4n/6SfPTVFaWI7rxIS8FvKyp2C1xrdj9FU/eT7PF
+  /DMru3ECgYEA/w2dkKEa/4mUpCvAFf2W/nXD9Pa4ANvfkpkSauAUkE197sDvZHPh
+  ONyoCBPmn7fjAEki+vl6w+zhlOXoDkjkvWTedww3SMgGjLZH/TbHF+yHC/iwxgsA
+  S7An7/Vemb+1xAgcG+CjkaBxFJdDo6nGBx7PcDok4Ow0ZSyvPpnAH88CgYEA8V20
+  GnGhWEKaAKf7920RH+3Gw3T6SmUhWrbMqY1SiRzBtxwSvz8XNw5NVyHmom85AnWI
+  qPCqfJJkrSuZeWOtjtJWqWp5whqAAzw5ou/DyPlfdPpsjqbMiuJsHntXBHKoLroS
+  Tg41eTYn/rFk1xSeaX+DCl1eqzscdulXYdPJzL0CgYEA2USr+MyExzJYIRHz68e+
+  nL2NVFvnmzOyXJtxCQIiAltA7+YDCDt+nIW7zkXFrEFlapTi65Eid0yPTdwbti96
+  S6xlplwNrD5Y9f1Bjf7f0w12bUhIriwo8FD7dHo9QBQDrx6Jc2YFcMSQD85bnEu/
+  mckxRJUDXWdZquZJ0rX+6BkCgYEAlsF2SsYKhrwiwKIryOFAvvafHVolMu5zpNtk
+  fcqdcLKbdCl+tCFN+L9gIzozeeWKcDTFRO/9LI2rgFYpKB7QOtK5+ltc7ZXruxmU
+  zmZ/nTnVG5WG1JruSxkdevSC525OCdGCuWo6kBj5ZiWa3JQuVaqlSIYFKWJkZwlb
+  4OiNtOkCgYEArSJNAuzsGgy+TCmd9pmuAUyBMMyDL93ywNtWJQ9FWpS+K73C/MXj
+  j6TWbLGm+9p5bIGgvwtVoWEjAEHzNM4caTtMq8hkwYmoSC53okg89QnasWznuu40
+  N2SE6Ki8SH8tgBH2ZnkrTNnaiS4pTEgAwA+I74U6fYHrcaxQhzAnsWE=
+  -----END RSA PRIVATE KEY-----
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  schema: metadata/Document/v1
+  name: sample
+  storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
+data: hunter2
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: deckhand/CertificateAuthority/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: deckhand/CertificateAuthorityKey/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: deckhand/Certificate/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: deckhand/CertificateKey/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: deckhand/PublicKey/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: deckhand/PrivateKey/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  schema: metadata/Control/v1
+  name: deckhand/Passphrase/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: string

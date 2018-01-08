@@ -1,0 +1,89 @@
+# Test success path for deckhand/**/v1 documents.
+#
+#  1. Purges existing data to ensure test isolation
+#  2. Put documents in a bucket.
+#  3. Verifies Certificate content
+#  4. Verifies Passphrase content
+#  5. Verifies schema validation
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/deckhand-owned-sample.yaml
+
+  - name: verify_certificate_content
+    desc: Verify Passphrase content
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=deckhand/Certificate/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data: |
+          -----BEGIN CERTIFICATE-----
+          MIID8jCCAtqgAwIBAgIUGBQX+WolO9GAclbqwB4/zgUKdLQwDQYJKoZIhvcNAQEL
+          BQAwKjETMBEGA1UEChMKS3ViZXJuZXRlczETMBEGA1UEAxMKa3ViZXJuZXRlczAe
+          Fw0xNzEyMjAyMTE5MDBaFw0xODEyMjAyMTE5MDBaMBQxEjAQBgNVBAMTCWFwaXNl
+          cnZlcjCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMdStqACFWPgaz3Z
+          lHN9JUgAgYzk4b0CXpQTuuW3ofb2om2mA625KrX5RzQekO/Qhm1qXcyeyjXXy5yD
+          i3W6nviQH/PEA+LIsVe43zs2NRcdMPVI3o5Tl8BbU2z70l6oQXFJH3PKCW9FLgNq
+          fSQc2AvUsxl04zi6z1b1Pbap6UOUqlBLgbO+zkN0e4uN5ls/8S9bY5Rt0yHccji2
+          dmBZ32hyqx0REETjJnbX7Ul6i6x1Gk7Uz4fPHczafnmALxQ9ucSq41e/UUxo2qLP
+          oqLVBE2ldQaJsM2mpZPCmMgjCqKFxu+cXRavNFuT39rPFBw8L3WBvN5bU+YSJP3I
+          SWhJBuUCAwEAAaOCASQwggEgMA4GA1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggr
+          BgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUr06Fp8vs
+          NQRhs57HGfIBzXBi9WYwHwYDVR0jBBgwFoAUyu9k70eyQ2kSTzohg/pEVakNXd4w
+          gaAGA1UdEQSBmDCBlYIKa3ViZXJuZXRlc4ISa3ViZXJuZXRlcy5kZWZhdWx0ghZr
+          dWJlcm5ldGVzLmRlZmF1bHQuc3ZjgiRrdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNs
+          dXN0ZXIubG9jYWyCCWxvY2FsaG9zdIIeYXBpc2VydmVyLmt1YmVybmV0ZXMucHJv
+          bWVuYWRlhwR/AAABhwQKYAABMA0GCSqGSIb3DQEBCwUAA4IBAQAvP0w60GHMxsKj
+          L49B2u34ti/C/IQPeM91Vkpasvv7d6bKX/HpCzgN19wjOYMVf+JGqlKB9Ur3Bl0K
+          VVUiuy2c/eBJUNGH9ZU/DiAoqMlVtBjVyE67YCX1rqnlxz2IkHN/UOxdl7tPT9bu
+          3FjXaVRUHCkuGceY5+BFUbCS/L5eEdzYpBe9EQG9ZY7CpHWxymPrbcsO1gBgYyIk
+          5JaMySBhx2B9M31VJFMH0zC1MSaqDUJdmnGe5S7ei9Qr/7KjAMF92QztlJqhZebS
+          NaDsb8ZqNACkX4by9ePv90c3RnqLwKchZP+PgrkWMK0aRdgNRoX9qFzJHmWmDa1C
+          Oc2+WoBP
+          -----END CERTIFICATE-----
+
+  - name: verify_passphrase_content
+    desc: Verify Passphrase content
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=deckhand/Passphrase/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data: hunter2
+
+  - name: verify_schema_is_valid
+    desc: Check schema validation of the added schema
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].results[*].status:
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success
+        - success

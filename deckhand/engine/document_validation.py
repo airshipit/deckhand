@@ -67,11 +67,23 @@ class DocumentValidation(object):
         """
 
         schema_versions_info = [
+            {'id': 'deckhand/CertificateAuthorityKey',
+             'schema': v1_0.certificate_authority_key_schema,
+             'version': '1.0'},
+            {'id': 'deckhand/CertificateAuthority',
+             'schema': v1_0.certificate_authority_schema,
+             'version': '1.0'},
             {'id': 'deckhand/CertificateKey',
              'schema': v1_0.certificate_key_schema,
              'version': '1.0'},
             {'id': 'deckhand/Certificate',
              'schema': v1_0.certificate_schema,
+             'version': '1.0'},
+            {'id': 'deckhand/PrivateKey',
+             'schema': v1_0.private_key_schema,
+             'version': '1.0'},
+            {'id': 'deckhand/PublicKey',
+             'schema': v1_0.public_key_schema,
              'version': '1.0'},
             {'id': 'deckhand/DataSchema',
              'schema': v1_0.data_schema_schema,

@@ -13,15 +13,25 @@
 # limitations under the License.
 
 DOCUMENT_SCHEMA_TYPES = (
+    CERTIFICATE_AUTHORITY_SCHEMA,
+    CERTIFICATE_KEY_AUTHORITY_SCHEMA,
     CERTIFICATE_SCHEMA,
     CERTIFICATE_KEY_SCHEMA,
+    PRIVATE_KEY_SCHEMA,
+    PUBLIC_KEY_SCHEMA,
+    PASSPHRASE_SCHEMA,
     DATA_SCHEMA_SCHEMA,
     LAYERING_POLICY_SCHEMA,
     PASSPHRASE_SCHEMA,
     VALIDATION_POLICY_SCHEMA,
 ) = (
+    'deckhand/CertificateAuthority',
+    'deckhand/CertificateAuthorityKey',
     'deckhand/Certificate',
     'deckhand/CertificateKey',
+    'deckhand/PrivateKey',
+    'deckhand/PublicKey',
+    'deckhand/Passphrase',
     'deckhand/DataSchema',
     'deckhand/LayeringPolicy',
     'deckhand/Passphrase',
@@ -30,12 +40,20 @@ DOCUMENT_SCHEMA_TYPES = (
 
 
 DOCUMENT_SECRET_TYPES = (
+    CERTIFICATE_AUTHORITY_SCHEMA,
+    CERTIFICATE_KEY_AUTHORITY_SCHEMA,
     CERTIFICATE_KEY_SCHEMA,
     CERTIFICATE_SCHEMA,
+    PRIVATE_KEY_SCHEMA,
+    PUBLIC_KEY_SCHEMA,
     PASSPHRASE_SCHEMA
 ) = (
+    'deckhand/CertificateAuthority',
+    'deckhand/CertificateAuthorityKey',
     'deckhand/Certificate',
     'deckhand/CertificateKey',
+    'deckhand/PrivateKey',
+    'deckhand/PublicKey',
     'deckhand/Passphrase'
 )
 
