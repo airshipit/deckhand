@@ -26,8 +26,15 @@ function cleanup {
         sudo docker stop $DECKHAND_ID
     fi
     rm -rf $CONF_DIR
-    kill %1
+
+    if [ -z "$DECKHAND_IMAGE" ]; then
+        # Kill all processes and child processes (for example, if workers > 1)
+        # if using uwsgi only.
+        PGID=$(ps -o comm -o pgid | grep uwsgi | grep -o [0-9]* | head -n 1)
+        setsid kill -- -$PGID
+    fi
 }
+
 
 trap cleanup EXIT
 
@@ -179,11 +186,15 @@ log_section Starting Deckhand image
 
 if [ -z "$DECKHAND_IMAGE" ]; then
     echo "Running Deckhand via uwsgi"
+
+    # Set --workers 2, so that concurrency is always tested.
     uwsgi \
     --http :9000 \
     -w deckhand.cmd \
     --callable deckhand_callable \
     --enable-threads \
+    --workers 2 \
+    --threads 1 \
     -L \
     --pyargv "--config-file $CONF_DIR/deckhand.conf" &> $STDOUT &
 else

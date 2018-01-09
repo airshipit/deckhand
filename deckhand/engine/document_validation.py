@@ -113,7 +113,7 @@ class DocumentValidation(object):
             been registered by external services via ``DataSchema`` documents.
             """
             data_schemas = db_api.document_get_all(
-                schema=types.DATA_SCHEMA_SCHEMA, revision_id='latest')
+                schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
 
             for data_schema in data_schemas:
                 if cls.schema_re.match(data_schema['metadata']['name']):
@@ -202,7 +202,7 @@ class DocumentValidation(object):
             jsonschema.validate(raw_dict, base_schema.schema)
         except jsonschema.exceptions.ValidationError as e:
             LOG.debug('Document failed top-level schema validation. Details: '
-                      '%s.', e.message)
+                      '%s', e.message)
             # NOTE(fmontei): Raise here because if we fail basic schema
             # validation, then there is no point in continuing.
             raise errors.InvalidDocumentFormat(
@@ -228,7 +228,8 @@ class DocumentValidation(object):
         # ignored.
         if document.is_abstract():
             LOG.info('Skipping schema validation for abstract '
-                     'document: %s.', raw_dict)
+                     'document: [%s] %s.', document.get_schema(),
+                                           document.get_name())
         else:
 
             for schema_to_use in schemas_to_use:
