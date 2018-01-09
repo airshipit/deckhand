@@ -26,7 +26,6 @@ function cleanup {
         sudo docker stop $DECKHAND_ID
     fi
     rm -rf $CONF_DIR
-    rm -f $LOGFILE
     kill %1
 }
 
@@ -63,15 +62,60 @@ function gen_config {
 
     cp etc/deckhand/logging.conf.sample $CONF_DIR/logging.conf
 
-# NOTE: allow_anonymous_access allows these functional tests to get around
-# Keystone authentication, but the context that is provided has zero privileges
-# so we must also override the policy file for authorization to pass.
+# Create a logging config file to dump everything to stdout/stderr.
+cat <<EOCONF > $CONF_DIR/logging.conf
+[loggers]
+keys = root, deckhand
+
+[handlers]
+keys = null, stderr, stdout
+
+[formatters]
+keys = simple, context
+
+[logger_deckhand]
+level = DEBUG
+handlers = stdout
+qualname = deckhand
+
+[logger_root]
+level = WARNING
+handlers = null
+
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = context
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
+formatter = context
+
+[handler_null]
+class = logging.NullHandler
+formatter = context
+args = ()
+
+[formatter_context]
+class = oslo_log.formatters.ContextFormatter
+
+[formatter_simple]
+format=%(asctime)s.%(msecs)03d %(process)d %(levelname)s: %(message)s
+EOCONF
+
+# Create a Deckhand config file with bare minimum options.
 cat <<EOCONF > $CONF_DIR/deckhand.conf
 [DEFAULT]
 debug = true
-log_file = deckhand.log
-log_dir = .
+# NOTE: Use the location of this file inside the mounted volume in the
+# container.
+log_config_append = /etc/deckhand/logging.conf
+publish_errors = true
 use_stderr = true
+# NOTE: allow_anonymous_access allows these functional tests to get around
+# Keystone authentication, but the context that is provided has zero privileges
+# so we must also override the policy file for authorization to pass.
 allow_anonymous_access = true
 
 [oslo_policy]
@@ -97,8 +141,10 @@ EOCONF
     echo $CONF_DIR/deckhand.conf 1>&2
     cat $CONF_DIR/deckhand.conf 1>&2
 
+    echo $CONF_DIR/logging.conf 1>&2
+    cat $CONF_DIR/logging.conf 1>&2
+
     log_section Starting server
-    rm -f deckhand.log
 }
 
 function gen_paste {
@@ -139,7 +185,7 @@ if [ -z "$DECKHAND_IMAGE" ]; then
     --callable deckhand_callable \
     --enable-threads \
     -L \
-    --pyargv "--config-file $CONF_DIR/deckhand.conf" &
+    --pyargv "--config-file $CONF_DIR/deckhand.conf" &> $STDOUT &
 else
     echo "Running Deckhand via Docker"
     sudo docker run \
@@ -179,7 +225,6 @@ if [ "x$TEST_STATUS" = "x0" ]; then
     log_section Done SUCCESS
 else
     log_section Deckhand Server Log
-    cat deckhand.log
     cat $STDOUT
     log_section Done FAILURE
     exit $TEST_STATUS
