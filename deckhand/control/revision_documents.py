@@ -61,7 +61,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
         filters['deleted'] = False  # Never return deleted documents to user.
 
         try:
-            documents = db_api.revision_get_documents(
+            documents = db_api.revision_documents_get(
                 revision_id, **filters)
         except errors.RevisionNotFound as e:
             LOG.exception(six.text_type(e))
@@ -106,7 +106,6 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         documents = self._retrieve_documents_for_rendering(revision_id,
                                                            **filters)
-
         try:
             document_layering = layering.DocumentLayering(documents)
             rendered_documents = document_layering.render()
@@ -123,7 +122,6 @@ class RenderedDocumentsResource(api_base.BaseResource):
         # documents have been rendered.
         order_by = sanitized_params.pop('order', None)
         sort_by = sanitized_params.pop('sort', None)
-
         user_filters = sanitized_params.copy()
         user_filters['metadata.layeringDefinition.abstract'] = False
 
@@ -145,7 +143,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
         call and add it to the list of documents.
         """
         try:
-            documents = db_api.revision_get_documents(revision_id, **filters)
+            documents = db_api.revision_documents_get(revision_id, **filters)
         except errors.RevisionNotFound as e:
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())

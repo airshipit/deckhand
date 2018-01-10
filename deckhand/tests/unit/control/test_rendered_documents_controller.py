@@ -20,7 +20,6 @@ from deckhand.control import buckets
 from deckhand.control import revision_documents
 from deckhand import errors
 from deckhand import factories
-from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
 from deckhand import types
 
@@ -122,32 +121,75 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
         self.assertEqual(2, rendered_documents[0]['status']['revision'])
 
     def test_list_rendered_documents_multiple_buckets(self):
+        """Validates that only the documents from the most recent revision
+        for each bucket in the DB are used for layering.
+        """
         rules = {'deckhand:list_cleartext_documents': '@',
                  'deckhand:list_encrypted_documents': '@',
                  'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
 
-        documents_factory = factories.DocumentFactory(1, [1])
+        bucket_names = ['first', 'first', 'second', 'second']
 
-        for idx in range(2):
-            payload = documents_factory.gen_test({})
-            if idx == 0:
-                # Pop off the first entry so that a conflicting layering
-                # policy isn't created during the 1st iteration.
-                payload.pop(0)
+        # Create 2 documents for each revision. (1 `LayeringPolicy` is created
+        # during the very 1st revision). Total = 9.
+        for x in range(4):
+            bucket_name = bucket_names[x]
+            documents_factory = factories.DocumentFactory(2, [1, 1])
+            payload = documents_factory.gen_test({}, global_abstract=False,
+                                                 site_abstract=False)
+            # Fix up the labels so that each document has a unique parent to
+            # avoid layering errors.
+            payload[-2]['metadata']['labels'] = {
+                'global': bucket_name
+            }
+            payload[-1]['metadata']['layeringDefinition']['parentSelector'] = {
+                'global': bucket_name
+            }
+
+            if x > 0:
+                payload = payload[1:]
             resp = self.app.simulate_put(
-                '/api/v1.0/buckets/%s/documents' % test_utils.rand_name(
-                    'bucket'),
+                '/api/v1.0/buckets/%s/documents' % bucket_name,
                 headers={'Content-Type': 'application/x-yaml'},
                 body=yaml.safe_dump_all(payload))
             self.assertEqual(200, resp.status_code)
         revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
             'revision']
 
+        # Although 9 documents have been created, 4 of those documents are
+        # stale: they were created in older revisions, so expect 5 documents.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
+
+        documents = list(yaml.safe_load_all(resp.text))
+        documents = sorted(documents, key=lambda x: x['status']['bucket'])
+
+        # Validate that the LayeringPolicy was returned, then remove it
+        # from documents to validate the rest of them.
+        layering_policies = [
+            d for d in documents
+            if d['schema'].startswith(types.LAYERING_POLICY_SCHEMA)
+        ]
+        self.assertEqual(1, len(layering_policies))
+        documents.remove(layering_policies[0])
+
+        first_revision_ids = [d['status']['revision'] for d in documents
+                              if d['status']['bucket'] == 'first']
+        second_revision_ids = [d['status']['revision'] for d in documents
+                               if d['status']['bucket'] == 'second']
+
+        # Validate correct number of documents, the revision and bucket for
+        # each document.
+        self.assertEqual(4, len(documents))
+        self.assertEqual(['first', 'first', 'second', 'second'],
+                         [d['status']['bucket'] for d in documents])
+        self.assertEqual(2, len(first_revision_ids))
+        self.assertEqual(2, len(second_revision_ids))
+        self.assertEqual([2, 2], first_revision_ids)
+        self.assertEqual([4, 4], second_revision_ids)
 
 
 class TestRenderedDocumentsControllerNegative(

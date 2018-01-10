@@ -94,7 +94,7 @@ class TestDbBase(base.DeckhandWithDBTestCase):
         return db_api.revision_delete_all()
 
     def list_revision_documents(self, revision_id, **filters):
-        documents = db_api.revision_get_documents(revision_id, **filters)
+        documents = db_api.revision_documents_get(revision_id, **filters)
         for document in documents:
             self.validate_document(document)
         return documents

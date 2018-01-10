@@ -133,7 +133,7 @@ def require_unique_document_schema(schema=None):
 
         @functools.wraps(f)
         def wrapper(bucket_name, documents, *args, **kwargs):
-            existing_documents = revision_get_documents(
+            existing_documents = revision_documents_get(
                 schema=schema, deleted=False, include_history=False)
             existing_document_names = [x['name'] for x in existing_documents]
             conflicting_names = [
@@ -176,7 +176,7 @@ def documents_create(bucket_name, documents, validations=None,
     # the previous revision (if it exists) that belong to `bucket_name` with
     # `documents`: the difference between the former and the latter.
     document_history = [(d['schema'], d['name'])
-                        for d in revision_get_documents(
+                        for d in revision_documents_get(
                             bucket_name=bucket_name)]
     documents_to_delete = [
         h for h in document_history if h not in
@@ -626,7 +626,7 @@ def _filter_revision_documents(documents, unique_only, **filters):
 
 
 @require_revision_exists
-def revision_get_documents(revision_id=None, include_history=True,
+def revision_documents_get(revision_id=None, include_history=True,
                            unique_only=True, session=None, **filters):
     """Return the documents that match filters for the specified `revision_id`.
 
@@ -656,19 +656,17 @@ def revision_get_documents(revision_id=None, include_history=True,
                 .order_by(models.Revision.created_at.desc())\
                 .first()
 
-        revision_documents = (revision.to_dict()['documents']
-                              if revision else [])
-
-        if include_history and revision:
-            older_revisions = session.query(models.Revision)\
-                .filter(models.Revision.created_at < revision.created_at)\
-                .order_by(models.Revision.created_at)\
-                .all()
-
-            # Include documents from older revisions in response body.
-            for older_revision in older_revisions:
-                revision_documents.extend(
-                    older_revision.to_dict()['documents'])
+        if revision:
+            revision_documents = revision.to_dict()['documents']
+            if include_history:
+                relevant_revisions = session.query(models.Revision)\
+                    .filter(models.Revision.created_at < revision.created_at)\
+                    .order_by(models.Revision.created_at)\
+                    .all()
+                # Include documents from older revisions in response body.
+                for relevant_revision in relevant_revisions:
+                    revision_documents.extend(
+                        relevant_revision.to_dict()['documents'])
     except sa_orm.exc.NoResultFound:
         raise errors.RevisionNotFound(revision=revision_id)
 
@@ -681,7 +679,7 @@ def revision_get_documents(revision_id=None, include_history=True,
 
 
 # NOTE(fmontei): No need to include `@require_revision_exists` decorator as
-# the this function immediately calls `revision_get_documents` for both
+# the this function immediately calls `revision_documents_get` for both
 # revision IDs, which has the decorator applied to it.
 def revision_diff(revision_id, comparison_revision_id):
     """Generate the diff between two revisions.
@@ -730,11 +728,11 @@ def revision_diff(revision_id, comparison_revision_id):
     """
     # Retrieve document history for each revision. Since `revision_id` of 0
     # doesn't exist, treat it as a special case: empty list.
-    docs = (revision_get_documents(revision_id,
+    docs = (revision_documents_get(revision_id,
                                    include_history=True,
                                    unique_only=False)
             if revision_id != 0 else [])
-    comparison_docs = (revision_get_documents(comparison_revision_id,
+    comparison_docs = (revision_documents_get(comparison_revision_id,
                                               include_history=True,
                                               unique_only=False)
                        if comparison_revision_id != 0 else [])
