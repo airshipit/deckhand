@@ -216,7 +216,6 @@ conf:
   deckhand:
     DEFAULT:
       debug: true
-      log_file: deckhand.log
       use_stderr: true
       use_syslog: true
     database:
@@ -232,27 +231,34 @@ conf:
       policy_dirs: policy.d
   logging:
     loggers:
-      keys: 'root, deckhand'
+      keys: 'root, deckhand, error'
     handlers:
-      keys: 'file, null, syslog'
+      keys: 'null, stderr, stdout, syslog'
     formatters:
       keys: 'simple, context'
     logger_deckhand:
       level: DEBUG
-      handlers: file
+      handlers: stdout
+      qualname: deckhand
+    logger_error:
+      level: ERROR
+      handlers: stderr
       qualname: deckhand
     logger_root:
       level: WARNING
       handlers: null
-    handler_file:
-      class: FileHandler
-      level: DEBUG
-      args: "('deckhand.log', 'w+')"
-      formatter: context
     handler_null:
       class: 'logging.NullHandler'
       formatter: context
       args: '()'
+    handler_stderr:
+      class: StreamHandler
+      args: '(sys.stderr,)'
+      formatter: context
+    handler_stdout:
+      class: StreamHandler
+      args: '(sys.stdout,)'
+      formatter: context
     handler_syslog:
       class: 'handlers.SysLogHandler'
       level: ERROR
