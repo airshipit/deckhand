@@ -2,8 +2,10 @@
 Deckhand
 ========
 
-Deckhand is a document-based configuration storage service built with
-auditability and validation in mind.
+Deckhand is a storage service for YAML-based configuration documents, which are
+managed through version control and automatically validated. Deckhand provides
+users with a variety of different document types that describe complex
+configurations using the features listed below.
 
 Core Responsibilities
 =====================
