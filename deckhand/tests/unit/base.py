@@ -105,8 +105,10 @@ class DeckhandWithDBTestCase(DeckhandTestCase):
 
     def setUp(self):
         super(DeckhandWithDBTestCase, self).setUp()
+        if 'PIFPAF_URL' not in os.environ:
+            raise RuntimeError('Unit tests must be run using `pifpaf run '
+                               'postgresql`.')
         self.override_config(
-            'connection', os.environ.get('DATABASE_URL', 'sqlite://'),
-            group='database')
+            'connection', os.environ['PIFPAF_URL'], group='database')
         db_api.setup_db()
         self.addCleanup(db_api.drop_db)

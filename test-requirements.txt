@@ -16,6 +16,7 @@ testtools>=1.4.0 # MIT
 bandit>=1.1.0 # Apache-2.0
 gabbi==1.35.1
 pytest-html==1.16.0
+pifpaf==2.0.0
 
 # NOTE(fmontei): The requirement below is only included because readthedocs
 # depends on it to work, since it runs pip install -rtest-requirements.txt.
