@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# Script intended for running Deckhand functional tests via gabbi. Requires
+# Docker CE (at least) to run.
+
 # Meant for capturing output of Deckhand image. This requires that logging
 # in the image be set up to pipe everything out to stdout/stderr.
 STDOUT=$(mktemp)
