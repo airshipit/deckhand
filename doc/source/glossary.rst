@@ -29,7 +29,8 @@ B
 
    bucket
 
-      Kind of like a Github repository, an ownership class for documents.
+      A bucket manages collections of documents together, providing write
+      protections around them.
 
 D
 ~

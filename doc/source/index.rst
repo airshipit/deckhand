@@ -38,9 +38,9 @@ User's Guide
 .. toctree::
    :maxdepth: 2
 
+   overview
    documents
    document_types
-   buckets
    validation
    substitution
    layering
