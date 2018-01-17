@@ -18,6 +18,8 @@ set -ex
 
 # Define port
 PORT=${PORT:-9000}
+# How long uWSGI should wait for each deckhand response
+DECKHAND_API_TIMEOUT=${DECKHAND_API_TIMEOUT:-"600"}
 # Number of uWSGI workers to handle API requests
 DECKHAND_API_WORKERS=${DECKHAND_API_WORKERS:-"4"}
 # Threads per worker
@@ -28,6 +30,7 @@ exec uwsgi \
     --http :${PORT} \
     -w deckhand.cmd \
     --callable deckhand_callable \
+    --http-timeout $DECKHAND_API_TIMEOUT \
     --enable-threads \
     -L \
     --pyargv "--config-file /etc/deckhand/deckhand.conf" \
