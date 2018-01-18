@@ -43,16 +43,22 @@ class Document(object):
             return False
 
     def get_schema(self):
-        return self._inner['schema']
+        try:
+            return self._inner['schema']
+        except Exception:
+            return ''
 
     def get_name(self):
-        return self._inner['metadata']['name']
+        try:
+            return self._inner['metadata']['name']
+        except Exception:
+            return ''
 
     def get_layer(self):
         try:
             return self._inner['metadata']['layeringDefinition']['layer']
         except Exception:
-            return None
+            return ''
 
     def get_parent_selector(self):
         """Return the `parentSelector` for the document.
@@ -60,24 +66,27 @@ class Document(object):
         The topmost document defined by the `layerOrder` in the LayeringPolicy
         does not have a `parentSelector` as it has no parent.
 
-        :returns: `parentSelcetor` for the document if present, else None.
+        :returns: `parentSelector` for the document if present, else None.
         """
         try:
             return self._inner['metadata']['layeringDefinition'][
                 'parentSelector']
-        except KeyError:
-            return None
+        except Exception:
+            return {}
 
     def get_labels(self):
         return self._inner['metadata']['labels']
 
     def get_substitutions(self):
-        return self._inner['metadata'].get('substitutions', None)
+        try:
+            return self._inner['metadata'].get('substitutions', [])
+        except Exception:
+            return []
 
     def get_actions(self):
         try:
             return self._inner['metadata']['layeringDefinition']['actions']
-        except KeyError:
+        except Exception:
             return []
 
     def get_children(self, nested=False):
