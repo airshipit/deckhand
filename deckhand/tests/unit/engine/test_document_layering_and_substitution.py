@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
-
-from deckhand.engine import secrets_manager
 from deckhand import factories
 from deckhand.tests.unit.engine import test_document_layering
 
@@ -51,14 +48,9 @@ class TestDocumentLayeringWithSubstitution(
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 'global-secret'}
         site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4, 'c': 'global-secret'}
 
-        with mock.patch.object(
-                secrets_manager.db_api, 'document_get',
-                return_value=certificate, autospec=True) as mock_document_get:
-            self._test_layering(documents, site_expected=site_expected,
-                                global_expected=global_expected)
-        mock_document_get.assert_called_once_with(
-            schema=certificate['schema'], name=certificate['metadata']['name'],
-            **{'metadata.layeringDefinition.abstract': False})
+        self._test_layering(documents, site_expected=site_expected,
+                            global_expected=global_expected,
+                            substitution_sources=[certificate])
 
     def test_layering_and_substitution_no_children(self):
         mapping = {
@@ -90,14 +82,9 @@ class TestDocumentLayeringWithSubstitution(
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 'global-secret'}
         site_expected = {'b': 4}
 
-        with mock.patch.object(
-                secrets_manager.db_api, 'document_get',
-                return_value=certificate, autospec=True) as mock_document_get:
-            self._test_layering(documents, site_expected=site_expected,
-                                global_expected=global_expected)
-        mock_document_get.assert_called_once_with(
-            schema=certificate['schema'], name=certificate['metadata']['name'],
-            **{'metadata.layeringDefinition.abstract': False})
+        self._test_layering(documents, site_expected=site_expected,
+                            global_expected=global_expected,
+                            substitution_sources=[certificate])
 
     def test_layering_parent_and_child_undergo_substitution(self):
         mapping = {
@@ -136,24 +123,14 @@ class TestDocumentLayeringWithSubstitution(
         site_expected = {'a': {'x': 1, 'y': 2}, 'b': 'global-secret',
                          'c': 'site-secret'}
 
-        def _get_secret_document(*args, **kwargs):
-            name = kwargs['name']
-            prefix = name.split('-')[0]
-            return secrets_factory.gen_test(
-                'Certificate', 'cleartext', data='%s-secret' % prefix,
-                name='%s' % name)
+        certificate = secrets_factory.gen_test(
+            'Certificate', 'cleartext', data='global-secret',
+            name='global-cert')
+        certificate_key = secrets_factory.gen_test(
+            'CertificateKey', 'cleartext', data='site-secret',
+            name='site-cert')
 
-        with mock.patch.object(
-                secrets_manager.db_api, 'document_get',
-                autospec=True) as mock_document_get:
-            mock_document_get.side_effect = _get_secret_document
-            self._test_layering(documents, site_expected=site_expected,
-                                global_expected=global_expected)
-        mock_document_get.assert_has_calls([
-            mock.call(
-                schema="deckhand/Certificate/v1", name='global-cert',
-                **{'metadata.layeringDefinition.abstract': False}),
-            mock.call(
-                schema="deckhand/CertificateKey/v1", name='site-cert',
-                **{'metadata.layeringDefinition.abstract': False})
-        ])
+        self._test_layering(
+            documents, site_expected=site_expected,
+            global_expected=global_expected,
+            substitution_sources=[certificate, certificate_key])

@@ -243,12 +243,12 @@ class Client(object):
 
     @property
     def projectid(self):
-        self.logger.warning(_("Property 'projectid' is deprecated since "
-                              "Ocata. Use 'project_name' instead."))
+        self.logger.warning("Property 'projectid' is deprecated since "
+                            "Ocata. Use 'project_name' instead.")
         return self.project_name
 
     @property
     def tenant_id(self):
-        self.logger.warning(_("Property 'tenant_id' is deprecated since "
-                              "Ocata. Use 'project_id' instead."))
+        self.logger.warning("Property 'tenant_id' is deprecated since "
+                            "Ocata. Use 'project_id' instead.")
         return self.project_id

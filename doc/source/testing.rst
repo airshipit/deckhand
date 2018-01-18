@@ -17,6 +17,11 @@
 Testing
 =======
 
+.. warning::
+
+  Deckhand has only been tested against a Ubuntu 16.04 environment. The guide
+  below assumes the user is using Ubuntu.
+
 Unit testing
 ============
 
@@ -27,13 +32,18 @@ Prerequisites
 postgresql database for unit tests. The DB URL is set up as an environment
 variable via ``PIFPAF_URL`` which is referenced by Deckhand's unit test suite.
 
-When running `pifpaf run postgresql` (implicitly called by unit tests below),
-pifpaf uses `pg_config` which can be installed on Ubuntu via::
+#. PostgreSQL must be installed. To do so, run::
 
-  sudo apt-get install libpq-dev -y
+     $ sudo apt-get update
+     $ sudo apt-get install postgresql postgresql-contrib -y
 
-Guide
------
+#. When running ``pifpaf run postgresql`` (implicitly called by unit tests below),
+   pifpaf uses ``pg_config`` which can be installed by running::
+
+     $ sudo apt-get install libpq-dev -y
+
+Overview
+--------
 
 Unit testing currently uses an in-memory sqlite database. Since Deckhand's
 primary function is to serve as the back-end storage for UCP, the majority
@@ -143,3 +153,24 @@ Which will result in the following script output:
   For testing dev changes, it is **not** recommended to follow this approach,
   as the most up-to-date code is located in the repository itself. Running tests
   against a remote image will likely result in false positives.
+
+Troubleshooting
+===============
+
+* For any errors related to ``tox``:
+
+  Ensure that ``tox`` is installed::
+
+    $ sudo apt-get install tox -y
+
+* For any errors related to running ``tox -e py27``:
+
+  Ensure that ``python-dev`` is installed::
+
+    $ sudo apt-get install python-dev -y
+
+* For any errors related to running ``tox -e py35``:
+
+  Ensure that ``python3-dev`` is installed::
+
+    $ sudo apt-get install python3-dev -y

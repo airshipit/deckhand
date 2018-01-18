@@ -30,10 +30,6 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
         self.dataschema = dataschema_factory.gen_test(
             self.test_document['schema'], {})
 
-        # Stub out the DB call for retrieving DataSchema documents.
-        self.patchobject(document_validation.db_api, 'revision_documents_get',
-                         lambda *a, **k: [])
-
     def test_data_schema_missing_optional_sections(self):
         optional_missing_data = [
             self._corrupt_data(self.test_document, 'metadata.labels'),

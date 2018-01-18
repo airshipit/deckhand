@@ -16,7 +16,6 @@ from oslo_log import log as logging
 import six
 
 from deckhand.barbican import driver
-from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import document as document_wrapper
 from deckhand import errors
 from deckhand import utils
@@ -98,24 +97,32 @@ class SecretsManager(object):
 class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
-    def __init__(self, documents):
+    def __init__(self, documents, substitution_sources=None):
         """SecretSubstitution constructor.
 
-        :param documents: List of documents that are candidates for secret
-            substitution. This class will automatically detect documents that
-            require substitution; documents need not be filtered prior to being
-            passed to the constructor.
+        This class will automatically detect documents that require
+        substitution; documents need not be filtered prior to being passed to
+        the constructor.
+
+        :param documents: List of documents that are candidates for
+            substitution.
+        :type documents: List[dict]
+        :param substitution_sources: List of documents that are potential
+            sources for substitution. Should only include concrete documents.
+        :type substitution_sources: List[dict]
         """
         if not isinstance(documents, (list, tuple)):
             documents = [documents]
 
-        self.docs_to_sub = []
+        self.substitution_documents = []
+        self.substitution_sources = substitution_sources or []
 
         for document in documents:
             if not isinstance(document, document_wrapper.Document):
                 document_obj = document_wrapper.Document(document)
+                # If the document has substitutions include it.
                 if document_obj.get_substitutions():
-                    self.docs_to_sub.append(document_obj)
+                    self.substitution_documents.append(document_obj)
 
     def substitute_all(self):
         """Substitute all documents that have a `metadata.substitutions` field.
@@ -128,10 +135,10 @@ class SecretsSubstitution(object):
         :returns: List of fully substituted documents.
         """
         LOG.debug('Substituting secrets for documents: %s',
-                  self.docs_to_sub)
+                  self.substitution_documents)
         substituted_docs = []
 
-        for doc in self.docs_to_sub:
+        for doc in self.substitution_documents:
             LOG.debug(
                 'Checking for substitutions in schema=%s, metadata.name=%s',
                 doc.get_name(), doc.get_schema())
@@ -140,11 +147,13 @@ class SecretsSubstitution(object):
                 src_name = sub['src']['name']
                 src_path = sub['src']['path']
 
-                # TODO(fmontei): Use SecretsManager for this logic. Need to
-                # check Barbican for the secret if it has been encrypted.
-                src_doc = db_api.document_get(
-                    schema=src_schema, name=src_name,
-                    **{'metadata.layeringDefinition.abstract': False})
+                is_match = (lambda x: x['schema'] == src_schema and
+                                      x['metadata']['name'] == src_name)
+                try:
+                    src_doc = next(
+                        iter(filter(is_match, self.substitution_sources)))
+                except StopIteration:
+                    src_doc = {}
 
                 # If the data is a dictionary, retrieve the nested secret
                 # via jsonpath_parse, else the secret is the primitive/string
@@ -153,7 +162,7 @@ class SecretsSubstitution(object):
                     src_secret = utils.jsonpath_parse(src_doc.get('data', {}),
                                                       src_path)
                 else:
-                    src_secret = src_doc['data']
+                    src_secret = src_doc.get('data')
 
                 dest_path = sub['dest']['path']
                 dest_pattern = sub['dest'].get('pattern', None)
