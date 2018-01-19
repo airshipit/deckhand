@@ -53,8 +53,7 @@ class BucketsResource(api_base.BaseResource):
         try:
             doc_validator = document_validation.DocumentValidation(documents)
             validations = doc_validator.validate_all()
-        except (deckhand_errors.InvalidDocumentFormat,
-                deckhand_errors.InvalidDocumentSchema) as e:
+        except deckhand_errors.InvalidDocumentFormat as e:
             LOG.exception(e.format_message())
             raise falcon.HTTPBadRequest(description=e.format_message())
 

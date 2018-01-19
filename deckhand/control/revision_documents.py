@@ -170,8 +170,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
         doc_validator = document_validation.DocumentValidation(documents)
         try:
             doc_validator.validate_all()
-        except (errors.InvalidDocumentFormat,
-                errors.InvalidDocumentSchema) as e:
+        except errors.InvalidDocumentFormat as e:
             LOG.error('Failed to post-validate rendered documents.')
             LOG.exception(e.format_message())
             raise falcon.HTTPInternalServerError(

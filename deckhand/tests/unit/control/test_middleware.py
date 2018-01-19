@@ -16,6 +16,7 @@ import yaml
 
 import mock
 
+from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
 
 
@@ -24,11 +25,14 @@ class TestYAMLTranslator(test_base.BaseControllerTest):
     def test_request_with_correct_content_type(self):
         rules = {'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
-        self._read_data('sample_document_simple')
+
+        documents_factory = factories.DocumentFactory(1, [1])
+        document = documents_factory.gen_test({})[-1]
+
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/b1/documents',
             headers={'Content-Type': 'application/x-yaml'},
-            body=yaml.safe_dump(self.data),
+            body=yaml.safe_dump(document),
         )
         self.assertEqual(200, resp.status_code)
 
@@ -84,11 +88,14 @@ class TestYAMLTranslator(test_base.BaseControllerTest):
     def test_request_with_correct_content_type_plus_encoding(self):
         rules = {'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
-        self._read_data('sample_document_simple')
+
+        documents_factory = factories.DocumentFactory(1, [1])
+        document = documents_factory.gen_test({})[-1]
+
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/b1/documents',
             headers={'Content-Type': 'application/x-yaml;encoding=utf-8'},
-            body=yaml.safe_dump(self.data),
+            body=yaml.safe_dump(document),
         )
         self.assertEqual(200, resp.status_code)
 

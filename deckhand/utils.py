@@ -181,7 +181,7 @@ def _add_microversion(value):
     """Hack for coercing all Deckhand schema fields (``schema`` and
     ``metadata.schema``) into ending with v1.0 rather than v1, for example.
     """
-    microversion_re = r'^.*/.*/v[0-9]+$'
+    microversion_re = r'^.*/.*/v[1-9]\d*$'
     if re.match(value, microversion_re):
         return value + '.0'
     return value

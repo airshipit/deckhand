@@ -36,7 +36,6 @@ tests:
     status: 204
     response_headers: null
 
-    # Create a revision implicitly by creating a document.
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
@@ -76,7 +75,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.`len`: 1
+      $.[0].results.`len`: 1
       $.[0].results[0].tags.`len`: 1
       $.[0].results[0].tags: [foo]
 
@@ -124,7 +123,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.`len`: 1
+      $.[0].results.`len`: 1
       $.[0].results[0].tags.`len`: 2
       $.[0].results[0].tags: [bar, foo]
 
@@ -162,7 +161,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.`len`: 1
+      $.[0].results.`len`: 1
       $.[0].results[0].tags.`len`: 1
       $.[0].results[0].tags: [bar]
 
@@ -185,7 +184,7 @@ tests:
     GET: /api/v1.0/revisions
     status: 200
     response_multidoc_jsonpaths:
-      $.`len`: 1
+      $.[0].results.`len`: 1
       $.[0].results[0].tags: []
 
   - name: verify_tag_delete_all

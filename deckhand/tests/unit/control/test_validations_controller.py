@@ -59,8 +59,13 @@ class TestValidationsController(test_base.BaseControllerTest):
 
     def _create_revision(self, payload=None):
         if not payload:
-            documents_factory = factories.DocumentFactory(2, [1, 1])
+            documents_factory = factories.DocumentFactory(1, [1])
             payload = documents_factory.gen_test({})
+            data_schema_factory = factories.DataSchemaFactory()
+            data_schema = data_schema_factory.gen_test(
+                payload[1]['schema'], data={})
+            payload.append(data_schema)
+
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
@@ -339,7 +344,7 @@ class TestValidationsController(test_base.BaseControllerTest):
                  'deckhand:list_validations': '@'}
         self.policy.set_rules(rules)
 
-        # Register a `DataSchema` against which the test document will be
+        # Create a `DataSchema` against which the test document will be
         # validated.
         data_schema_factory = factories.DataSchemaFactory()
         metadata_name = 'example/Doc/v1'
@@ -357,22 +362,6 @@ class TestValidationsController(test_base.BaseControllerTest):
         data_schema = data_schema_factory.gen_test(
             metadata_name, data=schema_to_use)
 
-        revision_id = self._create_revision(payload=[data_schema])
-
-        # Validate that the internal deckhand validation was created.
-        resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id,
-            headers={'Content-Type': 'application/x-yaml'})
-        self.assertEqual(200, resp.status_code)
-        body = yaml.safe_load(resp.text)
-        expected_body = {
-            'count': 1,
-            'results': [
-                {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'success'}
-            ]
-        }
-        self.assertEqual(expected_body, body)
-
         # Create the test document whose data section adheres to the
         # `DataSchema` above.
         doc_factory = factories.DocumentFactory(1, [1])
@@ -381,10 +370,9 @@ class TestValidationsController(test_base.BaseControllerTest):
             global_abstract=False)[-1]
         doc_to_test['schema'] = 'example/Doc/v1'
 
-        revision_id = self._create_revision(
-            payload=[doc_to_test])
+        revision_id = self._create_revision(payload=[doc_to_test, data_schema])
 
-        # Validate that the validation was created and passed.
+        # Validate that the validation was created and succeeded.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations' % revision_id,
             headers={'Content-Type': 'application/x-yaml'})
@@ -398,12 +386,16 @@ class TestValidationsController(test_base.BaseControllerTest):
         }
         self.assertEqual(expected_body, body)
 
-    def test_validation_with_registered_data_schema_expect_failure(self):
+    def test_validation_data_schema_different_revision_expect_failure(self):
+        """Validates that creating a ``DataSchema`` in one revision and then
+        creating a document in another revision that relies on the previously
+        created ``DataSchema`` results in an expected failure.
+        """
         rules = {'deckhand:create_cleartext_documents': '@',
                  'deckhand:list_validations': '@'}
         self.policy.set_rules(rules)
 
-        # Register a `DataSchema` against which the test document will be
+        # Create a `DataSchema` against which the test document will be
         # validated.
         data_schema_factory = factories.DataSchemaFactory()
         metadata_name = 'example/foo/v1'
@@ -419,7 +411,6 @@ class TestValidationsController(test_base.BaseControllerTest):
         }
         data_schema = data_schema_factory.gen_test(
             metadata_name, data=schema_to_use)
-
         revision_id = self._create_revision(payload=[data_schema])
 
         # Validate that the internal deckhand validation was created.
@@ -461,13 +452,15 @@ class TestValidationsController(test_base.BaseControllerTest):
         }
         self.assertEqual(expected_body, body)
 
-    def test_validation_with_registered_data_schema_expect_mixed(self):
+    def test_validation_data_schema_same_revision_expect_failure(self):
+        """Validates that creating a ``DataSchema`` alongside a document
+        that relies on it in the same revision results in an expected failure.
+        """
         rules = {'deckhand:create_cleartext_documents': '@',
-                 'deckhand:list_validations': '@',
-                 'deckhand:show_validation': '@'}
+                 'deckhand:list_validations': '@'}
         self.policy.set_rules(rules)
 
-        # Register a `DataSchema` against which the test document will be
+        # Create a `DataSchema` against which the test document will be
         # validated.
         data_schema_factory = factories.DataSchemaFactory()
         metadata_name = 'example/foo/v1'
@@ -484,9 +477,18 @@ class TestValidationsController(test_base.BaseControllerTest):
         data_schema = data_schema_factory.gen_test(
             metadata_name, data=schema_to_use)
 
-        revision_id = self._create_revision(payload=[data_schema])
+        # Create the test document that fails the validation due to the
+        # schema defined by the `DataSchema` document.
+        doc_factory = factories.DocumentFactory(1, [1])
+        doc_to_test = doc_factory.gen_test(
+            {'_GLOBAL_DATA_1_': {'data': {'a': 'fail'}}},
+            global_abstract=False)[-1]
+        doc_to_test['schema'] = 'example/foo/v1'
+        doc_to_test['metadata']['name'] = 'test_doc'
 
-        # Validate that the internal deckhand validation was created.
+        revision_id = self._create_revision(payload=[doc_to_test, data_schema])
+
+        # Validate that the validation was created and reports failure.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations' % revision_id,
             headers={'Content-Type': 'application/x-yaml'})
@@ -495,10 +497,109 @@ class TestValidationsController(test_base.BaseControllerTest):
         expected_body = {
             'count': 1,
             'results': [
-                {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'success'}
+                {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'failure'}
             ]
         }
         self.assertEqual(expected_body, body)
+
+    def test_validation_with_registered_data_schema_expect_multi_failure(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_validations': '@',
+                 'deckhand:show_validation': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a `DataSchema` against which the test document will be
+        # validated.
+        data_schema_factory = factories.DataSchemaFactory()
+        metadata_name = 'example/foo/v1'
+        schema_to_use = {
+            '$schema': 'http://json-schema.org/schema#',
+            'type': 'object',
+            'properties': {
+                'a': {
+                    'type': 'integer'  # Test doc will fail b/c of wrong type.
+                }
+            },
+            'required': ['a']
+        }
+        data_schema = data_schema_factory.gen_test(
+            metadata_name, data=schema_to_use)
+
+        # Failure #1.
+        # Create the test document that fails the validation due to the
+        # schema defined by the `DataSchema` document.
+        doc_factory = factories.DocumentFactory(1, [1])
+        doc_to_test = doc_factory.gen_test(
+            {'_GLOBAL_DATA_1_': {'data': {'a': 'fail'}}},
+            global_abstract=False)[-1]
+        doc_to_test['schema'] = 'example/foo/v1'
+        doc_to_test['metadata']['name'] = 'test_doc'
+        # Failure #2.
+        # Remove required metadata property, causing error to be generated.
+        del doc_to_test['metadata']['layeringDefinition']
+
+        revision_id = self._create_revision(payload=[doc_to_test, data_schema])
+
+        # Validate that the validation was created and reports failure.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 1,
+            'results': [
+                {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'failure'}
+            ]
+        }
+        self.assertEqual(expected_body, body)
+
+        # Validate that both expected errors are present for validation.
+        expected_errors = [
+            {
+                'message': "'layeringDefinition' is a required property",
+                'name': 'test_doc',
+                'schema': 'example/foo/v1',
+                'path': '.metadata'
+            }, {
+                'message': "'fail' is not of type 'integer'",
+                'name': 'test_doc',
+                'schema': 'example/foo/v1',
+                'path': '.data.a'
+            }
+        ]
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
+                revision_id, types.DECKHAND_SCHEMA_VALIDATION),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+
+        self.assertEqual('failure', body['status'])
+        self.assertEqual(expected_errors, body['errors'])
+
+    def test_validation_with_registered_data_schema_expect_mixed(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_validations': '@',
+                 'deckhand:show_validation': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a `DataSchema` against which the test document will be
+        # validated.
+        data_schema_factory = factories.DataSchemaFactory()
+        metadata_name = 'example/foo/v1'
+        schema_to_use = {
+            '$schema': 'http://json-schema.org/schema#',
+            'type': 'object',
+            'properties': {
+                'a': {
+                    'type': 'integer'  # Test doc will fail b/c of wrong type.
+                }
+            },
+            'required': ['a']
+        }
+        data_schema = data_schema_factory.gen_test(
+            metadata_name, data=schema_to_use)
 
         # Create a document that passes validation and another that fails it.
         doc_factory = factories.DocumentFactory(1, [1])
@@ -511,7 +612,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         pass_doc = copy.deepcopy(fail_doc)
         pass_doc['data']['a'] = 5
 
-        revision_id = self._create_revision(payload=[fail_doc, pass_doc])
+        revision_id = self._create_revision(
+            payload=[fail_doc, pass_doc, data_schema])
 
         # Validate that the validation reports failure since `fail_doc`
         # should've failed validation.
@@ -535,9 +637,10 @@ class TestValidationsController(test_base.BaseControllerTest):
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_body = {
-            'count': 2,
+            'count': 3,
             'results': [{'id': 0, 'status': 'failure'},  # fail_doc failed.
-                        {'id': 1, 'status': 'success'}]  # pass_doc succeeded.
+                        {'id': 1, 'status': 'success'},  # DataSchema passed.
+                        {'id': 2, 'status': 'success'}]  # pass_doc succeeded.
         }
         self.assertEqual(expected_body, body)
 
@@ -551,7 +654,8 @@ class TestValidationsController(test_base.BaseControllerTest):
         expected_errors = [{
             'schema': 'example/foo/v1',
             'name': 'test_doc',
-            'message': "'fail' is not of type 'integer'"
+            'message': "'fail' is not of type 'integer'",
+            'path': '.data.a'
         }]
         self.assertIn('errors', body)
         self.assertEqual(expected_errors, body['errors'])
@@ -563,14 +667,18 @@ class TestValidationsController(test_base.BaseControllerTest):
         depends on substitution from another document.
         """
         rules = {'deckhand:create_cleartext_documents': '@',
-                 'deckhand:list_validations': '@'}
+                 'deckhand:list_validations': '@',
+                 'deckhand:show_validation': '@'}
         self.policy.set_rules(rules)
 
         documents_factory = factories.DocumentFactory(1, [1])
-        payload = documents_factory.gen_test({}, global_abstract=False)[-1]
-        del payload['data']
+        document = documents_factory.gen_test({}, global_abstract=False)[-1]
+        del document['data']
 
-        revision_id = self._create_revision(payload=[payload])
+        data_schema_factory = factories.DataSchemaFactory()
+        data_schema = data_schema_factory.gen_test(document['schema'], {})
+
+        revision_id = self._create_revision(payload=[document, data_schema])
 
         # Validate that the entry is present.
         resp = self.app.simulate_get(
@@ -581,7 +689,92 @@ class TestValidationsController(test_base.BaseControllerTest):
 
         body = yaml.safe_load(resp.text)
         expected_body = {
+            'count': 2,
+            'results': [{'id': 0, 'status': 'failure'},  # Document.
+                        {'id': 1, 'status': 'success'}]  # DataSchema.
+        }
+        self.assertEqual(expected_body, body)
+
+        # Validate that the created document failed validation for the expected
+        # reason.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
+                revision_id, types.DECKHAND_SCHEMA_VALIDATION),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_errors = [{
+            'schema': document['schema'],
+            'name': document['metadata']['name'],
+            'message': "'data' is a required property",
+            'path': '.'
+        }]
+        self.assertIn('errors', body)
+        self.assertEqual(expected_errors, body['errors'])
+
+    def test_validation_only_new_data_schema_registered(self):
+        """Validate whether newly created DataSchemas replace old DataSchemas
+        when it comes to validation.
+        """
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_validations': '@'}
+        self.policy.set_rules(rules)
+
+        # Create 2 DataSchemas that will fail if they're used. These shouldn't
+        # be used for validation.
+        data_schema_factory = factories.DataSchemaFactory()
+        metadata_names = ['exampleA/Doc/v1', 'exampleB/Doc/v1']
+        schemas_to_use = [{
+            '$schema': 'http://json-schema.org/schema#',
+            'type': 'object',
+            'properties': {
+                'a': {
+                    'type': 'integer'
+                }
+            },
+            'required': ['a'],
+            'additionalProperties': False
+        }] * 2
+        old_data_schemas = [
+            data_schema_factory.gen_test(
+                metadata_names[i], data=schemas_to_use[i])
+            for i in range(2)
+        ]
+        # Save the DataSchemas in the first revision.
+        revision_id = self._create_revision(payload=old_data_schemas)
+
+        # Create 2 DataSchemas that will pass if they're used. These should
+        # be used for validation.
+        for schema_to_use in schemas_to_use:
+            schema_to_use['properties']['a']['type'] = 'string'
+        new_data_schemas = [
+            data_schema_factory.gen_test(
+                metadata_names[i], data=schemas_to_use[i])
+            for i in range(2)
+        ]
+        doc_factory = factories.DocumentFactory(1, [1])
+        example1_doc = doc_factory.gen_test(
+            {'_GLOBAL_DATA_1_': {'data': {'a': 'whatever'}}},
+            global_abstract=False)[-1]
+        example1_doc['schema'] = metadata_names[0]
+        example2_doc = copy.deepcopy(example1_doc)
+        example2_doc['schema'] = metadata_names[1]
+        # Save the documents that will be validated alongside the DataSchemas
+        # that will be used to validate them.
+        revision_id = self._create_revision(
+            payload=[example1_doc, example2_doc] + new_data_schemas)
+
+        # Validate that the validation was created and succeeded: This means
+        # that the new DataSchemas were used, not the old ones.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
             'count': 1,
-            'results': [{'id': 0, 'status': 'failure'}]
+            'results': [
+                {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'success'}
+            ]
         }
         self.assertEqual(expected_body, body)

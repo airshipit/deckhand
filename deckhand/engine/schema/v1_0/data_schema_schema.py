@@ -20,19 +20,18 @@ schema = {
     'properties': {
         'schema': {
             'type': 'string',
-            'pattern': '^(deckhand/DataSchema/v[1]{1}(\.[0]{1}){0,1})$'
+            'pattern': '^deckhand/DataSchema/v\d+(.0)?$'
         },
         'metadata': {
             'type': 'object',
             'properties': {
                 'schema': {
                     'type': 'string',
-                    'pattern': '^(metadata/Control/v[1]{1}(\.[0]{1}){0,1})$'
+                    'pattern': '^metadata/Control/v\d+(.0)?$'
                 },
                 'name': {
                     'type': 'string',
-                    'pattern': (
-                        '^([A-Za-z]+\/[A-Za-z]+\/v[1]{1}(\.[0]{1}){0,1})$')
+                    'pattern': '^[A-Za-z]+\/[A-Za-z]+\/v\d+(.0)?$'
                 },
                 # Labels are optional.
                 'labels': {
@@ -43,7 +42,7 @@ schema = {
                     'enum': ['encrypted', 'cleartext']
                 }
             },
-            'additionalProperties': False,
+            'additionalProperties': True,  # Can include layeringDefinition.
             'required': ['schema', 'name']
         },
         'data': {
@@ -65,7 +64,7 @@ schema = {
 
 .. literalinclude:: ../../deckhand/engine/schema/v1_0/data_schema_schema.py
    :language: python
-   :lines: 15-62
+   :lines: 15-61
 
 This schema is used to sanity-check all DataSchema documents that are
 passed to Deckhand. This schema is only enforced after validation for

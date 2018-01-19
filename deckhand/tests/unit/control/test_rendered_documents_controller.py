@@ -52,24 +52,22 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
             '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
-
         rendered_documents = list(yaml.safe_load_all(resp.text))
-        # TODO(fmontei): Implement "negative" filter server-side.
-        rendered_documents = [
-            d for d in rendered_documents
-            if not d['schema'].startswith(types.LAYERING_POLICY_SCHEMA)
-        ]
 
-        self.assertEqual(1, len(rendered_documents))
-        is_abstract = rendered_documents[0]['metadata']['layeringDefinition'][
+        self.assertEqual(2, len(rendered_documents))
+        rendered_documents = list(filter(
+            lambda x: not x['schema'].startswith(types.LAYERING_POLICY_SCHEMA),
+            rendered_documents))
+
+        is_abstract = rendered_documents[-1]['metadata']['layeringDefinition'][
             'abstract']
         self.assertFalse(is_abstract)
         for key, value in concrete_doc.items():
             if isinstance(value, dict):
                 self.assertDictContainsSubset(value,
-                                              rendered_documents[0][key])
+                                              rendered_documents[-1][key])
             else:
-                self.assertEqual(value, rendered_documents[0][key])
+                self.assertEqual(value, rendered_documents[-1][key])
 
     def test_list_rendered_documents_exclude_deleted_documents(self):
         """Verifies that documents from previous revisions that have been
@@ -83,40 +81,40 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
                  'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
 
-        # Create 1st document.
+        # PUT a bunch of documents, include a layeringPolicy.
         documents_factory = factories.DocumentFactory(1, [1])
-        payload = documents_factory.gen_test({}, global_abstract=False)[1:]
+        payload = documents_factory.gen_test({}, global_abstract=False)
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)
 
-        # Create 2nd document (exclude 1st document in new payload).
+        # PUT new document (exclude original documents from this payload).
         payload = documents_factory.gen_test({}, global_abstract=False)
-        new_name = payload[-1]['metadata']['name']
+        new_name = payload[1]['metadata']['name']
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',
             headers={'Content-Type': 'application/x-yaml'},
-            body=yaml.safe_dump_all(payload))
+            body=yaml.safe_dump_all([payload[1]]))
         self.assertEqual(200, resp.status_code)
         revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
             'revision']
 
-        # Verify that only the 2nd is returned for revision_id=2.
+        # Verify that only the document with `new_name` is returned. (The
+        # layeringPolicy) is omitted from the response even though it still
+        # exists.
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
-
         rendered_documents = list(yaml.safe_load_all(resp.text))
-        # TODO(fmontei): Implement "negative" filter server-side.
-        rendered_documents = [
-            d for d in rendered_documents
-            if not d['schema'].startswith(types.LAYERING_POLICY_SCHEMA)
-        ]
 
-        self.assertEqual(1, len(rendered_documents))
+        self.assertEqual(2, len(rendered_documents))
+        rendered_documents = list(filter(
+            lambda x: not x['schema'].startswith(types.LAYERING_POLICY_SCHEMA),
+            rendered_documents))
+
         self.assertEqual(new_name, rendered_documents[0]['metadata']['name'])
         self.assertEqual(2, rendered_documents[0]['status']['revision'])
 

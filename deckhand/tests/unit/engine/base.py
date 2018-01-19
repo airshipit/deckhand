@@ -28,9 +28,9 @@ class TestDocumentValidationBase(test_base.DeckhandTestCase):
 
         with open(test_yaml_path, 'r') as yaml_file:
             yaml_data = yaml_file.read()
-        self.data = yaml.safe_load(yaml_data)
+        return yaml.safe_load(yaml_data)
 
-    def _corrupt_data(self, key, value=None, data=None, op='delete'):
+    def _corrupt_data(self, data, key, value=None, op='delete'):
         """Corrupt test data to check that pre-validation works.
 
         Corrupt data by removing a key from the document (if ``op`` is delete)
@@ -54,8 +54,6 @@ class TestDocumentValidationBase(test_base.DeckhandTestCase):
         :type op: string
         :returns: Corrupted data.
         """
-        if data is None:
-            data = self.data
         if op not in ('delete', 'replace'):
             raise ValueError("The ``op`` argument must either be 'delete' or "
                              "'replace'.")

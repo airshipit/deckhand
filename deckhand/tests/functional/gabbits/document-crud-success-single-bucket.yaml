@@ -54,12 +54,14 @@ tests:
   - name: verify_initial
     desc: Verify initial document count and revisions
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - region-1234
         - site-1234
       $.[*].status.revision:
@@ -85,9 +87,14 @@ tests:
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 4
+    query_parameters:
+      sort: metadata.name
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 4
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - region-1234
         - site-1234
       $.[*].status.revision:
@@ -110,12 +117,14 @@ tests:
   - name: verify_update
     desc: Verify updated document count and revisions
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - region-1234
         - site-1234
       $.[*].status.revision:
@@ -133,12 +142,14 @@ tests:
   - name: verify_initial_documents_preserved_after_update
     desc: Verify initial documents count and revisions preserved after update
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - region-1234
         - site-1234
       $.[*].status.revision:
@@ -162,6 +173,8 @@ tests:
   - name: verify_delete
     desc: Verify document deletion
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 3
@@ -170,8 +183,8 @@ tests:
         - "$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']"
         - "$HISTORY['update_single_document'].$RESPONSE['$.[0].status.revision']"
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - site-1234
       $.[*].status.bucket:
         - mop
@@ -182,12 +195,14 @@ tests:
   - name: verify_initial_documents_preserved_after_delete
     desc: Verify initial documents count and revisions
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - region-1234
         - site-1234
       $.[*].status.revision:
@@ -205,12 +220,14 @@ tests:
   - name: verify_updated_documents_preserved_after_delete
     desc: Verify updated documents count and revisions preserved after delete
     GET: /api/v1.0/revisions/$HISTORY['update_single_document'].$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
-        - layering-policy
         - global-1234
+        - layering-policy
         - region-1234
         - site-1234
       $.[*].status.revision:

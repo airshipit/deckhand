@@ -155,6 +155,12 @@ if [ -z "$DECKHAND_IMAGE" ]; then
     sed '1 a log_config_append = '"$CONF_DIR"'/logging.conf' $CONF_DIR/deckhand.conf
 fi
 
+# Only set up logging if running Deckhand via uwsgi. The container already has
+# values for logging.
+if [ -z "$DECKHAND_IMAGE" ]; then
+    sed '1 a log_config_append = '"$CONF_DIR"'/logging.conf' $CONF_DIR/deckhand.conf
+fi
+
     echo $CONF_DIR/deckhand.conf 1>&2
     cat $CONF_DIR/deckhand.conf 1>&2
 

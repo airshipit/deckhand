@@ -68,14 +68,15 @@ class TestBucketsController(test_base.BaseControllerTest):
 
     def test_put_bucket_with_secret(self):
         def _do_test(payload):
+            bucket_name = test_utils.rand_name('bucket')
             resp = self.app.simulate_put(
-                '/api/v1.0/buckets/mop/documents',
+                '/api/v1.0/buckets/%s/documents' % bucket_name,
                 headers={'Content-Type': 'application/x-yaml'},
                 body=yaml.safe_dump_all(payload))
             self.assertEqual(200, resp.status_code)
             created_documents = list(yaml.safe_load_all(resp.text))
 
-            self.assertEqual(1, len(created_documents))
+            self.assertEqual(len(payload), len(created_documents))
             expected = sorted([(d['schema'], d['metadata']['name'])
                                for d in payload])
             actual = sorted([(d['schema'], d['metadata']['name'])
@@ -108,16 +109,16 @@ class TestBucketsController(test_base.BaseControllerTest):
         # `metadata.storagePolicy`='encrypted'. In the case below,
         # a generic document is tested.
         documents_factory = factories.DocumentFactory(1, [1])
-        document_mapping = {
-            "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}}
-        }
-        payload = documents_factory.gen_test(document_mapping,
-                                             global_abstract=False)
-        payload[-1]['metadata']['storagePolicy'] = 'encrypted'
+        document = documents_factory.gen_test({}, global_abstract=False)[-1]
+        document['metadata']['storagePolicy'] = 'encrypted'
+
+        data_schema_factory = factories.DataSchemaFactory()
+        data_schema = data_schema_factory.gen_test(document['schema'], {})
+
         with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
                                autospec=True) as mock_secrets_mgr:
-            mock_secrets_mgr.create.return_value = payload[-1]['data']
-            _do_test([payload[-1]])
+            mock_secrets_mgr.create.return_value = document['data']
+            _do_test([document, data_schema])
 
     def test_create_delete_then_recreate_document_in_different_bucket(self):
         """Ordiniarly creating a document with the same metadata.name/schema
@@ -163,28 +164,6 @@ class TestBucketsController(test_base.BaseControllerTest):
 
 class TestBucketsControllerNegative(test_base.BaseControllerTest):
     """Test suite for validating negative scenarios for bucket controller."""
-
-    def test_put_bucket_with_invalid_document_payload(self):
-        rules = {'deckhand:create_cleartext_documents': '@'}
-        self.policy.set_rules(rules)
-
-        no_colon_spaces = """
-name:foo
-schema:
-    layeringDefinition:
-        layer:site
-"""
-        invalid_payloads = ['garbage', no_colon_spaces]
-        error_re = ['.*The provided document YAML failed schema validation.*',
-                    '.*mapping values are not allowed here.*']
-
-        for idx, payload in enumerate(invalid_payloads):
-            resp = self.app.simulate_put(
-                '/api/v1.0/buckets/mop/documents',
-                headers={'Content-Type': 'application/x-yaml'},
-                body=payload)
-            self.assertEqual(400, resp.status_code)
-            self.assertRegexpMatches(resp.text, error_re[idx])
 
     def test_put_conflicting_layering_policy(self):
         rules = {'deckhand:create_cleartext_documents': '@'}
