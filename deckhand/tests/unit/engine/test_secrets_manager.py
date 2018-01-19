@@ -14,6 +14,7 @@
 
 import copy
 
+from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import secrets_manager
 from deckhand import factories
 from deckhand.tests import test_utils
@@ -90,7 +91,11 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         expected_document = copy.deepcopy(documents[-1])
         expected_document['data'] = expected_data
 
-        secret_substitution = secrets_manager.SecretsSubstitution(documents)
+        substitution_sources = db_api.document_get_all(
+            **{'metadata.layeringDefinition.abstract': False})
+
+        secret_substitution = secrets_manager.SecretsSubstitution(
+            documents, substitution_sources)
         substituted_docs = secret_substitution.substitute_all()
 
         self.assertIn(expected_document, substituted_docs)

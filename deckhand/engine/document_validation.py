@@ -19,7 +19,6 @@ import jsonschema
 from oslo_log import log as logging
 import six
 
-from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine.schema import base_schema
 from deckhand.engine.schema import v1_0
 from deckhand import errors
@@ -243,7 +242,7 @@ class DataSchemaValidator(SchemaValidator):
 
 class DocumentValidation(object):
 
-    def __init__(self, documents):
+    def __init__(self, documents, existing_data_schemas=None):
         """Class for document validation logic for documents.
 
         This class is responsible for validating documents according to their
@@ -254,12 +253,16 @@ class DocumentValidation(object):
 
         :param documents: Documents to be validated.
         :type documents: List[dict]
-
+        :param existing_data_schemas: ``DataSchema`` documents created in prior
+            revisions to be used the "data" section of each document in
+            ``documents``. Additional ``DataSchema`` documents in ``documents``
+            are combined with these.
+        :type existing_data_schemas: List[dict]
         """
 
         self.documents = []
-        data_schemas = db_api.revision_documents_get(
-            schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
+        existing_data_schemas = existing_data_schemas or []
+        data_schemas = existing_data_schemas[:]
         db_data_schemas = {d['metadata']['name']: d for d in data_schemas}
 
         if not isinstance(documents, (list, tuple)):

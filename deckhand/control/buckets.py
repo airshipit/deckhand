@@ -25,6 +25,7 @@ from deckhand.engine import document_validation
 from deckhand.engine import secrets_manager
 from deckhand import errors as deckhand_errors
 from deckhand import policy
+from deckhand import types
 
 LOG = logging.getLogger(__name__)
 
@@ -50,8 +51,11 @@ class BucketsResource(api_base.BaseResource):
         # because we expect certain formatting of the documents while doing
         # policy enforcement. If any documents fail basic schema validaiton
         # raise an exception immediately.
+        data_schemas = db_api.revision_documents_get(
+            schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
         try:
-            doc_validator = document_validation.DocumentValidation(documents)
+            doc_validator = document_validation.DocumentValidation(
+                documents, data_schemas)
             validations = doc_validator.validate_all()
         except deckhand_errors.InvalidDocumentFormat as e:
             LOG.exception(e.format_message())

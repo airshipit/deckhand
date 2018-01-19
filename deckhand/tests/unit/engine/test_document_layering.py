@@ -23,8 +23,9 @@ class TestDocumentLayering(test_base.DeckhandTestCase):
 
     def _test_layering(self, documents, site_expected=None,
                        region_expected=None, global_expected=None,
-                       exception_expected=None):
-        document_layering = layering.DocumentLayering(documents)
+                       exception_expected=None, substitution_sources=None):
+        document_layering = layering.DocumentLayering(
+            documents, substitution_sources)
 
         if all([site_expected, region_expected, global_expected,
                 exception_expected]):

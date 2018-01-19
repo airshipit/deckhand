@@ -154,7 +154,7 @@ class DocumentLayering(object):
                 )
         return None, [document.Document(d) for d in documents]
 
-    def __init__(self, documents):
+    def __init__(self, documents, substitution_sources=None):
         """Contructor for ``DocumentLayering``.
 
         :param layering_policy: The document with schema
@@ -162,6 +162,10 @@ class DocumentLayering(object):
         :param documents: List of all other documents to be layered together
             in accordance with the ``layerOrder`` defined by the
             LayeringPolicy document.
+        :type documents: List[dict]
+        :param substitution_sources: List of documents that are potential
+            sources for substitution. Should only include concrete documents.
+        :type substitution_sources: List[dict]
         """
         self.layering_policy, self.documents = self._extract_layering_policy(
             documents)
@@ -173,6 +177,7 @@ class DocumentLayering(object):
             raise errors.LayeringPolicyNotFound()
         self.layer_order = list(self.layering_policy['data']['layerOrder'])
         self.layered_docs = self._calc_document_children()
+        self.substitution_sources = substitution_sources or []
 
     def _apply_action(self, action, child_data, overall_data):
         """Apply actions to each layer that is rendered.
@@ -249,9 +254,10 @@ class DocumentLayering(object):
 
         return overall_data
 
-    def _apply_substitutions(self, data):
+    def _apply_substitutions(self, document):
         try:
-            secrets_substitution = secrets_manager.SecretsSubstitution(data)
+            secrets_substitution = secrets_manager.SecretsSubstitution(
+                document, self.substitution_sources)
             return secrets_substitution.substitute_all()
         except errors.DocumentNotFound as e:
             LOG.error('Failed to render the documents because a secret '

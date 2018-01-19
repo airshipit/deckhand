@@ -32,12 +32,6 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
         'schema': errors.InvalidDocumentFormat,
     }
 
-    def setUp(self):
-        super(TestDocumentValidationNegative, self).setUp()
-        # Stub out the DB call for retrieving DataSchema documents.
-        self.patchobject(document_validation.db_api, 'revision_documents_get',
-                         lambda *a, **k: [])
-
     def _do_validations(self, document_validator, expected, expected_err):
         validations = document_validator.validate_all()
         self.assertEqual(2, len(validations))

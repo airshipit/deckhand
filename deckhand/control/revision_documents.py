@@ -106,8 +106,11 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         documents = self._retrieve_documents_for_rendering(revision_id,
                                                            **filters)
+        substitution_sources = self._retrieve_substitution_sources()
+
         try:
-            document_layering = layering.DocumentLayering(documents)
+            document_layering = layering.DocumentLayering(
+                documents, substitution_sources)
             rendered_documents = document_layering.render()
         except (errors.IndeterminateDocumentParent,
                 errors.UnsupportedActionMethod,
@@ -164,10 +167,18 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         return documents
 
+    def _retrieve_substitution_sources(self):
+        # Return all concrete documents as potential substitution sources.
+        return db_api.document_get_all(
+            **{'metadata.layeringDefinition.abstract': False})
+
     def _post_validate(self, documents):
         # Perform schema validation post-rendering to ensure that rendering
         # and substitution didn't break anything.
-        doc_validator = document_validation.DocumentValidation(documents)
+        data_schemas = db_api.revision_documents_get(
+            schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
+        doc_validator = document_validation.DocumentValidation(
+            documents, data_schemas)
         try:
             doc_validator.validate_all()
         except errors.InvalidDocumentFormat as e:
