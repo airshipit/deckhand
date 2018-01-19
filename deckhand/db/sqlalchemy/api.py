@@ -840,9 +840,14 @@ def revision_tag_create(revision_id, tag, data=None, session=None):
         resp = tag_model.to_dict()
     except db_exception.DBDuplicateEntry:
         # Update the revision tag if it already exists.
-        tag_to_update = session.query(models.RevisionTag)\
-            .filter_by(tag=tag, revision_id=revision_id)\
-            .one()
+        LOG.debug('Tag %s already exists for revision_id %s. Attempting to '
+                  'update the entry.', tag, revision_id)
+        try:
+            tag_to_update = session.query(models.RevisionTag)\
+                .filter_by(tag=tag, revision_id=revision_id)\
+                .one()
+        except sa_orm.exc.NoResultFound:
+            raise errors.RevisionTagNotFound(tag=tag, revision=revision_id)
         tag_to_update.update({'data': data})
         tag_to_update.save(session=session)
         resp = tag_to_update.to_dict()

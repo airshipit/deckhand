@@ -44,7 +44,7 @@ class RevisionTagsResource(api_base.BaseResource):
 
         try:
             resp_tag = db_api.revision_tag_create(revision_id, tag, tag_data)
-        except errors.RevisionNotFound as e:
+        except (errors.RevisionNotFound, errors.RevisionTagNotFound) as e:
             raise falcon.HTTPNotFound(description=e.format_message())
         except errors.RevisionTagBadFormat as e:
             raise falcon.HTTPBadRequest(description=e.format_message())

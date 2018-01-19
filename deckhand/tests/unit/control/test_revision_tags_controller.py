@@ -24,8 +24,10 @@ class TestRevisionTagsController(test_base.BaseControllerTest):
         super(TestRevisionTagsController, self).setUp()
         rules = {'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
+        self.revision_id = self._create_revision()
 
-        # Create a revision to tag.
+    def _create_revision(self):
+        # Create a revision with any document (doesn't matter).
         secrets_factory = factories.DocumentSecretFactory()
         payload = [secrets_factory.gen_test('Certificate', 'cleartext')]
         resp = self.app.simulate_put(
@@ -33,8 +35,9 @@ class TestRevisionTagsController(test_base.BaseControllerTest):
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all(payload))
         self.assertEqual(200, resp.status_code)
-        self.revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
             'revision']
+        return revision_id
 
     def test_delete_tag(self):
         rules = {'deckhand:create_tag': '@',
@@ -56,6 +59,22 @@ class TestRevisionTagsController(test_base.BaseControllerTest):
             '/api/v1.0/revisions/%s/tags/%s' % (self.revision_id, 'test'),
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(404, resp.status_code)
+
+    def test_apply_same_tag_to_different_revisions(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:create_tag': '@'}
+        self.policy.set_rules(rules)
+
+        # self.revision_id already created in setUp.
+        alt_revision_id = self._create_revision()
+        tag = 'same_tag'
+
+        # Apply the same tag to both revisions.
+        for revision_id in (self.revision_id, alt_revision_id):
+            resp = self.app.simulate_post(
+                '/api/v1.0/revisions/%s/tags/%s' % (revision_id, tag),
+                headers={'Content-Type': 'application/x-yaml'})
+            self.assertEqual(201, resp.status_code)
 
 
 class TestRevisionTagsControllerNegativeRBAC(test_base.BaseControllerTest):
