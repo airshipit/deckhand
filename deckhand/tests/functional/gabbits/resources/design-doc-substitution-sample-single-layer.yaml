@@ -1,0 +1,72 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - region
+    - site
+---
+schema: deckhand/Certificate/v1
+metadata:
+  name: example-cert
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: |
+  CERTIFICATE DATA
+---
+schema: deckhand/CertificateKey/v1
+metadata:
+  name: example-key
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: |
+  KEY DATA
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  name: example-password
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: my-secret-password
+---
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  substitutions:
+    - dest:
+        path: .chart.values.tls.certificate
+      src:
+        schema: deckhand/Certificate/v1
+        name: example-cert
+        path: .
+    - dest:
+        path: .chart.values.tls.key
+      src:
+        schema: deckhand/CertificateKey/v1
+        name: example-key
+        path: .
+    - dest:
+        path: .chart.values.some_url
+        pattern: INSERT_[A-Z]+_HERE
+      src:
+        schema: deckhand/Passphrase/v1
+        name: example-password
+        path: .
+data:
+  chart:
+    details:
+      data: here
+    values:
+      some_url: http://admin:INSERT_PASSWORD_HERE@service-name:8080/v1
+...

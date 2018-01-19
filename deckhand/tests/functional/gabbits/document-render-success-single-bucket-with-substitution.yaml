@@ -3,6 +3,11 @@
 # 1. Purges existing data to ensure test isolation
 # 2. Adds initial documents from substitution sample of design doc
 # 3. Verifies fully substituted document data
+# 4. Purges existing data to ensure test isolation
+# 5. Adds initial documents from substitution sample of design doc using just
+#    a single layer in order to verify that substitution is carried out for
+#    this edge case
+# 6. Verifies fully substituted document data (again)
 
 defaults:
   request_headers:
@@ -24,6 +29,39 @@ tests:
     data: <@resources/design-doc-substitution-sample.yaml
 
   - name: verify_substitutions
+    desc: Check for expected substitutions
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      schema: armada/Chart/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[*].metadata.name: example-chart-01
+      $.[*].data:
+        chart:
+          details:
+            data: here
+          values:
+            tls:
+              certificate: |
+                CERTIFICATE DATA
+              key: |
+                KEY DATA
+            some_url: http://admin:my-secret-password@service-name:8080/v1
+
+  - name: purge_again
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: initialize_single_layer
+    desc: Create initial documents
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/design-doc-substitution-sample-single-layer.yaml
+
+  - name: verify_substitutions_single_layer
     desc: Check for expected substitutions
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
     query_parameters:

@@ -68,7 +68,7 @@ class DocumentLayering(object):
         """
         layered_docs = list(
             filter(lambda x: 'layeringDefinition' in x['metadata'],
-                self.documents))
+                self._documents))
 
         # ``all_children`` is a counter utility for verifying that each
         # document has exactly one parent.
@@ -78,8 +78,8 @@ class DocumentLayering(object):
             children = []
             doc_layer = doc.get_layer()
             try:
-                next_layer_idx = self.layer_order.index(doc_layer) + 1
-                children_doc_layer = self.layer_order[next_layer_idx]
+                next_layer_idx = self._layer_order.index(doc_layer) + 1
+                children_doc_layer = self._layer_order[next_layer_idx]
             except IndexError:
                 # The lowest layer has been reached, so no children. Return
                 # empty list.
@@ -106,7 +106,7 @@ class DocumentLayering(object):
 
             return children
 
-        for layer in self.layer_order:
+        for layer in self._layer_order:
             docs_by_layer = list(filter(
                 (lambda x: x.get_layer() == layer), layered_docs))
 
@@ -119,7 +119,7 @@ class DocumentLayering(object):
 
         all_children_elements = list(all_children.elements())
         secondary_docs = list(
-            filter(lambda d: d.get_layer() != self.layer_order[0],
+            filter(lambda d: d.get_layer() != self._layer_order[0],
             layered_docs))
         for doc in secondary_docs:
             # Unless the document is the topmost document in the
@@ -130,6 +130,7 @@ class DocumentLayering(object):
                          'schema=%s, layer=%s, parentSelector=%s.',
                          doc.get_name(), doc.get_schema(), doc.get_layer(),
                          doc.get_parent_selector())
+                self._parentless_documents.append(doc)
             # If the document is a child document of more than 1 parent, then
             # the document has too many parents, which is a validation error.
             elif all_children[doc] != 1:
@@ -167,17 +168,18 @@ class DocumentLayering(object):
             sources for substitution. Should only include concrete documents.
         :type substitution_sources: List[dict]
         """
-        self.layering_policy, self.documents = self._extract_layering_policy(
+        self._layering_policy, self._documents = self._extract_layering_policy(
             documents)
-        if self.layering_policy is None:
+        if self._layering_policy is None:
             error_msg = (
                 'No layering policy found in the system so could not reder '
                 'documents.')
             LOG.error(error_msg)
             raise errors.LayeringPolicyNotFound()
-        self.layer_order = list(self.layering_policy['data']['layerOrder'])
-        self.layered_docs = self._calc_document_children()
-        self.substitution_sources = substitution_sources or []
+        self._layer_order = list(self._layering_policy['data']['layerOrder'])
+        self._parentless_documents = []
+        self._layered_documents = self._calc_document_children()
+        self._substitution_sources = substitution_sources or []
 
     def _apply_action(self, action, child_data, overall_data):
         """Apply actions to each layer that is rendered.
@@ -257,7 +259,7 @@ class DocumentLayering(object):
     def _apply_substitutions(self, document):
         try:
             secrets_substitution = secrets_manager.SecretsSubstitution(
-                document, self.substitution_sources)
+                document, self._substitution_sources)
             return secrets_substitution.substitute_all()
         except errors.DocumentNotFound as e:
             LOG.error('Failed to render the documents because a secret '
@@ -284,11 +286,11 @@ class DocumentLayering(object):
         # NOTE(fmontei): ``global_docs`` represents the topmost documents in
         # the system. It should probably be impossible for more than 1
         # top-level doc to exist, but handle multiple for now.
-        global_docs = [doc for doc in self.layered_docs
-                       if doc.get_layer() == self.layer_order[0]]
+        global_docs = [doc for doc in self._layered_documents
+                       if doc.get_layer() == self._layer_order[0]]
 
         for doc in global_docs:
-            layer_idx = self.layer_order.index(doc.get_layer())
+            layer_idx = self._layer_order.index(doc.get_layer())
             if doc.get_substitutions():
                 substituted_data = self._apply_substitutions(doc.to_dict())
                 rendered_data_by_layer[layer_idx] = substituted_data[0]
@@ -299,7 +301,7 @@ class DocumentLayering(object):
             for child in doc.get_children(nested=True):
                 # Retrieve the most up-to-date rendered_data (by
                 # referencing the child's parent's data).
-                child_layer_idx = self.layer_order.index(child.get_layer())
+                child_layer_idx = self._layer_order.index(child.get_layer())
                 rendered_data = rendered_data_by_layer[child_layer_idx - 1]
 
                 # Apply each action to the current document.
@@ -316,9 +318,13 @@ class DocumentLayering(object):
                     if child.get_substitutions():
                         rendered_data['metadata'][
                             'substitutions'] = child.get_substitutions()
-                        self._apply_substitutions(rendered_data)
-                    self.layered_docs[self.layered_docs.index(child)][
-                        'data'] = rendered_data['data']
+                        substituted_data = self._apply_substitutions(
+                            rendered_data)
+                        if substituted_data:
+                            rendered_data = substituted_data[0]
+                    child_index = self._layered_documents.index(child)
+                    self._layered_documents[child_index]['data'] = (
+                        rendered_data['data'])
 
                 # Update ``rendered_data_by_layer`` for this layer so that
                 # children in deeper layers can reference the most up-to-date
@@ -328,7 +334,19 @@ class DocumentLayering(object):
             if 'children' in doc:
                 del doc['children']
 
+        # Handle edge case for parentless documents that require substitution.
+        # If a document has no parent, then the for loop above doesn't iterate
+        # over the parentless document, so substitution must be done here for
+        # parentless documents.
+        for doc in self._parentless_documents:
+            if not doc.is_abstract():
+                substituted_data = self._apply_substitutions(doc.to_dict())
+                if substituted_data:
+                    # TODO(fmontei): Use property after implementing it in
+                    # document wrapper class.
+                    doc._inner = substituted_data[0]
+
         return (
-            [d.to_dict() for d in self.layered_docs] +
-            [self.layering_policy.to_dict()]
+            [d.to_dict() for d in self._layered_documents] +
+            [self._layering_policy.to_dict()]
         )

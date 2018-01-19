@@ -187,6 +187,12 @@ class MissingDocumentKey(DeckhandException):
     code = 400
 
 
+class MissingDocumentPattern(DeckhandException):
+    msg_fmt = ("Missing document pattern %(pattern)s in %(data)s at path "
+               "%(path)s.")
+    code = 400
+
+
 class UnsupportedActionMethod(DeckhandException):
     msg_fmt = ("Method in %(actions)s is invalid for document %(document)s.")
     code = 400
