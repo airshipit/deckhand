@@ -59,6 +59,10 @@ class DocumentDict(dict):
             self, 'metadata.layeringDefinition.layer')
 
     @property
+    def layer_order(self):
+        return utils.jsonpath_parse(self, 'data.layerOrder')
+
+    @property
     def parent_selector(self):
         return utils.jsonpath_parse(
             self, 'metadata.layeringDefinition.parentSelector') or {}

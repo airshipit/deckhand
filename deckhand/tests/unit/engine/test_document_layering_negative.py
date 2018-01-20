@@ -79,7 +79,9 @@ class TestDocumentLayeringNegative(
             # The site will not be able to find a correct parent.
             layering.DocumentLayering(documents)
             self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
-                                     'Could not find parent for document .*')
+                                     '%s is an empty layer with no documents. '
+                                     'It will be discarded from the layerOrder'
+                                     ' during the layering process.')
             mock_log.info.reset_mock()
 
     @mock.patch.object(layering, 'LOG', autospec=True)
