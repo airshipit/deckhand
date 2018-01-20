@@ -1,5 +1,5 @@
 ---
-schema: deckhand/Certificate/v1.0
+schema: deckhand/CertificateAuthority/v1.0
 metadata:
   schema: metadata/Document/v1.0
   name: application-api

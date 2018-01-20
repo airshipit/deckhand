@@ -1,0 +1,119 @@
+# Copyright 2017 AT&T Intellectual Property.  All other rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  name: deckhand/Base/v1
+  schema: metadata/Control/v1
+data:
+  $schema: http://json-schema.org/schema#
+  properties:
+    schema:
+      type: string
+      pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+(.0)?$
+    metadata:
+      type: object
+      properties:
+        schema:
+          anyOf:
+            - type: string
+              pattern: ^metadata/Document/v\d+(.0)?$
+            - type: string
+              pattern: ^metadata/Control/v\d+(.0)?$
+        name:
+          type: string
+        labels:
+          type: object
+        layeringDefinition:
+          type: object
+          properties:
+            layer:
+              type: string
+            abstract:
+              type: boolean
+            parentSelector:
+              type: object
+            actions:
+              type: array
+              items:
+                type: object
+                properties:
+                  method:
+                    enum:
+                      - replace
+                      - delete
+                      - merge
+                  path:
+                    type: string
+                additionalProperties: false
+                required:
+                  - method
+                  - path
+          additionalProperties: false
+        substitutions:
+          type: array
+          items:
+            type: object
+            properties:
+              dest:
+                type: object
+                properties:
+                  path:
+                    type: string
+                  pattern:
+                    type: string
+                additionalProperties: false
+                required:
+                  - path
+              src:
+                type: object
+                properties:
+                  schema:
+                    type: string
+                    pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+(.0)?$
+                  name:
+                    type: string
+                  path:
+                    type: string
+                additionalProperties: false
+                required:
+                  - schema
+                  - name
+                  - path
+            additionalProperties: false
+            required:
+              - dest
+              - src
+        storagePolicy:
+          type: string
+          enum:
+            - encrypted
+            - cleartext
+      additionalProperties: false
+      required:
+        - schema
+        - name
+    data:
+      type:
+        - "null"
+        - string
+        - integer
+        - array
+        - object
+  additionalProperties: false
+  required:
+    - schema
+    - metadata
+    - data

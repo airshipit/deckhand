@@ -106,6 +106,25 @@ a specific action.
   and succeed, then services can check whether the documents in a bucket are
   stable, in accordance with the ``ValidationPolicy``.
 
+Validation Stages
+-----------------
+
+Deckhand performs pre- and post-rendering validation on documents. For
+pre-rendering validation 3 types of behavior are possible:
+
+#. Successfully validated docuemnts are stored in Deckhand's database.
+#. Failure to validate a document's basic properties will result in a 400
+   Bad Request error getting raised.
+#. Failure to validate a document's schema-specific properties will result
+   in a validation error created in the database, which can be later
+   returned via the Validations API.
+
+For post-rendering validation, 2 types of behavior are possible:
+
+#. Successfully valdiated post-rendered documents are returned to the user.
+#. Failure to validate post-rendered documents results in a 500 Internal Server
+   Error getting raised.
+
 Validation Module
 -----------------
 
@@ -120,35 +139,162 @@ Validation Schemas
 
 Below are the schemas Deckhand uses to validate documents.
 
-.. automodule:: deckhand.engine.schema.base_schema
-  :members: schema
+Base Schema
+-----------
 
-.. automodule:: deckhand.engine.schema.v1_0.certificate_authority_key_schema
-  :members: schema
+* Base schema.
 
-.. automodule:: deckhand.engine.schema.v1_0.certificate_authority_schema
-  :members: schema
+  Base JSON schema against which all Deckhand documents are validated.
 
-.. automodule:: deckhand.engine.schema.v1_0.certificate_key_schema
-  :members: schema
+  .. literalinclude:: ../../deckhand/engine/schemas/base_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Base schema that applies to all documents.
 
-.. automodule:: deckhand.engine.schema.v1_0.certificate_schema
-  :members: schema
+  This schema is used to sanity-check all documents that are passed to
+  Deckhand. Failure to pass this schema results in a critical error.
 
-.. automodule:: deckhand.engine.schema.v1_0.data_schema_schema
-  :members: schema
+DataSchema Schemas
+------------------
 
-.. automodule:: deckhand.engine.schema.v1_0.layering_policy_schema
-  :members: schema
+All schemas below are ``DataSchema`` documents. They define additional
+properties not included in the base schema or override default properties in
+the base schema.
 
-.. automodule:: deckhand.engine.schema.v1_0.passphrase_schema
-  :members: schema
+These schemas are only enforced after validation for the base schema has
+passed. Failure to pass these schemas will result in an error entry being
+created for the validation with name ``deckhand-schema-validation``
+corresponding to the created revision.
 
-.. automodule:: deckhand.engine.schema.v1_0.private_key_schema
-  :members: schema
+* ``CertificateAuthorityKey`` schema.
 
-.. automodule:: deckhand.engine.schema.v1_0.public_key_schema
-  :members: schema
+  JSON schema against which all documents with
+  ``deckhand/CertificateAuthorityKey/v1`` schema are validated.
 
-.. automodule:: deckhand.engine.schema.v1_0.validation_policy_schema
-  :members: schema
+  .. literalinclude::
+    ../../deckhand/engine/schemas/certificate_authority_key_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``CertificateAuthorityKey`` documents.
+
+  This schema is used to sanity-check all CertificateAuthorityKey documents
+  that are passed to Deckhand.
+
+* ``CertificateAuthority`` schema.
+
+  JSON schema against which all documents with
+  ``deckhand/CertificateAuthority/v1`` schema are validated.
+
+  .. literalinclude::
+    ../../deckhand/engine/schemas/certificate_authority_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``CertificateAuthority`` documents.
+
+  This schema is used to sanity-check all ``CertificateAuthority`` documents
+  that are passed to Deckhand.
+
+* ``CertificateKey`` schema.
+
+  JSON schema against which all documents with ``deckhand/CertificateKey/v1``
+  schema are validated.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/certificate_key_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``CertificateKey`` documents.
+
+  This schema is used to sanity-check all ``CertificateKey`` documents that are
+  passed to Deckhand.
+
+* ``Certificate`` schema.
+
+  JSON schema against which all documents with ``deckhand/Certificate/v1``
+  schema are validated.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/certificate_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``Certificate`` documents.
+
+  This schema is used to sanity-check all ``Certificate`` documents that are
+  passed to Deckhand.
+
+* ``DataSchema`` schema.
+
+  JSON schema against which all documents with ``deckhand/DataSchema/v1``
+  schema are validated.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/dataschema_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``DataSchema`` documents.
+
+  This schema is used to sanity-check all ``DataSchema`` documents that are
+  passed to Deckhand.
+
+* ``LayeringPolicy`` schema.
+
+  JSON schema against which all documents with ``deckhand/LayeringPolicy/v1``
+  schema are validated.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/layering_policy_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``LayeringPolicy`` documents.
+
+  This schema is used to sanity-check all ``LayeringPolicy`` documents that are
+  passed to Deckhand.
+
+* ``PrivateKey`` schema.
+
+  JSON schema against which all documents with ``deckhand/PrivateKey/v1``
+  schema are validated.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/passphrase_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``PrivateKey`` documents.
+
+  This schema is used to sanity-check all ``PrivateKey`` documents that are
+  passed to Deckhand.
+
+* ``PublicKey`` schema.
+
+  JSON schema against which all documents with ``deckhand/PublicKey/v1``
+  schema are validated.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/public_key_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``PublicKey`` documents.
+
+  This schema is used to sanity-check all ``PublicKey`` documents that are
+  passed to Deckhand.
+
+* ``Passphrase`` schema.
+
+  JSON schema against which all documents with ``deckhand/Passphrase/v1``
+  schema are validated.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/private_key_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``Passphrase`` documents.
+
+  This schema is used to sanity-check all ``Passphrase`` documents that are
+  passed to Deckhand.
+
+* ``ValidationPolicy`` schema.
+
+  JSON schema against which all documents with ``deckhand/ValidationPolicy/v1``
+  schema are validated.
+
+  .. literalinclude::
+    ../../deckhand/engine/schemas/validation_policy_schema.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``ValidationPolicy`` documents.
+
+  This schema is used to sanity-check all ``ValidationPolicy`` documents that
+  are passed to Deckhand.

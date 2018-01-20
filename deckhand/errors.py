@@ -175,8 +175,8 @@ class InvalidDocumentFormat(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("The provided document(s) failed schema validation. Details: "
-               "%(details)s")
+    msg_fmt = ("The provided document [%(document_schema)s] %(document_name)s "
+               "failed schema validation. Errors: %(errors)s")
     code = 400
 
 
@@ -206,7 +206,6 @@ class InvalidDocumentParent(DeckhandException):
     msg_fmt = ("The document parent [%(parent_schema)s] %(parent_name)s is "
                "invalid for document [%(document_schema)s] %(document_name)s. "
                "Reason: %(reason)s")
-    code = 400
 
 
 class IndeterminateDocumentParent(DeckhandException):

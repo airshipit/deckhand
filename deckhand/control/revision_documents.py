@@ -186,7 +186,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
         data_schemas = db_api.revision_documents_get(
             schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
         doc_validator = document_validation.DocumentValidation(
-            rendered_documents, data_schemas)
+            rendered_documents, data_schemas, pre_validate=False)
         try:
             validations = doc_validator.validate_all()
         except errors.InvalidDocumentFormat as e:

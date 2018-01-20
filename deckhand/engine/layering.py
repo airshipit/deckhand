@@ -245,7 +245,7 @@ class DocumentLayering(object):
 
         return result
 
-    def _validate_documents(self, documents):
+    def _pre_validate_documents(self, documents):
         LOG.debug('%s performing document pre-validation.',
                   self.__class__.__name__)
         validator = document_validation.DocumentValidation(
@@ -262,8 +262,9 @@ class DocumentLayering(object):
                     'Document [%s] %s failed with pre-validation error: %s.',
                     *error)
             raise errors.InvalidDocumentFormat(
-                details='The following pre-validation errors occurred '
-                        '(schema, name, error): %s.' % val_errors)
+                document_schema=', '.join(v[0] for v in val_errors),
+                document_name=', '.join(v[1] for v in val_errors),
+                errors=', '.join(v[2] for v in val_errors))
 
     def __init__(self, documents, substitution_sources=None, validate=True,
                  fail_on_missing_sub_src=True):
@@ -279,7 +280,8 @@ class DocumentLayering(object):
             sources for substitution. Should only include concrete documents.
         :type substitution_sources: List[dict]
         :param validate: Whether to pre-validate documents using built-in
-            schema validation. Default is True.
+            schema validation. Skips over externally registered ``DataSchema``
+            documents to avoid false positives. Default is True.
         :type validate: bool
         :param fail_on_missing_sub_src: Whether to fail on a missing
             substitution source. Default is True.
@@ -299,8 +301,9 @@ class DocumentLayering(object):
         self._documents_by_labels = {}
         self._layering_policy = None
 
+        # TODO(fmontei): Add a hook for post-validation too.
         if validate:
-            self._validate_documents(documents)
+            self._pre_validate_documents(documents)
 
         layering_policies = list(
             filter(lambda x: x.get('schema').startswith(

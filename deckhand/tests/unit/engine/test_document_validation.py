@@ -15,9 +15,8 @@
 import mock
 
 from deckhand.engine import document_validation
-from deckhand.tests.unit.engine import base as engine_test_base
-
 from deckhand import factories
+from deckhand.tests.unit.engine import base as engine_test_base
 from deckhand import utils
 
 
@@ -59,7 +58,7 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
         abstract_document = utils.jsonpath_replace(
             test_document, True, '.metadata.layeringDefinition.abstract')
         document_validation.DocumentValidation(
-            abstract_document).validate_all()
+            abstract_document, pre_validate=False).validate_all()
         self.assertTrue(mock_log.info.called)
         self.assertIn("Skipping schema validation for abstract document",
                       mock_log.info.mock_calls[0][1][0])
@@ -81,8 +80,12 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
             'scary-secret', utils.jsonpath_parse(test_document['data'],
                                                  sub['dest']['path']))
 
+        data_schema_factory = factories.DataSchemaFactory()
+        data_schema = data_schema_factory.gen_test(test_document['schema'], {})
+
         validations = document_validation.DocumentValidation(
-            test_document).validate_all()
+            test_document, existing_data_schemas=[data_schema],
+            pre_validate=False).validate_all()
 
         self.assertEqual(1, len(validations[0]['errors']))
         self.assertIn('Sanitized to avoid exposing secret.',

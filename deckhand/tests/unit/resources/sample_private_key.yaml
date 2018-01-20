@@ -1,10 +1,10 @@
 ---
-schema: deckhand/Passphrase/v1.0
+schema: deckhand/PrivateKey/v1.0
 metadata:
   schema: metadata/Document/v1.0
-  name: application-admin-password
+  name: application-private-password
   storagePolicy: encrypted
   layeringDefinition:
     abstract: False
     layer: site
-data: some-password
+data: some-private-key

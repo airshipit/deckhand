@@ -33,9 +33,9 @@ DataSchema
 that Deckhand can use for validation. No ``DataSchema`` documents with names
 beginning with ``deckhand/`` or ``metadata/`` are allowed.  The ``metadata.name``
 field of each ``DataSchema`` document specifies the top level ``schema`` that it
-is used to validate.
+is used to validate against.
 
-The contents of its ``data`` key are expected to be the json schema definition
+The contents of its ``data`` key are expected to be the JSON schema definition
 for the target document type from the target's top level ``data`` key down.
 
 .. TODO: give valid, tiny schema as example

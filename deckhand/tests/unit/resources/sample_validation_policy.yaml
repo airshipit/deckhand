@@ -4,6 +4,9 @@ schema: deckhand/ValidationPolicy/v1.0
 metadata:
   schema: metadata/Control/v1.0
   name: later-validation
+  layeringDefinition:
+    abstract: False
+    layer: site
 data:
   validations:
     - name: deckhand-schema-validation

@@ -27,13 +27,8 @@ DOCUMENT_TEST_SCHEMA = 'example/Kind/v1'
 
 @six.add_metaclass(abc.ABCMeta)
 class DeckhandFactory(object):
-    # TODO(fmontei): Allow this to be overriden in ``__init__``.
+    # TODO(fmontei): Allow this to be overridden in ``__init__``.
     API_VERSION = '1.0'
-
-    @abc.abstractmethod
-    def gen(self, *args):
-        """Generate an object for usage by the Deckhand `engine` module."""
-        pass
 
     @abc.abstractmethod
     def gen_test(self, *args, **kwargs):
@@ -51,7 +46,11 @@ class DataSchemaFactory(DeckhandFactory):
         "metadata": {
             "schema": "metadata/Control/v1",
             "name": "",
-            "labels": {}
+            "labels": {},
+            "layeringDefinition": {
+                "abstract": True,
+                "layer": "site"
+            }
         },
         "schema": "deckhand/DataSchema/v1"
     }
@@ -73,9 +72,6 @@ class DataSchemaFactory(DeckhandFactory):
             ...
         """
 
-    def gen(self):
-        raise NotImplementedError()
-
     def gen_test(self, metadata_name, data, **metadata_labels):
         data_schema_template = copy.deepcopy(self.DATA_SCHEMA_TEMPLATE)
 
@@ -90,18 +86,22 @@ class DataSchemaFactory(DeckhandFactory):
 class DocumentFactory(DeckhandFactory):
     """Class for auto-generating document templates for testing."""
 
-    LAYERING_DEFINITION = {
+    LAYERING_POLICY_TEMPLATE = {
         "data": {
             "layerOrder": []
         },
         "metadata": {
             "name": "placeholder",
-            "schema": "metadata/Control/v%s" % DeckhandFactory.API_VERSION
+            "schema": "metadata/Control/v%s" % DeckhandFactory.API_VERSION,
+            "layeringDefinition": {
+                "abstract": False,
+                "layer": ""
+            }
         },
         "schema": "deckhand/LayeringPolicy/v%s" % DeckhandFactory.API_VERSION
     }
 
-    LAYER_TEMPLATE = {
+    DOCUMENT_TEMPLATE = {
         "data": {},
         "metadata": {
             "labels": {"": ""},
@@ -159,10 +159,12 @@ class DocumentFactory(DeckhandFactory):
             layer_order = ["global", "region", "site"]
         else:
             raise ValueError("'num_layers' must be a value between 1 - 3.")
-        self.layering_definition = copy.deepcopy(self.LAYERING_DEFINITION)
-        self.layering_definition['metadata']['name'] = test_utils.rand_name(
+        self.layering_policy = copy.deepcopy(self.LAYERING_POLICY_TEMPLATE)
+        self.layering_policy['metadata']['name'] = test_utils.rand_name(
             'layering-policy')
-        self.layering_definition['data']['layerOrder'] = layer_order
+        self.layering_policy['data']['layerOrder'] = layer_order
+        self.layering_policy['metadata']['layeringDefinition'][
+            'layer'] = layer_order[0]
 
         if not isinstance(docs_per_layer, (list, tuple)):
             raise TypeError("'docs_per_layer' must be a list or tuple "
@@ -178,9 +180,6 @@ class DocumentFactory(DeckhandFactory):
 
         self.num_layers = num_layers
         self.docs_per_layer = docs_per_layer
-
-    def gen(self):
-        raise NotImplementedError()
 
     def gen_test(self, mapping, site_abstract=True, region_abstract=True,
                  global_abstract=True, site_parent_selectors=None):
@@ -228,12 +227,12 @@ class DocumentFactory(DeckhandFactory):
         :type site_parent_selectors: list
         :returns: Rendered template of the form specified above.
         """
-        rendered_template = [self.layering_definition]
+        rendered_template = [self.layering_policy]
         layer_order = rendered_template[0]['data']['layerOrder']
 
         for layer_idx in range(self.num_layers):
             for count in range(self.docs_per_layer[layer_idx]):
-                layer_template = copy.deepcopy(self.LAYER_TEMPLATE)
+                layer_template = copy.deepcopy(self.DOCUMENT_TEMPLATE)
                 layer_name = layer_order[layer_idx]
 
                 layer_template = copy.deepcopy(layer_template)
@@ -332,7 +331,11 @@ class DocumentSecretFactory(DeckhandFactory):
         "metadata": {
             "schema": "metadata/Document/v1",
             "name": "",
-            "storagePolicy": ""
+            "layeringDefinition": {
+                "abstract": False,
+                "layer": "site"
+            },
+            "storagePolicy": "",
         },
         "schema": "deckhand/%s/v1"
     }
@@ -357,9 +360,6 @@ class DocumentSecretFactory(DeckhandFactory):
               -----END CERTIFICATE-----
             ...
         """
-
-    def gen(self):
-        raise NotImplementedError()
 
     def gen_test(self, schema, storage_policy, data=None, name=None):
         if data is None:

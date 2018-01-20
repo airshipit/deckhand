@@ -13,21 +13,65 @@
 # limitations under the License.
 
 import abc
+import copy
+import os
+import pkg_resources
 import re
+import yaml
 
 import jsonschema
 from oslo_log import log as logging
 import six
 
 from deckhand.engine import document_wrapper
-from deckhand.engine.schema import base_schema
-from deckhand.engine.schema import v1_0
 from deckhand.engine.secrets_manager import SecretsSubstitution
 from deckhand import errors
 from deckhand import types
 from deckhand import utils
 
 LOG = logging.getLogger(__name__)
+
+_DEFAULT_SCHEMAS = {}
+_SUPPORTED_SCHEMA_VERSIONS = ('v1',)
+
+
+def _get_schema_parts(document, schema_key='schema'):
+    # TODO(fmontei): Remove this function once documents have been standardized
+    # around macroversions or microversions.
+    schema_parts = utils.jsonpath_parse(document, schema_key).split('/')
+    schema_prefix = '/'.join(schema_parts[:2])
+    schema_version = schema_parts[2]
+    if schema_version.endswith('.0'):
+        schema_version = schema_version[:-2]
+    return schema_prefix, schema_version
+
+
+def _get_schema_dir():
+    return pkg_resources.resource_filename('deckhand.engine', 'schemas')
+
+
+def _build_schema_map():
+    """Populates ``_DEFAULT_SCHEMAS`` with built-in Deckhand schemas."""
+    global _DEFAULT_SCHEMAS
+    _DEFAULT_SCHEMAS = {k: {} for k in _SUPPORTED_SCHEMA_VERSIONS}
+    schema_dir = _get_schema_dir()
+    for schema_file in os.listdir(schema_dir):
+        if not schema_file.endswith('.yaml'):
+            continue
+        with open(os.path.join(schema_dir, schema_file)) as f:
+            for schema in yaml.safe_load_all(f):
+                schema_name = schema['metadata']['name']
+                version = schema_name.split('/')[-1]
+                _DEFAULT_SCHEMAS.setdefault(version, {})
+                if schema_file in _DEFAULT_SCHEMAS[version]:
+                    raise RuntimeError("Duplicate DataSchema document [%s] %s "
+                                       "detected." % (schema['schema'],
+                                                      schema_name))
+                _DEFAULT_SCHEMAS[version].setdefault(
+                    '/'.join(schema_name.split('/')[:2]), schema['data'])
+
+
+_build_schema_map()
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -40,6 +84,10 @@ class BaseValidator(object):
 
     _supported_versions = ('v1',)
     _schema_re = re.compile(r'^[a-zA-Z]+\/[a-zA-Z]+\/v\d+(.0)?$')
+
+    def __init__(self):
+        global _DEFAULT_SCHEMAS
+        self._schema_map = _DEFAULT_SCHEMAS
 
     @abc.abstractmethod
     def matches(self, document):
@@ -59,11 +107,15 @@ class GenericValidator(BaseValidator):
     or abstract, or what version its schema is.
     """
 
+    def __init__(self):
+        super(GenericValidator, self).__init__()
+        self.base_schema = self._schema_map['v1']['deckhand/Base']
+
     def matches(self, document):
         # Applies to all schemas, so unconditionally returns True.
         return True
 
-    def validate(self, document):
+    def validate(self, document, **kwargs):
         """Validate ``document``against basic schema validation.
 
         Sanity-checks each document for mandatory keys like "metadata" and
@@ -82,8 +134,8 @@ class GenericValidator(BaseValidator):
 
         """
         try:
-            jsonschema.Draft4Validator.check_schema(base_schema.schema)
-            schema_validator = jsonschema.Draft4Validator(base_schema.schema)
+            jsonschema.Draft4Validator.check_schema(self.base_schema)
+            schema_validator = jsonschema.Draft4Validator(self.base_schema)
             error_messages = [
                 e.message for e in schema_validator.iter_errors(document)]
         except Exception as e:
@@ -96,34 +148,110 @@ class GenericValidator(BaseValidator):
                     'Failed sanity-check validation for document [%s] %s. '
                     'Details: %s', document.get('schema', 'N/A'),
                     document.metadata.get('name'), error_messages)
-                raise errors.InvalidDocumentFormat(details=error_messages)
+                raise errors.InvalidDocumentFormat(
+                    document_schema=document.schema,
+                    document_name=document.name,
+                    errors=', '.join(error_messages))
 
 
-class SchemaValidator(BaseValidator):
-    """Validator for validating built-in document kinds."""
+class DataSchemaValidator(GenericValidator):
+    """Validator for validating ``DataSchema`` documents."""
 
-    _schema_map = {
-        'v1': {
-            'deckhand/CertificateAuthorityKey':
-                    v1_0.certificate_authority_key_schema,
-            'deckhand/CertificateAuthority': v1_0.certificate_authority_schema,
-            'deckhand/CertificateKey': v1_0.certificate_key_schema,
-            'deckhand/Certificate': v1_0.certificate_schema,
-            'deckhand/DataSchema': v1_0.data_schema_schema,
-            'deckhand/LayeringPolicy': v1_0.layering_policy_schema,
-            'deckhand/Passphrase': v1_0.passphrase_schema,
-            'deckhand/PrivateKey': v1_0.private_key_schema,
-            'deckhand/PublicKey': v1_0.public_key_schema,
-            'deckhand/ValidationPolicy': v1_0.validation_policy_schema,
+    def __init__(self, data_schemas):
+        super(DataSchemaValidator, self).__init__()
+        global _DEFAULT_SCHEMAS
+
+        self._default_schema_map = _DEFAULT_SCHEMAS
+        self._external_data_schemas = [d.data for d in data_schemas]
+        self._schema_map = self._build_schema_map(data_schemas)
+
+    def _build_schema_map(self, data_schemas):
+        schema_map = copy.deepcopy(self._default_schema_map)
+
+        for data_schema in data_schemas:
+            # Ensure that each `DataSchema` document has required properties
+            # before they themselves can be used to validate other documents.
+            if 'name' not in data_schema.metadata:
+                continue
+            if self._schema_re.match(data_schema.name) is None:
+                continue
+            if 'data' not in data_schema:
+                continue
+            schema_prefix, schema_version = _get_schema_parts(data_schema,
+                                                             'metadata.name')
+            schema_map[schema_version].setdefault(schema_prefix,
+                                                  data_schema.data)
+
+        return schema_map
+
+    def matches(self, document):
+        if document.is_abstract:
+            LOG.info('Skipping schema validation for abstract document [%s]: '
+                     '%s.', document.schema, document.name)
+            return False
+        schema_prefix, schema_version = _get_schema_parts(document)
+        return schema_prefix in self._schema_map.get(schema_version, {})
+
+    def _generate_validation_error_output(self, schema, document, error,
+                                          root_path):
+        """Returns a formatted output with necessary details for debugging why
+        a validation failed.
+
+        The response is a dictionary with the following keys:
+
+        * validation_schema: The schema body that was used to validate the
+            document.
+        * schema_path: The JSON path in the schema where the failure
+                       originated.
+        * name: The document name.
+        * schema: The document schema.
+        * path: The JSON path in the document where the failure originated.
+        * error_section: The "section" in the document above which the error
+            originated (i.e. the dict in which ``path`` is found).
+        * message: The error message returned by the ``jsonschema`` validator.
+
+        :returns: Dictionary in the above format.
+        """
+        error_path = '.'.join([str(x) for x in error.path])
+        if error_path:
+            path_to_error_in_document = '.'.join([root_path, error_path])
+        else:
+            path_to_error_in_document = root_path
+        path_to_error_in_schema = '.' + '.'.join(
+            [str(x) for x in error.schema_path])
+
+        parent_path_to_error_in_document = '.'.join(
+            path_to_error_in_document.split('.')[:-1]) or '.'
+        try:
+            # NOTE(fmontei): Because validation is performed on fully rendered
+            # documents, it is necessary to omit the parts of the data section
+            # where substitution may have occurred to avoid exposing any
+            # secrets. While this may make debugging a few validation failures
+            # more difficult, it is a necessary evil.
+            sanitized_document = (
+                SecretsSubstitution.sanitize_potential_secrets(document))
+            parent_error_section = utils.jsonpath_parse(
+                sanitized_document, parent_path_to_error_in_document)
+        except Exception:
+            parent_error_section = (
+                'Failed to find parent section above where error occurred.')
+
+        error_output = {
+            'validation_schema': schema,
+            'schema_path': path_to_error_in_schema,
+            'name': document.name,
+            'schema': document.schema,
+            'path': path_to_error_in_document,
+            'error_section': parent_error_section,
+            # TODO(fmontei): Also sanitize any secrets contained in the message
+            # as well.
+            'message': error.message
         }
-    }
 
-    # Represents a generic document schema.
-    _fallback_schema = v1_0.document_schema
+        return error_output
 
     def _get_schemas(self, document):
-        """Retrieve the relevant schemas based on the document's
-        ``schema``.
+        """Retrieve the relevant schemas based on the document's ``schema``.
 
         :param dict doc: The document used for finding the correct schema
             to validate it based on its ``schema``.
@@ -134,32 +262,25 @@ class SchemaValidator(BaseValidator):
         """
         schema_prefix, schema_version = _get_schema_parts(document)
         matching_schemas = []
+
         relevant_schemas = self._schema_map.get(schema_version, {})
-        for candidae_schema_prefix, schema in relevant_schemas.items():
-            if candidae_schema_prefix == schema_prefix:
+        for candidate_schema_prefix, schema in relevant_schemas.items():
+            if candidate_schema_prefix == schema_prefix:
                 if schema not in matching_schemas:
                     matching_schemas.append(schema)
         return matching_schemas
 
-    def matches(self, document):
-        if document.is_abstract:
-            LOG.info('Skipping schema validation for abstract document [%s]: '
-                     '%s.', document.schema, document.name)
-            return False
-        return True
-
-    def validate(self, document, validate_section='',
-                 use_fallback_schema=True):
+    def validate(self, document, pre_validate=True):
         """Validate ``document`` against built-in ``schema``-specific schemas.
 
         Does not apply to abstract documents.
 
-        :param dict document: Document to validate.
-        :param str validate_section: Document section to validate. If empty
-            string, validates entire ``document``.
-        :param bool use_fallback_schema: Whether to use the "fallback" schema
-            if no matching schemas are found by :method:``matches``.
-
+        :param document: Document to validate.
+        :type document: DocumentDict
+        :param pre_validate: Whether to pre-validate documents using built-in
+            schema validation. Skips over externally registered ``DataSchema``
+            documents to avoid false positives. Default is True.
+        :type pre_validate: bool
         :raises RuntimeError: If the Deckhand schema itself is invalid.
         :returns: Tuple of (error message, parent path for failing property)
             following schema validation failure.
@@ -167,19 +288,30 @@ class SchemaValidator(BaseValidator):
 
         """
         schemas_to_use = self._get_schemas(document)
-        if not schemas_to_use and use_fallback_schema:
-            LOG.debug('Document schema %s not recognized. Using "fallback" '
-                      'schema.', document.schema)
-            schemas_to_use = [SchemaValidator._fallback_schema]
+        if not schemas_to_use:
+            LOG.debug('Document schema %s not recognized by %s. No further '
+                      'validation required.', document.schema,
+                                              self.__class__.__name__)
 
-        for schema_to_use in schemas_to_use:
-            schema = schema_to_use.schema
-            if validate_section:
-                to_validate = document.get(validate_section, None)
-                root_path = '.' + validate_section + '.'
-            else:
-                to_validate = document
+        for schema in schemas_to_use:
+            is_builtin_schema = schema not in self._external_data_schemas
+            # NOTE(fmontei): The purpose of this `continue` is to not
+            # PRE-validate documents against externally registered
+            # `DataSchema` documents, in order to avoid raising spurious
+            # errors. These spurious errors arise from `DataSchema` documents
+            # really only applying post-rendering, when documents have all
+            # the substitutions they need to pass externally registered
+            # `DataSchema` validations.
+            if not is_builtin_schema and pre_validate:
+                continue
+
+            if is_builtin_schema:
                 root_path = '.'
+                to_validate = document
+            else:
+                root_path = '.data'
+                to_validate = document.get('data', {})
+
             try:
                 jsonschema.Draft4Validator.check_schema(schema)
                 schema_validator = jsonschema.Draft4Validator(schema)
@@ -195,80 +327,52 @@ class SchemaValidator(BaseValidator):
                         'Failed schema validation for document [%s] %s. '
                         'Details: %s.', document.schema, document.name,
                         error.message)
-                    yield _generate_validation_error_output(
-                        schema_to_use, document, error, root_path)
-
-
-class DataSchemaValidator(SchemaValidator):
-    """Validator for validating ``DataSchema`` documents."""
-
-    def __init__(self, data_schemas):
-        super(DataSchemaValidator, self).__init__()
-        self._schema_map = self._build_schema_map(data_schemas)
-
-    def _build_schema_map(self, data_schemas):
-        schema_map = {k: {} for k in self._supported_versions}
-
-        for data_schema in data_schemas:
-            # Ensure that each `DataSchema` document has required properties
-            # before they themselves can be used to validate other documents.
-            if 'name' not in data_schema.metadata:
-                continue
-            if self._schema_re.match(data_schema.name) is None:
-                continue
-            if 'data' not in data_schema:
-                continue
-            schema_prefix, schema_version = _get_schema_parts(data_schema,
-                                                             'metadata.name')
-
-            class Schema(object):
-                schema = data_schema.data
-
-            schema_map[schema_version].setdefault(schema_prefix, Schema())
-
-        return schema_map
-
-    def matches(self, document):
-        if document.is_abstract:
-            LOG.info('Skipping schema validation for abstract document [%s]: '
-                     '%s.', document.schema, document.name)
-            return False
-        schema_prefix, schema_version = _get_schema_parts(document)
-        return schema_prefix in self._schema_map.get(schema_version, {})
-
-    def validate(self, document):
-        return super(DataSchemaValidator, self).validate(
-            document, validate_section='data', use_fallback_schema=False)
+                    yield self._generate_validation_error_output(
+                        schema, document, error, root_path)
 
 
 class DocumentValidation(object):
 
     def __init__(self, documents, existing_data_schemas=None,
-                 pre_validate=False):
+                 pre_validate=True):
         """Class for document validation logic for documents.
 
         This class is responsible for validating documents according to their
         schema.
 
+        If ``pre_validate`` is true, then:
+
+        * the base_schema validates ALL documents
+        * ALL built-in schemas validate the appropriate
+          document given a schema match
+        * NO externally registered DataSchema documents
+          are used for validation
+
+        Else:
+
+        * the base_schema validates ALL documents
+        * ALL built-in schemas validate the appropriate
+          document given a schema match
+        * ALL externally registered DataSchema documents
+          are used for validation given a schema match
+
         :param documents: Documents to be validated.
         :type documents: List[dict]
         :param existing_data_schemas: ``DataSchema`` documents created in prior
-            revisions to be used the "data" section of each document in
-            ``documents``. Additional ``DataSchema`` documents in ``documents``
-            are combined with these.
+            revisions to be used to validate the "data" section of each
+            document in ``documents``. Additional ``DataSchema`` documents in
+            ``documents`` are combined with these.
         :type existing_data_schemas: dict or List[dict]
-        :param pre_validate: Only runs validations from ``GenericValidator``
-            and ``SchemaValidator`` against the documents if True. Otherwise
-            runs them all. This is useful to avoid spurious errors arising
-            from missing properties that may only exist post-substitution.
-            Default is False.
+        :param pre_validate: Whether to pre-validate documents using built-in
+            schema validation. Skips over externally registered ``DataSchema``
+            documents to avoid false positives. Default is True.
+        :type pre_validate: bool
         """
 
-        self.documents = []
-        existing_data_schemas = existing_data_schemas or []
-        data_schemas = [document_wrapper.DocumentDict(d)
-                        for d in existing_data_schemas]
-        _data_schema_map = {d.name: d for d in data_schemas}
+        self._documents = []
+        self._external_data_schemas = [document_wrapper.DocumentDict(d)
+                                       for d in existing_data_schemas or []]
+        data_schema_map = {d.name: d for d in self._external_data_schemas}
 
         raw_properties = ('data', 'metadata', 'schema')
 
@@ -283,30 +387,30 @@ class DocumentValidation(object):
 
             document = document_wrapper.DocumentDict(raw_document)
             if document.schema.startswith(types.DATA_SCHEMA_SCHEMA):
-                data_schemas.append(document)
+                self._external_data_schemas.append(document)
                 # If a newer version of the same DataSchema was passed in,
                 # only use the new one and discard the old one.
-                if document.name in _data_schema_map:
-                    data_schemas.remove(_data_schema_map.pop(document.name))
+                if document.name in data_schema_map:
+                    self._external_data_schemas.remove(
+                        data_schema_map.pop(document.name))
 
-            self.documents.append(document)
+            self._documents.append(document)
 
         # NOTE(fmontei): The order of the validators is important. The
         # ``GenericValidator`` must come first.
         self._validators = [
             GenericValidator(),
-            SchemaValidator(),
-            DataSchemaValidator(data_schemas)
+            DataSchemaValidator(self._external_data_schemas)
         ]
 
         self._pre_validate = pre_validate
 
     def _get_supported_schema_list(self):
         schema_list = []
-        for validator in self._validators[1:]:  # Skip over `GenericValidator`.
-            for schema_version, schema_map in validator._schema_map.items():
-                for schema_prefix in schema_map:
-                    schema_list.append(schema_prefix + '/' + schema_version)
+        validator = self._validators[-1]
+        for schema_version, schema_map in validator._schema_map.items():
+            for schema_name in schema_map:
+                schema_list.append(schema_name + '/' + schema_version)
         return schema_list
 
     def _format_validation_results(self, results):
@@ -349,13 +453,10 @@ class DocumentValidation(object):
                            supported_schema_list))
             LOG.info(message)
 
-        validators = self._validators
-        if self._pre_validate is True:
-            validators = self._validators[:-1]
-
-        for validator in validators:
+        for validator in self._validators:
             if validator.matches(document):
-                error_outputs = validator.validate(document)
+                error_outputs = validator.validate(
+                    document, pre_validate=self._pre_validate)
                 if error_outputs:
                     for error_output in error_outputs:
                         result['errors'].append(error_output)
@@ -368,7 +469,7 @@ class DocumentValidation(object):
         return result
 
     def validate_all(self):
-        """Pre-validate that all documents are correctly formatted.
+        """Validate that all documents are correctly formatted.
 
         All concrete documents in the revision must successfully pass their
         JSON schema validations. The result of the validation is stored under
@@ -377,28 +478,15 @@ class DocumentValidation(object):
 
         All abstract documents must themselves be sanity-checked.
 
-        Validation is broken up into 3 stages:
+        Validation is broken up into 2 "main" stages:
 
             1) Validate that each document contains the basic bulding blocks
                needed: i.e. ``schema`` and ``metadata`` using a "base" schema.
                Failing this validation is deemed a critical failure, resulting
                in an exception.
 
-               .. note::
-
-                   The ``data`` section, while mandatory, will not result in
-                   critical failure. This is because a document can rely
-                   on yet another document for ``data`` substitution. But
-                   the validation for the document will be tagged as
-                   ``failure``.
-
-            2) Validate each specific document type (e.g. validation policy)
-               using a more detailed schema. Failing this validation is deemed
-               non-critical, resulting in the error being recorded along with
-               any other non-critical exceptions, which are returned together
-               later.
-
-            3) Execute ``DataSchema`` validations if applicable.
+            2) Execute ``DataSchema`` validations if applicable. Includes all
+               built-in ``DataSchema`` documents by default.
 
         :returns: A list of validations (one for each document validated).
         :rtype: List[dict]
@@ -410,72 +498,9 @@ class DocumentValidation(object):
 
         validation_results = []
 
-        for document in self.documents:
+        for document in self._documents:
             result = self._validate_one(document)
             validation_results.append(result)
 
         validations = self._format_validation_results(validation_results)
         return validations
-
-
-def _get_schema_parts(document, schema_key='schema'):
-    schema_parts = utils.jsonpath_parse(document, schema_key).split('/')
-    schema_prefix = '/'.join(schema_parts[:2])
-    schema_version = schema_parts[2]
-    if schema_version.endswith('.0'):
-        schema_version = schema_version[:-2]
-    return schema_prefix, schema_version
-
-
-def _generate_validation_error_output(schema, document, error, root_path):
-    """Returns a formatted output with necessary details for debugging why
-    a validation failed.
-
-    The response is a dictionary with the following keys:
-
-    * validation_schema: The schema body that was used to validate the
-        document.
-    * schema_path: The JSON path in the schema where the failure originated.
-    * name: The document name.
-    * schema: The document schema.
-    * path: The JSON path in the document where the failure originated.
-    * error_section: The "section" in the document above which the error
-        originated (i.e. the dict in which ``path`` is found).
-    * message: The error message returned by the ``jsonschema`` validator.
-
-    :returns: Dictionary in the above format.
-    """
-    path_to_error_in_document = root_path + '.'.join(
-        [str(x) for x in error.path])
-    path_to_error_in_schema = '.' + '.'.join(
-        [str(x) for x in error.schema_path])
-
-    parent_path_to_error_in_document = '.'.join(
-        path_to_error_in_document.split('.')[:-1]) or '.'
-    try:
-        # NOTE(fmontei): Because validation is performed on fully rendered
-        # documents, it is necessary to omit the parts of the data section
-        # where substitution may have occurred to avoid exposing any
-        # secrets. While this may make debugging a few validation failures
-        # more difficult, it is a necessary evil.
-        sanitized_document = SecretsSubstitution.sanitize_potential_secrets(
-            document)
-        parent_error_section = utils.jsonpath_parse(
-            sanitized_document, parent_path_to_error_in_document)
-    except Exception:
-        parent_error_section = (
-            'Failed to find parent section above where error occurred.')
-
-    error_output = {
-        'validation_schema': schema.schema,
-        'schema_path': path_to_error_in_schema,
-        'name': document.name,
-        'schema': document.schema,
-        'path': path_to_error_in_document,
-        'error_section': parent_error_section,
-        # TODO(fmontei): Also sanitize any secrets contained in the message
-        # as well.
-        'message': error.message
-    }
-
-    return error_output

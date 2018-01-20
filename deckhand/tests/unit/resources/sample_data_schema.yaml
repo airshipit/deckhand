@@ -5,5 +5,8 @@ metadata:
   name: promenade/Node/v1.0  # Specifies the documents to be used for validation.
   labels:
     application: promenade
+  layeringDefinition:
+    abstract: False
+    layer: site
 data:  # Valid JSON Schema is expected here.
   $schema: http://blah

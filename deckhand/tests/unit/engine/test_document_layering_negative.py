@@ -71,6 +71,7 @@ class TestDocumentLayeringNegative(
     def test_layering_with_empty_layer(self, mock_log):
         doc_factory = factories.DocumentFactory(1, [1])
         documents = doc_factory.gen_test({}, global_abstract=False)
+        del documents[0]['metadata']['layeringDefinition']
 
         # Only pass in the LayeringPolicy.
         self._test_layering([documents[0]], global_expected=None)
@@ -243,3 +244,29 @@ class TestDocumentLayeringValidationNegative(
             self.assertRaises(errors.InvalidDocumentFormat,
                               self._test_layering, [layering_policy, document],
                               validate=True)
+
+    def test_layering_invalid_document_format_generates_error_messages(self):
+        doc_factory = factories.DocumentFactory(1, [1])
+        lp_template, document = doc_factory.gen_test({
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".c"
+                },
+                "src": {
+                    "schema": "deckhand/Certificate/v1",
+                    "name": "global-cert",
+                    "path": "."
+                }
+
+            }],
+        }, global_abstract=False)
+
+        layering_policy = copy.deepcopy(lp_template)
+        del layering_policy['data']['layerOrder']
+        error_re = ("The provided document \[%s\] %s failed schema validation."
+                    " Errors: 'layerOrder' is a required property" % (
+                        layering_policy['schema'],
+                        layering_policy['metadata']['name']))
+        self.assertRaisesRegexp(
+            errors.InvalidDocumentFormat, error_re, self._test_layering,
+            [layering_policy, document], validate=True)

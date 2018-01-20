@@ -4,6 +4,9 @@ metadata:
   schema: metadata/Document/v1.0
   name: application-api
   storagePolicy: encrypted
+  layeringDefinition:
+    abstract: False
+    layer: site
 data: |-
   -----BEGIN RSA PRIVATE KEY-----
   MIIEpQIBAAKCAQEAx+m1+ao7uTVEs+I/Sie9YsXL0B9mOXFlzEdHX8P8x4nx78/T

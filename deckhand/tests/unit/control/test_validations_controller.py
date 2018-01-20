@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import os
 import yaml
 
 import mock
@@ -20,7 +21,6 @@ from oslo_config import cfg
 
 from deckhand.control import buckets
 from deckhand.engine import document_validation
-from deckhand.engine.schema.v1_0 import document_schema
 from deckhand import factories
 from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
@@ -93,6 +93,11 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
 
     def setUp(self):
         super(TestValidationsControllerPostValidate, self).setUp()
+        dataschema_schema = os.path.join(
+            os.getcwd(), 'deckhand', 'engine', 'schemas',
+            'dataschema_schema.yaml')
+        with open(dataschema_schema, 'r') as f:
+            self.dataschema_schema = yaml.safe_load(f.read())
         self._monkey_patch_document_validation()
 
     def _monkey_patch_document_validation(self):
@@ -556,25 +561,24 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
             'properties': {
                 'a': {
                     'type': 'integer'  # Test doc will fail b/c of wrong type.
+                },
+                'b': {
+                    'type': 'string'
                 }
             },
-            'required': ['a']
+            'required': ['a', 'b']
         }
         data_schema = data_schema_factory.gen_test(
             metadata_name, data=schema_to_use)
 
-        # Failure #1.
-        # Create the test document that fails the validation due to the
-        # schema defined by the `DataSchema` document.
+        # Failure #1: Provide wrong type for property "a".
+        # Failure #2: Don't include required property "b".
         doc_factory = factories.DocumentFactory(1, [1])
         doc_to_test = doc_factory.gen_test(
             {'_GLOBAL_DATA_1_': {'data': {'a': 'fail'}}},
             global_abstract=False)[-1]
         doc_to_test['schema'] = 'example/foo/v1'
         doc_to_test['metadata']['name'] = 'test_doc'
-        # Failure #2.
-        # Remove required metadata property, causing error to be generated.
-        del doc_to_test['metadata']['layeringDefinition']
 
         revision_id = self._create_revision(payload=[doc_to_test, data_schema])
 
@@ -597,16 +601,19 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
             'error_section': {
                 'data': {'a': 'fail'},
                 'metadata': {'labels': {'global': 'global1'},
-                             'name': 'test_doc',
-                             'schema': 'metadata/Document/v1.0'},
-                'schema': 'example/foo/v1'
+                             'layeringDefinition': {'abstract': False,
+                                                    'actions': [],
+                                                    'layer': 'global'},
+                             'name': doc_to_test['metadata']['name'],
+                             'schema': doc_to_test['metadata']['schema']},
+                'schema': doc_to_test['schema']
             },
             'name': 'test_doc',
-            'path': '.metadata',
+            'path': '.data',
             'schema': 'example/foo/v1',
-            'message': "'layeringDefinition' is a required property",
-            'validation_schema': document_schema.schema,
-            'schema_path': '.properties.metadata.required'
+            'message': "'b' is a required property",
+            'validation_schema': schema_to_use,
+            'schema_path': '.required'
         }, {
             'error_section': {'a': 'fail'},
             'name': 'test_doc',
@@ -624,7 +631,8 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
         body = yaml.safe_load(resp.text)
 
         self.assertEqual('failure', body['status'])
-        self.assertEqual(expected_errors, body['errors'])
+        self.assertEqual(sorted(expected_errors, key=lambda x: x['path']),
+                         sorted(body['errors'], key=lambda x: x['path']))
 
     def test_validation_with_registered_data_schema_expect_mixed(self):
         rules = {'deckhand:create_cleartext_documents': '@',
@@ -721,15 +729,12 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
         self.assertIn('errors', body)
         self.assertEqual(expected_errors, body['errors'])
 
-    def test_document_without_data_section_saves_but_fails_validation(self):
-        """Validate that a document without the data section is saved to the
-        database, but fails validation. This is a valid use case because a
-        document in a bucket can be created without a data section, which
-        depends on substitution from another document.
+    def test_document_without_data_section_ingested(self):
+        """Validate that a document without the data section is ingested
+        successfully.
         """
         rules = {'deckhand:create_cleartext_documents': '@',
-                 'deckhand:list_validations': '@',
-                 'deckhand:show_validation': '@'}
+                 'deckhand:list_validations': '@'}
         self.policy.set_rules(rules)
 
         documents_factory = factories.DocumentFactory(1, [1])
@@ -751,40 +756,10 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
         body = yaml.safe_load(resp.text)
         expected_body = {
             'count': 2,
-            'results': [{'id': 0, 'status': 'failure'},  # Document.
+            'results': [{'id': 0, 'status': 'success'},  # Document.
                         {'id': 1, 'status': 'success'}]  # DataSchema.
         }
         self.assertEqual(expected_body, body)
-
-        # Validate that the created document failed validation for the expected
-        # reason.
-        resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
-                revision_id, types.DECKHAND_SCHEMA_VALIDATION),
-            headers={'Content-Type': 'application/x-yaml'})
-        self.assertEqual(200, resp.status_code)
-        body = yaml.safe_load(resp.text)
-        expected_errors = [{
-            'error_section': {
-                'data': None,
-                'metadata': {'labels': {'global': 'global1'},
-                             'layeringDefinition': {'abstract': False,
-                                                    'actions': [],
-                                                    'layer': 'global'},
-                             'name': document['metadata']['name'],
-                             'schema': 'metadata/Document/v1.0'},
-                'schema': document['schema']
-            },
-            'name': document['metadata']['name'],
-            'path': '.data',
-            'schema': document['schema'],
-            'message': (
-                "None is not of type 'string', 'integer', 'array', 'object'"),
-            'validation_schema': document_schema.schema,
-            'schema_path': '.properties.data.type'
-        }]
-        self.assertIn('errors', body)
-        self.assertEqual(expected_errors, body['errors'])
 
     def test_validation_only_new_data_schema_registered(self):
         """Validate whether newly created DataSchemas replace old DataSchemas
@@ -859,7 +834,7 @@ class TestValidationsControllerPreValidate(ValidationsControllerBaseTest):
     Validations controller.
     """
 
-    def test_pre_validate_flag_skips_over_dataschema_validations(self):
+    def test_pre_validate_flag_skips_registered_dataschema_validations(self):
         rules = {'deckhand:create_cleartext_documents': '@',
                  'deckhand:list_validations': '@'}
         self.policy.set_rules(rules)
