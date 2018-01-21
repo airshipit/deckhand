@@ -70,7 +70,7 @@ to user-provided JSON schemas.
 .. note::
 
   While Deckhand ingests YAML documents, internally it translates them to
-  Python objects and can use JSON schemas to valdiate those objects.
+  Python objects and can use JSON schemas to validate those objects.
 
 For more information, see the :ref:`validation` section.
 
