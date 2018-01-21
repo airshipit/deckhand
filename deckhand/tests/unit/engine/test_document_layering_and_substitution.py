@@ -242,7 +242,6 @@ class TestDocumentLayeringWithSubstitution(
                     "name": "site-cert",
                     "path": "."
                 }
-
             }],
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])

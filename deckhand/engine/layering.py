@@ -346,12 +346,10 @@ class DocumentLayering(object):
 
                 # Update the actual document data if concrete.
                 if not child.is_abstract:
-                    if child.substitutions:
-                        rendered_data.substitutions = child.substitutions
-                        substituted_data = self._apply_substitutions(
-                            rendered_data)
-                        if substituted_data:
-                            rendered_data = substituted_data[0]
+                    child.data = rendered_data.data
+                    substituted_data = self._apply_substitutions(child)
+                    if substituted_data:
+                        rendered_data = substituted_data[0]
                     child_index = self._layered_documents.index(child)
                     self._layered_documents[child_index].data = (
                         rendered_data.data)

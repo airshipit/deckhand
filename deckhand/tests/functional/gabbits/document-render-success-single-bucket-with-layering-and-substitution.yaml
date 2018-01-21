@@ -1,0 +1,230 @@
+# Tests success paths for basic layering/substitution scenario as well as
+# success paths for the following edge cases:
+#  * Substitution/layering works with top layer empty
+#  * Substitution/layering works with multiple top layers empty
+#  * Substitution/layering works with intermediate layer empty
+#
+# Base case:
+# 1. Purges existing data to ensure test isolation.
+# 2. Creates basic LayeringPolicy with 2 layers.
+# 3. Adds initial documents for layering/substitution base case.
+# 4. Verifies fully substituted/layered document data.
+# Edge cases:
+# 5. Creates LayeringPolicy with 3 layers, where topmost is empty.
+# 6. Adds initial documents for layering/substitution base case.
+# 7. Verifies fully substituted/layered document data.
+# 8. Creates LayeringPolicy with 4 layers, where 2 topmost are empty.
+# 9. Adds initial documents for layering/substitution base case.
+# 10. Verifies fully substituted/layered document data.
+# 11. Creates LayeringPolicy with 5 layers, with empty interspersed layers.
+# 12. Adds initial documents for layering/substitution base case.
+# 13. Verifies fully substituted/layered document data.
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: initialize_layering_policy_base_case
+    desc: |
+      Initailize the layering policy with 2 layers where the child document
+      that requires substitution has layer site and the parent document which
+      is abstract has layer region.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - region
+          - site
+      ...
+
+  - name: initialize_base_case
+    desc: |
+      Base case for testing layering alongside substitution using two layers:
+      region and site, where site layers with region, then receives multiple
+      substitutions from secret documents.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/layering-and-substitution-example.yaml
+
+  - name: verify_base_case
+    desc: Check for expected substitutions
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      metadata.name: armada-chart-01
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].metadata.name: armada-chart-01
+      $.[0].data:
+        chart:
+          details:
+            data: here
+          values:
+            tls:
+              certificate: |
+                CERTIFICATE DATA
+              key: |
+                KEY DATA
+            some_url: http://admin:my-secret-password@service-name:8080/v1
+        from-parent: parent-val
+
+  - name: initialize_layering_policy_with_top_empty_layer
+    desc: |
+      Re-initailize the layering policy with 3 layers so that the top is empty
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - global  # Empty
+          - region
+          - site
+      ...
+
+  - name: initialize_base_case_with_empty_top_layer
+    desc: |
+      Same case as before, except with a top empty layer.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/layering-and-substitution-example.yaml
+
+  - name: verify_empty_top_layer
+    desc: Check for expected substitutions
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      metadata.name: armada-chart-01
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].metadata.name: armada-chart-01
+      $.[0].data:
+        chart:
+          details:
+            data: here
+          values:
+            tls:
+              certificate: |
+                CERTIFICATE DATA
+              key: |
+                KEY DATA
+            some_url: http://admin:my-secret-password@service-name:8080/v1
+        from-parent: parent-val
+
+  - name: initialize_layering_policy_with_2_top_empty_layers
+    desc: |
+      Re-initailize the layering policy with 4 layers so that the top 2 can be
+      empty
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - meta    # Empty
+          - global  # Empty
+          - region
+          - site
+      ...
+
+  - name: initialize_base_case_with_multiple_empty_top_layers
+    desc: |
+      Same case as before, except with multiple empty top layers.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/layering-and-substitution-example.yaml
+
+  - name: verify_multiple_empty_top_layers
+    desc: Check for expected substitutions
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      metadata.name: armada-chart-01
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].metadata.name: armada-chart-01
+      $.[0].data:
+        chart:
+          details:
+            data: here
+          values:
+            tls:
+              certificate: |
+                CERTIFICATE DATA
+              key: |
+                KEY DATA
+            some_url: http://admin:my-secret-password@service-name:8080/v1
+        from-parent: parent-val
+
+  - name: initialize_layering_policy_with_interspersed_empty_layers
+    desc: |
+      Re-initailize the layering policy with 5 layers with empty interspersed
+      layers.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - meta       # Empty
+          - global     # Empty
+          - region
+          - sub-region # Empty
+          - site
+      ...
+
+  - name: initialize_base_case_with_multiple_interspersed_empty_layers
+    desc: |
+      Same case as before, except with multiple empty interspersed layers.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/layering-and-substitution-example.yaml
+
+  - name: verify_multiple_empty_top_layers
+    desc: Check for expected substitutions
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      metadata.name: armada-chart-01
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].metadata.name: armada-chart-01
+      $.[0].data:
+        chart:
+          details:
+            data: here
+          values:
+            tls:
+              certificate: |
+                CERTIFICATE DATA
+              key: |
+                KEY DATA
+            some_url: http://admin:my-secret-password@service-name:8080/v1
+        from-parent: parent-val
