@@ -577,20 +577,22 @@ def revision_delete_all():
 
 
 def _exclude_deleted_documents(documents):
-    """Excludes all documents with ``deleted=True`` field including all
-    documents earlier in the revision history with the same `metadata.name`
-    and `schema` from ``documents``.
+    """Excludes all documents that have been deleted including all documents
+    earlier in the revision history with the same ``metadata.name`` and
+    ``schema`` from ``documents``.
     """
-    for doc in copy.copy(documents):
-        if doc['deleted']:
-            docs_to_delete = [
-                d for d in documents if
-                    (d['schema'], d['name']) == (doc['schema'], doc['name'])
-                    and d['created_at'] <= doc['deleted_at']
-            ]
-            for d in list(docs_to_delete):
-                documents.remove(d)
-    return documents
+    _documents_map = {}  # (schema, metadata.name) => should be included?
+
+    for doc in sorted(documents, key=lambda x: x['created_at']):
+        if doc['deleted'] is True:
+            previous_doc = _documents_map.get((doc['schema'], doc['name']))
+            if previous_doc:
+                if doc['deleted_at'] >= previous_doc['created_at']:
+                    _documents_map[(doc['schema'], doc['name'])] = None
+        else:
+            _documents_map[(doc['schema'], doc['name'])] = doc
+
+    return [d for d in _documents_map.values() if d is not None]
 
 
 def _filter_revision_documents(documents, unique_only, **filters):
@@ -739,8 +741,8 @@ def revision_diff(revision_id, comparison_revision_id):
 
     # Remove each deleted document and its older counterparts because those
     # documents technically don't exist.
-    for documents in (docs, comparison_docs):
-        documents = _exclude_deleted_documents(documents)
+    docs = _exclude_deleted_documents(docs)
+    comparison_docs = _exclude_deleted_documents(comparison_docs)
 
     revision = revision_get(revision_id) if revision_id != 0 else None
     comparison_revision = (revision_get(comparison_revision_id)
