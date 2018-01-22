@@ -45,6 +45,8 @@ spec:
       containers:
         - name: deckhand
           env:
+            - name: 'DECKHAND_API_TIMEOUT'
+              value: {{ .Values.conf.uwsgi.timeout | default 600 | quote }}
             - name: 'DECKHAND_API_WORKERS'
               value: {{ .Values.conf.uwsgi.workers | default 4 | quote }}
             - name: 'DECKHAND_API_THREADS'
