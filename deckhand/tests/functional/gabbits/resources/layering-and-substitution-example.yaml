@@ -1,13 +1,4 @@
 ---
-schema: deckhand/LayeringPolicy/v1
-metadata:
-  schema: metadata/Control/v1
-  name: layering-policy
-data:
-  layerOrder:
-    - region
-    - site
----
 schema: deckhand/Certificate/v1
 metadata:
   name: example-cert
@@ -39,10 +30,27 @@ data: my-secret-password
 ---
 schema: armada/Chart/v1
 metadata:
-  name: example-chart-01
   schema: metadata/Document/v1
+  name: armada-chartgroup-01
+  labels:
+    key1: value1
+  layeringDefinition:
+    abstract: true
+    layer: region
+data:
+  from-parent: parent-val
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: armada-chart-01
   layeringDefinition:
     layer: site
+    parentSelector:
+      key1: value1
+    actions:
+      - method: merge
+        path: .
   substitutions:
     - dest:
         path: .chart.values.tls.certificate
