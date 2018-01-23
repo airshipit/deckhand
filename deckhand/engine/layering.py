@@ -16,9 +16,8 @@ import collections
 import copy
 
 from oslo_log import log as logging
-import six
 
-from deckhand.engine import document
+from deckhand.engine import document_wrapper
 from deckhand.engine import secrets_manager
 from deckhand.engine import utils
 from deckhand import errors
@@ -62,21 +61,25 @@ class DocumentLayering(object):
             document contains a "children" property in addition to original
             data. List of documents returned is ordered from highest to lowest
             layer.
-        :rtype: list of deckhand.engine.document.Document objects.
+        :rtype: List[:class:`DocumentDict`]
         :raises IndeterminateDocumentParent: If more than one parent document
             was found for a document.
         """
         layered_docs = list(
-            filter(lambda x: 'layeringDefinition' in x['metadata'],
+            filter(lambda x: 'layeringDefinition' in x.metadata,
                 self._documents))
 
         # ``all_children`` is a counter utility for verifying that each
         # document has exactly one parent.
         all_children = collections.Counter()
 
+        # Mapping of (doc.name, doc.metadata.name) => children, where children
+        # are the documents whose `parentSelector` references the doc.
+        self._children = {}
+
         def _get_children(doc):
             children = []
-            doc_layer = doc.get_layer()
+            doc_layer = doc.layer
             try:
                 next_layer_idx = self._layer_order.index(doc_layer) + 1
                 children_doc_layer = self._layer_order[next_layer_idx]
@@ -89,16 +92,16 @@ class DocumentLayering(object):
                 # Documents with different schemas are never layered together,
                 # so consider only documents with same schema as candidates.
                 is_potential_child = (
-                    other_doc.get_layer() == children_doc_layer and
-                    other_doc.get_schema() == doc.get_schema()
+                    other_doc.layer == children_doc_layer and
+                    other_doc.schema == doc.schema
                 )
                 if (is_potential_child):
                     # A document can have many labels but should only have one
                     # explicit label for the parentSelector.
-                    parent_sel = other_doc.get_parent_selector()
+                    parent_sel = other_doc.parent_selector
                     parent_sel_key = list(parent_sel.keys())[0]
                     parent_sel_val = list(parent_sel.values())[0]
-                    doc_labels = doc.get_labels()
+                    doc_labels = doc.labels
 
                     if (parent_sel_key in doc_labels and
                         parent_sel_val == doc_labels[parent_sel_key]):
@@ -108,18 +111,19 @@ class DocumentLayering(object):
 
         for layer in self._layer_order:
             docs_by_layer = list(filter(
-                (lambda x: x.get_layer() == layer), layered_docs))
+                (lambda x: x.layer == layer), layered_docs))
 
             for doc in docs_by_layer:
                 children = _get_children(doc)
 
                 if children:
                     all_children.update(children)
-                    doc.to_dict().setdefault('children', children)
+                    self._children.setdefault((doc.name, doc.schema),
+                                              children)
 
         all_children_elements = list(all_children.elements())
         secondary_docs = list(
-            filter(lambda d: d.get_layer() != self._layer_order[0],
+            filter(lambda d: d.layer != self._layer_order[0],
             layered_docs))
         for doc in secondary_docs:
             # Unless the document is the topmost document in the
@@ -128,32 +132,30 @@ class DocumentLayering(object):
             if doc not in all_children_elements:
                 LOG.info('Could not find parent for document with name=%s, '
                          'schema=%s, layer=%s, parentSelector=%s.',
-                         doc.get_name(), doc.get_schema(), doc.get_layer(),
-                         doc.get_parent_selector())
+                         doc.name, doc.schema, doc.layer, doc.parent_selector)
                 self._parentless_documents.append(doc)
             # If the document is a child document of more than 1 parent, then
             # the document has too many parents, which is a validation error.
-            elif all_children[doc] != 1:
+            elif all_children[doc] > 1:
                 LOG.info('%d parent documents were found for child document '
                          'with name=%s, schema=%s, layer=%s, parentSelector=%s'
-                         '. Each document must only have 1 parent.',
-                         all_children[doc], doc.get_name(), doc.get_schema(),
-                         doc.get_layer(), doc.get_parent_selector())
+                         '. Each document must have exactly 1 parent.',
+                         all_children[doc], doc.name, doc.schema, doc.layer,
+                         doc.parent_selector)
                 raise errors.IndeterminateDocumentParent(document=doc)
 
         return layered_docs
 
     def _extract_layering_policy(self, documents):
-        documents = copy.deepcopy(documents)
         for doc in documents:
             if doc['schema'].startswith(types.LAYERING_POLICY_SCHEMA):
                 layering_policy = doc
-                documents.remove(doc)
                 return (
-                    document.Document(layering_policy),
-                    [document.Document(d) for d in documents]
+                    document_wrapper.DocumentDict(layering_policy),
+                    [document_wrapper.DocumentDict(d) for d in documents
+                     if d is not layering_policy]
                 )
-        return None, [document.Document(d) for d in documents]
+        return None, [document_wrapper.DocumentDict(d) for d in documents]
 
     def __init__(self, documents, substitution_sources=None):
         """Contructor for ``DocumentLayering``.
@@ -256,15 +258,29 @@ class DocumentLayering(object):
 
         return overall_data
 
+    def _get_children(self, document):
+        """Recursively retrieve all children.
+
+        Used in the layering module when calculating children for each
+        document.
+
+        :returns: List of nested children.
+        :rtype: Generator[:class:`DocumentDict`]
+        """
+        for child in self._children.get((document.name, document.schema), []):
+            yield child
+            grandchildren = self._get_children(child)
+            for grandchild in grandchildren:
+                yield grandchild
+
     def _apply_substitutions(self, document):
         try:
             secrets_substitution = secrets_manager.SecretsSubstitution(
                 document, self._substitution_sources)
             return secrets_substitution.substitute_all()
-        except errors.DocumentNotFound as e:
+        except errors.SubstitutionDependencyNotFound:
             LOG.error('Failed to render the documents because a secret '
                       'document could not be found.')
-            LOG.exception(six.text_type(e))
 
     def render(self):
         """Perform layering on the list of documents passed to ``__init__``.
@@ -281,72 +297,63 @@ class DocumentLayering(object):
         """
         # ``rendered_data_by_layer`` tracks the set of changes across all
         # actions across each layer for a specific document.
-        rendered_data_by_layer = {}
+        rendered_data_by_layer = document_wrapper.DocumentDict()
 
         # NOTE(fmontei): ``global_docs`` represents the topmost documents in
         # the system. It should probably be impossible for more than 1
         # top-level doc to exist, but handle multiple for now.
         global_docs = [doc for doc in self._layered_documents
-                       if doc.get_layer() == self._layer_order[0]]
+                       if doc.layer == self._layer_order[0]]
 
         for doc in global_docs:
-            layer_idx = self._layer_order.index(doc.get_layer())
-            if doc.get_substitutions():
-                substituted_data = self._apply_substitutions(doc.to_dict())
-                rendered_data_by_layer[layer_idx] = substituted_data[0]
+            layer_idx = self._layer_order.index(doc.layer)
+            if doc.substitutions:
+                substituted_data = self._apply_substitutions(doc)
+                if substituted_data:
+                    rendered_data_by_layer[layer_idx] = substituted_data[0]
             else:
-                rendered_data_by_layer[layer_idx] = doc.to_dict()
+                rendered_data_by_layer[layer_idx] = doc
 
             # Keep iterating as long as a child exists.
-            for child in doc.get_children(nested=True):
+            for child in self._get_children(doc):
                 # Retrieve the most up-to-date rendered_data (by
                 # referencing the child's parent's data).
-                child_layer_idx = self._layer_order.index(child.get_layer())
+                child_layer_idx = self._layer_order.index(child.layer)
                 rendered_data = rendered_data_by_layer[child_layer_idx - 1]
 
                 # Apply each action to the current document.
-                for action in child.get_actions():
+                for action in child.actions:
                     LOG.debug('Applying action %s to child document with '
                               'name=%s, schema=%s, layer=%s.', action,
-                              child.get_name(), child.get_schema(),
-                              child.get_layer())
+                              child.name, child.schema, child.layer)
                     rendered_data = self._apply_action(
-                        action, child.to_dict(), rendered_data)
+                        action, child, rendered_data)
 
                 # Update the actual document data if concrete.
-                if not child.is_abstract():
-                    if child.get_substitutions():
-                        rendered_data['metadata'][
-                            'substitutions'] = child.get_substitutions()
+                if not child.is_abstract:
+                    if child.substitutions:
+                        rendered_data.substitutions = child.substitutions
                         substituted_data = self._apply_substitutions(
                             rendered_data)
                         if substituted_data:
                             rendered_data = substituted_data[0]
                     child_index = self._layered_documents.index(child)
-                    self._layered_documents[child_index]['data'] = (
-                        rendered_data['data'])
+                    self._layered_documents[child_index].data = (
+                        rendered_data.data)
 
                 # Update ``rendered_data_by_layer`` for this layer so that
                 # children in deeper layers can reference the most up-to-date
                 # changes.
                 rendered_data_by_layer[child_layer_idx] = rendered_data
 
-            if 'children' in doc:
-                del doc['children']
-
         # Handle edge case for parentless documents that require substitution.
         # If a document has no parent, then the for loop above doesn't iterate
         # over the parentless document, so substitution must be done here for
         # parentless documents.
         for doc in self._parentless_documents:
-            if not doc.is_abstract():
-                substituted_data = self._apply_substitutions(doc.to_dict())
+            if not doc.is_abstract and doc.substitutions:
+                substituted_data = self._apply_substitutions(doc)
                 if substituted_data:
-                    # TODO(fmontei): Use property after implementing it in
-                    # document wrapper class.
-                    doc._inner = substituted_data[0]
+                    doc = substituted_data[0]
 
-        return (
-            [d.to_dict() for d in self._layered_documents] +
-            [self._layering_policy.to_dict()]
-        )
+        return self._layered_documents + [self._layering_policy]

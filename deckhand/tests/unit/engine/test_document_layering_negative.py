@@ -125,13 +125,10 @@ class TestDocumentLayeringNegative(
         # same unique parent identifier referenced by `parentSelector`.
         doc_factory = factories.DocumentFactory(3, [1, 1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
+        documents.append(documents[2])  # Copy region layer.
 
-        # 1 is global layer, 2 is region layer.
-        for idx in (1, 2):
-            documents.append(documents[idx])
-            self.assertRaises(errors.IndeterminateDocumentParent,
-                              layering.DocumentLayering, documents)
-            documents.pop(-1)  # Remove the just-appended duplicate.
+        self.assertRaises(errors.IndeterminateDocumentParent,
+                          layering.DocumentLayering, documents)
 
     @mock.patch.object(layering, 'LOG', autospec=True)
     def test_layering_document_references_itself(self, mock_log):

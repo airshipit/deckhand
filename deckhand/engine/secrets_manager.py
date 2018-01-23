@@ -16,7 +16,7 @@ from oslo_log import log as logging
 import six
 
 from deckhand.barbican import driver
-from deckhand.engine import document as document_wrapper
+from deckhand.engine import document_wrapper
 from deckhand import errors
 from deckhand import utils
 
@@ -111,18 +111,19 @@ class SecretsSubstitution(object):
             sources for substitution. Should only include concrete documents.
         :type substitution_sources: List[dict]
         """
-        if not isinstance(documents, (list, tuple)):
+
+        if not isinstance(documents, list):
             documents = [documents]
 
-        self.substitution_documents = []
-        self.substitution_sources = substitution_sources or []
+        self._documents = []
+        self._substitution_sources = substitution_sources or []
 
         for document in documents:
-            if not isinstance(document, document_wrapper.Document):
-                document_obj = document_wrapper.Document(document)
-                # If the document has substitutions include it.
-                if document_obj.get_substitutions():
-                    self.substitution_documents.append(document_obj)
+            if not isinstance(document, document_wrapper.DocumentDict):
+                document = document_wrapper.DocumentDict(document)
+            # If the document has substitutions include it.
+            if document.substitutions:
+                self._documents.append(document)
 
     def substitute_all(self):
         """Substitute all documents that have a `metadata.substitutions` field.
@@ -133,16 +134,19 @@ class SecretsSubstitution(object):
         from a document in the site layer.
 
         :returns: List of fully substituted documents.
+        :rtype: List[:class:`DocumentDict`]
+        :raises SubstitutionDependencyNotFound: If a substitution source wasn't
+            found or something else went wrong during substitution.
         """
-        LOG.debug('Substituting secrets for documents: %s',
-                  self.substitution_documents)
+        LOG.debug('Performing substitution on following documents: %s',
+                  ', '.join(['[%s] %s' % (d.schema, d.name)
+                            for d in self._documents]))
         substituted_docs = []
 
-        for doc in self.substitution_documents:
-            LOG.debug(
-                'Checking for substitutions in schema=%s, metadata.name=%s',
-                doc.get_name(), doc.get_schema())
-            for sub in doc.get_substitutions():
+        for document in self._documents:
+            LOG.debug('Checking for substitutions for document [%s] %s.',
+                      document.schema, document.name)
+            for sub in document.substitutions:
                 src_schema = sub['src']['schema']
                 src_name = sub['src']['name']
                 src_path = sub['src']['path']
@@ -151,7 +155,7 @@ class SecretsSubstitution(object):
                                       x['metadata']['name'] == src_name)
                 try:
                     src_doc = next(
-                        iter(filter(is_match, self.substitution_sources)))
+                        iter(filter(is_match, self._substitution_sources)))
                 except StopIteration:
                     src_doc = {}
 
@@ -172,16 +176,16 @@ class SecretsSubstitution(object):
                           src_name, src_path, dest_path, dest_pattern)
                 try:
                     substituted_data = utils.jsonpath_replace(
-                        doc['data'], src_secret, dest_path, dest_pattern)
+                        document['data'], src_secret, dest_path, dest_pattern)
                     if isinstance(substituted_data, dict):
-                        doc['data'].update(substituted_data)
+                        document['data'].update(substituted_data)
                     else:
-                        doc['data'] = substituted_data
+                        document['data'] = substituted_data
                 except Exception as e:
                     LOG.error('Unexpected exception occurred while attempting '
                               'secret substitution. %s', six.text_type(e))
                     raise errors.SubstitutionDependencyNotFound(
                         details=six.text_type(e))
 
-            substituted_docs.append(doc.to_dict())
-        return substituted_docs
+                substituted_docs.append(document)
+            return substituted_docs
