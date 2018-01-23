@@ -19,7 +19,7 @@ from oslo_log import log as logging
 
 from deckhand.engine import document_wrapper
 from deckhand.engine import secrets_manager
-from deckhand.engine import utils
+from deckhand.engine import utils as engine_utils
 from deckhand import errors
 from deckhand import types
 
@@ -65,9 +65,6 @@ class DocumentLayering(object):
         :raises IndeterminateDocumentParent: If more than one parent document
             was found for a document.
         """
-        layered_docs = list(
-            filter(lambda x: 'layeringDefinition' in x.metadata,
-                self._documents))
 
         # ``all_children`` is a counter utility for verifying that each
         # document has exactly one parent.
@@ -88,34 +85,34 @@ class DocumentLayering(object):
                 # empty list.
                 return children
 
-            for other_doc in layered_docs:
+            for other_doc in self._layered_docs:
                 # Documents with different schemas are never layered together,
                 # so consider only documents with same schema as candidates.
                 is_potential_child = (
                     other_doc.layer == children_doc_layer and
                     other_doc.schema == doc.schema
                 )
-                if (is_potential_child):
+                if is_potential_child:
                     # A document can have many labels but should only have one
                     # explicit label for the parentSelector.
                     parent_sel = other_doc.parent_selector
-                    parent_sel_key = list(parent_sel.keys())[0]
-                    parent_sel_val = list(parent_sel.values())[0]
-                    doc_labels = doc.labels
+                    try:
+                        parent_sel_key = list(parent_sel.keys())[0]
+                        parent_sel_val = list(parent_sel.values())[0]
+                    except IndexError:
+                        continue
 
-                    if (parent_sel_key in doc_labels and
-                        parent_sel_val == doc_labels[parent_sel_key]):
+                    if (parent_sel_key in doc.labels and
+                        parent_sel_val == doc.labels[parent_sel_key]):
                         children.append(other_doc)
 
             return children
 
         for layer in self._layer_order:
             docs_by_layer = list(filter(
-                (lambda x: x.layer == layer), layered_docs))
-
+                (lambda x: x.layer == layer), self._layered_docs))
             for doc in docs_by_layer:
                 children = _get_children(doc)
-
                 if children:
                     all_children.update(children)
                     self._children.setdefault((doc.name, doc.schema),
@@ -124,7 +121,8 @@ class DocumentLayering(object):
         all_children_elements = list(all_children.elements())
         secondary_docs = list(
             filter(lambda d: d.layer != self._layer_order[0],
-            layered_docs))
+            self._layered_docs)
+        ) if self._layer_order else []
         for doc in secondary_docs:
             # Unless the document is the topmost document in the
             # `layerOrder` of the LayeringPolicy, it should be a child document
@@ -144,7 +142,21 @@ class DocumentLayering(object):
                          doc.parent_selector)
                 raise errors.IndeterminateDocumentParent(document=doc)
 
-        return layered_docs
+        return self._layered_docs
+
+    def _get_layering_order(self, layering_policy):
+        # Pre-processing stage that removes empty layers from the
+        # ``layerOrder`` in the layering policy.
+        layer_order = list(layering_policy.layer_order)
+        for layer in layer_order[:]:
+            docs_by_layer = list(filter(
+                (lambda x: x.layer == layer), self._layered_docs))
+            if not docs_by_layer:
+                LOG.info('%s is an empty layer with no documents. It will be '
+                         'discarded from the layerOrder during the layering '
+                         'process.', layer)
+                layer_order.remove(layer)
+        return layer_order
 
     def _extract_layering_policy(self, documents):
         for doc in documents:
@@ -178,7 +190,10 @@ class DocumentLayering(object):
                 'documents.')
             LOG.error(error_msg)
             raise errors.LayeringPolicyNotFound()
-        self._layer_order = list(self._layering_policy['data']['layerOrder'])
+        self._layered_docs = list(
+            filter(lambda x: 'layeringDefinition' in x.metadata,
+                self._documents))
+        self._layer_order = self._get_layering_order(self._layering_policy)
         self._parentless_documents = []
         self._layered_documents = self._calc_document_children()
         self._substitution_sources = substitution_sources or []
@@ -234,7 +249,7 @@ class DocumentLayering(object):
                 # do a simple merge.
                 if (isinstance(rendered_data[last_key], dict)
                     and isinstance(child_data[last_key], dict)):
-                    utils.deep_merge(
+                    engine_utils.deep_merge(
                         rendered_data[last_key], child_data[last_key])
                 else:
                     rendered_data.setdefault(last_key, child_data[last_key])
