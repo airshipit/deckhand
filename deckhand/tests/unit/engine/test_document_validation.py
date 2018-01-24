@@ -63,3 +63,28 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
         self.assertTrue(mock_log.info.called)
         self.assertIn("Skipping schema validation for abstract document",
                       mock_log.info.mock_calls[0][1][0])
+
+    @mock.patch.object(document_validation, 'jsonschema', autospec=True)
+    def test_validation_failure_does_not_expose_secrets(self, mock_jsonschema):
+        m_args = mock.Mock()
+        mock_jsonschema.Draft4Validator(m_args).iter_errors.side_effect = [
+            # Return empty list of errors for base schema validator and pretend
+            # that 1 error is returned for next validator.
+            [], [mock.Mock(path=[], schema_path=[])]
+        ]
+        test_document = self._read_data('sample_document')
+        for sub in test_document['metadata']['substitutions']:
+            substituted_data = utils.jsonpath_replace(
+                test_document['data'], 'scary-secret', sub['dest']['path'])
+            test_document['data'].update(substituted_data)
+        self.assertEqual(
+            'scary-secret', utils.jsonpath_parse(test_document['data'],
+                                                 sub['dest']['path']))
+
+        validations = document_validation.DocumentValidation(
+            test_document).validate_all()
+
+        self.assertEqual(2, len(validations[0]['errors']))
+        self.assertIn('Sanitized to avoid exposing secret.',
+                      str(validations[0]['errors'][-1]))
+        self.assertNotIn('scary-secret.', str(validations[0]['errors'][-1]))

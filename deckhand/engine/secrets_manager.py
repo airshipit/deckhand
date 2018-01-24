@@ -216,3 +216,17 @@ class SecretsSubstitution(object):
 
                 substituted_docs.append(document)
             return substituted_docs
+
+    @staticmethod
+    def sanitize_potential_secrets(document):
+        """Sanitize all secret data that may have been substituted into the
+        document. Uses references in ``document.substitutions`` to determine
+        which values to sanitize. Only meaningful to call this on post-rendered
+        documents.
+
+        :param DocumentDict document: Document to sanitize.
+        """
+        safe_message = 'Sanitized to avoid exposing secret.'
+        for sub in document.substitutions:
+            utils.jsonpath_replace(document['data'], safe_message,
+                                   sub['dest']['path'])

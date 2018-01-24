@@ -17,6 +17,7 @@ import yaml
 
 from oslo_config import cfg
 
+from deckhand.engine.schema.v1_0 import document_schema
 from deckhand import factories
 from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
@@ -555,19 +556,29 @@ class TestValidationsController(test_base.BaseControllerTest):
         self.assertEqual(expected_body, body)
 
         # Validate that both expected errors are present for validation.
-        expected_errors = [
-            {
-                'message': "'layeringDefinition' is a required property",
-                'name': 'test_doc',
-                'schema': 'example/foo/v1',
-                'path': '.metadata'
-            }, {
-                'message': "'fail' is not of type 'integer'",
-                'name': 'test_doc',
-                'schema': 'example/foo/v1',
-                'path': '.data.a'
-            }
-        ]
+        expected_errors = [{
+            'error_section': {
+                'data': {'a': 'fail'},
+                'metadata': {'labels': {'global': 'global1'},
+                             'name': 'test_doc',
+                             'schema': 'metadata/Document/v1.0'},
+                'schema': 'example/foo/v1'
+            },
+            'name': 'test_doc',
+            'path': '.metadata',
+            'schema': 'example/foo/v1',
+            'message': "'layeringDefinition' is a required property",
+            'validation_schema': document_schema.schema,
+            'schema_path': '.properties.metadata.required'
+        }, {
+            'error_section': {'a': 'fail'},
+            'name': 'test_doc',
+            'path': '.data.a',
+            'schema': 'example/foo/v1',
+            'message': "'fail' is not of type 'integer'",
+            'validation_schema': schema_to_use,
+            'schema_path': '.properties.a.type'
+        }]
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
                 revision_id, types.DECKHAND_SCHEMA_VALIDATION),
@@ -598,6 +609,15 @@ class TestValidationsController(test_base.BaseControllerTest):
             },
             'required': ['a']
         }
+        expected_errors = [{
+            'error_section': {'a': 'fail'},
+            'name': 'test_doc',
+            'path': '.data.a',
+            'schema': 'example/foo/v1',
+            'message': "'fail' is not of type 'integer'",
+            'validation_schema': schema_to_use,
+            'schema_path': '.properties.a.type'
+        }]
         data_schema = data_schema_factory.gen_test(
             metadata_name, data=schema_to_use)
 
@@ -652,11 +672,15 @@ class TestValidationsController(test_base.BaseControllerTest):
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_errors = [{
-            'schema': 'example/foo/v1',
+            'error_section': {'a': 'fail'},
             'name': 'test_doc',
+            'path': '.data.a',
+            'schema': 'example/foo/v1',
             'message': "'fail' is not of type 'integer'",
-            'path': '.data.a'
+            'validation_schema': schema_to_use,
+            'schema_path': '.properties.a.type'
         }]
+
         self.assertIn('errors', body)
         self.assertEqual(expected_errors, body['errors'])
 
@@ -704,10 +728,13 @@ class TestValidationsController(test_base.BaseControllerTest):
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
         expected_errors = [{
-            'schema': document['schema'],
+            'error_section': document,
             'name': document['metadata']['name'],
+            'path': '.',
+            'schema': document['schema'],
             'message': "'data' is a required property",
-            'path': '.'
+            'validation_schema': document_schema.schema,
+            'schema_path': '.required'
         }]
         self.assertIn('errors', body)
         self.assertEqual(expected_errors, body['errors'])
