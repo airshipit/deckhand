@@ -152,9 +152,9 @@ class TestRevisionDiffing(base.TestDbBase):
 
         # Between revision_ids[0] and [1], bucket_name is unmodified and
         # alt_bucket_name is created.
-        # self._verify_buckets_status(
-        #     revision_ids[0], revision_ids[1],
-        #     {bucket_name: 'unmodified', alt_bucket_name: 'created'})
+        self._verify_buckets_status(
+            revision_ids[0], revision_ids[1],
+            {bucket_name: 'unmodified', alt_bucket_name: 'created'})
 
         # Between revision_ids[0] and [2], bucket_name is modified (by 2) and
         # alt_bucket_name is created (by 1).
