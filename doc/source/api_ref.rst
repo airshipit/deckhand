@@ -95,7 +95,7 @@ abstract documents will be returned. This is the primary endpoint that
 consumers will interact with for their configuration.
 
 Valid query parameters are the same as for
-``/revisions/{revision_id}/documents``, minus the paremters in
+``/revisions/{revision_id}/documents``, minus the parameters in
 ``metadata.layeringDetinition``, which are not supported.
 
 Raises a ``409 Conflict`` if a ``layeringPolicy`` document could not be found.
