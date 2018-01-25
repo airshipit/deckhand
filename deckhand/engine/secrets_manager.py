@@ -116,7 +116,7 @@ class SecretsSubstitution(object):
             documents = [documents]
 
         self._documents = []
-        self._substitution_sources = substitution_sources or []
+        self._substitution_sources = {}
 
         for document in documents:
             if not isinstance(document, document_wrapper.DocumentDict):
@@ -124,6 +124,13 @@ class SecretsSubstitution(object):
             # If the document has substitutions include it.
             if document.substitutions:
                 self._documents.append(document)
+
+        for document in substitution_sources:
+            if not isinstance(document, document_wrapper.DocumentDict):
+                document = document_wrapper.DocumentDict(document)
+            if document.schema and document.name:
+                self._substitution_sources.setdefault(
+                    (document.schema, document.name), document)
 
     def substitute_all(self):
         """Substitute all documents that have a `metadata.substitutions` field.
@@ -151,13 +158,28 @@ class SecretsSubstitution(object):
                 src_name = sub['src']['name']
                 src_path = sub['src']['path']
 
-                is_match = (lambda x: x['schema'] == src_schema and
-                                      x['metadata']['name'] == src_name)
-                try:
-                    src_doc = next(
-                        iter(filter(is_match, self._substitution_sources)))
-                except StopIteration:
+                if not src_schema:
+                    LOG.warning('Source document schema "%s" is unspecified '
+                                'under substitutions for document [%s] %s.',
+                                src_schema, document.schema, document.name)
+                if not src_name:
+                    LOG.warning('Source document name "%s" is unspecified'
+                                ' under substitutions for document [%s] %s.',
+                                src_name, document.schema, document.name)
+                if not src_path:
+                    LOG.warning('Source document path "%s" is unspecified '
+                                'under substitutions for document [%s] %s.',
+                                src_path, document.schema, document.name)
+
+                if (src_schema, src_name) in self._substitution_sources:
+                    src_doc = self._substitution_sources[
+                        (src_schema, src_name)]
+                else:
                     src_doc = {}
+                    LOG.warning('Could not find substitution source document '
+                                '[%s] %s among the provided '
+                                '`substitution_sources`.', src_schema,
+                                                           src_name)
 
                 # If the data is a dictionary, retrieve the nested secret
                 # via jsonpath_parse, else the secret is the primitive/string
@@ -170,6 +192,11 @@ class SecretsSubstitution(object):
 
                 dest_path = sub['dest']['path']
                 dest_pattern = sub['dest'].get('pattern', None)
+
+                if not dest_path:
+                    LOG.warning('Destination document path "%s" is unspecified'
+                                ' under substitutions for document [%s] %s.',
+                                dest_path, document.schema, document.name)
 
                 LOG.debug('Substituting from schema=%s name=%s src_path=%s '
                           'into dest_path=%s, dest_pattern=%s', src_schema,

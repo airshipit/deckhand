@@ -156,6 +156,11 @@ class DocumentLayering(object):
                          'discarded from the layerOrder during the layering '
                          'process.', layer)
                 layer_order.remove(layer)
+        if not layer_order:
+            LOG.info('Either the layerOrder in the LayeringPolicy was empty '
+                     'to begin with or no document layers were found in the '
+                     'layerOrder, causing it to become empty. No layering '
+                     'will be performed.')
         return layer_order
 
     def _extract_layering_policy(self, documents):
@@ -317,8 +322,10 @@ class DocumentLayering(object):
         # NOTE(fmontei): ``global_docs`` represents the topmost documents in
         # the system. It should probably be impossible for more than 1
         # top-level doc to exist, but handle multiple for now.
-        global_docs = [doc for doc in self._layered_documents
-                       if doc.layer == self._layer_order[0]]
+        global_docs = [
+            doc for doc in self._layered_documents
+            if self._layer_order and doc.layer == self._layer_order[0]
+        ]
 
         for doc in global_docs:
             layer_idx = self._layer_order.index(doc.layer)
