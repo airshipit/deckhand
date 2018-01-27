@@ -64,7 +64,7 @@ def init_application():
               paste_file)
 
     db_api.drop_db()
-    db_api.setup_db()
+    db_api.setup_db(CONF.database.connection)
 
     app = deploy.loadapp('config:%s' % paste_file, name='deckhand_api')
     return app

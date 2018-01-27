@@ -65,11 +65,12 @@ class TestApi(test_base.DeckhandTestCase):
     @mock.patch.object(api, 'policy', autospec=True)
     @mock.patch.object(api, 'db_api', autospec=True)
     @mock.patch.object(api, 'logging', autospec=True)
-    @mock.patch.object(api, 'CONF', autospec=True)
     @mock.patch('deckhand.service.falcon', autospec=True)
-    def test_init_application(self, mock_falcon, mock_config, mock_logging,
+    def test_init_application(self, mock_falcon, mock_logging,
                               mock_db_api, _):
         mock_falcon_api = mock_falcon.API.return_value
+        self.override_config(
+            'connection', mock.sentinel.db_connection, group='database')
 
         api.init_application()
 
@@ -105,4 +106,5 @@ class TestApi(test_base.DeckhandTestCase):
         ], any_order=True)
 
         mock_db_api.drop_db.assert_called_once_with()
-        mock_db_api.setup_db.assert_called_once_with()
+        mock_db_api.setup_db.assert_called_once_with(
+            str(mock.sentinel.db_connection))

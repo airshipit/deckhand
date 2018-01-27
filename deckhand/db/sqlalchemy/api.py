@@ -82,10 +82,8 @@ def drop_db():
     models.unregister_models(get_engine())
 
 
-def setup_db():
-    # Ensure the DB doesn't exist before creation.
-    drop_db()
-    models.register_models(get_engine())
+def setup_db(connection_string):
+    models.register_models(get_engine(), connection_string)
 
 
 def raw_query(query, **kwargs):
@@ -830,6 +828,9 @@ def revision_tag_create(revision_id, tag, data=None, session=None):
     """
     session = session or get_session()
     tag_model = models.RevisionTag()
+
+    if data is None:
+        data = {}
 
     if data and not isinstance(data, dict):
         raise errors.RevisionTagBadFormat(data=data)
