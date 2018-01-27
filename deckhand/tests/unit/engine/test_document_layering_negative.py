@@ -105,7 +105,7 @@ class TestDocumentLayeringNegative(
 
         for parent_label in ({'key2': 'value2'}, {'key1': 'value2'}):
             # Second doc is the global doc, or parent.
-            documents[1]['metadata']['labels'] = [parent_label]
+            documents[1]['metadata']['labels'] = parent_label
 
             layering.DocumentLayering(documents)
             self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],

@@ -97,33 +97,19 @@ class SecretsManager(object):
 class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
-    def __init__(self, documents, substitution_sources=None):
+    def __init__(self, substitution_sources=None):
         """SecretSubstitution constructor.
 
         This class will automatically detect documents that require
         substitution; documents need not be filtered prior to being passed to
         the constructor.
 
-        :param documents: List of documents that are candidates for
-            substitution.
-        :type documents: List[dict]
         :param substitution_sources: List of documents that are potential
             sources for substitution. Should only include concrete documents.
         :type substitution_sources: List[dict]
         """
 
-        if not isinstance(documents, list):
-            documents = [documents]
-
-        self._documents = []
         self._substitution_sources = {}
-
-        for document in documents:
-            if not isinstance(document, document_wrapper.DocumentDict):
-                document = document_wrapper.DocumentDict(document)
-            # If the document has substitutions include it.
-            if document.substitutions:
-                self._documents.append(document)
 
         for document in substitution_sources:
             if not isinstance(document, document_wrapper.DocumentDict):
@@ -132,7 +118,7 @@ class SecretsSubstitution(object):
                 self._substitution_sources.setdefault(
                     (document.schema, document.name), document)
 
-    def substitute_all(self):
+    def substitute_all(self, documents):
         """Substitute all documents that have a `metadata.substitutions` field.
 
         Concrete (non-abstract) documents can be used as a source of
@@ -140,17 +126,29 @@ class SecretsSubstitution(object):
         layer-independent, a document in the region layer could insert data
         from a document in the site layer.
 
+        :param documents: List of documents that are candidates for
+            substitution.
+        :type documents: dict or List[dict]
         :returns: List of fully substituted documents.
-        :rtype: List[:class:`DocumentDict`]
-        :raises SubstitutionDependencyNotFound: If a substitution source wasn't
-            found or something else went wrong during substitution.
+        :rtype: Generator[:class:`DocumentDict`]
         """
+
+        documents_to_substitute = []
+        if not isinstance(documents, list):
+            documents = [documents]
+
+        for document in documents:
+            if not isinstance(document, document_wrapper.DocumentDict):
+                document = document_wrapper.DocumentDict(document)
+            # If the document has substitutions include it.
+            if document.substitutions:
+                documents_to_substitute.append(document)
+
         LOG.debug('Performing substitution on following documents: %s',
                   ', '.join(['[%s] %s' % (d.schema, d.name)
-                            for d in self._documents]))
-        substituted_docs = []
+                            for d in documents_to_substitute]))
 
-        for document in self._documents:
+        for document in documents_to_substitute:
             LOG.debug('Checking for substitutions for document [%s] %s.',
                       document.schema, document.name)
             for sub in document.substitutions:
@@ -214,8 +212,7 @@ class SecretsSubstitution(object):
                     raise errors.SubstitutionDependencyNotFound(
                         details=six.text_type(e))
 
-                substituted_docs.append(document)
-            return substituted_docs
+                yield document
 
     @staticmethod
     def sanitize_potential_secrets(document):

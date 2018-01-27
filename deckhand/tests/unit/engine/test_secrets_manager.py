@@ -95,8 +95,8 @@ class TestSecretsSubstitution(test_base.TestDbBase):
             **{'metadata.layeringDefinition.abstract': False})
 
         secret_substitution = secrets_manager.SecretsSubstitution(
-            documents, substitution_sources)
-        substituted_docs = secret_substitution.substitute_all()
+            substitution_sources)
+        substituted_docs = secret_substitution.substitute_all(documents)
 
         self.assertIn(expected_document, substituted_docs)
 

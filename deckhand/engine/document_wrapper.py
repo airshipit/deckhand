@@ -54,6 +54,10 @@ class DocumentDict(dict):
         return utils.jsonpath_parse(self, 'metadata.name')
 
     @property
+    def layering_definition(self):
+        return utils.jsonpath_parse(self, 'metadata.layeringDefinition')
+
+    @property
     def layer(self):
         return utils.jsonpath_parse(
             self, 'metadata.layeringDefinition.layer')
