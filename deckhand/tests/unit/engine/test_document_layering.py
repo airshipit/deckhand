@@ -96,6 +96,74 @@ class TestDocumentLayering2Layers(TestDocumentLayering):
         site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4}
         self._test_layering(documents, site_expected)
 
+    def test_layering_default_scenario_multi_parentselector(self):
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}},
+            "_SITE_DATA_1_": {"data": {"b": 4}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        # Test case where the same number of labels are found in parent
+        # labels and child's parentSelector.
+        labels = {'foo': 'bar', 'baz': 'qux'}
+        documents[1]['metadata']['labels'] = labels
+        documents[-1]['metadata']['layeringDefinition']['parentSelector'] = (
+            labels)
+        site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4}
+        self._test_layering(documents, site_expected)
+
+        # Test case where child's parentSelector is a subset of parent's
+        # labels.
+        documents[-1]['metadata']['layeringDefinition']['parentSelector'] = {
+            'foo': 'bar'}
+        site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4}
+        self._test_layering(documents, site_expected)
+
+        documents[-1]['metadata']['layeringDefinition']['parentSelector'] = {
+            'baz': 'qux'}
+        site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4}
+        self._test_layering(documents, site_expected)
+
+    def test_layering_default_scenario_multi_parentselector_no_match(self):
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}},
+            "_SITE_DATA_1_": {"data": {"b": 4}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        labels = {'a': 'b', 'c': 'd'}
+        documents[1]['metadata']['labels'] = labels
+
+        # Test case where none of the labels in parentSelector match.
+        documents[-1]['metadata']['layeringDefinition']['parentSelector'] = {
+            'w': 'x', 'y': 'z'
+        }
+        self._test_layering(documents, site_expected={})
+
+        # Test case where parentSelector has one too many labels to be a match.
+        documents[-1]['metadata']['layeringDefinition']['parentSelector'] = {
+            'a': 'b', 'c': 'd', 'e': 'f'
+        }
+        self._test_layering(documents, site_expected={})
+
+        # Test case where parentSelector keys match (but not values).
+        documents[-1]['metadata']['layeringDefinition']['parentSelector'] = {
+            'a': 'x', 'c': 'y'
+        }
+        self._test_layering(documents, site_expected={})
+
+        # Test case where parentSelector values match (but not keys).
+        documents[-1]['metadata']['layeringDefinition']['parentSelector'] = {
+            'x': 'b', 'y': 'd'
+        }
+        self._test_layering(documents, site_expected={})
+
     def test_layering_method_delete(self):
         site_expected = [{}, {'c': 9}, {"a": {"x": 1, "y": 2}}]
         doc_factory = factories.DocumentFactory(2, [1, 1])

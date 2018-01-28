@@ -55,7 +55,9 @@ class DocumentLayering(object):
         if is_potential_child:
             parent_selector = potential_child.parent_selector
             labels = document.labels
-            return parent_selector == labels
+            # Labels are key-value pairs which are unhashable, so use ``all``
+            # instead.
+            return all(labels.get(x) == y for x, y in parent_selector.items())
         return False
 
     def _calc_document_children(self, document):
@@ -66,8 +68,12 @@ class DocumentLayering(object):
             # The lowest layer has been reached, so no children.
             return
 
-        potential_children = self._documents_by_labels.get(
-            str(document.labels), [])
+        potential_children = set()
+        for label_key, label_val in document.labels.items():
+            _potential_children = self._documents_by_labels.get(
+                (label_key, label_val), [])
+            potential_children |= set(_potential_children)
+
         for potential_child in potential_children:
             if self._is_actual_child_document(document, potential_child,
                                               child_layer):
@@ -189,10 +195,11 @@ class DocumentLayering(object):
                 self._documents_by_layer.setdefault(document.layer, [])
                 self._documents_by_layer[document.layer].append(document)
             if document.parent_selector:
-                self._documents_by_labels.setdefault(
-                    str(document.parent_selector), [])
-                self._documents_by_labels[
-                    str(document.parent_selector)].append(document)
+                for label_key, label_val in document.parent_selector.items():
+                    self._documents_by_labels.setdefault(
+                        (label_key, label_val), [])
+                    self._documents_by_labels[
+                        (label_key, label_val)].append(document)
 
         if self._layering_policy is None:
             error_msg = (

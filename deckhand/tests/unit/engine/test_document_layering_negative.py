@@ -85,6 +85,23 @@ class TestDocumentLayeringNegative(
             mock_log.info.reset_mock()
 
     @mock.patch.object(layering, 'LOG', autospec=True)
+    def test_layering_with_invalid_layer(self, mock_log):
+        doc_factory = factories.DocumentFactory(1, [1])
+        documents = doc_factory.gen_test({}, site_abstract=False)
+        documents[-1]['metadata']['layeringDefinition']['layer'] = 'invalid'
+
+        self._test_layering(documents, global_expected={})
+        mock_log.info.assert_has_calls([
+            mock.call(
+                '%s is an empty layer with no documents. It will be discarded '
+                'from the layerOrder during the layering process.', 'global'),
+            mock.call('Either the layerOrder in the LayeringPolicy was empty '
+                      'to begin with or no document layers were found in the '
+                      'layerOrder, causing it to become empty. No layering '
+                      'will be performed.')
+        ])
+
+    @mock.patch.object(layering, 'LOG', autospec=True)
     def test_layering_child_with_invalid_parent_selector(self, mock_log):
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({}, site_abstract=False)
@@ -174,3 +191,16 @@ class TestDocumentLayeringNegative(
         documents = doc_factory.gen_test({}, site_abstract=False)[1:]
         self.assertRaises(errors.LayeringPolicyNotFound,
                           layering.DocumentLayering, documents)
+
+    @mock.patch.object(layering, 'LOG', autospec=True)
+    def test_multiple_layering_policy_logs_warning(self, mock_log):
+        doc_factory = factories.DocumentFactory(1, [1])
+        documents = doc_factory.gen_test({}, site_abstract=False)
+        # Copy the same layering policy so that 2 are passed in, causing a
+        # warning to be raised.
+        documents.append(documents[0])
+        self._test_layering(documents, site_expected={})
+        mock_log.warning.assert_called_once_with(
+            'More than one layering policy document was passed in. Using the '
+            'first one found: [%s] %s.', documents[0]['schema'],
+            documents[0]['metadata']['name'])
