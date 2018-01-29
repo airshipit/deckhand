@@ -1,5 +1,5 @@
 {{/*
-Copyright 2017 The Openstack-Helm Authors.
+Copyright (c) 2017 AT&T Intellectual Property. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -44,19 +44,46 @@ spec:
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.jobs.db_sync | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           env:
-            - name: ROOT_DB_CONNECTION
+            - name: DECKHAND_DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.user }}
+                  key: DATABASE_URI
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.user }}
+                  key: DATABASE_NAME
+            - name: DB_SERVICE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.user }}
+                  key: DATABASE_USERNAME
+            - name: DB_SERVICE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.user }}
+                  key: DATABASE_PASSWORD
+            - name: DB_FQDN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.user }}
+                  key: DATABASE_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.user }}
+                  key: DATABASE_PORT
+            - name: DB_ADMIN_USER
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.secrets.postgresql.admin }}
-                  key: DB_CONNECTION
-            - name: DECKHAND_CONFIG_FILE
-              value: /etc/deckhand/deckhand.conf
-            - name: DB_NAME
-              value: {{ .Values.database.postgresql.db_name }}
-            - name: DB_USER
-              value: {{ .Values.endpoints.postgresql.auth.user.username }}
-            - name: DB_PASS
-              value: {{ .Values.endpoints.postgresql.auth.user.password }}
+                  key: DATABASE_USERNAME
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.postgresql.admin }}
+                  key: DATABASE_PASSWORD
           command:
             - /tmp/db-sync.sh
           volumeMounts:
