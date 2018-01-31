@@ -204,15 +204,21 @@ class SecretsSubstitution(object):
                         document['data'], src_secret, dest_path, dest_pattern)
                     if isinstance(substituted_data, dict):
                         document['data'].update(substituted_data)
-                    else:
+                    elif substituted_data:
                         document['data'] = substituted_data
+                    else:
+                        LOG.warning(
+                            'Failed to create JSON path "%s" in the '
+                            'destination document [%s] %s. No data was '
+                            'substituted.', dest_path, document.schema,
+                            document.name)
                 except Exception as e:
                     LOG.error('Unexpected exception occurred while attempting '
                               'secret substitution. %s', six.text_type(e))
                     raise errors.SubstitutionDependencyNotFound(
                         details=six.text_type(e))
 
-                yield document
+        yield document
 
     @staticmethod
     def sanitize_potential_secrets(document):
