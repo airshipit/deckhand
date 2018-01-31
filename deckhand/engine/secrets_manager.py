@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
 from oslo_log import log as logging
 import six
 
@@ -228,7 +230,13 @@ class SecretsSubstitution(object):
 
         :param DocumentDict document: Document to sanitize.
         """
+        to_sanitize = copy.deepcopy(document)
         safe_message = 'Sanitized to avoid exposing secret.'
+
         for sub in document.substitutions:
-            utils.jsonpath_replace(document['data'], safe_message,
-                                   sub['dest']['path'])
+            replaced_data = utils.jsonpath_replace(
+                to_sanitize['data'], safe_message, sub['dest']['path'])
+            if replaced_data:
+                to_sanitize['data'] = replaced_data
+
+        return to_sanitize

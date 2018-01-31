@@ -450,15 +450,15 @@ def _generate_validation_error_output(schema, document, error, root_path):
     parent_path_to_error_in_document = '.'.join(
         path_to_error_in_document.split('.')[:-1]) or '.'
     try:
+        # NOTE(fmontei): Because validation is performed on fully rendered
+        # documents, it is necessary to omit the parts of the data section
+        # where substitution may have occurred to avoid exposing any
+        # secrets. While this may make debugging a few validation failures
+        # more difficult, it is a necessary evil.
+        sanitized_document = SecretsSubstitution.sanitize_potential_secrets(
+            document)
         parent_error_section = utils.jsonpath_parse(
-            document, parent_path_to_error_in_document)
-        if 'data' in parent_error_section:
-            # NOTE(fmontei): Because validation is performed on fully rendered
-            # documents, it is necessary to omit the parts of the data section
-            # where substitution may have occurred to avoid exposing any
-            # secrets. While this may make debugging a few validation failures
-            # more difficult, it is a necessary evil.
-            SecretsSubstitution.sanitize_potential_secrets(document)
+            sanitized_document, parent_path_to_error_in_document)
     except Exception:
         parent_error_section = (
             'Failed to find parent section above where error occurred.')
@@ -470,6 +470,8 @@ def _generate_validation_error_output(schema, document, error, root_path):
         'schema': document.schema,
         'path': path_to_error_in_document,
         'error_section': parent_error_section,
+        # TODO(fmontei): Also sanitize any secrets contained in the message
+        # as well.
         'message': error.message
     }
 
