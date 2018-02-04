@@ -210,10 +210,17 @@ class SecretsSubstitution(object):
                 try:
                     substituted_data = utils.jsonpath_replace(
                         document['data'], src_secret, dest_path, dest_pattern)
-                    if isinstance(substituted_data, dict):
+                    sub_source = self._substitution_sources.get(
+                        (document.schema, document.name))
+                    if (isinstance(document['data'], dict) and
+                        isinstance(substituted_data, dict)):
                         document['data'].update(substituted_data)
+                        if sub_source:
+                            sub_source['data'].update(substituted_data)
                     elif substituted_data:
                         document['data'] = substituted_data
+                        if sub_source:
+                            sub_source['data'] = substituted_data
                     else:
                         LOG.warning(
                             'Failed to create JSON path "%s" in the '

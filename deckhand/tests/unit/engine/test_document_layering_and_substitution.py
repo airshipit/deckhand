@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import itertools
+
 import mock
 
 from deckhand import factories
@@ -232,7 +234,6 @@ class TestDocumentLayeringWithSubstitution(
                     "name": "global-cert",
                     "path": "."
                 }
-
             }],
             "_SITE_DATA_1_": {"data": {"c": "need-site-secret"}},
             "_SITE_ACTIONS_1_": {
@@ -277,3 +278,96 @@ class TestDocumentLayeringWithSubstitution(
         expected_log_calls = [mock.call(expected_message, layer)
                               for layer in ('empty_1', 'empty_2', 'empty_3')]
         mock_log.info.assert_has_calls(expected_log_calls)
+
+    def test_layering_with_substitution_dependency_chain(self):
+        """Validate that parent with multiple children that substitute from
+        each other works no matter the order of the documents.
+        """
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}},
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".b"
+                },
+                "src": {
+                    "schema": "deckhand/Certificate/v1",
+                    "name": "global-cert",
+                    "path": "."
+                }
+            }],
+            "_SITE_NAME_1_": "site-1",
+            "_SITE_DATA_1_": {"data": {"c": "placeholder"}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]},
+            "_SITE_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".c"
+                },
+                "src": {
+                    "schema": "deckhand/CertificateKey/v1",
+                    "name": "site-cert",
+                    "path": "."
+                }
+            }],
+            "_SITE_NAME_2_": "site-2",
+            "_SITE_DATA_2_": {"data": {"d": "placeholder"}},
+            "_SITE_ACTIONS_2_": {
+                "actions": [{"method": "merge", "path": "."}]},
+            "_SITE_SUBSTITUTIONS_2_": [{
+                "dest": {
+                    "path": ".d"
+                },
+                "src": {
+                    "schema": "example/Kind/v1",
+                    "name": "site-1",
+                    "path": ".c"
+                }
+            }],
+            "_SITE_NAME_3_": "site-3",
+            "_SITE_DATA_3_": {"data": {"e": "placeholder"}},
+            "_SITE_ACTIONS_3_": {
+                "actions": [{"method": "merge", "path": "."}]},
+            "_SITE_SUBSTITUTIONS_3_": [{
+                "dest": {
+                    "path": ".e"
+                },
+                "src": {
+                    "schema": "example/Kind/v1",
+                    "name": "site-2",
+                    "path": ".d"
+                }
+            }]
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 3])
+        documents = doc_factory.gen_test(mapping, site_abstract=False,
+                                         global_abstract=False)
+        secrets_factory = factories.DocumentSecretFactory()
+
+        global_expected = {'a': {'x': 1, 'y': 2}, 'b': 'global-secret'}
+        site_expected = [
+            {'a': {'x': 1, 'y': 2}, 'b': 'global-secret', 'c': 'site-secret'},
+            {'a': {'x': 1, 'y': 2}, 'b': 'global-secret', 'd': 'site-secret'},
+            {'a': {'x': 1, 'y': 2}, 'b': 'global-secret', 'e': 'site-secret'}
+        ]
+
+        certificate = secrets_factory.gen_test(
+            'Certificate', 'cleartext', data='global-secret',
+            name='global-cert')
+        certificate_key = secrets_factory.gen_test(
+            'CertificateKey', 'cleartext', data='site-secret',
+            name='site-cert')
+
+        # Pass in the documents in reverse order to ensure that the dependency
+        # chain by default is not linear and thus requires sorting.
+        self._test_layering(
+            list(reversed(documents)), site_expected=site_expected,
+            global_expected=global_expected,
+            substitution_sources=[certificate, certificate_key] + documents)
+
+        # Try different permutations of document orders for good measure.
+        for document_order in list(itertools.permutations(documents))[:10]:
+            self._test_layering(
+                document_order, site_expected=site_expected,
+                global_expected=global_expected,
+                substitution_sources=[
+                    certificate, certificate_key] + documents)

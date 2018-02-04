@@ -1,0 +1,147 @@
+---
+schema: deckhand/Certificate/v1
+metadata:
+  name: example-cert
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: |
+  CERTIFICATE DATA
+---
+schema: deckhand/CertificateKey/v1
+metadata:
+  name: example-key
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: |
+  KEY DATA
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  name: example-password
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: my-secret-password
+---
+# NOTE(fmontei): The documents below are included in reverse order with
+# respect to their substitution dependency hierarchy in order to verify
+# that the dependency chain is correctly resolved in the code.
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: armada-chart-03
+  layeringDefinition:
+    abstract: false
+    layer: site
+    parentSelector:
+      key1: value1
+    actions:
+      - method: merge
+        path: .
+  substitutions:
+    - dest:
+        path: .site-alt.certificate
+      src:
+        schema: armada/Chart/v1
+        name: armada-chart-02
+        path: .site.certificate
+    - dest:
+        path: .site-alt.certificatekey
+      src:
+        schema: armada/Chart/v1
+        name: armada-chart-02
+        path: .site.certificatekey
+    - dest:
+        path: .site-alt.passphrase
+      src:
+        schema: armada/Chart/v1
+        name: armada-chart-02
+        path: .site.passphrase
+data:
+  site-alt:
+    certificate: placeholder
+    certificatekey: placeholder
+    passphrase: placeholder
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: armada-chart-02
+  layeringDefinition:
+    abstract: false
+    layer: site
+    parentSelector:
+      key1: value1
+    actions:
+      - method: delete
+        path: .
+  substitutions:
+    - dest:
+        path: .site.certificate
+      src:
+        schema: armada/Chart/v1
+        name: armada-chart-01
+        path: .region.certificate
+    - dest:
+        path: .site.certificatekey
+      src:
+        schema: armada/Chart/v1
+        name: armada-chart-01
+        path: .region.certificatekey
+    - dest:
+        path: .site.passphrase
+      src:
+        schema: armada/Chart/v1
+        name: armada-chart-01
+        path: .region.passphrase
+data:
+  site:
+    certificate: placeholder
+    certificatekey: placeholder
+    passphrase: placeholder
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: armada-chart-01
+  labels:
+    key1: value1
+  layeringDefinition:
+    abstract: false
+    layer: region
+    parentSelector:
+      key1: value1
+    actions:
+      - method: merge
+        path: .
+  substitutions:
+    - dest:
+        path: .region.certificate
+      src:
+        schema: deckhand/Certificate/v1
+        name: example-cert
+        path: .
+    - dest:
+        path: .region.certificatekey
+      src:
+        schema: deckhand/CertificateKey/v1
+        name: example-key
+        path: .
+    - dest:
+        path: .region.passphrase
+        pattern: INSERT_[A-Z]+_HERE
+      src:
+        schema: deckhand/Passphrase/v1
+        name: example-password
+        path: .
+data:
+  region:
+    certificate: placeholder
+    certificatekey: placeholder
+    passphrase: http://admin:INSERT_PASSWORD_HERE@service-name:8080/v1
+...

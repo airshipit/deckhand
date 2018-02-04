@@ -211,7 +211,18 @@ class IndeterminateDocumentParent(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("Too many parent documents found for document %(document)s.")
+    msg_fmt = "Too many parent documents found for document %(document)s."
+    code = 400
+
+
+class SubstitutionDependencyCycle(DeckhandException):
+    """An illegal substitution depdencency cycle was detected.
+
+    **Troubleshoot:**
+    * Check that there is no two-way substitution dependency between documents.
+    """
+    msg_fmt = ('Cannot determine substitution order as a dependency '
+               'cycle exists for the following documents: %(cycle)s.')
     code = 400
 
 

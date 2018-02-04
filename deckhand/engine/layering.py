@@ -15,6 +15,9 @@
 import collections
 import copy
 
+import networkx
+from networkx.algorithms.cycles import find_cycle
+from networkx.algorithms.dag import topological_sort
 from oslo_log import log as logging
 
 from deckhand.engine import document_wrapper
@@ -103,13 +106,20 @@ class DocumentLayering(object):
         return is_actual_child
 
     def _calc_document_children(self, document):
-        potential_children = set()
+        potential_children = []
         for label_key, label_val in document.labels.items():
             _potential_children = self._documents_by_labels.get(
                 (label_key, label_val), [])
-            potential_children |= set(_potential_children)
+            potential_children.extend(_potential_children)
+        # NOTE(fmontei): The intention here is to preserve the order of all
+        # the documents that were sorted by `_topologically_sort_documents`
+        # in order to substitute documents in the right order. But at the same
+        # time, only unique children should be found. So, this trick below
+        # maintains the order (unlike set) and guarantees uniqueness.
+        unique_potential_children = collections.OrderedDict.fromkeys(
+            potential_children)
 
-        for potential_child in potential_children:
+        for potential_child in unique_potential_children:
             if self._is_actual_child_document(document, potential_child):
                 yield potential_child
 
@@ -199,6 +209,41 @@ class DocumentLayering(object):
                      'will be performed.')
         return layer_order
 
+    def _topologically_sort_documents(self, documents):
+        """Topologically sorts the DAG formed from the documents' substitution
+        dependency chain.
+        """
+        documents_by_name = {}
+        result = []
+
+        g = networkx.DiGraph()
+        for document in documents:
+            document = document_wrapper.DocumentDict(document)
+            documents_by_name.setdefault((document.schema, document.name),
+                                         document)
+            for sub in document.substitutions:
+                g.add_edge((document.schema, document.name),
+                           (sub['src']['schema'], sub['src']['name']))
+
+        try:
+            cycle = find_cycle(g)
+        except networkx.exception.NetworkXNoCycle:
+            pass
+        else:
+            LOG.error('Cannot determine substitution order as a dependency '
+                      'cycle exists for the following documents: %s.', cycle)
+            raise errors.SubstitutionDependencyCycle(cycle=cycle)
+
+        sorted_documents = reversed(list(topological_sort(g)))
+
+        for document in sorted_documents:
+            if document in documents_by_name:
+                result.append(documents_by_name.pop(document))
+        for document in documents_by_name.values():
+            result.append(document)
+
+        return result
+
     def __init__(self, documents, substitution_sources=None):
         """Contructor for ``DocumentLayering``.
 
@@ -245,7 +290,9 @@ class DocumentLayering(object):
             LOG.error(error_msg)
             raise errors.LayeringPolicyNotFound()
 
-        for document in documents:
+        sorted_documents = self._topologically_sort_documents(documents)
+
+        for document in sorted_documents:
             document = document_wrapper.DocumentDict(document)
             if document.layering_definition:
                 self._documents_to_layer.append(document)
@@ -432,12 +479,12 @@ class DocumentLayering(object):
 
                 # Update the actual document data if concrete.
                 if not child.is_abstract:
+                    child_index = self._documents_to_layer.index(child)
                     child.data = rendered_data.data
                     substituted_data = list(
                         self.secrets_substitution.substitute_all(child))
                     if substituted_data:
                         rendered_data = substituted_data[0]
-                    child_index = self._documents_to_layer.index(child)
                     self._documents_to_layer[child_index].data = (
                         rendered_data.data)
 

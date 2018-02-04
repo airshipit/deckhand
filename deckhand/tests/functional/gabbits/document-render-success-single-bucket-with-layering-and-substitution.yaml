@@ -3,6 +3,7 @@
 #  * Substitution/layering works with top layer empty
 #  * Substitution/layering works with multiple top layers empty
 #  * Substitution/layering works with intermediate layer empty
+#  * Substitution/layering works with substitution dependency chain
 #
 # Base case:
 # 1. Purges existing data to ensure test isolation.
@@ -19,6 +20,11 @@
 # 11. Creates LayeringPolicy with 5 layers, with empty interspersed layers.
 # 12. Adds initial documents for layering/substitution base case.
 # 13. Verifies fully substituted/layered document data.
+# DAG case:
+# 14. Re-creates the layering policy with 2 layers: region and site.
+# 15. Adds documents with a substitution dependency chain that
+#     requires sorting in order to resolve.
+# 16. Verifies fully substituted/layered document data.
 
 defaults:
   request_headers:
@@ -59,7 +65,7 @@ tests:
       substitutions from secret documents.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/layering-and-substitution-example.yaml
+    data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_base_case
     desc: Check for expected substitutions
@@ -106,7 +112,7 @@ tests:
       Same case as before, except with a top empty layer.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/layering-and-substitution-example.yaml
+    data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_empty_top_layer
     desc: Check for expected substitutions
@@ -155,7 +161,7 @@ tests:
       Same case as before, except with multiple empty top layers.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/layering-and-substitution-example.yaml
+    data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_multiple_empty_top_layers
     desc: Check for expected substitutions
@@ -205,7 +211,7 @@ tests:
       Same case as before, except with multiple empty interspersed layers.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
-    data: <@resources/layering-and-substitution-example.yaml
+    data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_multiple_empty_top_layers
     desc: Check for expected substitutions
@@ -228,3 +234,75 @@ tests:
                 KEY DATA
             some_url: http://admin:my-secret-password@service-name:8080/v1
         from-parent: parent-val
+
+  - name: initialize_layering_policy_base_case_again
+    desc: |
+      Initailize the layering policy with 2 layers.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - region
+          - site
+      ...
+
+  - name: initialize_substitution_dependency_chain
+    desc: |
+      Base case for testing layering alongside substitution in which a DAG
+      must be used to topologically sort the substitutions in order to derive
+      the correct substitution order.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/layering-and-substitution-dag-sample.yaml
+
+  - name: verify_substitution_dependency_chain
+    desc: |
+      The dependency chain is: armada-chart-03 -> armada-chart-02 -> armada-chart-01
+      but the documents are passed to the server in reverse order. This verifies
+      that the server re-orders the documents according to the topologically sorted
+      order of the substitution dependency DAG. Also, armada-chart-02 and
+      armada-chart-03 are layered with armada-chart-01 except that armada-chart-02
+      deletes everything and armada-chart-03 merges everything.
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      schema: armada/Chart/v1
+      sort: metadata.name
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 3
+      $.[0].metadata.name: armada-chart-01
+      $.[0].data:
+        region:
+          certificate: |
+            CERTIFICATE DATA
+          certificatekey: |
+            KEY DATA
+          passphrase: http://admin:my-secret-password@service-name:8080/v1
+      $.[1].metadata.name: armada-chart-02
+      $.[1].data:
+        site:
+          certificate: |
+            CERTIFICATE DATA
+          certificatekey: |
+            KEY DATA
+          passphrase: http://admin:my-secret-password@service-name:8080/v1
+      $.[2].metadata.name: armada-chart-03
+      $.[2].data:
+        region:
+          certificate: |
+            CERTIFICATE DATA
+          certificatekey: |
+            KEY DATA
+          passphrase: http://admin:my-secret-password@service-name:8080/v1
+        site-alt:
+          certificate: |
+            CERTIFICATE DATA
+          certificatekey: |
+            KEY DATA
+          passphrase: http://admin:my-secret-password@service-name:8080/v1

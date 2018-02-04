@@ -42,37 +42,48 @@ class TestDocumentLayering(test_base.DeckhandTestCase):
                 continue
             layer = doc['metadata']['layeringDefinition']['layer']
             if layer == 'site':
-                site_docs.append(doc)
+                site_docs.append(doc.get('data'))
             if layer == 'region':
-                region_docs.append(doc)
+                region_docs.append(doc.get('data'))
             if layer == 'global':
-                global_docs.append(doc)
+                global_docs.append(doc.get('data'))
 
         if site_expected is not None:
             if not isinstance(site_expected, list):
                 site_expected = [site_expected]
 
-            for idx, expected in enumerate(site_expected):
-                self.assertEqual(expected, site_docs[idx].get('data'),
+            for expected in site_expected:
+                self.assertIn(expected, site_docs)
+                idx = site_docs.index(expected)
+                self.assertEqual(expected, site_docs[idx],
                                  'Actual site data does not match expected.')
+                site_docs.remove(expected)
         else:
             self.assertEmpty(site_docs)
+
         if region_expected is not None:
             if not isinstance(region_expected, list):
                 region_expected = [region_expected]
 
-            for idx, expected in enumerate(region_expected):
-                self.assertEqual(expected, region_docs[idx].get('data'),
+            for expected in region_expected:
+                self.assertIn(expected, region_docs)
+                idx = region_docs.index(expected)
+                self.assertEqual(expected, region_docs[idx],
                                  'Actual region data does not match expected.')
+                region_docs.remove(expected)
         else:
             self.assertEmpty(region_docs)
+
         if global_expected is not None:
             if not isinstance(global_expected, list):
                 global_expected = [global_expected]
 
-            for idx, expected in enumerate(global_expected):
-                self.assertEqual(expected, global_docs[idx].get('data'),
+            for expected in global_expected:
+                self.assertIn(expected, global_docs)
+                idx = global_docs.index(expected)
+                self.assertEqual(expected, global_docs[idx],
                                  'Actual global data does not match expected.')
+                global_docs.remove(expected)
         else:
             self.assertEmpty(global_docs)
 
@@ -310,8 +321,8 @@ class TestDocumentLayering2Layers2Sites2Globals(TestDocumentLayering):
             mapping, site_abstract=False, site_parent_selectors=[
                 {'global': 'global1'}, {'global': 'global2'}])
 
-        site_expected = [{'a': {'x': 1, 'y': 2}, 'b': 4},
-                         {'a': {'x': 1, 'y': 2}, 'b': 3}]
+        site_expected = [{'a': {'x': 1, 'y': 2}, 'b': 3},
+                         {'a': {'x': 1, 'y': 2}, 'b': 4}]
         self._test_layering(documents, site_expected)
 
     def test_layering_two_parents_one_child_each_1(self):
@@ -330,8 +341,8 @@ class TestDocumentLayering2Layers2Sites2Globals(TestDocumentLayering):
             mapping, site_abstract=False, site_parent_selectors=[
                 {'global': 'global1'}, {'global': 'global2'}])
 
-        site_expected = [{'a': {'x': 1, 'y': 2}, 'b': 4},
-                         {'a': {'x': 1, 'y': 2}, 'b': 3}]
+        site_expected = [{'a': {'x': 1, 'y': 2}, 'b': 3},
+                         {'a': {'x': 1, 'y': 2}, 'b': 4}]
         self._test_layering(documents, site_expected)
 
     def test_layering_two_parents_one_child_each_2(self):
@@ -359,8 +370,8 @@ class TestDocumentLayering2Layers2Sites2Globals(TestDocumentLayering):
             mapping, site_abstract=False, site_parent_selectors=[
                 {'global': 'global1'}, {'global': 'global2'}])
 
-        site_expected = [{'a': {'x': 1, 'y': 2}, 'b': 4},
-                         {"b": {"f": -9, "g": 71}}]
+        site_expected = [{"b": {"f": -9, "g": 71}},
+                         {'a': {'x': 1, 'y': 2}, 'b': 4}]
         self._test_layering(documents, site_expected)
 
 

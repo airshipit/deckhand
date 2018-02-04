@@ -236,10 +236,20 @@ class DocumentFactory(DeckhandFactory):
                 layer_template = copy.deepcopy(self.LAYER_TEMPLATE)
                 layer_name = layer_order[layer_idx]
 
-                # Set name.
                 layer_template = copy.deepcopy(layer_template)
-                layer_template['metadata']['name'] = "%s%d" % (
-                    test_utils.rand_name(layer_name), count + 1)
+
+                # Set name.
+                name_key = "_%s_NAME_%d_" % (layer_name.upper(), count + 1)
+                if name_key in mapping:
+                    layer_template['metadata']['name'] = mapping[name_key]
+                else:
+                    layer_template['metadata']['name'] = "%s%d" % (
+                        test_utils.rand_name(layer_name), count + 1)
+
+                # Set schema.
+                schema_key = "_%s_SCHEMA_%d_" % (layer_name.upper(), count + 1)
+                if schema_key in mapping:
+                    layer_template['schema'] = mapping[schema_key]
 
                 # Set layer.
                 layer_template['metadata']['layeringDefinition'][

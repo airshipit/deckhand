@@ -24,6 +24,7 @@ metadata:
   name: example-password
   schema: metadata/Document/v1
   layeringDefinition:
+    abstract: false
     layer: site
   storagePolicy: cleartext
 data: my-secret-password
