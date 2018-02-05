@@ -215,8 +215,7 @@ class SecretsSubstitution(object):
                 except Exception as e:
                     LOG.error('Unexpected exception occurred while attempting '
                               'secret substitution. %s', six.text_type(e))
-                    raise errors.SubstitutionDependencyNotFound(
-                        details=six.text_type(e))
+                    raise errors.SubstitutionFailure(details=six.text_type(e))
 
         yield document
 

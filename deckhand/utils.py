@@ -18,9 +18,12 @@ import re
 import string
 
 import jsonpath_ng
+from oslo_log import log as logging
 import six
 
 from deckhand import errors
+
+LOG = logging.getLogger(__name__)
 
 
 def to_camel_case(s):
@@ -115,11 +118,12 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
     :param data: The `data` section of a document.
     :param value: The new value for ``data[jsonpath]``.
     :param jsonpath: A multi-part key that references a nested path in
-        ``data``.
+        ``data``. Must begin with "." (without quotes).
     :param pattern: A regular expression pattern.
     :returns: Updated value at ``data[jsonpath]``.
     :raises: MissingDocumentPattern if ``pattern`` is not None and
         ``data[jsonpath]`` doesn't exist.
+    :raises ValueError: If ``jsonpath`` doesn't begin with "."
 
     Example::
 
@@ -138,27 +142,34 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         doc['data'].update(replaced_data)
     """
     data = copy.copy(data)
+    value = copy.copy(value)
 
     if jsonpath == '.':
         jsonpath = '$'
     elif jsonpath.startswith('.'):
         jsonpath = '$' + jsonpath
+    else:
+        LOG.error('The provided jsonpath %s does not begin with "."', jsonpath)
+        raise ValueError('The provided jsonpath %s does not begin with "."',
+                         jsonpath)
 
     def _do_replace():
         p = jsonpath_ng.parse(jsonpath)
         p_to_change = p.find(data)
 
         if p_to_change:
-            _value = value
+            new_value = value
             if pattern:
                 to_replace = p_to_change[0].value
-                # `value` represents the value to inject into `to_replace` that
-                # matches the `pattern`.
+                # `new_value` represents the value to inject into `to_replace`
+                # that matches the `pattern`.
                 try:
-                    _value = re.sub(pattern, value, to_replace)
-                except TypeError:
-                    _value = None
-            return p.update(data, _value)
+                    new_value = re.sub(pattern, str(value), to_replace)
+                except TypeError as e:
+                    LOG.error('Failed to substitute the value %s into %s '
+                              'using pattern %s. Details: %s', str(value),
+                              to_replace, pattern, six.text_type(e))
+            return p.update(data, new_value)
 
     result = _do_replace()
     if result:

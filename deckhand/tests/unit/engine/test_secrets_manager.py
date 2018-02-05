@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import yaml
 
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import secrets_manager
@@ -80,7 +81,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self.document_factory = factories.DocumentFactory(1, [1])
         self.secrets_factory = factories.DocumentSecretFactory()
 
-    def _test_secret_substitution(self, document_mapping, secret_documents,
+    def _test_doc_substitution(self, document_mapping, secret_documents,
                                   expected_data):
         payload = self.document_factory.gen_test(document_mapping,
                                                  global_abstract=False)
@@ -99,7 +100,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         substituted_docs = list(secret_substitution.substitute_all(documents))
         self.assertIn(expected_document, substituted_docs)
 
-    def test_secret_substitution_single_cleartext(self):
+    def test_doc_substitution_single_cleartext(self):
         certificate = self.secrets_factory.gen_test(
             'Certificate', 'cleartext', data='CERTIFICATE DATA')
         certificate['metadata']['name'] = 'example-cert'
@@ -126,7 +127,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             }
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
     def test_create_destination_path_with_array(self):
@@ -158,7 +159,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             }]
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
     def test_create_destination_path_with_array_sequential_indices(self):
@@ -210,7 +211,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             ]
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
     def test_create_destination_path_with_array_multiple_subs(self):
@@ -254,7 +255,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             }]
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
     def test_create_destination_path_with_nested_arrays(self):
@@ -289,10 +290,10 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             ]
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
-    def test_secret_substitution_single_cleartext_with_pattern(self):
+    def test_doc_substitution_single_cleartext_with_pattern(self):
         passphrase = self.secrets_factory.gen_test(
             'Passphrase', 'cleartext', data='my-secret-password')
         passphrase['metadata']['name'] = 'example-password'
@@ -329,10 +330,10 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             }
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [passphrase], expected_data)
 
-    def test_secret_substitution_double_cleartext(self):
+    def test_doc_substitution_double_cleartext(self):
         certificate = self.secrets_factory.gen_test(
             'Certificate', 'cleartext', data='CERTIFICATE DATA')
         certificate['metadata']['name'] = 'example-cert'
@@ -374,10 +375,10 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             }
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [certificate, certificate_key], expected_data)
 
-    def test_secret_substitution_multiple_cleartext(self):
+    def test_doc_substitution_multiple_cleartext(self):
         certificate = self.secrets_factory.gen_test(
             'Certificate', 'cleartext', data='CERTIFICATE DATA')
         certificate['metadata']['name'] = 'example-cert'
@@ -446,7 +447,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
                 }
             }
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, [certificate, certificate_key, passphrase],
             expected_data)
 
@@ -488,5 +489,133 @@ class TestSecretsSubstitution(test_base.TestDbBase):
 
             }]
         }
-        self._test_secret_substitution(
+        self._test_doc_substitution(
             document_mapping, dependent_documents, expected_data=src_data)
+
+    def test_doc_substitution_multiple_pattern_non_string_values(self):
+        for test_value in (123, 3.2, False, None):
+            test_yaml = """
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - site
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: ucp-drydock
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+  substitutions:
+    - src:
+        schema: twigleg/CommonAddresses/v1
+        name: common-addresses
+        path: .node_ports.maas_api
+      dest:
+        path: .values.conf.drydock.maasdriver.maas_api_url
+        pattern: 'MAAS_PORT'
+data:
+  values:
+    conf:
+      drydock:
+        maasdriver:
+          maas_api_url: http://10.24.31.31:MAAS_PORT/MAAS/api/2.0/
+---
+schema: twigleg/CommonAddresses/v1
+metadata:
+  schema: metadata/Document/v1
+  name: common-addresses
+  layeringDefinition:
+    abstract: false
+    layer: site
+  storagePolicy: cleartext
+data:
+  node_ports:
+    maas_api: {}
+...
+    """.format(test_value)
+
+            documents = list(yaml.safe_load_all(test_yaml))
+            expected = copy.deepcopy(documents[1])
+            expected['data']['values']['conf']['drydock']['maasdriver'][
+                'maas_api_url'] = 'http://10.24.31.31:{}/MAAS/api/2.0/'.format(
+                    test_value)
+
+            secret_substitution = secrets_manager.SecretsSubstitution(
+                documents)
+            substituted_docs = list(secret_substitution.substitute_all(
+                documents))
+            self.assertEqual(expected, substituted_docs[0])
+
+    def test_doc_substitution_multiple_pattern_substitutions(self):
+        test_yaml = """
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - site
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: ucp-drydock
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+  substitutions:
+    - src:
+        schema: twigleg/CommonAddresses/v1
+        name: common-addresses
+        path: .genesis.ip
+      dest:
+        path: .values.conf.drydock.maasdriver.maas_api_url
+        pattern: 'MAAS_IP'
+    - src:
+        schema: twigleg/CommonAddresses/v1
+        name: common-addresses
+        path: .node_ports.maas_api
+      dest:
+        path: .values.conf.drydock.maasdriver.maas_api_url
+        pattern: 'MAAS_PORT'
+data:
+  values:
+    conf:
+      drydock:
+        maasdriver:
+          maas_api_url: http://MAAS_IP:MAAS_PORT/MAAS/api/2.0/
+---
+schema: twigleg/CommonAddresses/v1
+metadata:
+  schema: metadata/Document/v1
+  name: common-addresses
+  layeringDefinition:
+    abstract: false
+    layer: site
+  storagePolicy: cleartext
+data:
+  genesis:
+    ip: 10.24.31.31
+  node_ports:
+    maas_api: 30001
+...
+"""
+        documents = list(yaml.safe_load_all(test_yaml))
+        expected = copy.deepcopy(documents[1])
+        expected['data']['values']['conf']['drydock']['maasdriver'][
+            'maas_api_url'] = 'http://10.24.31.31:30001/MAAS/api/2.0/'
+
+        secret_substitution = secrets_manager.SecretsSubstitution(documents)
+        substituted_docs = list(secret_substitution.substitute_all(documents))
+        self.assertEqual(expected, substituted_docs[0])

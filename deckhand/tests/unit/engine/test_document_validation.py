@@ -57,7 +57,7 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
         test_document = self._read_data('sample_passphrase')
         # Set the document to abstract.
         abstract_document = utils.jsonpath_replace(
-            test_document, True, 'metadata.layeringDefinition.abstract')
+            test_document, True, '.metadata.layeringDefinition.abstract')
         document_validation.DocumentValidation(
             abstract_document).validate_all()
         self.assertTrue(mock_log.info.called)
