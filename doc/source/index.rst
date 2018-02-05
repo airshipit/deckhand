@@ -47,6 +47,7 @@ User's Guide
    revision_history
    api_ref
    api_client
+   exceptions
 
 Developer's Guide
 =================

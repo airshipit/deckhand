@@ -171,56 +171,96 @@ class DeckhandException(Exception):
 
 
 class InvalidDocumentFormat(DeckhandException):
+    """Schema validations failed for the provided document.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("The provided document failed schema validation. Details: "
                "%(details)s")
     code = 400
 
 
 class IndeterminateDocumentParent(DeckhandException):
+    """More than one parent document was found for a document.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("Too many parent documents found for document %(document)s.")
     code = 400
 
 
 class MissingDocumentKey(DeckhandException):
+    """The key does not exist in the "rendered_data".
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("Missing document key %(key)s from either parent or child. "
                "Parent: %(parent)s. Child: %(child)s.")
     code = 400
 
 
 class MissingDocumentPattern(DeckhandException):
+    """'Pattern' is not None and data[jsonpath] doesn't exist.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("Missing document pattern %(pattern)s in %(data)s at path "
                "%(path)s.")
     code = 400
 
 
 class UnsupportedActionMethod(DeckhandException):
+    """The action is not in the list of supported methods.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("Method in %(actions)s is invalid for document %(document)s.")
     code = 400
 
 
 class RevisionTagBadFormat(DeckhandException):
+    """The tag data is neither None nor dictionary.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("The requested tag data %(data)s must either be null or "
                "dictionary.")
     code = 400
 
 
 class DocumentNotFound(DeckhandException):
+    """The requested document could not be found.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("The requested document %(document)s was not found.")
     code = 404
 
 
 class RevisionNotFound(DeckhandException):
+    """The revision cannot be found or doesn't exist.
+
+    **Troubleshoot:**
+    """
     msg_fmt = "The requested revision %(revision)s was not found."
     code = 404
 
 
 class RevisionTagNotFound(DeckhandException):
+    """The tag for the revision id was not found.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("The requested tag '%(tag)s' for revision %(revision)s was "
                "not found.")
     code = 404
 
 
 class ValidationNotFound(DeckhandException):
+    """The requested validation was not found.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("The requested validation entry %(entry_id)s was not found "
                "for validation name %(validation_name)s and revision ID "
                "%(revision_id)s.")
@@ -228,12 +268,22 @@ class ValidationNotFound(DeckhandException):
 
 
 class DocumentExists(DeckhandException):
+    """A document attempted to be put into a bucket where another document with
+    the same schema and metadata.name already exist.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("Document with schema %(schema)s and metadata.name "
                "%(name)s already exists in bucket %(bucket)s.")
     code = 409
 
 
 class SingletonDocumentConflict(DeckhandException):
+    """A singleton document already exist within the system.
+
+    **Troubleshoot:**
+    """
+
     msg_fmt = ("A singleton document by the name %(document)s already "
                "exists in the system. The new document %(conflict)s cannot be "
                "created. To create a document with a new name, delete the "
@@ -242,22 +292,38 @@ class SingletonDocumentConflict(DeckhandException):
 
 
 class LayeringPolicyNotFound(DeckhandException):
+    """Required LayeringPolicy was not found for layering.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ("Required LayeringPolicy was not found for layering.")
     code = 409
 
 
 class SubstitutionFailure(DeckhandException):
+    """An unknown error occurred during substitution.
+
+    **Troubleshoot:**
+    """
     msg_fmt = ('An unknown exception occurred while trying to perform '
                'substitution. Details: %(detail)s')
     code = 400
 
 
 class BarbicanException(DeckhandException):
+    """An error occurred with Barbican.
+
+    **Troubleshoot:**
+    """
 
     def __init__(self, message, code):
         super(BarbicanException, self).__init__(message=message, code=code)
 
 
 class PolicyNotAuthorized(DeckhandException):
+    """The policy action is not found in the list of registered rules.
+
+    **Troubleshoot:**
+    """
     msg_fmt = "Policy doesn't allow %(action)s to be performed."
     code = 403
