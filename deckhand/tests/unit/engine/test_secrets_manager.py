@@ -30,7 +30,7 @@ class TestSecretsManager(test_base.TestDbBase):
             secrets_manager.SecretsManager, 'barbican_driver')
         self.secret_ref = 'https://path/to/fake_secret'
         self.mock_barbican_driver.create_secret.return_value = (
-            {'secret_href': self.secret_ref})
+            {'secret_ref': self.secret_ref})
 
         self.secrets_manager = secrets_manager.SecretsManager()
         self.factory = factories.DocumentSecretFactory()

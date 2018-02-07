@@ -73,7 +73,7 @@ class SecretsManager(object):
             }
             resp = self.barbican_driver.create_secret(**kwargs)
 
-            secret_ref = resp['secret_href']
+            secret_ref = resp['secret_ref']
             created_secret = secret_ref
         elif encryption_type == CLEARTEXT:
             created_secret = secret_doc['data']
@@ -93,6 +93,12 @@ class SecretsManager(object):
         _schema = schema.split('/')[1].lower().strip()
         if _schema == 'certificatekey':
             return 'private'
+        elif _schema == 'certificateauthority':
+            return 'certificate'
+        elif _schema == 'certificateauthoritykey':
+            return 'private'
+        elif _schema == 'publickey':
+            return 'public'
         return _schema
 
 

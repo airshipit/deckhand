@@ -35,4 +35,8 @@ oslo.policy>=1.23.0 # Apache-2.0
 oslo.serialization!=2.19.1,>=1.10.0 # Apache-2.0
 oslo.utils>=3.20.0 # Apache-2.0
 
+# TODO(alanmeadows)
+# this must match the container service
+# likely this should be imported from a
+# container sidecar long-term
 python-barbicanclient>=4.0.0  # Apache-2.0

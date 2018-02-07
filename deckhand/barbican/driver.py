@@ -32,7 +32,7 @@ class BarbicanDriver(object):
         secret = self.barbicanclient.call("secrets.create", **kwargs)
 
         try:
-            secret.store()
+            secret_ref = secret.store()
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError,
                 barbicanclient.exceptions.HTTPServerError) as e:
@@ -43,6 +43,7 @@ class BarbicanDriver(object):
         # NOTE(fmontei): The dictionary representation of the Secret object by
         # default has keys that are not snake case -- so make them snake case.
         resp = secret.to_dict()
-        for key in resp.keys():
+        for key in resp:
             resp[utils.to_snake_case(key)] = resp.pop(key)
+        resp['secret_ref'] = secret_ref
         return resp
