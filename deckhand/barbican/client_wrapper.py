@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from keystoneauth1.identity import v3
+from keystoneauth1 import loading
 from keystoneauth1 import session
+
 from oslo_log import log as logging
 
 from deckhand.conf import config
@@ -48,8 +49,7 @@ class BarbicanClientWrapper(object):
         # endpoint URL automatically.
         barbican_url = CONF.barbican.api_endpoint
 
-        keystone_auth = dict(CONF.keystone_authtoken)
-        auth = v3.Password(**keystone_auth)
+        auth = loading.load_auth_from_conf_options(CONF, 'keystone_authtoken')
         sess = session.Session(auth=auth)
 
         try:
