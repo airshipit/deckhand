@@ -33,6 +33,11 @@
 {{- tuple "oslo_cache" "internal" "memcache" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "memcached_servers" | quote | trunc 0 -}}
 {{- end -}}
 
+# Add endpoint URI lookup for barbican
+{{- if empty .Values.conf.deckhand.barbican.api_endpoint -}}
+{{- tuple "barbican" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.barbican "api_endpoint" | quote | trunc 0 -}}
+{{- end -}}
+
 {{- $userIdentity := .Values.endpoints.identity.auth.user -}}
 
 {{- if empty .Values.conf.deckhand.keystone_authtoken.project_name -}}
