@@ -84,7 +84,7 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
         validations = document_validation.DocumentValidation(
             test_document).validate_all()
 
-        self.assertEqual(2, len(validations[0]['errors']))
+        self.assertEqual(1, len(validations[0]['errors']))
         self.assertIn('Sanitized to avoid exposing secret.',
                       str(validations[0]['errors'][-1]))
         self.assertNotIn('scary-secret.', str(validations[0]['errors'][-1]))

@@ -29,7 +29,7 @@ schema = {
             'additionalProperties': True,
             'required': ['schema', 'name']
         },
-        'data': {'type': ['string', 'integer', 'array', 'object']}
+        'data': {'type': ['null', 'string', 'integer', 'array', 'object']}
     },
     'additionalProperties': False,
     'required': ['schema', 'metadata']

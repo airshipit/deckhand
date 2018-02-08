@@ -3,14 +3,17 @@
 #  1. Purges existing data to ensure test isolation
 #  2. Creates a DataSchema
 #  3. Checks that schema validation for the DataSchema passes
-#  4. Puts a valid document
-#  5. Checks that the document passes schema validation
-#  6. Puts an invalid document
-#  7. Checks that the document fails schema validation
-#  8. Checks that the document entry details adhere to expected validation
+#  4. Puts a valid document (and LayeringPolicy)
+#  5. Checks that the document passes schema pre-validation
+#  6. Checks that the document passes schema post-validation
+#  7. Puts an invalid document
+#  8. Checks that the document fails schema pre-validation
+#  9. Checks that the document fails schema post-validation by raising expected
+#     exception
+# 10. Checks that the document entry details adhere to expected validation
 #     format
-#  9. Re-puts the same invalid document with substitutions
-# 10. Verify that the substitutions were sanitized in the validation output
+# 11. Re-puts the same invalid document with substitutions
+# 12. Verify that the substitutions were sanitized in the validation output
 
 defaults:
   request_headers:
@@ -56,6 +59,15 @@ tests:
     PUT: /api/v1.0/buckets/good/documents
     status: 200
     data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - site
+      ---
       schema: example/Doc/v1
       metadata:
         schema: metadata/Document/v1
@@ -67,18 +79,18 @@ tests:
         a: this-one-is-required
         b: 77
 
-  - name: verify_document_is_valid
-    desc: Check schema validation of the added document
+  - name: verify_document_is_valid_pre_validation
+    desc: Check schema pre-validation of the added document
     GET: /api/v1.0/revisions/$HISTORY['add_valid_document'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].count: 1
+      $.[0].count: 2
       $.[0].results[0].id: 0
       $.[0].results[0].status: success
 
-  - name: verify_document_validation_success_in_list_view
-    desc: Check document validation success shows in list view
+  - name: verify_document_pre_validation_success_in_list_view
+    desc: Check document pre-validation success shows in list view
     GET: /api/v1.0/revisions/$HISTORY['add_valid_document'].$RESPONSE['$.[0].status.revision']/validations
     status: 200
     response_multidoc_jsonpaths:
@@ -86,6 +98,11 @@ tests:
       $.[0].count: 1
       $.[0].results[*].name: deckhand-schema-validation
       $.[0].results[*].status: success
+
+  - name: verify_document_is_valid_post_validation
+    desc: Check that the document passes post-validation
+    GET: /api/v1.0/revisions/$HISTORY['add_valid_document'].$RESPONSE['$.[0].status.revision']/rendered-documents
+    status: 200
 
   - name: add_invalid_document
     desc: Add a document that does not follow the schema
@@ -103,61 +120,68 @@ tests:
         a: this-one-is-required-and-can-be-different
         b: 177
 
-  - name: verify_document_is_not_valid
-    desc: Check failure of schema validation of the added document
+  - name: verify_invalid_document_is_valid_pre_validation
+    desc: Check success of schema pre-validation of the added document
     GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].count: 1
-      $.[0].results[*].status: failure
+      $.[0].results[*].status: success
 
-  - name: verify_document_validation_failure_in_list_view
-    desc: Check document validation failure shows in list view
+  - name: verify_document_pre_validation_failure_in_list_view
+    desc: Check document pre-validation success shows in list view
     GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/validations
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].count: 1
       $.[0].results[0].name: deckhand-schema-validation
-      $.[0].results[0].status: failure
+      $.[0].results[0].status: success
 
-  - name: verify_document_validation_failure_entry_details
-    desc: Check document validation failure details for specific entry
-    GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation/entries/0
-    status: 200
+  - name: verify_document_is_invalid_post_validation
+    desc: Check that the document fails post-validation
+    GET: /api/v1.0/revisions/$HISTORY['add_invalid_document'].$RESPONSE['$.[0].status.revision']/rendered-documents
+    status: 400
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].status: failure
-      $.[0].errors:
-        - name: bad
-          schema: example/Doc/v1
-          path: .data.b
-          schema_path: .properties.b.maximum
-          error_section:
-            a: this-one-is-required-and-can-be-different
-            b: 177
-          message: 177 is greater than the maximum of 100
-          validation_schema:
-            $schema: http://json-schema.org/schema#
-            additionalProperties: False
-            properties:
-              a:
-                type: string
-              b:
-                maximum: 100
-                minimum: 0
-                type: integer
-            required:
+      $.[0].status: Failure
+      $.[0].message:
+        - errors:
+          - validation_schema:
+              "$schema": http://json-schema.org/schema#
+              properties:
+                a:
+                  type: string
+                b:
+                  maximum: 100
+                  type: integer
+                  minimum: 0
+              type: object
+              required:
               - a
               - b
-            type: object
+              additionalProperties: false
+            error_section:
+              a: this-one-is-required-and-can-be-different
+              b: 177
+            schema_path: ".properties.b.maximum"
+            name: bad
+            schema: example/Doc/v1
+            path: ".data.b"
+            message: 177 is greater than the maximum of 100
+          name: deckhand-schema-validation
+          validator:
+            name: deckhand
+            version: '1.0'
+          status: failure
 
   - name: add_invalid_document_with_substitutions
     desc: Add a document that does not follow the schema
     PUT: /api/v1.0/buckets/bad/documents
     status: 200
     data: |-
+      ---
       schema: example/Doc/v1
       metadata:
         schema: metadata/Document/v1
@@ -166,46 +190,58 @@ tests:
           abstract: false
           layer: site
         substitutions:
-          # It doesn't matter if the values below are junk, only that the
-          # destination path of .a is sanitized in the `error_section` of the
-          # validation result.
           - src:
-              schema: None
-              name: None
+              schema: deckhand/Certificate/v1
+              name: test-certificate
               path: .
             dest:
               path: .a
       data:
         a: this-one-is-required-and-can-be-different
         b: 177
+      ---
+      schema: deckhand/Certificate/v1
+      metadata:
+        name: test-certificate
+        schema: metadata/Document/v1
+        layeringDefinition:
+          layer: site
+        storagePolicy: cleartext
+      data: this-should-definitely-be-sanitized
 
-  - name: verify_document_validation_failure_entry_details_hides_secrets
+  - name: verify_document_post_validation_failure_entry_details_hides_secrets
     desc: Check document validation failure hides secrets
-    GET: /api/v1.0/revisions/$HISTORY['add_invalid_document_with_substitutions'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation/entries/0
-    status: 200
+    GET: /api/v1.0/revisions/$HISTORY['add_invalid_document_with_substitutions'].$RESPONSE['$.[0].status.revision']/rendered-documents
+    status: 400
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].status: failure
-      $.[0].errors:
-        - name: bad
-          schema: example/Doc/v1
-          path: .data.b
-          schema_path: .properties.b.maximum
-          error_section:
-            a: Sanitized to avoid exposing secret.
-            b: 177
-          message: 177 is greater than the maximum of 100
-          validation_schema:
-            $schema: http://json-schema.org/schema#
-            additionalProperties: False
-            properties:
-              a:
-                type: string
-              b:
-                maximum: 100
-                minimum: 0
-                type: integer
-            required:
-              - a
-              - b
-            type: object
+      $.[0].status: Failure
+      $.[0].message:
+        - errors:
+          - name: bad
+            schema: example/Doc/v1
+            path: .data.b
+            schema_path: .properties.b.maximum
+            error_section:
+              a: Sanitized to avoid exposing secret.
+              b: 177
+            message: 177 is greater than the maximum of 100
+            validation_schema:
+              $schema: http://json-schema.org/schema#
+              additionalProperties: False
+              properties:
+                a:
+                  type: string
+                b:
+                  maximum: 100
+                  minimum: 0
+                  type: integer
+              required:
+                - a
+                - b
+              type: object
+          name: deckhand-schema-validation
+          validator:
+            name: deckhand
+            version: '1.0'
+          status: failure

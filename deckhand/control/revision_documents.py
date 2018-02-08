@@ -174,17 +174,22 @@ class RenderedDocumentsResource(api_base.BaseResource):
         return db_api.document_get_all(
             **{'metadata.layeringDefinition.abstract': False})
 
-    def _post_validate(self, documents):
+    def _post_validate(self, rendered_documents):
         # Perform schema validation post-rendering to ensure that rendering
         # and substitution didn't break anything.
         data_schemas = db_api.revision_documents_get(
             schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
         doc_validator = document_validation.DocumentValidation(
-            documents, data_schemas)
+            rendered_documents, data_schemas)
         try:
-            doc_validator.validate_all()
+            validations = doc_validator.validate_all()
         except errors.InvalidDocumentFormat as e:
             LOG.error('Failed to post-validate rendered documents.')
             LOG.exception(e.format_message())
             raise falcon.HTTPInternalServerError(
                 description=e.format_message())
+        else:
+            failed_validations = [
+                v for v in validations if v['status'] == 'failure']
+            if failed_validations:
+                raise falcon.HTTPBadRequest(description=failed_validations)

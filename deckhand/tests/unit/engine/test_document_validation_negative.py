@@ -80,25 +80,24 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
     def test_certificate_key_missing_required_sections(self):
         document = self._read_data('sample_certificate_key')
         properties_to_remove = tuple(self.exception_map.keys()) + (
-            'data', 'metadata.storagePolicy',)
+            'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_certificate_missing_required_sections(self):
         document = self._read_data('sample_certificate')
         properties_to_remove = tuple(self.exception_map.keys()) + (
-            'data', 'metadata.storagePolicy',)
+            'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_data_schema_missing_required_sections(self):
         document = self._read_data('sample_data_schema')
         properties_to_remove = tuple(self.exception_map.keys()) + (
-            'data', 'data.$schema',)
+            'data.$schema',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_document_missing_required_sections(self):
         document = self._read_data('sample_document')
         properties_to_remove = tuple(self.exception_map.keys()) + (
-            'data',
             'metadata.layeringDefinition',
             'metadata.layeringDefinition.layer',
             'metadata.layeringDefinition.actions.0.method',
@@ -132,16 +131,10 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
         validations = doc_validator.validate_all()
 
         errors = validations[0]['errors']
-        self.assertEqual(len(properties_to_remove) + 1, len(errors))
-
-        # Validate the first error relates to the fact that the document's
-        # schema is unrecognized (promenade/ResourceType/v1.0) as it wasn't
-        # registered with a ``DataSchema``.
-        self.assertIn('%s is invalid' % document['schema'],
-                      errors[0]['message'])
+        self.assertEqual(len(properties_to_remove), len(errors))
 
         # Sort the errors to match the order in ``properties_to_remove``.
-        errors = sorted(errors[1:], key=lambda x: (x['path'], x['message']))
+        errors = sorted(errors, key=lambda x: (x['path'], x['message']))
 
         # Validate that an error was generated for each missing property in
         # ``properties_to_remove`` that was removed from ``document``.
@@ -172,19 +165,19 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
     def test_layering_policy_missing_required_sections(self):
         document = self._read_data('sample_layering_policy')
         properties_to_remove = tuple(self.exception_map.keys()) + (
-            'data', 'data.layerOrder',)
+            'data.layerOrder',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_passphrase_missing_required_sections(self):
         document = self._read_data('sample_passphrase')
         properties_to_remove = tuple(self.exception_map.keys()) + (
-            'data', 'metadata.storagePolicy',)
+            'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_validation_policy_missing_required_sections(self):
         document = self._read_data('sample_validation_policy')
         properties_to_remove = tuple(self.exception_map.keys()) + (
-            'data', 'data.validations', 'data.validations.0.name')
+            'data.validations', 'data.validations.0.name')
         self._test_missing_required_sections(document, properties_to_remove)
 
     @mock.patch.object(document_validation, 'LOG', autospec=True)
@@ -195,8 +188,9 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
         doc_validator = document_validation.DocumentValidation(document)
         doc_validator.validate_all()
         self.assertRegex(
-            mock_log.error.mock_calls[0][1][0],
-            'The provided document schema %s is invalid.' % document['schema'])
+            mock_log.info.mock_calls[0][1][0],
+            'The provided document schema %s is not registered.'
+            % document['schema'])
 
     @mock.patch.object(document_validation, 'LOG', autospec=True)
     def test_invalid_document_schema_version_generates_error(self, mock_log):
@@ -206,8 +200,9 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
         doc_validator = document_validation.DocumentValidation(document)
         doc_validator.validate_all()
         self.assertRegex(
-            mock_log.error.mock_calls[0][1][0],
-            'The provided document schema %s is invalid.' % document['schema'])
+            mock_log.info.mock_calls[0][1][0],
+            'The provided document schema %s is not registered.'
+            % document['schema'])
 
     def test_invalid_validation_schema_raises_runtime_error(self):
         document = self._read_data('sample_passphrase')

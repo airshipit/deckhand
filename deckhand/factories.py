@@ -22,6 +22,8 @@ from deckhand.tests import test_utils
 
 LOG = logging.getLogger(__name__)
 
+DOCUMENT_TEST_SCHEMA = 'example/Kind/v1'
+
 
 @six.add_metaclass(abc.ABCMeta)
 class DeckhandFactory(object):
@@ -111,7 +113,7 @@ class DocumentFactory(DeckhandFactory):
             "name": "",
             "schema": "metadata/Document/v%s" % DeckhandFactory.API_VERSION
         },
-        "schema": "example/Kind/v1.0"
+        "schema": DOCUMENT_TEST_SCHEMA
     }
 
     def __init__(self, num_layers, docs_per_layer):

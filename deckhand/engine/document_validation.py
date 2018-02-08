@@ -95,7 +95,7 @@ class GenericValidator(BaseValidator):
                 LOG.error(
                     'Failed sanity-check validation for document [%s] %s. '
                     'Details: %s', document.get('schema', 'N/A'),
-                    document.get('metadata', {}).get('name'), error_messages)
+                    document.metadata.get('name'), error_messages)
                 raise errors.InvalidDocumentFormat(details=error_messages)
 
 
@@ -243,14 +243,12 @@ class DataSchemaValidator(SchemaValidator):
 
 class DocumentValidation(object):
 
-    def __init__(self, documents, existing_data_schemas=None):
+    def __init__(self, documents, existing_data_schemas=None,
+                 pre_validate=False):
         """Class for document validation logic for documents.
 
         This class is responsible for validating documents according to their
         schema.
-
-        ``DataSchema`` documents must be validated first, as they are in turn
-        used to validate other documents.
 
         :param documents: Documents to be validated.
         :type documents: List[dict]
@@ -259,6 +257,11 @@ class DocumentValidation(object):
             ``documents``. Additional ``DataSchema`` documents in ``documents``
             are combined with these.
         :type existing_data_schemas: dict or List[dict]
+        :param pre_validate: Only runs validations from ``GenericValidator``
+            and ``SchemaValidator`` against the documents if True. Otherwise
+            runs them all. This is useful to avoid spurious errors arising
+            from missing properties that may only exist post-substitution.
+            Default is False.
         """
 
         self.documents = []
@@ -267,17 +270,25 @@ class DocumentValidation(object):
                         for d in existing_data_schemas]
         _data_schema_map = {d.name: d for d in data_schemas}
 
+        raw_properties = ('data', 'metadata', 'schema')
+
         if not isinstance(documents, list):
             documents = [documents]
         for document in documents:
-            if not isinstance(document, document_wrapper.DocumentDict):
-                document = document_wrapper.DocumentDict(document)
+            # For post-validation documents are retrieved from the DB so those
+            # DB properties need to be stripped to avoid validation errors.
+            raw_document = {}
+            for prop in raw_properties:
+                raw_document[prop] = document.get(prop)
+
+            document = document_wrapper.DocumentDict(raw_document)
             if document.schema.startswith(types.DATA_SCHEMA_SCHEMA):
                 data_schemas.append(document)
                 # If a newer version of the same DataSchema was passed in,
                 # only use the new one and discard the old one.
                 if document.name in _data_schema_map:
                     data_schemas.remove(_data_schema_map.pop(document.name))
+
             self.documents.append(document)
 
         # NOTE(fmontei): The order of the validators is important. The
@@ -288,9 +299,11 @@ class DocumentValidation(object):
             DataSchemaValidator(data_schemas)
         ]
 
+        self._pre_validate = pre_validate
+
     def _get_supported_schema_list(self):
         schema_list = []
-        for validator in self._validators[1:]:
+        for validator in self._validators[1:]:  # Skip over `GenericValidator`.
             for schema_version, schema_map in validator._schema_map.items():
                 for schema_prefix in schema_map:
                     schema_list.append(schema_prefix + '/' + schema_version)
@@ -330,19 +343,17 @@ class DocumentValidation(object):
         document_schema = None if not document.get('schema') else '/'.join(
             _get_schema_parts(document))
         if document_schema not in supported_schema_list:
-            error_msg = ("The provided document schema %s is invalid. "
-                         "Supported schemas include: %s" % (
-                             document.get('schema', 'N/A'),
-                             supported_schema_list))
-            LOG.error(error_msg)
-            result['errors'].append({
-                'schema': document.get('schema', 'N/A'),
-                'name': document.get('metadata', {}).get('name', 'N/A'),
-                'message': error_msg,
-                'path': '.'
-            })
+            message = ("The provided document schema %s is not registered. "
+                       "Registered schemas include: %s" % (
+                           document.get('schema', 'N/A'),
+                           supported_schema_list))
+            LOG.info(message)
 
-        for validator in self._validators:
+        validators = self._validators
+        if self._pre_validate is True:
+            validators = self._validators[:-1]
+
+        for validator in validators:
             if validator.matches(document):
                 error_outputs = validator.validate(document)
                 if error_outputs:
@@ -400,16 +411,8 @@ class DocumentValidation(object):
         validation_results = []
 
         for document in self.documents:
-            # NOTE(fmontei): Since ``DataSchema`` documents created in previous
-            # revisions are retrieved and combined with new ``DataSchema``
-            # documents, we only want to create a validation result in the DB
-            # for the new documents. One way to do this is to check whether the
-            # document contains the 'id' key which is only assigned by the DB.
-            requires_validation = 'id' not in document
-
-            if requires_validation:
-                result = self._validate_one(document)
-                validation_results.append(result)
+            result = self._validate_one(document)
+            validation_results.append(result)
 
         validations = self._format_validation_results(validation_results)
         return validations

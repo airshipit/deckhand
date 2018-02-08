@@ -35,15 +35,15 @@ class DocumentDict(dict):
 
     @property
     def schema(self):
-        return self.get('schema', '')
+        return self.get('schema') or ''
 
     @property
     def metadata(self):
-        return self.get('metadata', {})
+        return self.get('metadata') or {}
 
     @property
     def data(self):
-        return self.get('data', {})
+        return self.get('data') or {}
 
     @data.setter
     def data(self, value):
@@ -51,7 +51,7 @@ class DocumentDict(dict):
 
     @property
     def name(self):
-        return utils.jsonpath_parse(self, 'metadata.name')
+        return utils.jsonpath_parse(self, 'metadata.name') or ''
 
     @property
     def layering_definition(self):

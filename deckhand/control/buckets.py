@@ -55,7 +55,7 @@ class BucketsResource(api_base.BaseResource):
             schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
         try:
             doc_validator = document_validation.DocumentValidation(
-                documents, data_schemas)
+                documents, data_schemas, pre_validate=True)
             validations = doc_validator.validate_all()
         except deckhand_errors.InvalidDocumentFormat as e:
             LOG.exception(e.format_message())
