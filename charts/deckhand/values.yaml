@@ -226,6 +226,8 @@ conf:
       policy_file: policy.yaml
       policy_default_rule: default
       policy_dirs: policy.d
+    barbican:
+      api_endpoint:
   logging:
     loggers:
       keys: 'root, deckhand, error'

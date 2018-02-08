@@ -20,12 +20,12 @@
 
 # FIXME fix for broken keystonemiddleware oslo config gen in newton - will remove in future
 {{- if empty .Values.conf.deckhand.keystone_authtoken.auth_url -}}
-{{- tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup"| set .Values.conf.deckhand.keystone_authtoken "auth_url" | quote | trunc 0 -}}
+{{- tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "auth_url" | quote | trunc 0 -}}
 {{- end -}}
 
 # Add endpoint URI lookup for Deckhand Postgresql DB Connection
 {{- if empty .Values.conf.deckhand.database.connection -}}
-{{- tuple "postgresql" "internal" "user" "postgresql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup"| set .Values.conf.deckhand.database "connection" | quote | trunc 0 -}}
+{{- tuple "postgresql" "internal" "user" "postgresql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup" | set .Values.conf.deckhand.database "connection" | quote | trunc 0 -}}
 {{- end -}}
 
 # Add endpoint URI lookup for memcached servers Connection
