@@ -148,10 +148,12 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         jsonpath = '$'
     elif jsonpath.startswith('.'):
         jsonpath = '$' + jsonpath
-    else:
-        LOG.error('The provided jsonpath %s does not begin with "."', jsonpath)
-        raise ValueError('The provided jsonpath %s does not begin with "."',
-                         jsonpath)
+
+    if not jsonpath == '$' and not jsonpath.startswith('$.'):
+        LOG.error('The provided jsonpath %s does not begin with "." or "$"',
+                  jsonpath)
+        raise ValueError('The provided jsonpath %s does not begin with "." '
+                         'or "$"' % jsonpath)
 
     def _do_replace():
         p = jsonpath_ng.parse(jsonpath)
