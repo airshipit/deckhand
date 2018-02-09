@@ -112,7 +112,9 @@ class RenderedDocumentsResource(api_base.BaseResource):
             document_layering = layering.DocumentLayering(
                 documents, substitution_sources)
             rendered_documents = document_layering.render()
-        except (errors.IndeterminateDocumentParent,
+        except (errors.InvalidDocumentLayer,
+                errors.InvalidDocumentParent,
+                errors.IndeterminateDocumentParent,
                 errors.UnsupportedActionMethod,
                 errors.MissingDocumentKey) as e:
             raise falcon.HTTPBadRequest(description=e.format_message())

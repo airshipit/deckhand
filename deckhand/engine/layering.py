@@ -44,30 +44,65 @@ class DocumentLayering(object):
 
     SUPPORTED_METHODS = ('merge', 'replace', 'delete')
 
-    def _is_actual_child_document(self, document, potential_child,
-                                  target_layer):
-        # Documents with different schemas are never layered together,
-        # so consider only documents with same schema as candidates.
-        is_potential_child = (
-            potential_child.layer == target_layer and
-            potential_child.schema == document.schema
-        )
-        if is_potential_child:
-            parent_selector = potential_child.parent_selector
-            labels = document.labels
-            # Labels are key-value pairs which are unhashable, so use ``all``
-            # instead.
-            return all(labels.get(x) == y for x, y in parent_selector.items())
-        return False
+    def _replace_older_parent_with_younger_parent(self, child, parent,
+                                                  all_children):
+        # If child has layer N, parent N+1, and current_parent N+2, then swap
+        # parent with current_parent. In other words, if parent's layer is
+        # closer to child's layer than current_parent's layer, then use parent.
+        current_parent = self._parents.get((child.name, child.schema))
+        if current_parent:
+            if (self._layer_order.index(parent.layer) >
+                self._layer_order.index(current_parent.layer)):
+                self._parents[(child.name, child.schema)] = parent
+                self._children[
+                    (current_parent.name, current_parent.schema)].remove(child)
+                all_children[child] -= 1
+        else:
+            self._parents.setdefault((child.name, child.schema), parent)
+
+    def _is_actual_child_document(self, document, potential_child):
+        if document == potential_child:
+            return False
+
+        document_layer_idx = self._layer_order.index(document.layer)
+        child_layer_idx = self._layer_order.index(potential_child.layer)
+
+        parent_selector = potential_child.parent_selector
+        labels = document.labels
+        # Labels are key-value pairs which are unhashable, so use ``all``
+        # instead.
+        is_actual_child = all(
+            labels.get(x) == y for x, y in parent_selector.items())
+
+        if is_actual_child:
+            # Documents with different `schema`s are never layered together,
+            # so consider only documents with same schema as candidates.
+            if potential_child.schema != document.schema:
+                reason = ('Child has parentSelector which references parent, '
+                          'but their `schema`s do not match.')
+                LOG.error(reason)
+                raise errors.InvalidDocumentParent(
+                    parent_schema=document.schema, parent_name=document.name,
+                    document_schema=potential_child.schema,
+                    document_name=potential_child.name, reason=reason)
+
+            # The highest order is 0, so the parent should be lower than the
+            # child.
+            if document_layer_idx >= child_layer_idx:
+                reason = ('Child has parentSelector which references parent, '
+                          'but the child layer %s must be lower than the '
+                          'parent layer %s for layerOrder %s.' % (
+                              potential_child.layer, document.layer,
+                              ', '.join(self._layer_order)))
+                LOG.error(reason)
+                raise errors.InvalidDocumentParent(
+                    parent_schema=document.schema, parent_name=document.name,
+                    document_schema=potential_child.schema,
+                    document_name=potential_child.name, reason=reason)
+
+        return is_actual_child
 
     def _calc_document_children(self, document):
-        try:
-            document_layer_idx = self._layer_order.index(document.layer)
-            child_layer = self._layer_order[document_layer_idx + 1]
-        except IndexError:
-            # The lowest layer has been reached, so no children.
-            return
-
         potential_children = set()
         for label_key, label_val in document.labels.items():
             _potential_children = self._documents_by_labels.get(
@@ -75,8 +110,7 @@ class DocumentLayering(object):
             potential_children |= set(_potential_children)
 
         for potential_child in potential_children:
-            if self._is_actual_child_document(document, potential_child,
-                                              child_layer):
+            if self._is_actual_child_document(document, potential_child):
                 yield potential_child
 
     def _calc_all_document_children(self):
@@ -106,16 +140,21 @@ class DocumentLayering(object):
         # Mapping of (doc.name, doc.metadata.name) => children, where children
         # are the documents whose `parentSelector` references the doc.
         self._children = {}
+        self._parents = {}
         self._parentless_documents = []
 
         for layer in self._layer_order:
             documents_in_layer = self._documents_by_layer.get(layer, [])
             for document in documents_in_layer:
                 children = list(self._calc_document_children(document))
+                self._children[(document.name, document.schema)] = children
+
                 if children:
                     all_children.update(children)
-                    self._children.setdefault(
-                        (document.name, document.schema), children)
+
+                for child in children:
+                    self._replace_older_parent_with_younger_parent(
+                        child, document, all_children)
 
         all_children_elements = list(all_children.elements())
         secondary_documents = []
@@ -172,26 +211,56 @@ class DocumentLayering(object):
         :param substitution_sources: List of documents that are potential
             sources for substitution. Should only include concrete documents.
         :type substitution_sources: List[dict]
+
+        :raises LayeringPolicyNotFound: If no LayeringPolicy was found among
+            list of ``documents``.
+        :raises InvalidDocumentLayer: If document layer not found in layerOrder
+            for provided LayeringPolicy.
+        :raises InvalidDocumentParent: If child references parent but they
+            don't have the same schema or their layers are incompatible.
+        :raises IndeterminateDocumentParent: If more than one parent document
+            was found for a document.
         """
         self._documents_to_layer = []
         self._documents_by_layer = {}
         self._documents_by_labels = {}
         self._layering_policy = None
 
+        layering_policies = list(
+            filter(lambda x: x.get('schema').startswith(
+                   types.LAYERING_POLICY_SCHEMA), documents))
+        if layering_policies:
+            self._layering_policy = document_wrapper.DocumentDict(
+                layering_policies[0])
+            if len(layering_policies) > 1:
+                LOG.warning('More than one layering policy document was '
+                            'passed in. Using the first one found: [%s] %s.',
+                            self._layering_policy.schema,
+                            self._layering_policy.name)
+
+        if self._layering_policy is None:
+            error_msg = (
+                'No layering policy found in the system so could not render '
+                'documents.')
+            LOG.error(error_msg)
+            raise errors.LayeringPolicyNotFound()
+
         for document in documents:
             document = document_wrapper.DocumentDict(document)
-            if document.schema.startswith(types.LAYERING_POLICY_SCHEMA):
-                if self._layering_policy:
-                    LOG.warning('More than one layering policy document was '
-                                'passed in. Using the first one found: [%s] '
-                                '%s.', document.schema, document.name)
-                else:
-                    self._layering_policy = document
-                continue
-
             if document.layering_definition:
                 self._documents_to_layer.append(document)
             if document.layer:
+                if document.layer not in self._layering_policy.layer_order:
+                    LOG.error('Document layer %s for document [%s] %s not '
+                              'in layerOrder: %s.', document.layer,
+                              document.schema, document.name,
+                              self._layering_policy.layer_order)
+                    raise errors.InvalidDocumentLayer(
+                        document_schema=document.schema,
+                        document_name=document.name,
+                        layer_order=', '.join(
+                            self._layering_policy.layer_order),
+                        layering_policy_name=self._layering_policy.name)
                 self._documents_by_layer.setdefault(document.layer, [])
                 self._documents_by_layer[document.layer].append(document)
             if document.parent_selector:
@@ -201,17 +270,9 @@ class DocumentLayering(object):
                     self._documents_by_labels[
                         (label_key, label_val)].append(document)
 
-        if self._layering_policy is None:
-            error_msg = (
-                'No layering policy found in the system so could not reder '
-                'documents.')
-            LOG.error(error_msg)
-            raise errors.LayeringPolicyNotFound()
-
         self._layer_order = self._get_layering_order(self._layering_policy)
         self._calc_all_document_children()
         self._substitution_sources = substitution_sources or []
-
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
             self._substitution_sources)
 
@@ -228,6 +289,11 @@ class DocumentLayering(object):
             * `replace` - overwrite data at the specified path and replace it
               with the data given in this document
             * `delete` - remove the data at the specified path
+
+        :raises UnsupportedActionMethod: If the layering action isn't found
+            among ``self.SUPPORTED_METHODS``.
+        :raises MissingDocumentKey: If a layering action path isn't found
+            in both the parent and child documents being layered together.
         """
         method = action['method']
         if method not in self.SUPPORTED_METHODS:
@@ -320,6 +386,11 @@ class DocumentLayering(object):
         :returns: The list of rendered documents (does not include layering
             policy document).
         :rtype: List[dict]
+
+        :raises UnsupportedActionMethod: If the layering action isn't found
+            among ``self.SUPPORTED_METHODS``.
+        :raises MissingDocumentKey: If a layering action path isn't found
+            in both the parent and child documents being layered together.
         """
         # ``rendered_data_by_layer`` tracks the set of changes across all
         # actions across each layer for a specific document.
@@ -345,10 +416,12 @@ class DocumentLayering(object):
 
             # Keep iterating as long as a child exists.
             for child in self._get_children(doc):
-                # Retrieve the most up-to-date rendered_data (by
-                # referencing the child's parent's data).
+                # Retrieve the most up-to-date rendered_data (by referencing
+                # the child's parent's data).
                 child_layer_idx = self._layer_order.index(child.layer)
-                rendered_data = rendered_data_by_layer[child_layer_idx - 1]
+                parent = self._parents[child.name, child.schema]
+                parent_layer_idx = self._layer_order.index(parent.layer)
+                rendered_data = rendered_data_by_layer[parent_layer_idx]
 
                 # Apply each action to the current document.
                 for action in child.actions:
@@ -385,4 +458,4 @@ class DocumentLayering(object):
                 if substituted_data:
                     doc = substituted_data[0]
 
-        return self._documents_to_layer + [self._layering_policy]
+        return self._documents_to_layer

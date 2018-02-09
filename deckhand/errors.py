@@ -180,6 +180,32 @@ class InvalidDocumentFormat(DeckhandException):
     code = 400
 
 
+class InvalidDocumentLayer(DeckhandException):
+    """The document layer is invalid.
+
+    **Troubleshoot:**
+    * Check that the document layer is contained in the layerOrder in the
+      registered LayeringPolicy in the system.
+    """
+    msg_fmt = ("Invalid layer for document [%(document_schema)s] "
+               "%(document_name)s was not found in layerOrder %(layer_order)s "
+               "for provided LayeringPolicy %(layering_policy_name)s.")
+    code = 400
+
+
+class InvalidDocumentParent(DeckhandException):
+    """The document parent is invalid.
+
+    **Troubleshoot:**
+    * Check that the document `schema` and parent `schema` match.
+    * Check that the document layer is lower-order than the parent layer.
+    """
+    msg_fmt = ("The document parent [%(parent_schema)s] %(parent_name)s is "
+               "invalid for document [%(document_schema)s] %(document_name)s. "
+               "Reason: %(reason)s")
+    code = 400
+
+
 class IndeterminateDocumentParent(DeckhandException):
     """More than one parent document was found for a document.
 
