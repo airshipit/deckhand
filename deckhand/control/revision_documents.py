@@ -124,11 +124,11 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all
-        # documents have been rendered.
+        # documents have been rendered. Note that `layering` module only
+        # returns concrete documents, so no filtering for that is needed here.
         order_by = sanitized_params.pop('order', None)
         sort_by = sanitized_params.pop('sort', None)
         user_filters = sanitized_params.copy()
-        user_filters['metadata.layeringDefinition.abstract'] = False
 
         rendered_documents = [
             d for d in rendered_documents if utils.deepfilter(

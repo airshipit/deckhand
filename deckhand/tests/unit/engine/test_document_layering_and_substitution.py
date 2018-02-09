@@ -41,7 +41,8 @@ class TestDocumentLayeringWithSubstitution(
                 "actions": [{"method": "merge", "path": "."}]}
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
-        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        documents = doc_factory.gen_test(mapping, site_abstract=False,
+                                         global_abstract=False)
 
         secrets_factory = factories.DocumentSecretFactory()
         certificate = secrets_factory.gen_test(
@@ -79,7 +80,8 @@ class TestDocumentLayeringWithSubstitution(
                 "actions": [{"method": "merge", "path": "."}]}
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
-        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        documents = doc_factory.gen_test(mapping, site_abstract=False,
+                                         global_abstract=False)
 
         # Remove the labels from the global document so that the site document
         # (the child) has no parent.
@@ -121,7 +123,8 @@ class TestDocumentLayeringWithSubstitution(
                 "actions": [{"method": "merge", "path": "."}]}
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
-        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        documents = doc_factory.gen_test(mapping, site_abstract=False,
+                                         global_abstract=False)
 
         # Remove the labels from the global document so that the site document
         # (the child) has no parent.
@@ -176,7 +179,8 @@ class TestDocumentLayeringWithSubstitution(
             }],
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
-        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        documents = doc_factory.gen_test(mapping, site_abstract=False,
+                                         global_abstract=False)
         secrets_factory = factories.DocumentSecretFactory()
 
         global_expected = {'a': {'x': 1, 'y': 2}, 'b': 'global-secret'}
@@ -245,7 +249,8 @@ class TestDocumentLayeringWithSubstitution(
             }],
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
-        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        documents = doc_factory.gen_test(mapping, site_abstract=False,
+                                         global_abstract=False)
         documents[0]['data']['layerOrder'] = [
             'empty_1', 'empty_2', 'global', 'empty_3', 'site']
         secrets_factory = factories.DocumentSecretFactory()
