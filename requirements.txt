@@ -5,39 +5,39 @@
 # Hacking already pins down pep8, pyflakes and flake8
 hacking>=1.0.0 # Apache-2.0
 
-falcon>=1.0.0 # Apache-2.0
-pbr!=2.1.0,>=2.0.0 # Apache-2.0
-PasteDeploy>=1.5.0 # MIT
+falcon>=1.4.1 # Apache-2.0
+pbr!=2.1.0,>=3.1.1 # Apache-2.0
+PasteDeploy>=1.5.2 # MIT
 Paste # MIT
-Routes>=2.3.1 # MIT
-keystoneauth1>=3.2.0 # Apache-2.0
+Routes>=2.4.1 # MIT
+keystoneauth1>=3.4.0 # Apache-2.0
 networkx==2.1
 
-six>=1.9.0 # MIT
-stevedore>=1.20.0 # Apache-2.0
-python-keystoneclient>=3.8.0 # Apache-2.0
-python-memcached==1.58
-keystonemiddleware>=4.12.0 # Apache-2.0
-psycopg2==2.7.3.1
-uwsgi==2.0.15
+six>=1.11.0 # MIT
+stevedore>=1.28.0 # Apache-2.0
+python-keystoneclient>=3.15.0 # Apache-2.0
+python-memcached==1.59
+keystonemiddleware>=4.21.0 # Apache-2.0
+psycopg2==2.7.4
+uwsgi==2.0.16
 jsonpath-ng==1.4.3
 jsonschema==2.6.0
 
-oslo.cache>=1.5.0 # Apache-2.0
-oslo.concurrency>=3.8.0 # Apache-2.0
-oslo.config!=4.3.0,!=4.4.0,>=4.0.0 # Apache-2.0
-oslo.context>=2.14.0 # Apache-2.0
-oslo.messaging!=5.25.0,>=5.24.2 # Apache-2.0
-oslo.db>=4.24.0 # Apache-2.0
-oslo.i18n!=3.15.2,>=2.1.0 # Apache-2.0
-oslo.log>=3.22.0 # Apache-2.0
-oslo.middleware>=3.27.0 # Apache-2.0
-oslo.policy>=1.23.0 # Apache-2.0
-oslo.serialization!=2.19.1,>=1.10.0 # Apache-2.0
-oslo.utils>=3.20.0 # Apache-2.0
+oslo.cache>=1.28.0 # Apache-2.0
+oslo.concurrency>=3.25.0 # Apache-2.0
+oslo.config!=4.3.0,!=4.4.0,>=5.2.0 # Apache-2.0
+oslo.context>=2.20.0 # Apache-2.0
+oslo.messaging!=5.25.0,>=5.35.0 # Apache-2.0
+oslo.db>=4.33.0 # Apache-2.0
+oslo.i18n!=3.15.2,>=3.19.0 # Apache-2.0
+oslo.log>=3.36.0 # Apache-2.0
+oslo.middleware>=3.34.0 # Apache-2.0
+oslo.policy>=1.33.1 # Apache-2.0
+oslo.serialization!=2.19.1,>=2.24.0 # Apache-2.0
+oslo.utils>=3.35.0 # Apache-2.0
 
 # TODO(alanmeadows)
 # this must match the container service
 # likely this should be imported from a
 # container sidecar long-term
-python-barbicanclient>=4.0.0  # Apache-2.0
+python-barbicanclient>=4.6.0  # Apache-2.0
