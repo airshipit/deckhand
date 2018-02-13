@@ -88,5 +88,13 @@ class DocumentDict(dict):
         return utils.jsonpath_parse(
             self, 'metadata.layeringDefinition.actions') or []
 
+    @property
+    def storage_policy(self):
+        return utils.jsonpath_parse(self, 'metadata.storagePolicy') or ''
+
+    @property
+    def is_encrypted(self):
+        return self.storage_policy == 'encrypted'
+
     def __hash__(self):
         return hash(json.dumps(self, sort_keys=True))

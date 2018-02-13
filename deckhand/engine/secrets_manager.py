@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import copy
+import re
 
 from oslo_log import log as logging
 import six
@@ -114,17 +115,32 @@ class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
     @staticmethod
-    def sanitize_potential_secrets(document):
+    def sanitize_potential_secrets(error, document):
         """Sanitize all secret data that may have been substituted into the
-        document. Uses references in ``document.substitutions`` to determine
-        which values to sanitize. Only meaningful to call this on post-rendered
-        documents.
+        document or contained in the document itself (if the document has
+        ``metadata.storagePolicy`` == 'encrypted'). Uses references in
+        ``document.substitutions`` to determine which values to sanitize. Only
+        meaningful to call this on post-rendered documents.
 
-        :param DocumentDict document: Document to sanitize.
+        :param error: Error message produced by ``jsonschema``.
+        :param document: Document to sanitize.
+        :type document: DocumentDict
         """
+        if not document.substitutions and not document.is_encrypted:
+            return document
+
+        insecure_reg_exps = [
+            re.compile(r'^.* is not of type .+$')
+        ]
         to_sanitize = copy.deepcopy(document)
         safe_message = 'Sanitized to avoid exposing secret.'
 
+        # Sanitize any secrets contained in `error.message` referentially.
+        if error.message and any(
+                r.match(error.message) for r in insecure_reg_exps):
+            error.message = safe_message
+
+        # Sanitize any secrets extracted from the document itself.
         for sub in document.substitutions:
             replaced_data = utils.jsonpath_replace(
                 to_sanitize['data'], safe_message, sub['dest']['path'])

@@ -64,21 +64,27 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
                       mock_log.info.mock_calls[0][1][0])
 
     @mock.patch.object(document_validation, 'jsonschema', autospec=True)
-    def test_validation_failure_does_not_expose_secrets(self, mock_jsonschema):
+    def test_validation_failure_sanitizes_error_section_secrets(
+            self, mock_jsonschema):
         m_args = mock.Mock()
         mock_jsonschema.Draft4Validator(m_args).iter_errors.side_effect = [
             # Return empty list of errors for base schema validator and pretend
             # that 1 error is returned for next validator.
-            [], [mock.Mock(path=[], schema_path=[])]
+            [],
+            [mock.Mock(path=[], schema_path=[], message='scary-secret-here')]
         ]
-        test_document = self._read_data('sample_document')
-        for sub in test_document['metadata']['substitutions']:
-            substituted_data = utils.jsonpath_replace(
-                test_document['data'], 'scary-secret', sub['dest']['path'])
-            test_document['data'].update(substituted_data)
-        self.assertEqual(
-            'scary-secret', utils.jsonpath_parse(test_document['data'],
-                                                 sub['dest']['path']))
+
+        document_factory = factories.DocumentFactory(1, [1])
+        test_document = document_factory.gen_test(
+            {
+                '_GLOBAL_DATA_1_': {'data': {'secret-a': 5}},
+                '_GLOBAL_SUBSTITUTIONS_1_': [
+                    {'src': {
+                        'path': '.', 'schema': 'foo/bar/v1', 'name': 'foo'},
+                     'dest': {'path': '.secret-a'}}
+                ]
+            },
+            global_abstract=False)[-1]
 
         data_schema_factory = factories.DataSchemaFactory()
         data_schema = data_schema_factory.gen_test(test_document['schema'], {})
@@ -91,3 +97,62 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
         self.assertIn('Sanitized to avoid exposing secret.',
                       str(validations[0]['errors'][-1]))
         self.assertNotIn('scary-secret.', str(validations[0]['errors'][-1]))
+
+    def test_validation_failure_sanitizes_message_secrets(self):
+        data_schema_factory = factories.DataSchemaFactory()
+        metadata_name = 'example/Doc/v1'
+        schema_to_use = {
+            '$schema': 'http://json-schema.org/schema#',
+            'type': 'object',
+            'properties': {
+                'secret-a': {'type': 'string'}
+            },
+            'required': ['secret-a'],
+            'additionalProperties': False
+        }
+        data_schema = data_schema_factory.gen_test(
+            metadata_name, data=schema_to_use)
+
+        # Case 1: Check that sensitive data is sanitized if the document has
+        # substitutions and `metadata.storagePolicy` == 'cleartext'.
+        document_factory = factories.DocumentFactory(1, [1])
+        test_document = document_factory.gen_test({
+            "_GLOBAL_DATA_1_": {'data': {'secret-a': 5}},
+            "_GLOBAL_SCHEMA_1_": metadata_name,
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".secret-a"
+                },
+                "src": {
+                    "schema": "deckhand/CertificateKey/v1",
+                    "name": "site-cert",
+                    "path": "."
+                }
+            }],
+        }, global_abstract=False)[-1]
+        test_document['metadata']['storagePolicy'] = 'cleartext'
+
+        validations = document_validation.DocumentValidation(
+            test_document, existing_data_schemas=[data_schema],
+            pre_validate=False).validate_all()
+
+        self.assertEqual(1, len(validations[0]['errors']))
+        self.assertEqual('Sanitized to avoid exposing secret.',
+                         validations[0]['errors'][0]['message'])
+
+        # Case 2: Check that sensitive data is sanitized if the document has
+        # no substitutions and `metadata.storagePolicy` == 'encrypted'.
+        test_document = document_factory.gen_test({
+            "_GLOBAL_DATA_1_": {'data': {'secret-a': 5}},
+            "_GLOBAL_SCHEMA_1_": metadata_name,
+            "_GLOBAL_SUBSTITUTIONS_1_": [],
+        }, global_abstract=False)[-1]
+        test_document['metadata']['storagePolicy'] = 'encrypted'
+
+        validations = document_validation.DocumentValidation(
+            test_document, existing_data_schemas=[data_schema],
+            pre_validate=False).validate_all()
+
+        self.assertEqual(1, len(validations[0]['errors']))
+        self.assertEqual('Sanitized to avoid exposing secret.',
+                         validations[0]['errors'][0]['message'])

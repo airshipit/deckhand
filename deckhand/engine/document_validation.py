@@ -153,14 +153,6 @@ class GenericValidator(BaseValidator):
 class DataSchemaValidator(GenericValidator):
     """Validator for validating ``DataSchema`` documents."""
 
-    def __init__(self, data_schemas):
-        super(DataSchemaValidator, self).__init__()
-        global _DEFAULT_SCHEMAS
-
-        self._default_schema_map = _DEFAULT_SCHEMAS
-        self._external_data_schemas = [d.data for d in data_schemas]
-        self._schema_map = self._build_schema_map(data_schemas)
-
     def _build_schema_map(self, data_schemas):
         schema_map = copy.deepcopy(self._default_schema_map)
 
@@ -179,6 +171,14 @@ class DataSchemaValidator(GenericValidator):
                                                   data_schema.data)
 
         return schema_map
+
+    def __init__(self, data_schemas):
+        super(DataSchemaValidator, self).__init__()
+        global _DEFAULT_SCHEMAS
+
+        self._default_schema_map = _DEFAULT_SCHEMAS
+        self._external_data_schemas = [d.data for d in data_schemas]
+        self._schema_map = self._build_schema_map(data_schemas)
 
     def matches(self, document):
         if document.is_abstract:
@@ -225,7 +225,8 @@ class DataSchemaValidator(GenericValidator):
             # secrets. While this may make debugging a few validation failures
             # more difficult, it is a necessary evil.
             sanitized_document = (
-                SecretsSubstitution.sanitize_potential_secrets(document))
+                SecretsSubstitution.sanitize_potential_secrets(
+                    error, document))
             parent_error_section = utils.jsonpath_parse(
                 sanitized_document, parent_path_to_error_in_document)
         except Exception:
@@ -239,8 +240,6 @@ class DataSchemaValidator(GenericValidator):
             'schema': document.schema,
             'path': path_to_error_in_document,
             'error_section': parent_error_section,
-            # TODO(fmontei): Also sanitize any secrets contained in the message
-            # as well.
             'message': error.message
         }
 
