@@ -45,7 +45,7 @@ variable via ``PIFPAF_URL`` which is referenced by Deckhand's unit test suite.
 Overview
 --------
 
-Unit testing currently uses an in-memory sqlite database. Since Deckhand's
+Unit testing currently uses an in-memory sqlite SQLite. Since Deckhand's
 primary function is to serve as the back-end storage for UCP, the majority
 of unit tests perform actual database operations. Mocking is used sparingly
 because Deckhand is a fairly insular application that lives at the bottom
@@ -53,17 +53,21 @@ of a very deep stack; Deckhand only communicates with Keystone and Barbican.
 As such, validating database operations is paramount to correctly testing
 Deckhand.
 
-To run unit tests using PostgreSQL, execute::
+To run unit tests using SQLite, execute::
 
     $ tox -epy27
     $ tox -epy35
 
-against a py27- or py35-backed environment, respectively. To run individual
-unit tests, run::
+against a py27- or py35-backed environment, respectively.
+
+To run unit tests using PostgreSQL, execute::
+
+    $ tox -epy27-postgresql
+    $ tox -epy35-postgresql
+
+To run individual unit tests, run (for example)::
 
     $ tox -e py27 -- deckhand.tests.unit.db.test_revisions
-
-for example.
 
 .. warning::
 
