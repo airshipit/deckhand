@@ -1008,6 +1008,23 @@ def revision_rollback(revision_id, latest_revision, session=None):
 ####################
 
 
+def _get_validation_policies_for_revision(revision_id, session=None):
+    session = session or get_session()
+
+    # Check if a ValidationPolicy for the revision exists.
+    validation_policies = document_get_all(
+        session, revision_id=revision_id, deleted=False,
+        schema=types.VALIDATION_POLICY_SCHEMA)
+    if not validation_policies:
+        # Otherwise return early.
+        LOG.info('Failed to find a ValidationPolicy for revision ID %s.'
+                 'Only the "%s" results will be included in the response.',
+                 revision_id, types.DECKHAND_SCHEMA_VALIDATION)
+        validation_policies = []
+
+    return validation_policies
+
+
 @require_revision_exists
 def validation_create(revision_id, val_name, val_data, session=None):
     session = session or get_session()
@@ -1037,6 +1054,7 @@ def validation_get_all(revision_id, session=None):
     # has its own validation but for this query we want to return the result
     # of the overall validation for the revision. If just 1 document failed
     # validation, we regard the validation for the whole revision as 'failure'.
+    session = session or get_session()
 
     query = raw_query("""
         SELECT DISTINCT name, status FROM validations as v1
@@ -1050,8 +1068,35 @@ def validation_get_all(revision_id, session=None):
             ORDER BY name, status;
     """, revision_id=revision_id)
 
-    result = query.fetchall()
-    return result
+    result = {v[0]: v for v in query.fetchall()}
+    actual_validations = set(v[0] for v in result.values())
+
+    validation_policies = _get_validation_policies_for_revision(revision_id)
+    if not validation_policies:
+        return result.values()
+
+    # TODO(fmontei): Raise error for expiresAfter conflicts for duplicate
+    # validations across ValidationPolicy documents.
+    expected_validations = set()
+    for vp in validation_policies:
+        expected_validations = expected_validations.union(
+            list(v['name'] for v in vp['data'].get('validations', [])))
+
+    missing_validations = expected_validations - actual_validations
+    extra_validations = actual_validations - expected_validations
+
+    # If an entry in the ValidationPolicy was never POSTed, set its status
+    # to failure.
+    for missing_validation in missing_validations:
+        result[missing_validation] = (missing_validation, 'failure')
+
+    # If an entry is not in the ValidationPolicy but was externally registered,
+    # then override its status to "ignored [{original_status}]".
+    for extra_validation in extra_validations:
+        result[extra_validation] = (
+            extra_validation, 'ignored [%s]' % result[extra_validation][1])
+
+    return result.values()
 
 
 @require_revision_exists
@@ -1062,15 +1107,75 @@ def validation_get_all_entries(revision_id, val_name, session=None):
         .filter_by(**{'revision_id': revision_id, 'name': val_name})\
         .order_by(models.Validation.created_at.asc())\
         .all()
+    result = [e.to_dict() for e in entries]
+    result_map = {}
+    for r in result:
+        result_map.setdefault(r['name'], [])
+        result_map[r['name']].append(r)
+    actual_validations = set(v['name'] for v in result)
 
-    return [e.to_dict() for e in entries]
+    validation_policies = _get_validation_policies_for_revision(revision_id)
+    if not validation_policies:
+        return result
+
+    # TODO(fmontei): Raise error for expiresAfter conflicts for duplicate
+    # validations across ValidationPolicy documents.
+    expected_validations = set()
+    for vp in validation_policies:
+        expected_validations |= set(
+            v['name'] for v in vp['data'].get('validations', []))
+
+    missing_validations = expected_validations - actual_validations
+    extra_validations = actual_validations - expected_validations
+
+    # If an entry in the ValidationPolicy was never POSTed, set its status
+    # to failure.
+    for missing_name in missing_validations:
+        if missing_name == val_name:
+            result.append({
+                'id': len(result),
+                'name': val_name,
+                'status': 'failure',
+                'errors': [{
+                    'message': 'The result for this validation was never '
+                               'externally registered so its status defaulted '
+                               'to "failure".'
+                }]
+            })
+            break
+
+    # If an entry is not in the ValidationPolicy but was externally registered,
+    # then override its status to "ignored [{original_status}]".
+    for extra_name in extra_validations:
+        for entry in result_map[extra_name]:
+            original_status = entry['status']
+            entry['status'] = 'ignored [%s]' % original_status
+
+            entry.setdefault('errors', [])
+            for vp in validation_policies:
+                entry['errors'].append({
+                    'message': (
+                        'The result for this validation was externally '
+                        'registered but has been ignored because it is not '
+                        'found in the validations for ValidationPolicy [%s]'
+                        ' %s: %s.' % (
+                            vp['schema'], vp['metadata']['name'],
+                            ', '.join(v['name'] for v in vp['data'].get(
+                                'validations', []))
+                        )
+                    )
+                })
+
+    return result
 
 
 @require_revision_exists
 def validation_get_entry(revision_id, val_name, entry_id, session=None):
     session = session or get_session()
+
     entries = validation_get_all_entries(
         revision_id, val_name, session=session)
+
     try:
         return entries[entry_id]
     except IndexError:

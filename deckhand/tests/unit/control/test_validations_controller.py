@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import copy
-import os
 import yaml
 
 import mock
@@ -47,11 +46,7 @@ validator:
 VALIDATION_RESULT_ALT = """
 ---
 status: success
-errors:
-  - documents:
-      - schema: promenade/Slaves/v1
-        name: kubernetes-slaves
-    message: No slave nodes found.
+errors: []
 validator:
   name: promenade
   version: 1.1.2
@@ -85,21 +80,6 @@ class ValidationsControllerBaseTest(test_base.BaseControllerTest):
             headers={'Content-Type': 'application/x-yaml'}, body=policy)
         return resp
 
-
-class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
-    """Test suite for validating positive scenarios for post-validations with
-    Validations controller.
-    """
-
-    def setUp(self):
-        super(TestValidationsControllerPostValidate, self).setUp()
-        dataschema_schema = os.path.join(
-            os.getcwd(), 'deckhand', 'engine', 'schemas',
-            'dataschema_schema.yaml')
-        with open(dataschema_schema, 'r') as f:
-            self.dataschema_schema = yaml.safe_load(f.read())
-        self._monkey_patch_document_validation()
-
     def _monkey_patch_document_validation(self):
         """Workaround for testing complex validation scenarios by forcibly
         passing in `pre_validate=False`.
@@ -115,6 +95,16 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
         mock.patch.object(buckets.document_validation, 'DocumentValidation',
                           side_effect=monkey_patch, autospec=True).start()
         self.addCleanup(mock.patch.stopall)
+
+
+class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
+    """Test suite for validating positive scenarios for post-validations with
+    Validations controller.
+    """
+
+    def setUp(self):
+        super(TestValidationsControllerPostValidate, self).setUp()
+        self._monkey_patch_document_validation()
 
     def test_create_validation(self):
         rules = {'deckhand:create_cleartext_documents': '@',
@@ -192,6 +182,7 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
                 }
             ]
         }
+        body['results'] = sorted(body['results'], key=lambda x: x['name'])
         self.assertEqual(expected_body, body)
 
     def test_list_validation_entries(self):
@@ -825,6 +816,325 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
             'results': [
                 {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'success'}
             ]
+        }
+        self.assertEqual(expected_body, body)
+
+
+class TestValidationsControllerWithValidationPolicy(
+        ValidationsControllerBaseTest):
+
+    def setUp(self):
+        super(TestValidationsControllerWithValidationPolicy, self).setUp()
+        self._monkey_patch_document_validation()
+
+    def test_validation_with_validation_policy_success(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_validations': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a `ValidationPolicy` which is used to check whether a revision
+        # passed all the validations.
+        validation_policy = yaml.safe_load("""
+---
+schema: deckhand/ValidationPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: site-deploy-ready
+  layeringDefinition:
+    abstract: true
+data:
+  validations:
+    - name: deckhand-schema-validation
+...
+""")
+        revision_id = self._create_revision(payload=[validation_policy])
+
+        # Validate that the validation was created and reports success.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 1,
+            'results': [
+                {'name': 'deckhand-schema-validation', 'status': 'success'}
+            ]
+        }
+        self.assertEqual(expected_body, body)
+
+    def test_with_validation_policy_external_validation(self):
+        """Validate that a ValidationPolicy with an externally registered
+        validation that is successful passes.
+        """
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:create_validation': '@',
+                 'deckhand:list_validations': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a `ValidationPolicy` which expects two validations.
+        validation_policy = yaml.safe_load("""
+---
+schema: deckhand/ValidationPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: site-deploy-ready
+  layeringDefinition:
+    abstract: true
+data:
+  validations:
+    - name: deckhand-schema-validation
+    - name: promenade-schema-validation
+...
+""")
+        revision_id = self._create_revision(payload=[validation_policy])
+
+        # Create the external validation for "promenade-schema-validation".
+        resp = self._create_validation(
+            revision_id, 'promenade-schema-validation', VALIDATION_RESULT_ALT)
+        self.assertEqual(201, resp.status_code)
+
+        # Validate that the validation was created and reports success.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 2,
+            'results': [
+                {'name': 'deckhand-schema-validation', 'status': 'success'},
+                {'name': 'promenade-schema-validation', 'status': 'success'}
+            ]
+        }
+        body['results'] = sorted(body['results'], key=lambda x: x['name'])
+        self.assertEqual(expected_body, body)
+
+    def test_with_multiple_validation_policy_external_validation(self):
+        """Validate that two ValidationPolicy documents, one that references
+        the internal deckhand-schema-validation, and the other which requires
+        an externally registered validation, produces a successful validation
+        result.
+        """
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:create_validation': '@',
+                 'deckhand:list_validations': '@'}
+        self.policy.set_rules(rules)
+
+        # Create two `ValidationPolicy` documents.
+        validation_policies = yaml.safe_load_all("""
+---
+schema: deckhand/ValidationPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: vp-1
+  layeringDefinition:
+    abstract: true
+data:
+  validations:
+    - name: deckhand-schema-validation
+---
+schema: deckhand/ValidationPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: vp-2
+  layeringDefinition:
+    abstract: true
+data:
+  validations:
+    - name: promenade-schema-validation
+...
+""")
+        revision_id = self._create_revision(payload=validation_policies)
+
+        # Create the external validation for "promenade-schema-validation".
+        resp = self._create_validation(
+            revision_id, 'promenade-schema-validation', VALIDATION_RESULT_ALT)
+        self.assertEqual(201, resp.status_code)
+
+        # Validate that the validation was created and reports success.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 2,
+            'results': [
+                {'name': 'deckhand-schema-validation', 'status': 'success'},
+                {'name': 'promenade-schema-validation', 'status': 'success'}
+            ]
+        }
+        body['results'] = sorted(body['results'], key=lambda x: x['name'])
+        self.assertEqual(expected_body, body)
+
+    def test_with_validation_policy_missing_external_validation(self):
+        """Validate that a ValidationPolicy with a missing externally
+        registered validation that is listed under the validations for the
+        ValidationPolicy defaults to "failure".
+        """
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_validations': '@',
+                 'deckhand:show_validation': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a `ValidationPolicy` which expects two validations but do not
+        # create the validation for "promenade-schema-validation".
+        validation_policy = yaml.safe_load("""
+---
+schema: deckhand/ValidationPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: site-deploy-ready
+  layeringDefinition:
+    abstract: true
+data:
+  validations:
+    - name: deckhand-schema-validation
+    - name: promenade-schema-validation
+...
+""")
+        revision_id = self._create_revision(payload=[validation_policy])
+
+        # Validate that the validation was created and that the missing one
+        # defaults to "failure".
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 2,
+            'results': [
+                {'name': 'deckhand-schema-validation', 'status': 'success'},
+                {'name': 'promenade-schema-validation', 'status': 'failure'}
+            ]
+        }
+        body['results'] = sorted(body['results'], key=lambda x: x['name'])
+        self.assertEqual(expected_body, body)
+
+        # Validate that 'promenade-schema-validation' is 'failure' even though
+        # it was never externally registered.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations/%s' % (
+                revision_id, 'promenade-schema-validation'),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 1,
+            'results': [{'id': 0, 'status': 'failure'}]
+        }
+        self.assertEqual(expected_body, body)
+
+        # Validate information explaining why 'promenade-schema-validation'
+        # failed is returned. Note that DH should be smart enough to say that
+        # it was never registered externally, which is why it's 'failure'.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
+                revision_id, 'promenade-schema-validation'),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+
+        expected_msg = ('The result for this validation was never externally '
+                        'registered so its status defaulted to "failure".')
+        expected_body = {
+            'name': 'promenade-schema-validation',
+            'status': 'failure',
+            'createdAt': None,
+            'expiresAfter': None,
+            'errors': [{'message': expected_msg}]
+        }
+        self.assertEqual(expected_body, body)
+
+    def test_with_validation_policy_extra_external_validation(self):
+        """Validate that a ValidationPolicy with extra externally registered
+        validations that aren't listed under the validations for the
+        ValidationPolicy defaults to "ignored [{original_status}]".
+        """
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:create_validation': '@',
+                 'deckhand:list_validations': '@',
+                 'deckhand:show_validation': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a `ValidationPolicy` with only 1 validation.
+        validation_policy = yaml.safe_load("""
+---
+schema: deckhand/ValidationPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: site-deploy-ready
+  layeringDefinition:
+    abstract: true
+data:
+  validations:
+    - name: deckhand-schema-validation
+...
+""")
+        revision_id = self._create_revision(payload=[validation_policy])
+
+        # Register an extra validation not in the ValidationPolicy.
+        resp = self._create_validation(
+            revision_id, 'promenade-schema-validation', VALIDATION_RESULT)
+        self.assertEqual(201, resp.status_code)
+
+        # Validate that the extra validation is ignored.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 2,
+            'results': [
+                {'name': 'deckhand-schema-validation', 'status': 'success'},
+                {'name': 'promenade-schema-validation',
+                 'status': 'ignored [failure]'}
+            ]
+        }
+        body['results'] = sorted(body['results'], key=lambda x: x['name'])
+        self.assertEqual(expected_body, body)
+
+        # Validate that 'promenade-schema-validation' is 'ignored [failure]'
+        # even though it was externally registered.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations/%s' % (
+                revision_id, 'promenade-schema-validation'),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 1,
+            'results': [{'id': 0, 'status': 'ignored [failure]'}]
+        }
+        self.assertEqual(expected_body, body)
+
+        # Validate information explaining why 'promenade-schema-validation'
+        # is ignored is returned.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
+                revision_id, 'promenade-schema-validation'),
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+
+        expected_msg = ('The result for this validation was externally '
+                        'registered but has been ignored because it is not '
+                        'found in the validations for ValidationPolicy [%s] '
+                        '%s: %s.' % (validation_policy['schema'],
+                                     validation_policy['metadata']['name'],
+                                     types.DECKHAND_SCHEMA_VALIDATION))
+        expected_errors = yaml.safe_load(VALIDATION_RESULT)['errors']
+        expected_errors.append({'message': expected_msg})
+
+        expected_body = {
+            'name': 'promenade-schema-validation',
+            'status': 'ignored [failure]',
+            'createdAt': None,
+            'expiresAfter': None,
+            'errors': expected_errors
         }
         self.assertEqual(expected_body, body)
 
