@@ -25,6 +25,8 @@ from deckhand import errors
 
 LOG = logging.getLogger(__name__)
 
+path_cache = dict()
+
 
 def to_camel_case(s):
     """Convert string to camel case."""
@@ -71,7 +73,12 @@ def jsonpath_parse(data, jsonpath, match_all=False):
     elif jsonpath.startswith('.'):
         jsonpath = '$' + jsonpath
 
-    p = jsonpath_ng.parse(jsonpath)
+    if jsonpath not in path_cache:
+        p = jsonpath_ng.parse(jsonpath)
+        path_cache[jsonpath] = p
+    else:
+        p = path_cache[jsonpath]
+
     matches = p.find(data)
     if matches:
         result = [m.value for m in matches]

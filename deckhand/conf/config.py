@@ -48,6 +48,9 @@ Possible values:
     * True
     * False
 """),
+    cfg.BoolOpt('profiler', default=False,
+                help="Enabling profiling of API requests. Do NOT "
+                     "use in production."),
 ]
 
 

@@ -78,8 +78,16 @@ spec:
               mountPath: /etc/deckhand/policy.yaml
               subPath: policy.yaml
               readOnly: true
+{{ if .Values.conf.deckhand.DEFAULT.profiler }}
+            - name: tmp-profiles
+              mountPath: /tmp/profiles
+{{ end }}
 {{ if $mounts_deckhand.volumeMounts }}{{ toYaml $mounts_deckhand.volumeMounts | indent 12 }}{{ end }}
       volumes:
+{{ if .Values.conf.deckhand.DEFAULT.profiler }}
+        - name: tmp-profiles
+          emptyDir: {}
+{{ end }}
         - name: etc-deckhand
           emptyDir: {}
         - name: deckhand-etc

@@ -17,6 +17,7 @@ import os
 import falcon
 from oslo_config import cfg
 from oslo_log import log
+from werkzeug.contrib.profiler import ProfilerMiddleware
 
 from deckhand.control import base
 from deckhand.control import buckets
@@ -82,5 +83,11 @@ def deckhand_app_factory(global_config, **local_config):
 
     app = falcon.API(request_type=base.DeckhandRequest,
                      middleware=middleware_list)
-
-    return configure_app(app, version='v1.0')
+    if CONF.profiler:
+        LOG.warning("Profiler ENABLED. Expect significant "
+                    "performance overhead.")
+        return ProfilerMiddleware(
+            configure_app(app, version='v1.0'),
+            profile_dir="/tmp/profiles")  # nosec w/o profile data
+    else:
+        return configure_app(app, version='v1.0')

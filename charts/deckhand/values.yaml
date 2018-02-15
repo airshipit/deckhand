@@ -215,6 +215,7 @@ conf:
       debug: true
       use_stderr: true
       use_syslog: true
+      profiler: false
     database:
       connection:
     keystone_authtoken:
