@@ -89,8 +89,18 @@ Deckhand Exceptions
          :members:
          :show-inheritance:
          :undoc-members:
-  * - SubstitutionFailure
-    - .. autoexception:: deckhand.errors.SubstitutionFailure
+  * - SubstitutionDependencyCycle
+    - .. autoexception:: deckhand.errors.SubstitutionDependencyCycle
+         :members:
+         :show-inheritance:
+         :undoc-members:
+  * - SubstitutionSourceNotFound
+    - .. autoexception:: deckhand.errors.SubstitutionSourceNotFound
+         :members:
+         :show-inheritance:
+         :undoc-members:
+  * - UnknownSubstitutionError
+    - .. autoexception:: deckhand.errors.UnknownSubstitutionError
          :members:
          :show-inheritance:
          :undoc-members:

@@ -27,7 +27,10 @@ substitution_schema = {
         'src': {
             'type': 'object',
             'properties': {
-                'schema': {'type': 'string'},
+                'schema': {
+                    'type': 'string',
+                    'pattern': '^[A-Za-z]+/[A-Za-z]+/v\d+(.0)?$'
+                },
                 'name': {'type': 'string'},
                 'path': {'type': 'string'}
             },

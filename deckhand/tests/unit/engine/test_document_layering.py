@@ -25,9 +25,9 @@ class TestDocumentLayering(test_base.DeckhandTestCase):
 
     def _test_layering(self, documents, site_expected=None,
                        region_expected=None, global_expected=None,
-                       substitution_sources=None):
+                       substitution_sources=None, validate=False, **kwargs):
         document_layering = layering.DocumentLayering(
-            documents, substitution_sources)
+            documents, substitution_sources, validate=validate, **kwargs)
 
         site_docs = []
         region_docs = []

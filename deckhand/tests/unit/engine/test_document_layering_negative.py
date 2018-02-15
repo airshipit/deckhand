@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
 import mock
 
 from deckhand.engine import layering
@@ -200,3 +202,44 @@ class TestDocumentLayeringNegative(
 
         self.assertRaises(
             errors.InvalidDocumentParent, self._test_layering, documents)
+
+
+class TestDocumentLayeringValidationNegative(
+        test_document_layering.TestDocumentLayering):
+
+    def test_layering_invalid_substitution_format_raises_exc(self):
+        doc_factory = factories.DocumentFactory(1, [1])
+        layering_policy, document_template = doc_factory.gen_test({
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".c"
+                },
+                "src": {
+                    "schema": "deckhand/Certificate/v1",
+                    "name": "global-cert",
+                    "path": "."
+                }
+
+            }],
+        }, global_abstract=False)
+
+        for key in ('src', 'dest'):
+            document = copy.deepcopy(document_template)
+            del document['metadata']['substitutions'][0][key]
+            self.assertRaises(errors.InvalidDocumentFormat,
+                              self._test_layering, [layering_policy, document],
+                              validate=True)
+
+        for key in ('schema', 'name', 'path'):
+            document = copy.deepcopy(document_template)
+            del document['metadata']['substitutions'][0]['src'][key]
+            self.assertRaises(errors.InvalidDocumentFormat,
+                              self._test_layering, [layering_policy, document],
+                              validate=True)
+
+        for key in ('path',):
+            document = copy.deepcopy(document_template)
+            del document['metadata']['substitutions'][0]['dest'][key]
+            self.assertRaises(errors.InvalidDocumentFormat,
+                              self._test_layering, [layering_policy, document],
+                              validate=True)

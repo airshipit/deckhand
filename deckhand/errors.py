@@ -171,11 +171,11 @@ class DeckhandException(Exception):
 
 
 class InvalidDocumentFormat(DeckhandException):
-    """Schema validations failed for the provided document.
+    """Schema validations failed for the provided document(s).
 
     **Troubleshoot:**
     """
-    msg_fmt = ("The provided document failed schema validation. Details: "
+    msg_fmt = ("The provided document(s) failed schema validation. Details: "
                "%(details)s")
     code = 400
 
@@ -184,6 +184,7 @@ class InvalidDocumentLayer(DeckhandException):
     """The document layer is invalid.
 
     **Troubleshoot:**
+
     * Check that the document layer is contained in the layerOrder in the
       registered LayeringPolicy in the system.
     """
@@ -198,6 +199,7 @@ class InvalidDocumentParent(DeckhandException):
     """The document parent is invalid.
 
     **Troubleshoot:**
+
     * Check that the document `schema` and parent `schema` match.
     * Check that the document layer is lower-order than the parent layer.
     """
@@ -220,6 +222,7 @@ class SubstitutionDependencyCycle(DeckhandException):
     """An illegal substitution depdencency cycle was detected.
 
     **Troubleshoot:**
+
     * Check that there is no two-way substitution dependency between documents.
     """
     msg_fmt = ('Cannot determine substitution order as a dependency '
@@ -338,14 +341,19 @@ class LayeringPolicyNotFound(DeckhandException):
     code = 409
 
 
-class SubstitutionFailure(DeckhandException):
-    """An unknown error occurred during substitution.
+class SubstitutionSourceNotFound(DeckhandException):
+    """Required substitution source document was not found for layering.
 
     **Troubleshoot:**
+
+    * Ensure that the missing source document being referenced exists in
+      the system or was passed to the layering module.
     """
-    msg_fmt = ('An unknown exception occurred while trying to perform '
-               'substitution. Details: %(detail)s')
-    code = 400
+    msg_fmt = (
+        "Required substitution source document [%(src_schema)s] %(src_name)s "
+        "was not found, yet is referenced by [%(document_schema)s] "
+        "%(document_name)s.")
+    code = 409
 
 
 class BarbicanException(DeckhandException):
@@ -365,3 +373,13 @@ class PolicyNotAuthorized(DeckhandException):
     """
     msg_fmt = "Policy doesn't allow %(action)s to be performed."
     code = 403
+
+
+class UnknownSubstitutionError(DeckhandException):
+    """An unknown error occurred during substitution.
+
+    **Troubleshoot:**
+    """
+    msg_fmt = ('An unknown exception occurred while trying to perform '
+               'substitution. Details: %(details)s')
+    code = 500

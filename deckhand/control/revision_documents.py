@@ -109,18 +109,24 @@ class RenderedDocumentsResource(api_base.BaseResource):
         substitution_sources = self._retrieve_substitution_sources()
 
         try:
+            # NOTE(fmontei): `validate` is False because documents have already
+            # been pre-validated during ingestion. Documents are post-validated
+            # below, regardless.
             document_layering = layering.DocumentLayering(
-                documents, substitution_sources)
+                documents, substitution_sources, validate=False)
             rendered_documents = document_layering.render()
         except (errors.InvalidDocumentLayer,
                 errors.InvalidDocumentParent,
                 errors.IndeterminateDocumentParent,
-                errors.UnsupportedActionMethod,
-                errors.MissingDocumentKey) as e:
+                errors.MissingDocumentKey,
+                errors.UnsupportedActionMethod) as e:
             raise falcon.HTTPBadRequest(description=e.format_message())
         except (errors.LayeringPolicyNotFound,
-                errors.SubstitutionFailure) as e:
+                errors.SubstitutionSourceNotFound) as e:
             raise falcon.HTTPConflict(description=e.format_message())
+        except errors.errors.UnknownSubstitutionError as e:
+            raise falcon.HTTPInternalServerError(
+                description=e.format_message())
 
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all

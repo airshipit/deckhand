@@ -20,6 +20,7 @@ from networkx.algorithms.cycles import find_cycle
 from networkx.algorithms.dag import topological_sort
 from oslo_log import log as logging
 
+from deckhand.engine import document_validation
 from deckhand.engine import document_wrapper
 from deckhand.engine import secrets_manager
 from deckhand.engine import utils as engine_utils
@@ -244,7 +245,27 @@ class DocumentLayering(object):
 
         return result
 
-    def __init__(self, documents, substitution_sources=None):
+    def _validate_documents(self, documents):
+        LOG.debug('%s performing document pre-validation.',
+                  self.__class__.__name__)
+        validator = document_validation.DocumentValidation(
+            documents, pre_validate=True)
+        results = validator.validate_all()
+        val_errors = []
+        for result in results:
+            val_errors.extend(
+                [(e['schema'], e['name'], e['message'])
+                    for e in result['errors']])
+        if val_errors:
+            for error in val_errors:
+                LOG.error(
+                    'Document [%s] %s failed with pre-validation error: %s.',
+                    *error)
+            raise errors.InvalidDocumentFormat(
+                details='The following pre-validation errors occurred '
+                        '(schema, name, error): %s.' % val_errors)
+
+    def __init__(self, documents, substitution_sources=None, validate=True):
         """Contructor for ``DocumentLayering``.
 
         :param layering_policy: The document with schema
@@ -256,6 +277,9 @@ class DocumentLayering(object):
         :param substitution_sources: List of documents that are potential
             sources for substitution. Should only include concrete documents.
         :type substitution_sources: List[dict]
+        :param validate: Whether to pre-validate documents using built-in
+            schema validation. Default is True.
+        :type validate: bool
 
         :raises LayeringPolicyNotFound: If no LayeringPolicy was found among
             list of ``documents``.
@@ -270,6 +294,9 @@ class DocumentLayering(object):
         self._documents_by_layer = {}
         self._documents_by_labels = {}
         self._layering_policy = None
+
+        if validate:
+            self._validate_documents(documents)
 
         layering_policies = list(
             filter(lambda x: x.get('schema').startswith(
