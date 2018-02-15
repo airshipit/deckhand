@@ -38,6 +38,7 @@ User's Guide
 .. toctree::
    :maxdepth: 2
 
+   getting-started
    overview
    documents
    document_types
