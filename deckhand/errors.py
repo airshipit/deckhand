@@ -187,9 +187,10 @@ class InvalidDocumentLayer(DeckhandException):
     * Check that the document layer is contained in the layerOrder in the
       registered LayeringPolicy in the system.
     """
-    msg_fmt = ("Invalid layer for document [%(document_schema)s] "
-               "%(document_name)s was not found in layerOrder %(layer_order)s "
-               "for provided LayeringPolicy %(layering_policy_name)s.")
+    msg_fmt = ("Invalid layer '%(document_layer)s' for document "
+               "[%(document_schema)s] %(document_name)s was not found in "
+               "layerOrder: %(layer_order)s for provided LayeringPolicy: "
+               "%(layering_policy_name)s.")
     code = 400
 
 

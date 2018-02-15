@@ -303,6 +303,7 @@ class DocumentLayering(object):
                               document.schema, document.name,
                               self._layering_policy.layer_order)
                     raise errors.InvalidDocumentLayer(
+                        document_layer=document.layer,
                         document_schema=document.schema,
                         document_name=document.name,
                         layer_order=', '.join(
