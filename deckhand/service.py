@@ -86,8 +86,12 @@ def deckhand_app_factory(global_config, **local_config):
     if CONF.profiler:
         LOG.warning("Profiler ENABLED. Expect significant "
                     "performance overhead.")
+        profile_dir = "/tmp/profiles"  # nosec w/o profile data
+        if not os.path.isdir(profile_dir):
+            os.mkdir(profile_dir)
+        LOG.debug("Profiler artifacts will be saved to %s.", profile_dir)
         return ProfilerMiddleware(
             configure_app(app, version='v1.0'),
-            profile_dir="/tmp/profiles")  # nosec w/o profile data
+            profile_dir=profile_dir)
     else:
         return configure_app(app, version='v1.0')
