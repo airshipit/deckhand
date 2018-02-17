@@ -16,6 +16,7 @@ DECKHAND_IMAGE_NAME        ?= deckhand
 IMAGE_PREFIX               ?= attcomdev
 IMAGE_TAG                  ?= latest
 HELM                       ?= helm
+LABEL                      ?= commit-id
 
 # Build Deckhand Docker image for this project
 .PHONY: images
@@ -39,7 +40,7 @@ dry-run: clean
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
 build_deckhand:
-	docker build -t $(IMAGE_PREFIX)/$(DECKHAND_IMAGE_NAME):$(IMAGE_TAG) .
+	docker build -t $(IMAGE_PREFIX)/$(DECKHAND_IMAGE_NAME):$(IMAGE_TAG) --label $(LABEL) .
 
 .PHONY: clean
 clean:
