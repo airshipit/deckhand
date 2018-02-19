@@ -46,3 +46,14 @@ class BarbicanDriver(object):
             resp[utils.to_snake_case(key)] = resp.pop(key)
         resp['secret_ref'] = secret_ref
         return resp
+
+    def get_secret(self, secret_ref):
+        """Get a secret."""
+
+        try:
+            return self.barbicanclient.call("secrets.get", secret_ref)
+        except (barbicanclient.exceptions.HTTPAuthError,
+                barbicanclient.exceptions.HTTPClientError,
+                barbicanclient.exceptions.HTTPServerError) as e:
+            LOG.exception(str(e))
+            raise errors.BarbicanException(details=str(e))

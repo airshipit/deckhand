@@ -67,7 +67,13 @@ class BucketsResource(api_base.BaseResource):
                     'deckhand:create_encrypted_documents', req.context)
                 break
 
-        self._prepare_secret_documents(documents)
+        try:
+            self._prepare_secret_documents(documents)
+        except deckhand_errors.BarbicanException as e:
+            LOG.error('An unknown exception occurred while trying to store '
+                      'a secret in Barbican.')
+            raise falcon.HTTPInternalServerError(
+                description=e.format_message())
 
         created_documents = self._create_revision_documents(
             bucket_name, documents, validations)

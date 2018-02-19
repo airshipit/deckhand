@@ -36,7 +36,8 @@ class SecretsManager(object):
 
     barbican_driver = driver.BarbicanDriver()
 
-    def create(self, secret_doc):
+    @classmethod
+    def create(cls, secret_doc):
         """Securely store secrets contained in ``secret_doc``.
 
         Ordinarily, Deckhand documents are stored directly in Deckhand's
@@ -62,7 +63,7 @@ class SecretsManager(object):
             ``deckhand.db.sqlalchemy.models.DocumentSecret``.
         """
         encryption_type = secret_doc['metadata']['storagePolicy']
-        secret_type = self._get_secret_type(secret_doc['schema'])
+        secret_type = cls._get_secret_type(secret_doc['schema'])
 
         if encryption_type == ENCRYPTED:
             # Store secret_ref in database for `secret_doc`.
@@ -71,7 +72,7 @@ class SecretsManager(object):
                 'secret_type': secret_type,
                 'payload': secret_doc['data']
             }
-            resp = self.barbican_driver.create_secret(**kwargs)
+            resp = cls.barbican_driver.create_secret(**kwargs)
 
             secret_ref = resp['secret_ref']
             created_secret = secret_ref
@@ -80,7 +81,14 @@ class SecretsManager(object):
 
         return created_secret
 
-    def _get_secret_type(self, schema):
+    @classmethod
+    def get(cls, secret_ref):
+        secret = cls.barbican_driver.get_secret(secret_ref=secret_ref)
+        payload = secret.payload
+        return payload
+
+    @classmethod
+    def _get_secret_type(cls, schema):
         """Get the Barbican secret type based on the following mapping:
 
         ``deckhand/Certificate/v1`` => certificate
@@ -150,6 +158,11 @@ class SecretsSubstitution(object):
                 self._substitution_sources.setdefault(
                     (document.schema, document.name), document)
 
+    def _is_barbican_ref(self, src_secret):
+        # TODO(fmontei): Make this more robust.
+        return (isinstance(src_secret, six.string_types) and
+                'key-manager/v1/secrets' in src_secret)
+
     def substitute_all(self, documents):
         """Substitute all documents that have a `metadata.substitutions` field.
 
@@ -218,6 +231,12 @@ class SecretsSubstitution(object):
                 else:
                     src_secret = src_doc.get('data')
 
+                # Check if src_secret is Barbican secret reference.
+                if self._is_barbican_ref(src_secret):
+                    LOG.debug('Resolving Barbican reference for %s.',
+                              src_secret)
+                    src_secret = SecretsManager.get(src_secret)
+
                 dest_path = sub['dest']['path']
                 dest_pattern = sub['dest'].get('pattern', None)
 
@@ -240,6 +259,10 @@ class SecretsSubstitution(object):
                             document.name)
                         LOG.error(message)
                         raise errors.UnknownSubstitutionError(details=message)
+                except errors.BarbicanException as e:
+                    LOG.error('Failed to resolve a Barbican reference.')
+                    raise errors.UnknownSubstitutionError(
+                        details=e.format_message())
                 except Exception as e:
                     LOG.error('Unexpected exception occurred while attempting '
                               'secret substitution. %s', six.text_type(e))
