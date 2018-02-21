@@ -14,7 +14,10 @@
 
 import yaml
 
+import mock
+
 from deckhand.engine import layering
+from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import factories
 from deckhand.tests.unit import base as test_base
@@ -86,6 +89,34 @@ class TestDocumentLayering(test_base.DeckhandTestCase):
                 global_docs.remove(expected)
         else:
             self.assertEmpty(global_docs)
+
+
+class TestDocumentLayeringScenarios(TestDocumentLayering):
+
+    @mock.patch.object(secrets_manager, 'LOG', autospec=True)
+    def test_layering_with_missing_substitution_source_log_warning(self,
+                                                                   m_log):
+        """Validate that a missing substitution source document fails."""
+        mapping = {
+            "_SITE_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".c"
+                },
+                "src": {
+                    "schema": "example/Kind/v1",
+                    "name": "nowhere-to-be-found",
+                    "path": "."
+                }
+            }]
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        self._test_layering(documents, site_expected={},
+                            fail_on_missing_sub_src=False)
+        self.assertTrue(m_log.warning.called)
+        self.assertRegex(m_log.warning.mock_calls[0][1][0][0],
+                         r'Could not find substitution source document .*')
 
 
 class TestDocumentLayering2Layers(TestDocumentLayering):

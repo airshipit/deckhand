@@ -105,7 +105,8 @@ class SecretsManager(object):
 class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
-    def __init__(self, substitution_sources=None):
+    def __init__(self, substitution_sources=None,
+                 fail_on_missing_sub_src=True):
         """SecretSubstitution constructor.
 
         This class will automatically detect documents that require
@@ -115,9 +116,12 @@ class SecretsSubstitution(object):
         :param substitution_sources: List of documents that are potential
             sources for substitution. Should only include concrete documents.
         :type substitution_sources: List[dict]
+        :param bool fail_on_missing_sub_src: Whether to fail on a missing
+            substitution source. Default is True.
         """
 
         self._substitution_sources = {}
+        self._fail_on_missing_sub_src = fail_on_missing_sub_src
 
         for document in substitution_sources:
             if not isinstance(document, document_wrapper.DocumentDict):
@@ -175,11 +179,15 @@ class SecretsSubstitution(object):
                     message = ('Could not find substitution source document '
                               '[%s] %s among the provided '
                               '`substitution_sources`.', src_schema, src_name)
-                    LOG.error(message)
-                    raise errors.SubstitutionSourceNotFound(
-                        src_schema=src_schema, src_name=src_name,
-                        document_schema=document.schema,
-                        document_name=document.name)
+                    if self._fail_on_missing_sub_src:
+                        LOG.error(message)
+                        raise errors.SubstitutionSourceNotFound(
+                            src_schema=src_schema, src_name=src_name,
+                            document_schema=document.schema,
+                            document_name=document.name)
+                    else:
+                        LOG.warning(message)
+                        continue
 
                 # If the data is a dictionary, retrieve the nested secret
                 # via jsonpath_parse, else the secret is the primitive/string

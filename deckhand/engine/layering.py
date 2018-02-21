@@ -265,7 +265,8 @@ class DocumentLayering(object):
                 details='The following pre-validation errors occurred '
                         '(schema, name, error): %s.' % val_errors)
 
-    def __init__(self, documents, substitution_sources=None, validate=True):
+    def __init__(self, documents, substitution_sources=None, validate=True,
+                 fail_on_missing_sub_src=True):
         """Contructor for ``DocumentLayering``.
 
         :param layering_policy: The document with schema
@@ -280,6 +281,9 @@ class DocumentLayering(object):
         :param validate: Whether to pre-validate documents using built-in
             schema validation. Default is True.
         :type validate: bool
+        :param fail_on_missing_sub_src: Whether to fail on a missing
+            substitution source. Default is True.
+        :type fail_on_missing_sub_src: bool
 
         :raises LayeringPolicyNotFound: If no LayeringPolicy was found among
             list of ``documents``.
@@ -349,7 +353,8 @@ class DocumentLayering(object):
         self._calc_all_document_children()
         self._substitution_sources = substitution_sources or []
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
-            self._substitution_sources)
+            self._substitution_sources,
+            fail_on_missing_sub_src=fail_on_missing_sub_src)
 
         del self._documents_by_layer
         del self._documents_by_labels
