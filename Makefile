@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DECKHAND_IMAGE_NAME        ?= deckhand
+DOCKER_REGISTRY            ?= quay.io
+IMAGE_NAME                 ?= deckhand
 IMAGE_PREFIX               ?= attcomdev
 IMAGE_TAG                  ?= latest
 HELM                       ?= helm
 LABEL                      ?= commit-id
+
+IMAGE := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
 
 # Build Deckhand Docker image for this project
 .PHONY: images
@@ -40,7 +43,7 @@ dry-run: clean
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
 build_deckhand:
-	docker build -t $(IMAGE_PREFIX)/$(DECKHAND_IMAGE_NAME):$(IMAGE_TAG) --label $(LABEL) .
+	docker build -t $(IMAGE) --label $(LABEL) .
 
 .PHONY: clean
 clean:
