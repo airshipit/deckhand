@@ -105,6 +105,26 @@ class SecretsManager(object):
 class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
+    @staticmethod
+    def sanitize_potential_secrets(document):
+        """Sanitize all secret data that may have been substituted into the
+        document. Uses references in ``document.substitutions`` to determine
+        which values to sanitize. Only meaningful to call this on post-rendered
+        documents.
+
+        :param DocumentDict document: Document to sanitize.
+        """
+        to_sanitize = copy.deepcopy(document)
+        safe_message = 'Sanitized to avoid exposing secret.'
+
+        for sub in document.substitutions:
+            replaced_data = utils.jsonpath_replace(
+                to_sanitize['data'], safe_message, sub['dest']['path'])
+            if replaced_data:
+                to_sanitize['data'] = replaced_data
+
+        return to_sanitize
+
     def __init__(self, substitution_sources=None,
                  fail_on_missing_sub_src=True):
         """SecretSubstitution constructor.
@@ -207,17 +227,11 @@ class SecretsSubstitution(object):
                 try:
                     substituted_data = utils.jsonpath_replace(
                         document['data'], src_secret, dest_path, dest_pattern)
-                    sub_source = self._substitution_sources.get(
-                        (document.schema, document.name))
-                    if (isinstance(document['data'], dict) and
-                        isinstance(substituted_data, dict)):
+                    if (isinstance(document['data'], dict)
+                            and isinstance(substituted_data, dict)):
                         document['data'].update(substituted_data)
-                        if sub_source:
-                            sub_source['data'].update(substituted_data)
                     elif substituted_data:
                         document['data'] = substituted_data
-                        if sub_source:
-                            sub_source['data'] = substituted_data
                     else:
                         message = (
                             'Failed to create JSON path "%s" in the '
@@ -234,22 +248,12 @@ class SecretsSubstitution(object):
 
         yield document
 
-    @staticmethod
-    def sanitize_potential_secrets(document):
-        """Sanitize all secret data that may have been substituted into the
-        document. Uses references in ``document.substitutions`` to determine
-        which values to sanitize. Only meaningful to call this on post-rendered
-        documents.
+    def update_substitution_sources(self, schema, name, data):
+        if (schema, name) not in self._substitution_sources:
+            return
 
-        :param DocumentDict document: Document to sanitize.
-        """
-        to_sanitize = copy.deepcopy(document)
-        safe_message = 'Sanitized to avoid exposing secret.'
-
-        for sub in document.substitutions:
-            replaced_data = utils.jsonpath_replace(
-                to_sanitize['data'], safe_message, sub['dest']['path'])
-            if replaced_data:
-                to_sanitize['data'] = replaced_data
-
-        return to_sanitize
+        substitution_src = self._substitution_sources[(schema, name)]
+        if isinstance(data, dict) and isinstance(substitution_src.data, dict):
+            substitution_src.data.update(data)
+        else:
+            substitution_src.data = data

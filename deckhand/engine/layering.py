@@ -490,6 +490,8 @@ class DocumentLayering(object):
                     self.secrets_substitution.substitute_all(doc))
                 if substituted_data:
                     rendered_data_by_layer[layer_idx] = substituted_data[0]
+                    self.secrets_substitution.update_substitution_sources(
+                        doc.schema, doc.name, substituted_data[0].data)
             else:
                 rendered_data_by_layer[layer_idx] = doc
 
@@ -525,6 +527,8 @@ class DocumentLayering(object):
                 # children in deeper layers can reference the most up-to-date
                 # changes.
                 rendered_data_by_layer[child_layer_idx] = rendered_data
+                self.secrets_substitution.update_substitution_sources(
+                    child.schema, child.name, rendered_data.data)
 
         # Handle edge case for parentless documents that require substitution.
         # If a document has no parent, then the for loop above doesn't iterate
@@ -536,6 +540,8 @@ class DocumentLayering(object):
                     self.secrets_substitution.substitute_all(doc))
                 if substituted_data:
                     doc = substituted_data[0]
+                    self.secrets_substitution.update_substitution_sources(
+                        doc.schema, doc.name, substituted_data[0].data)
 
         # Return only concrete documents.
         return [d for d in self._documents_to_layer if d.is_abstract is False]

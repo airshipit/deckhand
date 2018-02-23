@@ -118,6 +118,88 @@ class TestDocumentLayeringScenarios(TestDocumentLayering):
         self.assertRegex(m_log.warning.mock_calls[0][1][0][0],
                          r'Could not find substitution source document .*')
 
+    def test_layering_substitution_source_skips_layering(self):
+        """This scenario consists of a layerOrder with global, region, site,
+        with 1 global documents and 2 sites documents. 1 site document ('e')
+        layers with the parent (the global document) and the other site
+        document substitutes from the 1st site document.
+        """
+
+        payload = """
+---
+schema: aic/Versions/v1
+metadata:
+  name: d
+  schema: metadata/Document/v1
+  labels:
+    selector: foo1
+  layeringDefinition:
+    abstract: True
+    layer: global
+data:
+  conf:
+    foo: default
+---
+schema: aic/Versions/v1
+metadata:
+  name: e
+  schema: metadata/Document/v1
+  labels:
+    selector: baz1
+  layeringDefinition:
+    abstract: False
+    layer: site
+    parentSelector:
+      selector: foo1
+    actions:
+      - method: merge
+        path: .
+data:
+  conf:
+    bar: override
+---
+schema: armada/Chart/v1
+metadata:
+  name: f
+  schema: metadata/Document/v1
+  layeringDefinition:
+    abstract: False
+    layer: site
+  substitutions:
+    - src:
+        schema: aic/Versions/v1
+        name: e
+        path: .conf
+      dest:
+        path: .application.conf
+data:
+  application:
+    conf: {}
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+...
+"""
+
+        documents = list(yaml.safe_load_all(payload))
+
+        site_expected = [
+            {'conf': {'foo': 'default', 'bar': 'override'}},
+            {'application': {'conf': {'bar': 'override', 'foo': 'default'}}}
+        ]
+        region_expected = None
+        global_expected = None
+        self._test_layering(
+            documents, site_expected, region_expected, global_expected,
+            substitution_sources=[documents[1]])
+
 
 class TestDocumentLayering2Layers(TestDocumentLayering):
 

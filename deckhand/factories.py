@@ -172,7 +172,7 @@ class DocumentFactory(DeckhandFactory):
                              "be equal to the value of 'num_layers'.")
 
         for doc_count in docs_per_layer:
-            if doc_count < 1:
+            if doc_count < 0:
                 raise ValueError(
                     "Each entry in 'docs_per_layer' must be >= 1.")
 
