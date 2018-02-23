@@ -36,9 +36,8 @@ class BarbicanDriver(object):
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError,
                 barbicanclient.exceptions.HTTPServerError) as e:
-            LOG.exception(e.message)
-            raise errors.BarbicanException(message=e.message,
-                                           code=e.status_code)
+            LOG.exception(str(e))
+            raise errors.BarbicanException(details=str(e))
 
         # NOTE(fmontei): The dictionary representation of the Secret object by
         # default has keys that are not snake case -- so make them snake case.

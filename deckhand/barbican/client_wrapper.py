@@ -61,9 +61,8 @@ class BarbicanClientWrapper(object):
                 self._cached_client = cli
 
         except barbican_exc.HTTPAuthError as e:
-            LOG.exception(e.message)
-            raise errors.BarbicanException(message=e.message,
-                                           code=e.status_code)
+            LOG.exception(str(e))
+            raise errors.BarbicanException(details=str(e))
 
         return cli
 

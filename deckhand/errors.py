@@ -356,16 +356,6 @@ class SubstitutionSourceNotFound(DeckhandException):
     code = 409
 
 
-class BarbicanException(DeckhandException):
-    """An error occurred with Barbican.
-
-    **Troubleshoot:**
-    """
-
-    def __init__(self, message, code):
-        super(BarbicanException, self).__init__(message=message, code=code)
-
-
 class PolicyNotAuthorized(DeckhandException):
     """The policy action is not found in the list of registered rules.
 
@@ -373,6 +363,21 @@ class PolicyNotAuthorized(DeckhandException):
     """
     msg_fmt = "Policy doesn't allow %(action)s to be performed."
     code = 403
+
+
+class BarbicanException(DeckhandException):
+    """An error occurred with Barbican.
+
+    **Troubleshoot:**
+
+    * Ensure that Deckhand can authenticate against Keystone.
+    * Ensure that Deckhand's Barbican configuration options are correct.
+    * Ensure that Deckhand and Barbican are contained in the Keystone service
+      catalog.
+    """
+    msg_fmt = ('An exception occurred while trying to communicate with '
+               'Barbican. Details: %(details)s')
+    code = 500
 
 
 class UnknownSubstitutionError(DeckhandException):
