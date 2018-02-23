@@ -89,9 +89,9 @@ the client managers' functionality:
     # Generate a sample document.
     payload = """
     ---
-    schema: deckhand/Certificate/v1.0
+    schema: deckhand/Certificate/v1
     metadata:
-      schema: metadata/Document/v1.0
+      schema: metadata/Document/v1
       name: application-api
       storagePolicy: cleartext
     data: |-
@@ -112,10 +112,10 @@ the client managers' functionality:
     # Convert the response to a dictionary.
     >>> result.to_dict()
     {'status': {'bucket': 'mop', 'revision': 1},
-     'schema': 'deckhand/Certificate/v1.0', 'data': {...} 'id': 1,
+     'schema': 'deckhand/Certificate/v1', 'data': {...} 'id': 1,
      'metadata': {'layeringDefinition': {'abstract': False},
      'storagePolicy': 'cleartext', 'name': 'application-api',
-     'schema': 'metadata/Document/v1.0'}}
+     'schema': 'metadata/Document/v1'}}
 
     # Show the revision that was created.
     revision = client.revisions.get(1)
@@ -138,10 +138,10 @@ the client managers' functionality:
 
     >>> [r.to_dict() for r in raw_documents]
     [{'status': {'bucket': 'foo', 'revision': 1},
-      'schema': 'deckhand/Certificate/v1.0', 'data': {...}, 'id': 1,
+      'schema': 'deckhand/Certificate/v1', 'data': {...}, 'id': 1,
       'metadata': {'layeringDefinition': {'abstract': False},
       'storagePolicy': 'cleartext', 'name': 'application-api',
-      'schema': 'metadata/Document/v1.0'}}]
+      'schema': 'metadata/Document/v1'}}]
 
 Client Reference
 ----------------

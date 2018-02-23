@@ -1,8 +1,8 @@
 # Sample post-validation policy document.
 ---
-schema: deckhand/ValidationPolicy/v1.0
+schema: deckhand/ValidationPolicy/v1
 metadata:
-  schema: metadata/Control/v1.0
+  schema: metadata/Control/v1
   name: later-validation
   layeringDefinition:
     abstract: False

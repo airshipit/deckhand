@@ -36,13 +36,9 @@ _SUPPORTED_SCHEMA_VERSIONS = ('v1',)
 
 
 def _get_schema_parts(document, schema_key='schema'):
-    # TODO(fmontei): Remove this function once documents have been standardized
-    # around macroversions or microversions.
     schema_parts = utils.jsonpath_parse(document, schema_key).split('/')
     schema_prefix = '/'.join(schema_parts[:2])
     schema_version = schema_parts[2]
-    if schema_version.endswith('.0'):
-        schema_version = schema_version[:-2]
     return schema_prefix, schema_version
 
 
@@ -83,7 +79,7 @@ class BaseValidator(object):
     """
 
     _supported_versions = ('v1',)
-    _schema_re = re.compile(r'^[a-zA-Z]+\/[a-zA-Z]+\/v\d+(.0)?$')
+    _schema_re = re.compile(r'^[a-zA-Z]+\/[a-zA-Z]+\/v\d+$')
 
     def __init__(self):
         global _DEFAULT_SCHEMAS

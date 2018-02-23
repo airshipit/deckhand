@@ -27,8 +27,6 @@ DOCUMENT_TEST_SCHEMA = 'example/Kind/v1'
 
 @six.add_metaclass(abc.ABCMeta)
 class DeckhandFactory(object):
-    # TODO(fmontei): Allow this to be overridden in ``__init__``.
-    API_VERSION = '1.0'
 
     @abc.abstractmethod
     def gen_test(self, *args, **kwargs):
@@ -92,13 +90,13 @@ class DocumentFactory(DeckhandFactory):
         },
         "metadata": {
             "name": "placeholder",
-            "schema": "metadata/Control/v%s" % DeckhandFactory.API_VERSION,
+            "schema": "metadata/Control/v1",
             "layeringDefinition": {
                 "abstract": False,
                 "layer": ""
             }
         },
-        "schema": "deckhand/LayeringPolicy/v%s" % DeckhandFactory.API_VERSION
+        "schema": "deckhand/LayeringPolicy/v1"
     }
 
     DOCUMENT_TEMPLATE = {
@@ -111,7 +109,7 @@ class DocumentFactory(DeckhandFactory):
                 "actions": []
             },
             "name": "",
-            "schema": "metadata/Document/v%s" % DeckhandFactory.API_VERSION
+            "schema": "metadata/Document/v1"
         },
         "schema": DOCUMENT_TEST_SCHEMA
     }

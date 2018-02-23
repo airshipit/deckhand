@@ -222,16 +222,6 @@ def multisort(data, sort_by=None, order_by=None):
         reverse=True if order_by == 'desc' else False)
 
 
-def _add_microversion(value):
-    """Hack for coercing all Deckhand schema fields (``schema`` and
-    ``metadata.schema``) into ending with v1.0 rather than v1, for example.
-    """
-    microversion_re = r'^.*/.*/v[1-9]\d*$'
-    if re.match(value, microversion_re):
-        return value + '.0'
-    return value
-
-
 def deepfilter(dct, **filters):
     """Match ``dct`` against all the filters in ``filters``.
 
@@ -297,8 +287,6 @@ def deepfilter(dct, **filters):
                     filter_val = _transform_filter_bool(filter_val)
 
                 if filter_key in ['schema', 'metadata.schema']:
-                    actual_val = _add_microversion(actual_val)
-                    filter_val = _add_microversion(filter_val)
                     parts = actual_val.split('/')[:2]
                     if len(parts) == 2:
                         actual_namespace, actual_kind = parts

@@ -22,16 +22,16 @@ data:
   properties:
     schema:
       type: string
-      pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+(.0)?$
+      pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+$
     metadata:
       type: object
       properties:
         schema:
           anyOf:
             - type: string
-              pattern: ^metadata/Document/v\d+(.0)?$
+              pattern: ^metadata/Document/v\d+$
             - type: string
-              pattern: ^metadata/Control/v\d+(.0)?$
+              pattern: ^metadata/Control/v\d+$
         name:
           type: string
         labels:
@@ -82,7 +82,7 @@ data:
                 properties:
                   schema:
                     type: string
-                    pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+(.0)?$
+                    pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+$
                   name:
                     type: string
                   path:

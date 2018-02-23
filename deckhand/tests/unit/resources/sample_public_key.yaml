@@ -1,7 +1,7 @@
 ---
-schema: deckhand/PublicKey/v1.0
+schema: deckhand/PublicKey/v1
 metadata:
-  schema: metadata/Document/v1.0
+  schema: metadata/Document/v1
   name: application-public-password
   storagePolicy: encrypted
   layeringDefinition:

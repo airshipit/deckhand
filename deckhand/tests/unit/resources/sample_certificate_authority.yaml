@@ -1,7 +1,7 @@
 ---
-schema: deckhand/CertificateAuthority/v1.0
+schema: deckhand/CertificateAuthority/v1
 metadata:
-  schema: metadata/Document/v1.0
+  schema: metadata/Document/v1
   name: application-api
   storagePolicy: cleartext
   layeringDefinition:
