@@ -1,4 +1,4 @@
-# Copyright 2017 AT&T Intellectual Property.  All other rights reserved.
+# Copyright 2018 AT&T Intellectual Property.  All other rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@ FROM ubuntu:16.04
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
+ENV PORT 9000
+
+# Expose port 9000 for application
+EXPOSE $PORT
 
 RUN set -x && \
     apt-get -qq update && \
@@ -47,26 +51,23 @@ RUN set -x && \
         /usr/share/doc \
         /usr/share/doc-base
 
-# Copy dependency requirements
-COPY ./requirements.txt /tmp/
-RUN pip3 install -r /tmp/requirements.txt
-
 # Create deckhand user
 RUN useradd -ms /bin/bash deckhand
 
 # Clone the deckhand repository
-COPY ./ /home/deckhand/
+COPY . /home/deckhand/
 
 # Change permissions
 RUN chown -R deckhand: /home/deckhand \
     && chmod +x /home/deckhand/entrypoint.sh
 
-# Expose port 9000 for application
-EXPOSE 9000
+# Set work directory and install dependencies
+WORKDIR /home/deckhand
+RUN pip3 install -r requirements.txt
+RUN python3 setup.py install
 
-# Set work directory
+# Set user to deckhand
 USER deckhand
-WORKDIR /home/deckhand/
 
 # Execute entrypoint
 ENTRYPOINT ["/home/deckhand/entrypoint.sh"]

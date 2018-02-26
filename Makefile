@@ -1,4 +1,4 @@
-# Copyright 2017 AT&T Intellectual Property.  All other rights reserved.
+# Copyright 2018 AT&T Intellectual Property.  All other rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ dry-run: clean
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
 build_deckhand:
-	docker build -t $(IMAGE) --label $(LABEL) .
+	docker build -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile .
 
 .PHONY: clean
 clean:
