@@ -103,9 +103,10 @@ class TestDocumentLayeringNegative(
                 'parentSelector'] = parent_selector
 
             layering.DocumentLayering(documents)
-            self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
-                                     'Could not find parent for document .*')
-            mock_log.info.reset_mock()
+            self.assertTrue(any('Could not find parent for document' in
+                mock_log.debug.mock_calls[x][1][0])
+                    for x in range(len(mock_log.debug.mock_calls)))
+            mock_log.debug.reset_mock()
 
     @mock.patch.object(layering, 'LOG', autospec=True)
     def test_layering_unreferenced_parent_label(self, mock_log):
@@ -117,9 +118,10 @@ class TestDocumentLayeringNegative(
             documents[1]['metadata']['labels'] = parent_label
 
             layering.DocumentLayering(documents)
-            self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
-                                     'Could not find parent for document .*')
-            mock_log.info.reset_mock()
+            self.assertTrue(any('Could not find parent for document' in
+                mock_log.debug.mock_calls[x][1][0])
+                    for x in range(len(mock_log.debug.mock_calls)))
+            mock_log.debug.reset_mock()
 
     def test_layering_duplicate_parent_selector_2_layer(self):
         # Validate that documents belonging to the same layer cannot have the
@@ -155,8 +157,9 @@ class TestDocumentLayeringNegative(
             'parentSelector'] = self_ref
 
         layering.DocumentLayering(documents)
-        self.assertRegexpMatches(mock_log.info.mock_calls[0][1][0],
-                                 'Could not find parent for document .*')
+        self.assertTrue(any('Could not find parent for document' in
+            mock_log.debug.mock_calls[x][1][0])
+                for x in range(len(mock_log.debug.mock_calls)))
 
     def test_layering_without_layering_policy_raises_exc(self):
         doc_factory = factories.DocumentFactory(1, [1])

@@ -178,9 +178,11 @@ class DocumentLayering(object):
             # `layerOrder` of the LayeringPolicy, it should be a child document
             # of another document.
             if doc not in all_children_elements:
-                LOG.info('Could not find parent for document with name=%s, '
-                         'schema=%s, layer=%s, parentSelector=%s.',
-                         doc.name, doc.schema, doc.layer, doc.parent_selector)
+                if doc.parent_selector:
+                    LOG.debug(
+                        'Could not find parent for document with name=%s, '
+                        'schema=%s, layer=%s, parentSelector=%s.', doc.name,
+                        doc.schema, doc.layer, doc.parent_selector)
                 self._parentless_documents.append(doc)
             # If the document is a child document of more than 1 parent, then
             # the document has too many parents, which is a validation error.
