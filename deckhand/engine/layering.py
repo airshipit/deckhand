@@ -53,16 +53,18 @@ class DocumentLayering(object):
         # If child has layer N, parent N+1, and current_parent N+2, then swap
         # parent with current_parent. In other words, if parent's layer is
         # closer to child's layer than current_parent's layer, then use parent.
-        current_parent = self._parents.get((child.name, child.schema))
+        current_parent_index = self._parents.get((child.schema, child.name))
+        current_parent = self._documents_by_index.get(
+            current_parent_index, None)
         if current_parent:
             if (self._layer_order.index(parent.layer) >
                 self._layer_order.index(current_parent.layer)):
-                self._parents[(child.name, child.schema)] = parent
-                self._children[
-                    (current_parent.name, current_parent.schema)].remove(child)
+                self._parents[(child.schema, child.name)] = \
+                    (parent.schema, parent.name)
                 all_children[child] -= 1
         else:
-            self._parents.setdefault((child.name, child.schema), parent)
+            self._parents.setdefault((child.schema, child.name),
+                                     (parent.schema, parent.name))
 
     def _is_actual_child_document(self, document, potential_child):
         if document == potential_child:
@@ -112,13 +114,7 @@ class DocumentLayering(object):
             _potential_children = self._documents_by_labels.get(
                 (label_key, label_val), [])
             potential_children.extend(_potential_children)
-        # NOTE(fmontei): The intention here is to preserve the order of all
-        # the documents that were sorted by `_topologically_sort_documents`
-        # in order to substitute documents in the right order. But at the same
-        # time, only unique children should be found. So, this trick below
-        # maintains the order (unlike set) and guarantees uniqueness.
-        unique_potential_children = collections.OrderedDict.fromkeys(
-            potential_children)
+        unique_potential_children = set(potential_children)
 
         for potential_child in unique_potential_children:
             if self._is_actual_child_document(document, potential_child):
@@ -150,7 +146,6 @@ class DocumentLayering(object):
         all_children = collections.Counter()
         # Mapping of (doc.name, doc.metadata.name) => children, where children
         # are the documents whose `parentSelector` references the doc.
-        self._children = {}
         self._parents = {}
         self._parentless_documents = []
 
@@ -158,7 +153,6 @@ class DocumentLayering(object):
             documents_in_layer = self._documents_by_layer.get(layer, [])
             for document in documents_in_layer:
                 children = list(self._calc_document_children(document))
-                self._children[(document.name, document.schema)] = children
 
                 if children:
                     all_children.update(children)
@@ -213,8 +207,8 @@ class DocumentLayering(object):
         return layer_order
 
     def _topologically_sort_documents(self, documents):
-        """Topologically sorts the DAG formed from the documents' substitution
-        dependency chain.
+        """Topologically sorts the DAG formed from the documents' layering
+        and substitution dependency chain.
         """
         documents_by_name = {}
         result = []
@@ -224,6 +218,11 @@ class DocumentLayering(object):
             document = document_wrapper.DocumentDict(document)
             documents_by_name.setdefault((document.schema, document.name),
                                          document)
+            if document.parent_selector:
+                parent = self._parents.get((document.schema, document.name))
+                if parent:
+                    g.add_edge((document.schema, document.name), parent)
+
             for sub in document.substitutions:
                 g.add_edge((document.schema, document.name),
                            (sub['src']['schema'], sub['src']['name']))
@@ -298,10 +297,11 @@ class DocumentLayering(object):
         :raises IndeterminateDocumentParent: If more than one parent document
             was found for a document.
         """
-        self._documents_to_layer = []
         self._documents_by_layer = {}
         self._documents_by_labels = {}
         self._layering_policy = None
+        self._sorted_documents = {}
+        self._documents_by_index = {}
 
         # TODO(fmontei): Add a hook for post-validation too.
         if validate:
@@ -326,12 +326,10 @@ class DocumentLayering(object):
             LOG.error(error_msg)
             raise errors.LayeringPolicyNotFound()
 
-        sorted_documents = self._topologically_sort_documents(documents)
-
-        for document in sorted_documents:
+        for document in documents:
             document = document_wrapper.DocumentDict(document)
-            if document.layering_definition:
-                self._documents_to_layer.append(document)
+            self._documents_by_index.setdefault(
+                (document.schema, document.name), document)
             if document.layer:
                 if document.layer not in self._layering_policy.layer_order:
                     LOG.error('Document layer %s for document [%s] %s not '
@@ -360,6 +358,8 @@ class DocumentLayering(object):
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
             self._substitution_sources,
             fail_on_missing_sub_src=fail_on_missing_sub_src)
+
+        self._sorted_documents = self._topologically_sort_documents(documents)
 
         del self._documents_by_layer
         del self._documents_by_labels
@@ -444,21 +444,6 @@ class DocumentLayering(object):
 
         return overall_data
 
-    def _get_children(self, document):
-        """Recursively retrieve all children.
-
-        Used in the layering module when calculating children for each
-        document.
-
-        :returns: List of nested children.
-        :rtype: Generator[:class:`DocumentDict`]
-        """
-        for child in self._children.get((document.name, document.schema), []):
-            yield child
-            grandchildren = self._get_children(child)
-            for grandchild in grandchildren:
-                yield grandchild
-
     def render(self):
         """Perform layering on the list of documents passed to ``__init__``.
 
@@ -476,77 +461,38 @@ class DocumentLayering(object):
         :raises MissingDocumentKey: If a layering action path isn't found
             in both the parent and child documents being layered together.
         """
-        # ``rendered_data_by_layer`` tracks the set of changes across all
-        # actions across each layer for a specific document.
-        rendered_data_by_layer = document_wrapper.DocumentDict()
+        for doc in self._sorted_documents:
 
-        # NOTE(fmontei): ``global_docs`` represents the topmost documents in
-        # the system. It should probably be impossible for more than 1
-        # top-level doc to exist, but handle multiple for now.
-        global_docs = [
-            doc for doc in self._documents_to_layer
-            if self._layer_order and doc.layer == self._layer_order[0]
-        ]
-
-        for doc in global_docs:
-            layer_idx = self._layer_order.index(doc.layer)
-            if doc.substitutions:
-                substituted_data = list(
-                    self.secrets_substitution.substitute_all(doc))
-                if substituted_data:
-                    rendered_data_by_layer[layer_idx] = substituted_data[0]
-                    self.secrets_substitution.update_substitution_sources(
-                        doc.schema, doc.name, substituted_data[0].data)
-            else:
-                rendered_data_by_layer[layer_idx] = doc
-
-            # Keep iterating as long as a child exists.
-            for child in self._get_children(doc):
-                # Retrieve the most up-to-date rendered_data (by referencing
-                # the child's parent's data).
-                child_layer_idx = self._layer_order.index(child.layer)
-                parent = self._parents[child.name, child.schema]
-                parent_layer_idx = self._layer_order.index(parent.layer)
-                rendered_data = rendered_data_by_layer[parent_layer_idx]
+            if doc.parent_selector:
+                parent_meta = self._parents.get((doc.schema, doc.name))
 
                 # Apply each action to the current document.
-                for action in child.actions:
-                    LOG.debug('Applying action %s to child document with '
-                              'name=%s, schema=%s, layer=%s.', action,
-                              child.name, child.schema, child.layer)
-                    rendered_data = self._apply_action(
-                        action, child, rendered_data)
+                if parent_meta:
+                    parent = self._documents_by_index[parent_meta]
+                    rendered_data = parent
+                    for action in doc.actions:
+                        LOG.debug('Applying action %s to document with '
+                                  'name=%s, schema=%s, layer=%s.', action,
+                                  doc.name, doc.schema, doc.layer)
+                        rendered_data = self._apply_action(
+                            action, doc, rendered_data)
+                    if not doc.is_abstract:
+                        doc.data = rendered_data.data
+                    self.secrets_substitution.update_substitution_sources(
+                        doc.schema, doc.name, rendered_data.data)
+                    self._documents_by_index[(doc.schema, doc.name)] = (
+                        rendered_data)
 
-                # Update the actual document data if concrete.
-                if not child.is_abstract:
-                    child_index = self._documents_to_layer.index(child)
-                    child.data = rendered_data.data
-                    substituted_data = list(
-                        self.secrets_substitution.substitute_all(child))
-                    if substituted_data:
-                        rendered_data = substituted_data[0]
-                    self._documents_to_layer[child_index].data = (
-                        rendered_data.data)
-
-                # Update ``rendered_data_by_layer`` for this layer so that
-                # children in deeper layers can reference the most up-to-date
-                # changes.
-                rendered_data_by_layer[child_layer_idx] = rendered_data
-                self.secrets_substitution.update_substitution_sources(
-                    child.schema, child.name, rendered_data.data)
-
-        # Handle edge case for parentless documents that require substitution.
-        # If a document has no parent, then the for loop above doesn't iterate
-        # over the parentless document, so substitution must be done here for
-        # parentless documents.
-        for doc in self._parentless_documents:
-            if not doc.is_abstract and doc.substitutions:
+            # Update the actual document data if concrete.
+            if not doc.is_abstract:
                 substituted_data = list(
                     self.secrets_substitution.substitute_all(doc))
                 if substituted_data:
-                    doc = substituted_data[0]
+                    rendered_data = substituted_data[0]
+                    doc.data = rendered_data.data
                     self.secrets_substitution.update_substitution_sources(
-                        doc.schema, doc.name, substituted_data[0].data)
+                        doc.schema, doc.name, rendered_data.data)
+                    self._documents_by_index[(doc.schema, doc.name)] = doc
 
         # Return only concrete documents.
-        return [d for d in self._documents_to_layer if d.is_abstract is False]
+        return [d for d in self._sorted_documents if d.is_abstract is False]

@@ -200,6 +200,93 @@ data:
             documents, site_expected, region_expected, global_expected,
             substitution_sources=[documents[1]])
 
+    def test_layering_verify_that_substitution_dependencies_includes_parents(
+            self):
+        """This scenario consists of a layerOrder with global, region, site,
+        with 1 global documents and 2 sites documents. Below, document 'f'
+        directly relies on document 'e' for substitutions. However, in order
+        for document 'e' to have all the data it needs, it must be layered
+        with its parent, document 'd', first. Hence, document 'f', by extension
+        has an implicit dependency on document 'd'. This test verifies that
+        implicit dependencies are factored in.
+        """
+
+        payload = """
+---
+schema: aic/Versions/v1
+metadata:
+  name: d
+  schema: metadata/Document/v1
+  labels:
+    selector: foo1
+  layeringDefinition:
+    abstract: True
+    layer: global
+data:
+  conf:
+    foo: default
+---
+schema: aic/Versions/v1
+metadata:
+  name: e
+  schema: metadata/Document/v1
+  labels:
+    selector: baz1
+  layeringDefinition:
+    abstract: False
+    layer: site
+    parentSelector:
+      selector: foo1
+    actions:
+      - method: merge
+        path: .
+data:
+  conf:
+    bar: override
+---
+schema: armada/Chart/v1
+metadata:
+  name: f
+  schema: metadata/Document/v1
+  layeringDefinition:
+    abstract: False
+    layer: global
+  substitutions:
+    - src:
+        schema: aic/Versions/v1
+        name: e
+        path: .conf
+      dest:
+        path: .application.conf
+data:
+  application:
+    conf: {}
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+...
+"""
+
+        documents = list(yaml.safe_load_all(payload))
+
+        site_expected = [
+            {'conf': {'foo': 'default', 'bar': 'override'}},
+        ]
+        region_expected = None
+        global_expected = [
+            {'application': {'conf': {'bar': 'override', 'foo': 'default'}}}
+        ]
+        self._test_layering(
+            documents, site_expected, region_expected, global_expected,
+            substitution_sources=[documents[1]])
+
 
 class TestDocumentLayering2Layers(TestDocumentLayering):
 
