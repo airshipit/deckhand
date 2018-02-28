@@ -107,8 +107,8 @@ ENV/
 .mypy_cache/
 
 # makefile build/lint artifacts
-/charts/deckhand/*
-
+/charts/deckhand/*.tgz
+/charts/deckhand/*.lock
 # git
 Changelog
 AUTHORS
