@@ -305,6 +305,153 @@ class TestDocumentLayering2Layers(TestDocumentLayering):
         site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4}
         self._test_layering(documents, site_expected)
 
+    def test_layering_default_scenario_merge_with_numeric_in_path(self):
+        # Check that 2 dicts are merged together for [0] index.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1, "y": 2}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{"z": 3}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": ".data.a[0]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{'x': 1, 'y': 2, 'z': 3}]}
+        self._test_layering(documents, site_expected)
+
+        # Check that 2 dicts are merged together for [0] index with [1] index
+        # data carried over.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1, "y": 2}, {"z": 3}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": ".data.a[0]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{'x': 1, 'y': 2}, {'z': 3}]}
+        self._test_layering(documents, site_expected)
+
+        # Check that 2 dicts are merged together for [0] index with deep merge.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1, "y": 2}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{"x": 3}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": ".data.a[0]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{'x': 3, 'y': 2}]}
+        self._test_layering(documents, site_expected)
+
+        # Check that 2 dicts are merged together for [1] index.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": ["test", {"x": 1, "y": 2}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{}, {"z": 3}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": ".data.a[1]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': ["test", {'x': 1, 'y': 2, 'z': 3}]}
+        self._test_layering(documents, site_expected)
+
+        # Check that merging works for an attribute within an index.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": ["test", {"x": {"b": 5}}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{}, {"x": {"a": 8}}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": ".data.a[1].x"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {"a": ["test", {"x": {"a": 8, "b": 5}}]}
+        self._test_layering(documents, site_expected)
+
+    def test_layering_default_scenario_replace_with_numeric_in_path(self):
+        # Check that replacing the first index works.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1, "y": 2}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{"z": 3}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "replace", "path": ".data.a[0]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{'z': 3}]}
+        self._test_layering(documents, site_expected)
+
+        # Check that replacing the second index works.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1}, {"y": 2}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{}, {"y": 3}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "replace", "path": ".data.a[1]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{'x': 1}, {'y': 3}]}
+        self._test_layering(documents, site_expected)
+
+        # Check that replacing an attribute within an index works.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{}, {"x": 1, "y": 2}]}},
+            "_SITE_DATA_1_": {"data": {"a": [{}, {"y": 3}]}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "replace", "path": ".data.a[1].y"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{}, {'x': 1, 'y': 3}]}
+        self._test_layering(documents, site_expected)
+
+    def test_layering_default_scenario_delete_with_numeric_in_path(self):
+        # Check that removing the first index results in empty array.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1, "y": 2}]}},
+            "_SITE_DATA_1_": {"data": {}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "delete", "path": ".data.a[0]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': []}
+        self._test_layering(documents, site_expected)
+
+        # Check that removing one index retains the other.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1}, {"y": 2}]}},
+            "_SITE_DATA_1_": {"data": {}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "delete", "path": ".data.a[0]"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{'y': 2}]}
+        self._test_layering(documents, site_expected)
+
+        # Check that removing an attribute within an index works.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": [{"x": 1, "y": 2}]}},
+            "_SITE_DATA_1_": {"data": {}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "delete", "path": ".data.a[0].x"}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+
+        site_expected = {'a': [{"y": 2}]}
+        self._test_layering(documents, site_expected)
+
     def test_layering_default_scenario_multi_parentselector(self):
         mapping = {
             "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}},
