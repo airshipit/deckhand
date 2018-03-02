@@ -34,25 +34,25 @@ class RevisionManager(base.Manager):
 
     def list(self, **filters):
         """Get a list of revisions."""
-        url = '/api/v1.0/revisions'
+        url = '/revisions'
         # Call `_get` instead of `_list` because the response from the server
         # is a dict of form `{"count": n, "results": []}`.
         return self._get(url, filters=filters)
 
     def get(self, revision_id):
         """Get details for a revision."""
-        url = '/api/v1.0/revisions/%s' % revision_id
+        url = '/revisions/%s' % revision_id
         return self._get(url)
 
     def diff(self, revision_id, comparison_revision_id):
         """Get revision diff between two revisions."""
-        url = '/api/v1.0/revisions/%s/diff/%s' % (
+        url = '/revisions/%s/diff/%s' % (
             revision_id, comparison_revision_id)
         return self._get(url)
 
     def rollback(self, revision_id):
         """Rollback to a previous revision, effectively creating a new one."""
-        url = '/api/v1.0/rollback/%s' % revision_id
+        url = '/rollback/%s' % revision_id
         return self._post(url)
 
     def documents(self, revision_id, rendered=True, **filters):
@@ -66,9 +66,9 @@ class RevisionManager(base.Manager):
         :rtype: list[:class:`Revision`]
         """
         if rendered:
-            url = '/api/v1.0/revisions/%s/rendered-documents' % revision_id
+            url = '/revisions/%s/rendered-documents' % revision_id
         else:
-            url = '/api/v1.0/revisions/%s/documents' % revision_id
+            url = '/revisions/%s/documents' % revision_id
         return self._list(url, filters=filters)
 
     def delete_all(self):
@@ -78,5 +78,5 @@ class RevisionManager(base.Manager):
 
             Effectively the same as purging the entire database.
         """
-        url = '/api/v1.0/revisions'
+        url = '/revisions'
         return self._delete(url)

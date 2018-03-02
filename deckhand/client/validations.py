@@ -27,25 +27,23 @@ class ValidationManager(base.Manager):
 
     def list(self, revision_id):
         """Get list of revision validations."""
-        url = '/api/v1.0/revisions/%s/validations' % revision_id
+        url = '/revisions/%s/validations' % revision_id
         return self._list(url)
 
     def list_entries(self, revision_id, validation_name):
         """Get list of entries for a validation."""
-        url = '/api/v1.0/revisions/%s/validations/%s' % (revision_id,
-                                                         validation_name)
+        url = '/revisions/%s/validations/%s' % (revision_id, validation_name)
         # Call `_get` instead of `_list` because the response from the server
         # is a dict of form `{"count": n, "results": []}`.
         return self._get(url)
 
     def get_entry(self, revision_id, validation_name, entry_id):
         """Get entry details for a validation."""
-        url = '/api/v1.0/revisions/%s/validations/%s/entries/%s' % (
+        url = '/revisions/%s/validations/%s/entries/%s' % (
             revision_id, validation_name, entry_id)
         return self._get(url)
 
     def create(self, revision_id, validation_name, data):
         """Associate a validation with a revision."""
-        url = '/api/v1.0/revisions/%s/validations/%s' % (revision_id,
-                                                         validation_name)
+        url = '/revisions/%s/validations/%s' % (revision_id, validation_name)
         return self._create(url, data=data)

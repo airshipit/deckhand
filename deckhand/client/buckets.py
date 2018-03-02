@@ -34,5 +34,5 @@ class BucketManager(base.Manager):
         :returns: The created documents along with their associated bucket
             and revision.
         """
-        url = '/api/v1.0/buckets/%s/documents' % bucket_name
+        url = '/buckets/%s/documents' % bucket_name
         return self._update(url, documents)

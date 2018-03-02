@@ -30,25 +30,25 @@ class RevisionTagManager(base.Manager):
 
     def list(self, revision_id):
         """Get list of revision tags."""
-        url = '/api/v1.0/revisions/%s/tags' % revision_id
+        url = '/revisions/%s/tags' % revision_id
         return self._list(url)
 
     def get(self, revision_id, tag):
         """Get details for a revision tag."""
-        url = '/api/v1.0/revisions/%s/tags/%s' % (revision_id, tag)
+        url = '/revisions/%s/tags/%s' % (revision_id, tag)
         return self._get(url)
 
     def create(self, revision_id, tag, data=None):
         """Create a revision tag."""
-        url = '/api/v1.0/revisions/%s/tags/%s' % (revision_id, tag)
+        url = '/revisions/%s/tags/%s' % (revision_id, tag)
         return self._create(url, data=data)
 
     def delete(self, revision_id, tag):
         """Delete a revision tag."""
-        url = '/api/v1.0/revisions/%s/tags/%s' % (revision_id, tag)
+        url = '/revisions/%s/tags/%s' % (revision_id, tag)
         return self._delete(url)
 
     def delete_all(self, revision_id):
         """Delete all revision tags."""
-        url = '/api/v1.0/revisions/%s/tags' % revision_id
+        url = '/revisions/%s/tags' % revision_id
         return self._delete(url)
