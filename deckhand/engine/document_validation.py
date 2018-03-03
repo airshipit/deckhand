@@ -78,6 +78,8 @@ class BaseValidator(object):
     validation.
     """
 
+    __slots__ = ('_schema_map')
+
     _supported_versions = ('v1',)
     _schema_re = re.compile(r'^[a-zA-Z]+\/[a-zA-Z]+\/v\d+$')
 
@@ -102,6 +104,8 @@ class GenericValidator(BaseValidator):
     """Validator used for validating all documents, regardless whether concrete
     or abstract, or what version its schema is.
     """
+
+    __slots__ = ('base_schema')
 
     def __init__(self):
         super(GenericValidator, self).__init__()
@@ -152,6 +156,8 @@ class GenericValidator(BaseValidator):
 
 class DataSchemaValidator(GenericValidator):
     """Validator for validating ``DataSchema`` documents."""
+
+    __slots__ = ('_default_schema_map', '_external_data_schemas')
 
     def _build_schema_map(self, data_schemas):
         schema_map = copy.deepcopy(self._default_schema_map)

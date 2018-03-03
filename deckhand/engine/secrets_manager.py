@@ -114,6 +114,8 @@ class SecretsManager(object):
 class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
+    __slots__ = ('_fail_on_missing_sub_src', '_substitution_sources')
+
     @staticmethod
     def sanitize_potential_secrets(error, document):
         """Sanitize all secret data that may have been substituted into the

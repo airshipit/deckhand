@@ -47,6 +47,10 @@ class DocumentLayering(object):
         together into a fully rendered document.
     """
 
+    __slots__ = ('_documents_by_index', '_documents_by_labels',
+                 '_documents_by_layer', '_layer_order', '_layering_policy',
+                 '_parents', '_sorted_documents', 'secrets_substitution')
+
     _SUPPORTED_METHODS = (_MERGE_ACTION, _REPLACE_ACTION, _DELETE_ACTION) = (
         'merge', 'replace', 'delete')
 
@@ -149,7 +153,6 @@ class DocumentLayering(object):
         # Mapping of (doc.name, doc.metadata.name) => children, where children
         # are the documents whose `parentSelector` references the doc.
         self._parents = {}
-        self._parentless_documents = []
 
         for layer in self._layer_order:
             documents_in_layer = self._documents_by_layer.get(layer, [])
@@ -179,7 +182,6 @@ class DocumentLayering(object):
                         'Could not find parent for document with name=%s, '
                         'schema=%s, layer=%s, parentSelector=%s.', doc.name,
                         doc.schema, doc.layer, doc.parent_selector)
-                self._parentless_documents.append(doc)
             # If the document is a child document of more than 1 parent, then
             # the document has too many parents, which is a validation error.
             elif all_children[doc] > 1:
@@ -356,9 +358,9 @@ class DocumentLayering(object):
 
         self._layer_order = self._get_layering_order(self._layering_policy)
         self._calc_all_document_children()
-        self._substitution_sources = substitution_sources or []
+
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
-            self._substitution_sources,
+            substitution_sources or [],
             fail_on_missing_sub_src=fail_on_missing_sub_src)
 
         self._sorted_documents = self._topologically_sort_documents(documents)
@@ -499,3 +501,7 @@ class DocumentLayering(object):
 
         # Return only concrete documents.
         return [d for d in self._sorted_documents if d.is_abstract is False]
+
+    @property
+    def documents(self):
+        return self._sorted_documents
