@@ -243,3 +243,42 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
             [document, data_schema], pre_validate=False)
         with self.assertRaisesRegexp(RuntimeError, 'Unknown error'):
             doc_validator.validate_all()
+
+    def test_parent_selector_but_no_actions_raises_validation_error(self):
+        # Verify that an error is thrown if parentSelector is specified but
+        # actions is missing altogether.
+        document = self._read_data('sample_document')
+        document['metadata']['layeringDefinition']['parentSelector'] = {
+            'some': 'label'
+        }
+        document['metadata']['layeringDefinition'].pop('actions')
+        doc_validator = document_validation.DocumentValidation(
+            [document], pre_validate=False)
+        self.assertRaises(
+            errors.InvalidDocumentFormat, doc_validator.validate_all)
+
+        # Verify that an error is thrown if parentSelector is specified but
+        # at least 1 action isn't specified.
+        document['metadata']['layeringDefinition']['actions'] = []
+        doc_validator = document_validation.DocumentValidation(
+            [document], pre_validate=False)
+        self.assertRaises(
+            errors.InvalidDocumentFormat, doc_validator.validate_all)
+
+    def test_actions_but_no_parent_selector_raises_validation_error(self):
+        # Verify that an error is thrown if actions are specified but
+        # parentSelector is missing altogether.
+        document = self._read_data('sample_document')
+        document['metadata']['layeringDefinition'].pop('parentSelector')
+        doc_validator = document_validation.DocumentValidation(
+            [document], pre_validate=False)
+        self.assertRaises(
+            errors.InvalidDocumentFormat, doc_validator.validate_all)
+
+        # Verify that an error is thrown if actions are specified but no
+        # parentSelector labels are.
+        document['metadata']['layeringDefinition']['parentSelector'] = {}
+        doc_validator = document_validation.DocumentValidation(
+            [document], pre_validate=False)
+        self.assertRaises(
+            errors.InvalidDocumentFormat, doc_validator.validate_all)

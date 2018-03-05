@@ -19,6 +19,23 @@ metadata:
   schema: metadata/Control/v1
 data:
   $schema: http://json-schema.org/schema#
+
+  definitions:
+    parent_selector_requires_actions:
+      dependencies:
+        # Requires that if parentSelector is provided, then actions is
+        # required and must contain at least 1 item.
+        parentSelector:
+          required:
+            - actions
+    actions_requires_parent_selector:
+      dependencies:
+        # Requires that if actions are provided, then so too must
+        # parentSelector.
+        actions:
+          required:
+            - parentSelector
+
   properties:
     schema:
       type: string
@@ -45,8 +62,10 @@ data:
               type: boolean
             parentSelector:
               type: object
+              minProperties: 1
             actions:
               type: array
+              minItems: 1
               items:
                 type: object
                 properties:
@@ -62,6 +81,9 @@ data:
                   - method
                   - path
           additionalProperties: false
+          allOf:
+            - $ref: "#/definitions/parent_selector_requires_actions"
+            - $ref: "#/definitions/actions_requires_parent_selector"
         substitutions:
           type: array
           items:
@@ -112,6 +134,7 @@ data:
         - integer
         - array
         - object
+
   additionalProperties: false
   required:
     - schema

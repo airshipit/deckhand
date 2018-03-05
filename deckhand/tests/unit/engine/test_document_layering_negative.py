@@ -102,7 +102,7 @@ class TestDocumentLayeringNegative(
             documents[-1]['metadata']['layeringDefinition'][
                 'parentSelector'] = parent_selector
 
-            layering.DocumentLayering(documents)
+            layering.DocumentLayering(documents, validate=False)
             self.assertTrue(any('Could not find parent for document' in
                 mock_log.debug.mock_calls[x][1][0])
                     for x in range(len(mock_log.debug.mock_calls)))
@@ -117,7 +117,7 @@ class TestDocumentLayeringNegative(
             # Second doc is the global doc, or parent.
             documents[1]['metadata']['labels'] = parent_label
 
-            layering.DocumentLayering(documents)
+            layering.DocumentLayering(documents, validate=False)
             self.assertTrue(any('Could not find parent for document' in
                 mock_log.debug.mock_calls[x][1][0])
                     for x in range(len(mock_log.debug.mock_calls)))
@@ -132,7 +132,7 @@ class TestDocumentLayeringNegative(
         documents[2]['metadata']['labels'] = documents[1]['metadata']['labels']
 
         self.assertRaises(errors.IndeterminateDocumentParent,
-                          layering.DocumentLayering, documents)
+                          layering.DocumentLayering, documents, validate=False)
 
     def test_layering_duplicate_parent_selector_3_layer(self):
         # Validate that documents belonging to the same layer cannot have the
@@ -143,7 +143,7 @@ class TestDocumentLayeringNegative(
         documents[3]['metadata']['labels'] = documents[2]['metadata']['labels']
 
         self.assertRaises(errors.IndeterminateDocumentParent,
-                          layering.DocumentLayering, documents)
+                          layering.DocumentLayering, documents, validate=False)
 
     @mock.patch.object(layering, 'LOG', autospec=True)
     def test_layering_document_references_itself(self, mock_log):
@@ -156,7 +156,7 @@ class TestDocumentLayeringNegative(
         documents[2]['metadata']['layeringDefinition'][
             'parentSelector'] = self_ref
 
-        layering.DocumentLayering(documents)
+        layering.DocumentLayering(documents, validate=False)
         self.assertTrue(any('Could not find parent for document' in
             mock_log.debug.mock_calls[x][1][0])
                 for x in range(len(mock_log.debug.mock_calls)))

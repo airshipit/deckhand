@@ -105,8 +105,7 @@ class DocumentFactory(DeckhandFactory):
             "labels": {"": ""},
             "layeringDefinition": {
                 "abstract": False,
-                "layer": "",
-                "actions": []
+                "layer": ""
             },
             "name": "",
             "schema": "metadata/Document/v1"
@@ -290,7 +289,6 @@ class DocumentFactory(DeckhandFactory):
                 except KeyError as e:
                     LOG.debug('Could not map %s because it was not found in '
                               'the `mapping` dict.', e.args[0])
-                    pass
 
                 try:
                     layer_template['metadata']['layeringDefinition'][
@@ -298,7 +296,6 @@ class DocumentFactory(DeckhandFactory):
                 except KeyError as e:
                     LOG.debug('Could not map %s because it was not found in '
                               'the `mapping` dict.', e.args[0])
-                    pass
 
                 try:
                     layer_template['metadata']['substitutions'] = mapping[
@@ -306,7 +303,6 @@ class DocumentFactory(DeckhandFactory):
                 except KeyError as e:
                     LOG.debug('Could not map %s because it was not found in '
                               'the `mapping` dict.', e.args[0])
-                    pass
 
                 rendered_template.append(layer_template)
 

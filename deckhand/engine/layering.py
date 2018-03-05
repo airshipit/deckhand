@@ -475,20 +475,26 @@ class DocumentLayering(object):
 
                 if parent_meta:
                     parent = self._documents_by_index[parent_meta]
-                    rendered_data = parent
-                    # Apply each action to the current document.
-                    for action in doc.actions:
-                        LOG.debug('Applying action %s to document with '
-                                  'name=%s, schema=%s, layer=%s.', action,
-                                  doc.name, doc.schema, doc.layer)
-                        rendered_data = self._apply_action(
-                            action, doc, rendered_data)
-                    if not doc.is_abstract:
-                        doc.data = rendered_data.data
-                    self.secrets_substitution.update_substitution_sources(
-                        doc.schema, doc.name, rendered_data.data)
-                    self._documents_by_index[(doc.schema, doc.name)] = (
-                        rendered_data)
+
+                    if doc.actions:
+                        rendered_data = parent
+                        for action in doc.actions:
+                            LOG.debug('Applying action %s to document with '
+                                      'name=%s, schema=%s, layer=%s.', action,
+                                      doc.name, doc.schema, doc.layer)
+                            rendered_data = self._apply_action(
+                                action, doc, rendered_data)
+                        if not doc.is_abstract:
+                            doc.data = rendered_data.data
+                        self.secrets_substitution.update_substitution_sources(
+                            doc.schema, doc.name, rendered_data.data)
+                        self._documents_by_index[(doc.schema, doc.name)] = (
+                            rendered_data)
+                    else:
+                        LOG.info('Skipped layering for document [%s] %s which '
+                                 'has a parent [%s] %s, but no associated '
+                                 'layering actions.', doc.schema, doc.name,
+                                 parent.schema, parent.name)
 
             # Perform substitutions on abstract data for child documents that
             # inherit from it, but only update the document's data if concrete.

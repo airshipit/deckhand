@@ -40,8 +40,6 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
 
     def test_document_missing_optional_sections(self):
         properties_to_remove = (
-            'metadata.layeringDefinition.actions',
-            'metadata.layeringDefinition.parentSelector',
             'metadata.substitutions',
             'metadata.substitutions.2.dest.pattern')
 
@@ -156,3 +154,28 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
         self.assertEqual(1, len(validations[0]['errors']))
         self.assertEqual('Sanitized to avoid exposing secret.',
                          validations[0]['errors'][0]['message'])
+
+    def test_parent_selector_and_actions_both_provided_is_valid(self):
+        test_document = self._read_data('sample_document')
+        data_schema_factory = factories.DataSchemaFactory()
+        data_schema = data_schema_factory.gen_test(test_document['schema'], {})
+
+        validations = document_validation.DocumentValidation(
+            test_document, existing_data_schemas=[data_schema],
+            pre_validate=False).validate_all()
+
+        self.assertEmpty(validations[0]['errors'])
+
+    def test_neither_parent_selector_nor_actions_provided_is_valid(self):
+        test_document = self._read_data('sample_document')
+        test_document['metadata']['layeringDefinition'].pop('actions')
+        test_document['metadata']['layeringDefinition'].pop('parentSelector')
+
+        data_schema_factory = factories.DataSchemaFactory()
+        data_schema = data_schema_factory.gen_test(test_document['schema'], {})
+
+        validations = document_validation.DocumentValidation(
+            test_document, existing_data_schemas=[data_schema],
+            pre_validate=False).validate_all()
+
+        self.assertEmpty(validations[0]['errors'])

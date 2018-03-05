@@ -129,7 +129,11 @@ class TestBucketsController(test_base.BaseControllerTest):
         rules = {'deckhand:create_cleartext_documents': '@'}
         self.policy.set_rules(rules)
 
-        payload = factories.DocumentFactory(2, [1, 1]).gen_test({})
+        payload = factories.DocumentFactory(2, [1, 1]).gen_test({
+            '_SITE_ACTIONS_1_': {
+                'actions': [{'method': 'merge', 'path': '.'}]
+            }
+        })
         bucket_name = test_utils.rand_name('bucket')
         alt_bucket_name = test_utils.rand_name('bucket')
 

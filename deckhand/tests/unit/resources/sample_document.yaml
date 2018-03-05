@@ -18,6 +18,8 @@ metadata:
           path: .path.to.merge.into.parent
         - method: delete
           path: .path.to.delete
+      parentSelector:
+        some: label
   substitutions:
     - dest:
         path: .chart.values.tls.certificate

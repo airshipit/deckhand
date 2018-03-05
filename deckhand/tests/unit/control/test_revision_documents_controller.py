@@ -90,7 +90,11 @@ class TestRevisionDocumentsControllerSorting(test_base.BaseControllerTest):
         self.policy.set_rules(rules)
 
         documents_factory = factories.DocumentFactory(2, [1, 1])
-        documents = documents_factory.gen_test({})
+        documents = documents_factory.gen_test({
+            '_SITE_ACTIONS_1_': {
+                'actions': [{'method': 'merge', 'path': '.'}]
+            }
+        })
         expected_names = ['bar', 'baz', 'foo']
         for idx in range(len(documents)):
             documents[idx]['metadata']['name'] = expected_names[idx]
@@ -121,7 +125,11 @@ class TestRevisionDocumentsControllerSorting(test_base.BaseControllerTest):
         self.policy.set_rules(rules)
 
         documents_factory = factories.DocumentFactory(2, [1, 1])
-        documents = documents_factory.gen_test({})
+        documents = documents_factory.gen_test({
+            '_SITE_ACTIONS_1_': {
+                'actions': [{'method': 'merge', 'path': '.'}]
+            }
+        })
         expected_names = ['foo', 'baz', 'bar']
         expected_schemas = ['deckhand/Certificate/v1',
                             'deckhand/Certificate/v1',
@@ -158,7 +166,11 @@ class TestRevisionDocumentsControllerSorting(test_base.BaseControllerTest):
         self.policy.set_rules(rules)
 
         documents_factory = factories.DocumentFactory(2, [1, 1])
-        documents = documents_factory.gen_test({})
+        documents = documents_factory.gen_test({
+            '_SITE_ACTIONS_1_': {
+                'actions': [{'method': 'merge', 'path': '.'}]
+            }
+        })
         expected_schemas = ['deckhand/Certificate/v1',
                             'deckhand/CertificateKey/v1',
                             'deckhand/LayeringPolicy/v1']
