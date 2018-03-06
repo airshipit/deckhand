@@ -676,3 +676,40 @@ class TestDocumentLayeringWithSubstitution(
                 global_expected=global_expected,
                 substitution_sources=[
                     certificate, certificate_key] + documents)
+
+    def test_layering_and_substitution_site_abstract_and_global_concrete(self):
+        """Verifies that if a global document is abstract, yet has
+        substitutions, those substitutions are performed and carry down to
+        concrete children that inherit from the abstract parent.
+        """
+        secrets_factory = factories.DocumentSecretFactory()
+        certificate = secrets_factory.gen_test(
+            'Certificate', 'cleartext', data='global-secret',
+            name='global-cert')
+
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"global": "random"}},
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".cert"
+                },
+                "src": {
+                    "schema": certificate['schema'],
+                    "name": certificate['metadata']['name'],
+                    "path": "."
+                }
+            }],
+            "_SITE_DATA_1_": {"data": {"site": "stuff"}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False,
+                                         global_abstract=True)
+
+        site_expected = {"global": "random", "cert": "global-secret",
+                         "site": "stuff"}
+        global_expected = None
+        self._test_layering(documents, site_expected,
+                            global_expected=global_expected,
+                            substitution_sources=[certificate])

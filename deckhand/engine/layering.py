@@ -483,16 +483,20 @@ class DocumentLayering(object):
                     self._documents_by_index[(doc.schema, doc.name)] = (
                         rendered_data)
 
-            # Update the actual document data if concrete.
-            if not doc.is_abstract:
+            # Perform substitutions on abstract data for child documents that
+            # inherit from it, but only update the document's data if concrete.
+            if doc.substitutions:
                 substituted_data = list(
                     self.secrets_substitution.substitute_all(doc))
                 if substituted_data:
                     rendered_data = substituted_data[0]
-                    doc.data = rendered_data.data
+                    # Update the actual document data if concrete.
+                    if not doc.is_abstract:
+                        doc.data = rendered_data.data
                     self.secrets_substitution.update_substitution_sources(
                         doc.schema, doc.name, rendered_data.data)
-                    self._documents_by_index[(doc.schema, doc.name)] = doc
+                    self._documents_by_index[(doc.schema, doc.name)] = (
+                        rendered_data)
 
         # Return only concrete documents.
         return [d for d in self._sorted_documents if d.is_abstract is False]
