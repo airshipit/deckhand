@@ -322,6 +322,14 @@ pod:
         requests:
           memory: "128Mi"
           cpu: "100m"
+    test:
+      deckhand:
+        limits:
+          memory: "128Mi"
+          cpu: "100m"
+        requests:
+          memory: "128Mi"
+          cpu: "100m"
 manifests:
   configmap_bin: true
   configmap_etc: true
@@ -337,3 +345,4 @@ manifests:
   ingress_api: true
   service: true
   service_ingress: true
+  test_deckhand_api: true
