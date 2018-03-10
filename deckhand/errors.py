@@ -385,5 +385,7 @@ class UnknownSubstitutionError(DeckhandException):
     **Troubleshoot:**
     """
     msg_fmt = ('An unknown exception occurred while trying to perform '
-               'substitution. Details: %(details)s')
+               'substitution using source document [%(src_schema)s] '
+               '%(src_name)s contained in document [%(document_schema)s] '
+               '%(document_name)s. Details: %(details)s')
     code = 500

@@ -278,13 +278,26 @@ class SecretsSubstitution(object):
                         LOG.error(message)
                         raise errors.UnknownSubstitutionError(details=message)
                 except errors.BarbicanException as e:
-                    LOG.error('Failed to resolve a Barbican reference.')
+                    LOG.error('Failed to resolve a Barbican reference for '
+                              'substitution source document [%s] %s referenced'
+                              ' in document [%s] %s. Details: %s', src_schema,
+                              src_name, document.schema, document.name,
+                              e.format_message())
                     raise errors.UnknownSubstitutionError(
+                        src_schema=src_schema, src_name=src_name,
+                        document_name=document.name,
+                        document_schema=document.schema,
                         details=e.format_message())
                 except Exception as e:
                     LOG.error('Unexpected exception occurred while attempting '
-                              'secret substitution. %s', six.text_type(e))
+                              'substitution using source document [%s] %s '
+                              'referenced in [%s] %s. Details: %s', src_schema,
+                              src_name, document.schema, document.name,
+                              six.text_type(e))
                     raise errors.UnknownSubstitutionError(
+                        src_schema=src_schema, src_name=src_name,
+                        document_name=document.name,
+                        document_schema=document.schema,
                         details=six.text_type(e))
 
         yield document
