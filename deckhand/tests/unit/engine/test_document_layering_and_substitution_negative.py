@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import mock
+
 from deckhand.engine import layering
 from deckhand import errors
 from deckhand import factories
@@ -113,10 +115,12 @@ class TestDocumentLayeringWithSubstitutionNegative(
         self.assertRaises(
             errors.SubstitutionDependencyCycle, self._test_layering, documents)
 
-    def test_layering_with_missing_substitution_source_raises_exc(self):
+    @mock.patch.object(layering, 'LOG', autospec=True)
+    def test_layering_with_missing_substitution_source_raises_exc(
+            self, mock_log):
         """Validate that a missing substitution source document fails."""
         mapping = {
-            "_SITE_SUBSTITUTIONS_1_": [{
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
                 "dest": {
                     "path": ".c"
                 },
@@ -125,10 +129,26 @@ class TestDocumentLayeringWithSubstitutionNegative(
                     "name": "nowhere-to-be-found",
                     "path": "."
                 }
-            }]
+            }],
+            "_GLOBAL_DATA_1_": {
+                "data": {
+                    "a": {"b": [1, 2, 3]}, "c": "d"
+                }
+            }
         }
-        doc_factory = factories.DocumentFactory(2, [1, 1])
-        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        doc_factory = factories.DocumentFactory(1, [1])
+        documents = doc_factory.gen_test(mapping, global_abstract=False)
+
+        scrubbed_data = {
+            'a': {'b': ['Scrubbed', 'Scrubbed', 'Scrubbed']}, 'c': 'Scrubbed'}
 
         self.assertRaises(
             errors.SubstitutionSourceNotFound, self._test_layering, documents)
+
+        # Verifies that document data is recursively scrubbed prior to logging
+        # it.
+        mock_log.debug.assert_called_with(
+            'An exception occurred while attempting to add substitutions %s '
+            'into document [%s] %s\nScrubbed document data: %s.',
+            documents[1]['metadata']['substitutions'], documents[1]['schema'],
+            documents[1]['metadata']['name'], scrubbed_data)

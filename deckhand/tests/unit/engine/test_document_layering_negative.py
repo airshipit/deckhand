@@ -39,20 +39,31 @@ class TestDocumentLayeringNegative(
         self.assertRaises(errors.MissingDocumentKey, self._test_layering,
                           documents)
 
-    def test_layering_method_delete_key_not_in_child(self):
+    @mock.patch.object(layering, 'LOG', autospec=True)
+    def test_layering_method_delete_key_not_in_child(self, mock_log):
         # The key will not be in the site after the global data is copied into
         # the site data implicitly.
+        action = {'method': 'delete', 'path': '.b'}
         mapping = {
             "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}, "c": 9}},
             "_SITE_DATA_1_": {"data": {"a": {"x": 7, "z": 3}, "b": 4}},
-            "_SITE_ACTIONS_1_": {
-                "actions": [{"method": "delete", "path": ".b"}]}
+            "_SITE_ACTIONS_1_": {"actions": [action]}
         }
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test(mapping, site_abstract=False)
 
         self.assertRaises(errors.MissingDocumentKey, self._test_layering,
                           documents)
+        # Verifies that document data is recursively scrubbed prior to logging
+        # it.
+        mock_log.debug.assert_called_with(
+            'An exception occurred while attempting to layer child document '
+            '[%s] %s with parent document [%s] %s using layering action: %s.\n'
+            'Scrubbed child document data: %s.\nScrubbed parent document data:'
+            ' %s.', documents[2]['schema'], documents[2]['metadata']['name'],
+            documents[1]['schema'], documents[1]['metadata']['name'],
+            action, {'b': 'Scrubbed', 'a': {'z': 'Scrubbed', 'x': 'Scrubbed'}},
+            {'c': 'Scrubbed', 'a': {'x': 'Scrubbed', 'y': 'Scrubbed'}})
 
     def test_layering_method_replace_key_not_in_child(self):
         mapping = {

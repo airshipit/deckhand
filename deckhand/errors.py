@@ -255,9 +255,15 @@ class MissingDocumentPattern(DeckhandException):
     """'Pattern' is not None and data[jsonpath] doesn't exist.
 
     **Troubleshoot:**
+
+    * Check that the destination document's data section contains the
+      pattern specified under `substitutions.dest.pattern` in its data
+      section at `substitutions.dest.path`.
     """
-    msg_fmt = ("Missing document pattern %(pattern)s in %(data)s at path "
-               "%(path)s.")
+    msg_fmt = ("The destination document's `data` section is missing the "
+               "pattern %(pattern)s specified under "
+               "`substitutions.dest.pattern` at path %(jsonpath)s, specified "
+               "under `substitutions.dest.path`.")
     code = 400
 
 

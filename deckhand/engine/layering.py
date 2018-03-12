@@ -20,6 +20,7 @@ from networkx.algorithms.cycles import find_cycle
 from networkx.algorithms.dag import topological_sort
 from oslo_log import log as logging
 from oslo_log import versionutils
+from oslo_utils import excutils
 
 from deckhand.common import document as document_wrapper
 from deckhand.common import utils
@@ -445,6 +446,29 @@ class DocumentLayering(object):
         del self._documents_by_layer
         del self._documents_by_labels
 
+    def _log_data_for_layering_failure(self, child, parent, action):
+        child_data = copy.deepcopy(child.data)
+        parent_data = copy.deepcopy(parent.data)
+
+        engine_utils.deep_scrub(child_data, None)
+        engine_utils.deep_scrub(parent_data, None)
+
+        LOG.debug('An exception occurred while attempting to layer child '
+                  'document [%s] %s with parent document [%s] %s using '
+                  'layering action: %s.\nScrubbed child document data: %s.\n'
+                  'Scrubbed parent document data: %s.', child.schema,
+                  child.name, parent.schema, parent.name, action, child_data,
+                  parent_data)
+
+    def _log_data_for_substitution_failure(self, document):
+        document_data = copy.deepcopy(document.data)
+        engine_utils.deep_scrub(document_data, None)
+
+        LOG.debug('An exception occurred while attempting to add substitutions'
+                  ' %s into document [%s] %s\nScrubbed document data: %s.',
+                  document.substitutions, document.schema, document.name,
+                  document_data)
+
     def _apply_action(self, action, child_data, overall_data):
         """Apply actions to each layer that is rendered.
 
@@ -565,10 +589,18 @@ class DocumentLayering(object):
                         # Apply each action to the current document.
                         for action in doc.actions:
                             LOG.debug('Applying action %s to document with '
-                                      'schema=%s, name=%s, layer=%s.', action,
+                                      'schema=%s, layer=%s, name=%s.', action,
                                       *doc.meta)
-                            rendered_data = self._apply_action(
-                                action, doc, rendered_data)
+                            try:
+                                rendered_data = self._apply_action(
+                                    action, doc, rendered_data)
+                            except Exception:
+                                with excutils.save_and_reraise_exception():
+                                    try:
+                                        self._log_data_for_layering_failure(
+                                            doc, parent, action)
+                                    except Exception:  # nosec
+                                        pass
                         if not doc.is_abstract:
                             doc.data = rendered_data.data
                         self.secrets_substitution.update_substitution_sources(
@@ -584,8 +616,15 @@ class DocumentLayering(object):
             # Perform substitutions on abstract data for child documents that
             # inherit from it, but only update the document's data if concrete.
             if doc.substitutions:
-                substituted_data = list(
-                    self.secrets_substitution.substitute_all(doc))
+                try:
+                    substituted_data = list(
+                        self.secrets_substitution.substitute_all(doc))
+                except Exception:
+                    with excutils.save_and_reraise_exception():
+                        try:
+                            self._log_data_for_substitution_failure(doc)
+                        except Exception:  # nosec
+                            pass
                 if substituted_data:
                     rendered_data = substituted_data[0]
                     # Update the actual document data if concrete.

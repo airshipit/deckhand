@@ -69,3 +69,28 @@ def deep_delete(target, value, parent):
             if found:
                 return True
     return False
+
+
+def deep_scrub(value, parent):
+    """Scrubs all primitives in document data recursively. Useful for scrubbing
+    any and all secret data that may have been substituted into the document
+    data section before logging it out safely following an error.
+    """
+    primitive = (int, float, complex, str, bytes, bool)
+
+    def is_primitive(value):
+        return isinstance(value, primitive)
+
+    if is_primitive(value):
+        if isinstance(parent, list):
+            parent[parent.index(value)] = 'Scrubbed'
+        elif isinstance(parent, dict):
+            for k, v in parent.items():
+                if v == value:
+                    parent[k] = 'Scrubbed'
+    elif isinstance(value, list):
+        for v in value:
+            deep_scrub(v, value)
+    elif isinstance(value, dict):
+        for v in value.values():
+            deep_scrub(v, value)

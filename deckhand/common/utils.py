@@ -19,6 +19,7 @@ import string
 
 import jsonpath_ng
 from oslo_log import log as logging
+from oslo_utils import excutils
 import six
 
 from deckhand import errors
@@ -175,9 +176,10 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
                 try:
                     new_value = re.sub(pattern, str(value), to_replace)
                 except TypeError as e:
-                    LOG.error('Failed to substitute the value %s into %s '
-                              'using pattern %s. Details: %s', str(value),
-                              to_replace, pattern, six.text_type(e))
+                    with excutils.save_and_reraise_exception():
+                        LOG.error('Failed to substitute the value %s into %s '
+                                  'using pattern %s. Details: %s', str(value),
+                                  to_replace, pattern, six.text_type(e))
             return p.update(data, new_value)
 
     result = _do_replace()
@@ -188,10 +190,9 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
     # and then figure out what re.match(data[jsonpath], pattern) is (in
     # pseudocode). But raise an exception in case the path isn't present in the
     # data and a pattern has been provided since it is impossible to do the
-    # look up.
+    # look-up.
     if pattern:
-        raise errors.MissingDocumentPattern(
-            data=data, path=jsonpath, pattern=pattern)
+        raise errors.MissingDocumentPattern(path=jsonpath, pattern=pattern)
 
     # However, Deckhand should be smart enough to create the nested keys in the
     # data if they don't exist and a pattern isn't required.
