@@ -313,8 +313,8 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
                                        VALIDATION_FAILURE_RESULT)
 
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (revision_id,
-                                                         validation_name),
+            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
+                revision_id, validation_name),
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
 
@@ -358,8 +358,8 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
                               validation_name, revision_id))
 
         resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s/entries/5' % (revision_id,
-                                                         validation_name),
+            '/api/v1.0/revisions/%s/validations/%s/entries/5' % (
+                revision_id, validation_name),
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(404, resp.status_code)
         self.assertEqual(expected_error, yaml.safe_load(resp.text)['message'])
@@ -1077,74 +1077,86 @@ data:
     - name: deckhand-schema-validation
 ...
 """)
-        revision_id = self._create_revision(payload=[validation_policy])
 
-        # Register an extra validation not in the ValidationPolicy.
-        resp = self._create_validation(
-            revision_id, 'promenade-schema-validation',
-            VALIDATION_FAILURE_RESULT)
-        self.assertEqual(201, resp.status_code)
+        def _do_test(validation_result, expected_status):
+            revision_id = self._create_revision(payload=[validation_policy])
 
-        # Validate that the extra validation is ignored.
-        resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id,
-            headers={'Content-Type': 'application/x-yaml'})
-        self.assertEqual(200, resp.status_code)
-        body = yaml.safe_load(resp.text)
-        expected_body = {
-            'count': 2,
-            'results': [
-                {'name': 'deckhand-schema-validation', 'status': 'success'},
-                {'name': 'promenade-schema-validation',
-                 'status': 'ignored [failure]'}
-            ]
-        }
-        body['results'] = sorted(body['results'], key=lambda x: x['name'])
-        self.assertEqual(expected_body, body)
+            # Register an extra validation not in the ValidationPolicy.
+            resp = self._create_validation(
+                revision_id, 'promenade-schema-validation',
+                validation_result)
+            self.assertEqual(201, resp.status_code)
 
-        # Validate that 'promenade-schema-validation' is 'ignored [failure]'
-        # even though it was externally registered.
-        resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s' % (
-                revision_id, 'promenade-schema-validation'),
-            headers={'Content-Type': 'application/x-yaml'})
-        self.assertEqual(200, resp.status_code)
-        body = yaml.safe_load(resp.text)
-        expected_body = {
-            'count': 1,
-            'results': [{'id': 0, 'status': 'ignored [failure]'}]
-        }
-        self.assertEqual(expected_body, body)
+            # Validate that the extra validation is ignored.
+            resp = self.app.simulate_get(
+                '/api/v1.0/revisions/%s/validations' % revision_id,
+                headers={'Content-Type': 'application/x-yaml'})
+            self.assertEqual(200, resp.status_code)
+            body = yaml.safe_load(resp.text)
+            expected_body = {
+                'count': 2,
+                'results': [
+                    {'name': 'deckhand-schema-validation',
+                             'status': 'success'},
+                    {'name': 'promenade-schema-validation',
+                     'status': 'ignored [%s]' % expected_status}
+                ]
+            }
+            body['results'] = sorted(body['results'], key=lambda x: x['name'])
+            self.assertEqual(expected_body, body)
 
-        # Validate information explaining why 'promenade-schema-validation'
-        # is ignored is returned.
-        resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
-                revision_id, 'promenade-schema-validation'),
-            headers={'Content-Type': 'application/x-yaml'})
-        self.assertEqual(200, resp.status_code)
-        body = yaml.safe_load(resp.text)
+            # Validate that 'promenade-schema-validation' is
+            # 'ignored [expected_status]'.
+            resp = self.app.simulate_get(
+                '/api/v1.0/revisions/%s/validations/%s' % (
+                    revision_id, 'promenade-schema-validation'),
+                headers={'Content-Type': 'application/x-yaml'})
+            self.assertEqual(200, resp.status_code)
+            body = yaml.safe_load(resp.text)
+            expected_body = {
+                'count': 1,
+                'results': [
+                    {'id': 0, 'status': 'ignored [%s]' % expected_status}
+                ]
+            }
+            self.assertEqual(expected_body, body)
 
-        expected_msg = ('The result for this validation was externally '
-                        'registered but has been ignored because it is not '
-                        'found in the validations for ValidationPolicy '
-                        '[%s, %s] %s: %s.' % (
-                            validation_policy['schema'],
-                            validation_policy['metadata'][
-                                'layeringDefinition']['layer'],
-                            validation_policy['metadata']['name'],
-                            types.DECKHAND_SCHEMA_VALIDATION))
-        expected_errors = yaml.safe_load(VALIDATION_FAILURE_RESULT)['errors']
-        expected_errors.append({'message': expected_msg})
+            # Validate information explaining why 'promenade-schema-validation'
+            # is ignored is returned.
+            resp = self.app.simulate_get(
+                '/api/v1.0/revisions/%s/validations/%s/entries/0' % (
+                    revision_id, 'promenade-schema-validation'),
+                headers={'Content-Type': 'application/x-yaml'})
+            self.assertEqual(200, resp.status_code)
+            body = yaml.safe_load(resp.text)
 
-        expected_body = {
-            'name': 'promenade-schema-validation',
-            'status': 'ignored [failure]',
-            'createdAt': None,
-            'expiresAfter': None,
-            'errors': expected_errors
-        }
-        self.assertEqual(expected_body, body)
+            expected_msg = ('The result for this validation was externally '
+                            'registered but has been ignored because it is not'
+                            ' found in the validations for ValidationPolicy '
+                            '[%s, %s] %s: %s.' % (
+                                validation_policy['schema'],
+                                validation_policy['metadata'][
+                                    'layeringDefinition']['layer'],
+                                validation_policy['metadata']['name'],
+                                types.DECKHAND_SCHEMA_VALIDATION))
+
+            expected_errors = []
+            if expected_status == 'failure':
+                expected_errors.extend(
+                    yaml.safe_load(VALIDATION_FAILURE_RESULT)['errors'])
+            expected_errors.append({'message': expected_msg})
+
+            expected_body = {
+                'name': 'promenade-schema-validation',
+                'status': 'ignored [%s]' % expected_status,
+                'createdAt': None,
+                'expiresAfter': None,
+                'errors': expected_errors
+            }
+            self.assertEqual(expected_body, body)
+
+        _do_test(VALIDATION_SUCCESS_RESULT, 'success')
+        _do_test(VALIDATION_FAILURE_RESULT, 'failure')
 
 
 class TestValidationsControllerPreValidate(ValidationsControllerBaseTest):

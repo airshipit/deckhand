@@ -71,7 +71,7 @@ class ValidationsResource(api_base.BaseResource):
                 req, resp, revision_id, validation_name, entry_id)
         elif validation_name:
             resp_body = self._list_validation_entries(req, resp, revision_id,
-                                          validation_name)
+                                                      validation_name)
         else:
             resp_body = self._list_all_validations(req, resp, revision_id)
 
