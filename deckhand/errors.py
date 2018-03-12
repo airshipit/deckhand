@@ -230,12 +230,22 @@ class SubstitutionDependencyCycle(DeckhandException):
 
 
 class MissingDocumentKey(DeckhandException):
-    """The key does not exist in the "rendered_data".
+    """Either the parent or child document data is missing the action path
+    used for layering.
 
     **Troubleshoot:**
+
+    * Check that the action path exists in the data section for both child
+      and parent documents being layered together.
+    * Note that previous delete layering actions can affect future layering
+      actions by removing a path needed by a future layering action.
+    * Note that substitutions that substitute in lists or objects into the
+      rendered data for a document can also complicate debugging this issue.
     """
-    msg_fmt = ("Missing document key %(key)s from either parent or child. "
-               "Parent: %(parent)s. Child: %(child)s.")
+    msg_fmt = ("Missing action path in %(action)s needed for layering from "
+               "either the data section of the parent [%(parent_schema)s] "
+               "%(parent_name)s or child [%(child_schema)s] %(child_name)s "
+               "document.")
     code = 400
 
 

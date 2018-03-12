@@ -405,9 +405,11 @@ class DocumentLayering(object):
                                                   action_path)
                 if from_child is None:
                     raise errors.MissingDocumentKey(
-                        child=child_data.data,
-                        parent=overall_data.data,
-                        key=action_path)
+                        child_schema=child_data.schema,
+                        child_name=child_data.name,
+                        parent_schema=overall_data.schema,
+                        parent_name=overall_data.name,
+                        action=action)
 
                 engine_utils.deep_delete(from_child, overall_data.data, None)
 
@@ -417,9 +419,11 @@ class DocumentLayering(object):
 
             if from_child is None:
                 raise errors.MissingDocumentKey(
-                    child=child_data.data,
-                    parent=overall_data.data,
-                    key=action_path)
+                    child_schema=child_data.schema,
+                    child_name=child_data.name,
+                    parent_schema=overall_data.schema,
+                    parent_name=overall_data.name,
+                    action=action)
 
             if (isinstance(from_parent, dict)
                     and isinstance(from_child, dict)):
@@ -436,9 +440,11 @@ class DocumentLayering(object):
 
             if from_child is None:
                 raise errors.MissingDocumentKey(
-                    child=child_data.data,
-                    parent=overall_data.data,
-                    key=action_path)
+                    child_schema=child_data.schema,
+                    child_name=child_data.name,
+                    parent_schema=overall_data.schema,
+                    parent_name=overall_data.name,
+                    action=action)
 
             overall_data.data = utils.jsonpath_replace(
                 overall_data.data, from_child, action_path)
