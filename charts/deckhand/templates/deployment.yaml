@@ -55,10 +55,21 @@ spec:
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           ports:
-            - containerPort: {{ .Values.network.port }}
+            - containerPort: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /api/v1.0/health
+              port: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            initialDelaySeconds: 15
+            periodSeconds: 10
           readinessProbe:
-            tcpSocket:
-              port: {{ .Values.network.port }}
+            httpGet:
+              scheme: HTTP
+              path: /api/v1.0/health
+              port: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            initialDelaySeconds: 15
+            periodSeconds: 10
           volumeMounts:
             - name: etc-deckhand
               mountPath: /etc/deckhand
