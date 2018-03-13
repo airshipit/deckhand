@@ -33,7 +33,8 @@ Deckhand-Provided Validations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Deckhand provides a few internal validations which are made available
-immediately upon document ingestion.
+immediately upon document ingestion. Deckhand's internal schema validations are
+defined as ``DataSchema`` documents.
 
 Here is a list of internal validations:
 
@@ -56,61 +57,106 @@ For more information, refer to the ``DataSchema`` section in
 :ref:`document-types`.
 
 Schema Validations
-^^^^^^^^^^^^^^^^^^
+------------------
 
 Schema validations are controlled by two mechanisms:
 
 1) Deckhand's internal schema validation for sanity-checking the formatting
    of the default documents that it understands. For example, Deckhand
    will check that a ``LayeringPolicy``, ``ValidationPolicy`` or ``DataSchema``
-   adhere to the "skeleton" or schemas registered under
-   ``deckhand.engine.schema``.
-
-   .. note::
-
-      Each document is always subjected to 2 stages of document validation:
-      the first stage checks whether the document adheres to the fundamental
-      building blocks: Does it have a ``schema``, ``metadata``, and ``data``
-      section? The second stage then checks whether the document's ``schema``
-      passes a more nuanced schema validation specific to that ``schema``.
+   adhere to the appropriate internal schemas.
 
 2) Externally provided validations via ``DataSchema`` documents. These
    documents can be registered by external services and subject the target
-   document's data section to *additional* validations, validations specified
-   by the ``data`` section of the ``DataSchema`` document.
-
-   For more information about ``DataSchema`` documents, please refer to
-   :ref:`document-types`.
+   document's ``data`` section to *additional* validations, validations
+   specified by the ``data`` section of the ``DataSchema`` document.
 
 Policy Validations
-^^^^^^^^^^^^^^^^^^
+------------------
 
 *Not yet implemented*.
 
 Validation Policies
+-------------------
+
+Validation policies are optional. Deckhand will perform all internal and
+externally registered schema validations against all documents, with or without
+any Validation Policies.
+
+All ``ValidationPolicy`` documents in Deckhand are externally registered. They
+allow services to report success or failure of named validations for a given
+revision. The intended purpose is to allow a simple mapping that enables
+consuming services to be able to quickly check whether the configuration in
+Deckhand is in a valid state for performing a specific action.
+
+``ValidationPolicy`` documents are not the same as ``DataSchema`` documents.
+A ``ValidationPolicy`` document can reference a list of internal Deckhand
+validations in addition to externally registered ``DataSchema`` documents.
+Whereas a ``DataSchema`` document specifies a new set of validations to check
+against relevant documents, a ``ValidationPolicy`` is a bookkeeping device
+that merely lists the set of validations in a revision that need to succeed
+in order for the revision itself to be valid.
+
+For example, given Revision 1 which contains a ``ValidationPolicy`` of:
+
+::
+
+  ---
+  schema: deckhand/ValidationPolicy/v1
+  metadata:
+    schema: metadata/Control/v1
+    name: later-validation
+    layeringDefinition:
+      abstract: False
+      layer: site
+  data:
+    validations:
+      - name: deckhand-schema-validation
+      - name: drydock-site-validation
+
+Deckhand automatically creates ``deckhand-schema-validation`` as soon as the
+revision itself is created. Afterward, Drydock can POST its result for
+``drydock-site-validation`` using Deckhand's Validations API. Finally, Shipyard
+query Deckhand's Validations API which in turn checks whether all validations
+contained in the ``ValidationPolicy`` above are successful, before it proceeds
+to the next stage in its workflow.
+
+Missing Validations
 ^^^^^^^^^^^^^^^^^^^
 
-Validation policies allow services to report success or failure of named
-validations for a given revision. Those validations can then be referenced by
-many ``ValidationPolicy`` control documents. The intended purpose use is to
-allow a simple mapping that enables consuming services to be able to quickly
-check whether the configuration in Deckhand is in a valid state for performing
-a specific action.
+Validations contained in a ``ValidationPolicy`` but which were never created
+in Deckhand for a given revision are considered missing. Missing validations
+result in the entire validation result reporting "failure".
 
-.. note::
+If, for example, Drydock never POSTed a result for ``drydock-site-validation``
+then the Deckhand Validations API will return a "failure" result, even if
+``deckhand-schema-validation`` reports "success".
 
-  ``ValidationPolicy`` documents are not the same as ``DataSchema`` documents.
-  A ``ValidationPolicy`` document can reference a list of internal Deckhand
-  validations in addition to externally registered ``DataSchema`` documents.
-  Once all the validations specified in the ``ValidationPolicy`` are executed
-  and succeed, then services can check whether the documents in a bucket are
-  stable, in accordance with the ``ValidationPolicy``.
+Extra Validations
+^^^^^^^^^^^^^^^^^
+
+Validations that are registered in Deckhand via the Validations API
+but are not included in the ``ValidationPolicy`` (if one exists) for a given
+revision are **ignored** (with the original status reported as
+"ignored [failure]" or "ignored [success]").
+
+For example, given the ``ValidationPolicy`` example above, if Promenade POSTs
+``promenade-schema-validation`` with a result of "failure", then the *overall*
+validation status for the given revision returned by Deckhand will be *success*
+because the "failure" result from Promenade, since it was never registered,
+will be ignored.
 
 Validation Stages
 -----------------
 
-Deckhand performs pre- and post-rendering validation on documents. For
-pre-rendering validation 3 types of behavior are possible:
+Deckhand performs pre- and post-rendering validation on documents.
+
+Pre-Rendering
+^^^^^^^^^^^^^
+
+Carried out during document ingestion.
+
+For pre-rendering validation 3 types of behavior are possible:
 
 #. Successfully validated docuemnts are stored in Deckhand's database.
 #. Failure to validate a document's basic properties will result in a 400
@@ -118,6 +164,11 @@ pre-rendering validation 3 types of behavior are possible:
 #. Failure to validate a document's schema-specific properties will result
    in a validation error created in the database, which can be later
    returned via the Validations API.
+
+Post-Rendering
+^^^^^^^^^^^^^^
+
+Carried out after rendering all documents.
 
 For post-rendering validation, 2 types of behavior are possible:
 
