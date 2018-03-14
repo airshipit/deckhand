@@ -55,23 +55,73 @@ class DocumentLayering(object):
     _SUPPORTED_METHODS = (_MERGE_ACTION, _REPLACE_ACTION, _DELETE_ACTION) = (
         'merge', 'replace', 'delete')
 
+    def _calc_replacements_and_substitutions(
+            self, substitution_sources):
+        for document in self._documents_by_index.values():
+            if document.is_replacement:
+                parent_meta = self._parents.get(document.meta)
+                parent = self._documents_by_index.get(parent_meta)
+
+                if not parent_meta or not parent:
+                    error_message = (
+                        'Document replacement requires that the document with '
+                        '`replacement: true` have a parent.')
+                    raise errors.InvalidDocumentReplacement(
+                        schema=document.schema, name=document.name,
+                        layer=document.layer, reason=error_message)
+
+                # This checks that a document can only be a replacement for
+                # another document with the same `metadata.name` and `schema`.
+                if (document.schema == parent.schema and
+                        document.name == parent.name):
+                    parent.replaced_by = document
+                else:
+                    error_message = (
+                        'Document replacement requires that both documents '
+                        'have the same `schema` and `metadata.name`.')
+                    raise errors.InvalidDocumentReplacement(
+                        schema=document.schema, name=document.name,
+                        layer=document.layer, reason=error_message)
+
+        # Since a substitution source only provides the document's
+        # `metadata.name` and `schema`, their tuple acts as the dictionary key.
+        # If a substitution source has a replacement, the replacement is used
+        # instead.
+        substitution_source_map = {}
+
+        for src in substitution_sources:
+            src_ref = document_wrapper.DocumentDict(src)
+            if src_ref.meta in self._documents_by_index:
+                src_ref = self._documents_by_index[src_ref.meta]
+                # If the document has a replacement, use the replacement as the
+                # substitution source instead.
+                if src_ref.has_replacement:
+                    if src_ref.is_replacement:
+                        error_message = ('A replacement document cannot itself'
+                                         ' be replaced by another document.')
+                        raise errors.InvalidDocumentReplacement(
+                            schema=src_ref.schema, name=src_ref.name,
+                            layer=src_ref.layer, reason=error_message)
+
+                    src_ref = src_ref.replaced_by
+            substitution_source_map[(src_ref.schema, src_ref.name)] = src_ref
+
+        return substitution_source_map
+
     def _replace_older_parent_with_younger_parent(self, child, parent,
                                                   all_children):
         # If child has layer N, parent N+1, and current_parent N+2, then swap
         # parent with current_parent. In other words, if parent's layer is
         # closer to child's layer than current_parent's layer, then use parent.
-        current_parent_index = self._parents.get((child.schema, child.name))
-        current_parent = self._documents_by_index.get(
-            current_parent_index, None)
+        parent_meta = self._parents.get(child.meta)
+        current_parent = self._documents_by_index.get(parent_meta, None)
         if current_parent:
             if (self._layer_order.index(parent.layer) >
                 self._layer_order.index(current_parent.layer)):
-                self._parents[(child.schema, child.name)] = \
-                    (parent.schema, parent.name)
+                self._parents[child.meta] = parent.meta
                 all_children[child] -= 1
         else:
-            self._parents.setdefault((child.schema, child.name),
-                                     (parent.schema, parent.name))
+            self._parents.setdefault(child.meta, parent.meta)
 
     def _is_actual_child_document(self, document, potential_child):
         if document == potential_child:
@@ -213,26 +263,29 @@ class DocumentLayering(object):
                      'will be performed.')
         return layer_order
 
-    def _topologically_sort_documents(self, documents):
+    def _topologically_sort_documents(self, substitution_sources):
         """Topologically sorts the DAG formed from the documents' layering
         and substitution dependency chain.
         """
-        documents_by_name = {}
         result = []
 
         g = networkx.DiGraph()
-        for document in documents:
-            document = document_wrapper.DocumentDict(document)
-            documents_by_name.setdefault((document.schema, document.name),
-                                         document)
+        for document in self._documents_by_index.values():
             if document.parent_selector:
-                parent = self._parents.get((document.schema, document.name))
+                parent = self._parents.get(document.meta)
                 if parent:
-                    g.add_edge((document.schema, document.name), parent)
+                    g.add_edge(document.meta, parent)
 
             for sub in document.substitutions:
-                g.add_edge((document.schema, document.name),
-                           (sub['src']['schema'], sub['src']['name']))
+                # Retrieve the correct substitution source using
+                # ``substitution_sources``. Necessary for 2 reasons:
+                # 1) It accounts for document replacements.
+                # 2) It effectively maps a 2-tuple key to a 3-tuple document
+                #    unique identifier (meta).
+                src = substitution_sources.get(
+                    (sub['src']['schema'], sub['src']['name']))
+                if src:
+                    g.add_edge(document.meta, src.meta)
 
         try:
             cycle = find_cycle(g)
@@ -245,11 +298,12 @@ class DocumentLayering(object):
 
         sorted_documents = reversed(list(topological_sort(g)))
 
-        for document in sorted_documents:
-            if document in documents_by_name:
-                result.append(documents_by_name.pop(document))
-        for document in documents_by_name.values():
-            result.append(document)
+        for document_meta in sorted_documents:
+            if document_meta in self._documents_by_index:
+                result.append(self._documents_by_index[document_meta])
+        for document in self._documents_by_index.values():
+            if document not in result:
+                result.append(document)
 
         return result
 
@@ -311,6 +365,8 @@ class DocumentLayering(object):
         self._sorted_documents = {}
         self._documents_by_index = {}
 
+        substitution_sources = substitution_sources or []
+
         # TODO(fmontei): Add a hook for post-validation too.
         if validate:
             self._pre_validate_documents(documents)
@@ -336,8 +392,9 @@ class DocumentLayering(object):
 
         for document in documents:
             document = document_wrapper.DocumentDict(document)
-            self._documents_by_index.setdefault(
-                (document.schema, document.name), document)
+
+            self._documents_by_index.setdefault(document.meta, document)
+
             if document.layer:
                 if document.layer not in self._layering_policy.layer_order:
                     LOG.error('Document layer %s for document [%s] %s not '
@@ -375,11 +432,15 @@ class DocumentLayering(object):
                     if not d.is_abstract
             ]
 
+        substitution_sources = self._calc_replacements_and_substitutions(
+            substitution_sources)
+
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
             substitution_sources,
             fail_on_missing_sub_src=fail_on_missing_sub_src)
 
-        self._sorted_documents = self._topologically_sort_documents(documents)
+        self._sorted_documents = self._topologically_sort_documents(
+            substitution_sources)
 
         del self._documents_by_layer
         del self._documents_by_labels
@@ -494,30 +555,31 @@ class DocumentLayering(object):
                 continue
 
             if doc.parent_selector:
-                parent_meta = self._parents.get((doc.schema, doc.name))
+                parent_meta = self._parents.get(doc.meta)
 
                 if parent_meta:
                     parent = self._documents_by_index[parent_meta]
 
                     if doc.actions:
                         rendered_data = parent
+                        # Apply each action to the current document.
                         for action in doc.actions:
                             LOG.debug('Applying action %s to document with '
-                                      'name=%s, schema=%s, layer=%s.', action,
-                                      doc.name, doc.schema, doc.layer)
+                                      'schema=%s, name=%s, layer=%s.', action,
+                                      *doc.meta)
                             rendered_data = self._apply_action(
                                 action, doc, rendered_data)
                         if not doc.is_abstract:
                             doc.data = rendered_data.data
                         self.secrets_substitution.update_substitution_sources(
                             doc.schema, doc.name, rendered_data.data)
-                        self._documents_by_index[(doc.schema, doc.name)] = (
-                            rendered_data)
+                        self._documents_by_index[doc.meta] = rendered_data
                     else:
-                        LOG.info('Skipped layering for document [%s] %s which '
-                                 'has a parent [%s] %s, but no associated '
-                                 'layering actions.', doc.schema, doc.name,
-                                 parent.schema, parent.name)
+                        LOG.debug(
+                            'Skipped layering for document [%s, %s] %s which '
+                            'has a parent [%s, %s] %s, but no associated '
+                            'layering actions.', doc.schema, doc.layer,
+                            doc.name, parent.schema, parent.layer, parent.name)
 
             # Perform substitutions on abstract data for child documents that
             # inherit from it, but only update the document's data if concrete.
@@ -531,11 +593,11 @@ class DocumentLayering(object):
                         doc.data = rendered_data.data
                     self.secrets_substitution.update_substitution_sources(
                         doc.schema, doc.name, rendered_data.data)
-                    self._documents_by_index[(doc.schema, doc.name)] = (
-                        rendered_data)
+                    self._documents_by_index[doc.meta] = rendered_data
 
-        # Return only concrete documents.
-        return [d for d in self._sorted_documents if d.is_abstract is False]
+        # Return only concrete documents and non-replacements.
+        return [d for d in self._sorted_documents
+                    if d.is_abstract is False and d.has_replacement is False]
 
     @property
     def documents(self):

@@ -116,6 +116,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
             rendered_documents = document_layering.render()
         except (errors.InvalidDocumentLayer,
                 errors.InvalidDocumentParent,
+                errors.InvalidDocumentReplacement,
                 errors.IndeterminateDocumentParent,
                 errors.MissingDocumentKey,
                 errors.UnsupportedActionMethod) as e:

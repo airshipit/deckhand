@@ -304,11 +304,8 @@ data:
         site_expected = 'should not change'
         self._test_layering(documents, site_expected, global_expected=None)
 
-        mock_log.info.assert_called_once_with(
-            'Skipped layering for document [%s] %s which has a parent [%s] '
-            '%s, but no associated layering actions.', documents[2]['schema'],
-            documents[2]['metadata']['name'], documents[1]['schema'],
-            documents[1]['metadata']['name'])
+        error_re = r'^Skipped layering for document.*'
+        self.assertRegex(mock_log.debug.mock_calls[0][1][0], error_re)
 
 
 class TestDocumentLayering2Layers(TestDocumentLayering):
@@ -1316,3 +1313,108 @@ class TestDocumentLayering3Layers2Regions2Sites(TestDocumentLayering):
         global_expected = None
         self._test_layering(documents, site_expected, region_expected,
                             global_expected)
+
+
+class TestDocumentLayeringWithReplacement(TestDocumentLayering):
+
+    def setUp(self):
+        super(TestDocumentLayeringWithReplacement, self).setUp()
+        self.documents = list(yaml.safe_load_all("""
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - site
+---
+schema: aic/Versions/v1
+metadata:
+  name: a
+  labels:
+    selector: foo
+  layeringDefinition:
+    abstract: False
+    layer: global
+data:
+  conf:
+    foo: default
+---
+schema: aic/Versions/v1
+metadata:
+  name: a
+  labels:
+    selector: baz
+  replacement: true
+  layeringDefinition:
+    abstract: False
+    layer: site
+    parentSelector:
+      selector: foo
+    actions:
+      - method: merge
+        path: .
+data:
+  conf:
+    bar: override
+---
+schema: armada/Chart/v1
+metadata:
+  name: c
+  layeringDefinition:
+    abstract: False
+    layer: global
+  substitutions:
+    - src:
+        schema: aic/Versions/v1
+        name: a
+        path: .conf
+      dest:
+        path: .application.conf
+data:
+  application:
+    conf: {}
+...
+"""))
+
+    def test_basic_replacement(self):
+        """Verify that the replacement document is the only one returned."""
+        site_expected = [{"conf": {"foo": "default", "bar": "override"}}]
+        global_expected = None
+
+        self.documents = self.documents[:-1]
+
+        self._test_layering(self.documents, site_expected,
+                            global_expected=global_expected)
+
+    def test_replacement_with_substitution_from_replacer(self):
+        """Verify that using a replacement document as a substitution source
+        works.
+        """
+        site_expected = [{"conf": {"foo": "default", "bar": "override"}}]
+        global_expected = [
+            {"application": {"conf": {"foo": "default", "bar": "override"}}}]
+        # Pass in the replacee and replacer as substitution sources. The
+        # replacer should be used as the source.
+        self._test_layering(self.documents, site_expected,
+                            global_expected=global_expected,
+                            substitution_sources=self.documents[1:3])
+        # Attempt the same scenario but reverse the order of the substitution
+        # sources, which verifies that the replacer always takes priority.
+        self._test_layering(
+            self.documents, site_expected, global_expected=global_expected,
+            substitution_sources=list(reversed(self.documents[1:3])))
+
+        # Pass in the replacee as the only substitution source. The replacer
+        # should replace it and be used as the source.
+        self._test_layering(self.documents, site_expected,
+                            global_expected=global_expected,
+                            substitution_sources=[self.documents[1]])
+
+        # Pass in the replacer as the only substitution source, which should be
+        # used as the source.
+        self._test_layering(self.documents, site_expected,
+                            global_expected=global_expected,
+                            substitution_sources=[self.documents[2]])

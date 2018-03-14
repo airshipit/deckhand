@@ -276,3 +276,70 @@ class TestDocumentLayeringValidationNegative(
         self.assertRaisesRegexp(
             errors.InvalidDocumentFormat, error_re, self._test_layering,
             [layering_policy, document], validate=True)
+
+
+class TestDocumentLayeringReplacementNegative(
+        test_document_layering.TestDocumentLayering):
+
+    def test_replacement_with_incompatible_name_or_schema_raises_exc(self):
+        """Validate that attempting to replace a child with its parent when
+        they don't have the same ``metadata.name`` and ``schema`` results in
+        exception.
+        """
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test({})
+
+        # Validate case where names mismatch.
+        documents[1]['metadata']['name'] = 'foo'
+        documents[2]['metadata']['replacement'] = True
+        documents[2]['metadata']['name'] = 'bar'
+
+        error_re = (r'.*Document replacement requires that both documents '
+                     'have the same `schema` and `metadata.name`.')
+        self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
+                                self._test_layering, documents)
+
+        # Validate case where schemas mismatch.
+        documents[1]['metadata']['schema'] = 'example/Kind/v1'
+        documents[2]['metadata']['replacement'] = True
+        documents[2]['metadata']['schema'] = 'example/Other/v1'
+
+        error_re = (r'Document replacement requires that both documents '
+                     'have the same `schema` and `metadata.name`.')
+        self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
+                                self._test_layering, documents)
+
+    def test_replacement_without_parent_raises_exc(self):
+        """Validate that attempting to do replacement without a parent document
+        raises an exception.
+        """
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test({})
+
+        documents[2]['metadata']['replacement'] = True
+        documents[2]['metadata']['layeringDefinition'].pop('parentSelector')
+
+        error_re = (r'Document replacement requires that the document with '
+                     '`replacement: true` have a parent.')
+        self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
+                                self._test_layering, documents)
+
+    def test_replacement_that_is_replaced_raises_exc(self):
+        """Validate that attempting replace a replacement document raises an
+        exception.
+        """
+        doc_factory = factories.DocumentFactory(3, [1, 1, 1])
+        documents = doc_factory.gen_test({})
+
+        for document in documents[1:]:
+            document['metadata']['name'] = 'foo'
+            document['schema'] = 'example/Kind/v1'
+
+        documents[2]['metadata']['replacement'] = True
+        documents[3]['metadata']['replacement'] = True
+
+        error_re = (r'A replacement document cannot itself be replaced by '
+                     'another document.')
+        self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
+                                self._test_layering, documents,
+                                substitution_sources=documents[1:])

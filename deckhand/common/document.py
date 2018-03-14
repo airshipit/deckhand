@@ -32,6 +32,10 @@ class DocumentDict(dict):
 
     """
 
+    def __init__(self, *args, **kwargs):
+        super(DocumentDict, self).__init__(*args, **kwargs)
+        self._replaced_by = None
+
     @classmethod
     def from_dict(self, documents):
         """Convert a list of documents or single document into an instance of
@@ -122,6 +126,22 @@ class DocumentDict(dict):
     @property
     def is_encrypted(self):
         return self.storage_policy == 'encrypted'
+
+    @property
+    def is_replacement(self):
+        return utils.jsonpath_parse(self, 'metadata.replacement') is True
+
+    @property
+    def has_replacement(self):
+        return isinstance(self._replaced_by, DocumentDict)
+
+    @property
+    def replaced_by(self):
+        return self._replaced_by
+
+    @replaced_by.setter
+    def replaced_by(self, other):
+        self._replaced_by = other
 
     def __hash__(self):
         return hash(json.dumps(self, sort_keys=True))
