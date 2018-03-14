@@ -28,6 +28,7 @@ Barbican options for allowing Deckhand to communicate with Barbican.
 barbican_opts = [
     cfg.StrOpt(
         'api_endpoint',
+        default='http://127.0.0.1/key-manager',
         sample_default='http://barbican.example.org:9311/',
         help='URL override for the Barbican API endpoint.'),
 ]

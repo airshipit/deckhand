@@ -15,6 +15,7 @@
 import copy
 import re
 
+from oslo_config import cfg
 from oslo_log import log as logging
 import six
 
@@ -23,6 +24,7 @@ from deckhand.engine import document_wrapper
 from deckhand import errors
 from deckhand import utils
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 CLEARTEXT = 'cleartext'
@@ -177,9 +179,8 @@ class SecretsSubstitution(object):
                     (document.schema, document.name), document)
 
     def _is_barbican_ref(self, src_secret):
-        # TODO(fmontei): Make this more robust.
         return (isinstance(src_secret, six.string_types) and
-                'key-manager/v1/secrets' in src_secret)
+                    src_secret.startswith(CONF.barbican.api_endpoint))
 
     def substitute_all(self, documents):
         """Substitute all documents that have a `metadata.substitutions` field.

@@ -23,6 +23,7 @@ from oslo_log import log as logging
 import testtools
 
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand.tests.unit import fixtures as dh_fixtures
 
 CONF = cfg.CONF
 logging.register_options(CONF)
@@ -34,6 +35,8 @@ class DeckhandTestCase(testtools.TestCase):
     def setUp(self):
         super(DeckhandTestCase, self).setUp()
         self.useFixture(fixtures.FakeLogger('deckhand'))
+        self.useFixture(dh_fixtures.ConfPatcher(
+            api_endpoint='http://127.0.0.1/key-manager', group='barbican'))
 
     def override_config(self, name, override, group=None):
         CONF.set_override(name, override, group)
