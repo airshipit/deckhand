@@ -1,0 +1,237 @@
+# Test success path Validations API in conjunction with Validation Policy.
+#
+#  1. Purge existing data to ensure test isolation
+#  2. Create a Validation Policy.
+#  3. Verifies that the revision is success.
+#  4. Creates a Validation Policy with two validations, one which requires an
+#     an external validation result from Promenade.
+#  5. Register success result for promenade-schema-validation.
+#  6. Validate that the revision is success.
+#  7. Create a Validation Policy with two validations, same as before.
+#  8. Intentionally do not register promenade-schema-validation.
+#  9. Validate that promenade-schema-validation defaults to failure for
+#     get and list views.
+# 10. Create a Validation Policy with one validation
+#     (deckhand-schema-validation) only.
+# 11. Register extra promenade-schema-validation (not included in VP) as
+#     failure.
+# 12. Validate that promenade-schema-validation is ignored for
+#     get and list views.
+# 13. Validate that detail view for promenade-schema-validation indicates it
+#     is ignored, with detailed message.
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: create_validation_policy
+    desc: Create an example validation policy.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/ValidationPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: site-deploy-ready
+        layeringDefinition:
+          abstract: true
+      data:
+        validations:
+          - name: deckhand-schema-validation
+      ...
+
+  - name: verify_revision_is_success
+    desc: |
+      Validate that the Validation Policy itself passed
+      deckhand-schema-validation.
+    GET: /api/v1.0/revisions/$HISTORY['create_validation_policy'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 1
+      $.[0].results[0].id: 0
+      $.[0].results[0].status: success
+
+  - name: create_vp_two_validations
+    desc: Add a validation policy with two validations.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/ValidationPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: site-deploy-ready
+        layeringDefinition:
+          abstract: true
+      data:
+        validations:
+          - name: deckhand-schema-validation
+          - name: promenade-schema-validation
+      ...
+
+  - name: register_promenade_validation_as_success
+    desc: Externally register the result for promenade-schema-validation.
+    POST: /api/v1.0/revisions/$HISTORY['create_vp_two_validations'].$RESPONSE['$.[0].status.revision']/validations/promenade-schema-validation
+    status: 201
+    data: |-
+      ---
+      status: success
+      errors: []
+      validator:
+        name: promenade
+        version: 1.1.2
+      ...
+
+  - name: verify_revision_with_two_validations_list_view_is_success
+    desc: Verify that both validations are marked as success.
+    GET: /api/v1.0/revisions/$HISTORY['create_vp_two_validations'].$RESPONSE['$.[0].status.revision']/validations
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 2
+      # Sort the results by name alphabetically for reliable assertions.
+      $.[0].results[/name][0].name: deckhand-schema-validation
+      $.[0].results[/name][0].status: success
+      $.[0].results[/name][1].name: promenade-schema-validation
+      $.[0].results[/name][1].status: success
+
+  - name: create_vp_two_validations_missing
+    desc: Add a validation policy with two validations.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/ValidationPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: site-deploy-ready
+        layeringDefinition:
+          abstract: true
+      data:
+        validations:
+          - name: deckhand-schema-validation
+          - name: promenade-schema-validation
+      ...
+
+  # Do not register promenade-schema-validation.
+
+  - name: verify_promenade_schema_validation_is_failure
+    desc: |
+      Verify that promenade-schema-validation status is failure because
+      it should default to failure as it was never externally registered.
+    GET: /api/v1.0/revisions/$HISTORY['create_vp_two_validations_missing'].$RESPONSE['$.[0].status.revision']/validations/promenade-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 1
+      $.[0].results[0].id: 0
+      $.[0].results[0].status: failure
+
+  - name: verify_revision_with_missing_validation_list_view_is_failure
+    desc: Verify promenade-schema-validation is failure.
+    GET: /api/v1.0/revisions/$HISTORY['create_vp_two_validations_missing'].$RESPONSE['$.[0].status.revision']/validations
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 2
+      # Sort the results by name alphabetically for reliable assertions.
+      $.[0].results[/name][0].name: deckhand-schema-validation
+      $.[0].results[/name][0].status: success
+      $.[0].results[/name][1].name: promenade-schema-validation
+      $.[0].results[/name][1].status: failure
+
+  - name: create_vp_one_validation_extra
+    desc: |
+      Add a validation policy with only one validation but later on register
+      an extra validation.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/ValidationPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: site-deploy-ready
+        layeringDefinition:
+          abstract: true
+      data:
+        validations:
+          - name: deckhand-schema-validation
+      ...
+
+  - name: register_extra_promenade_validation_as_failure
+    desc: |
+      Externally register the result for extra promenade-schema-validation as
+      failure.
+    POST: /api/v1.0/revisions/$HISTORY['create_vp_one_validation_extra'].$RESPONSE['$.[0].status.revision']/validations/promenade-schema-validation
+    status: 201
+    data: |-
+      ---
+      status: failure
+      errors:
+        - documents:
+            - schema: promenade/Node/v1
+              name: node-document-name
+            - schema: promenade/Masters/v1
+              name: kubernetes-masters
+          message: Node has master role, but not included in cluster masters list.
+      validator:
+        name: promenade
+        version: 1.1.2
+      ...
+
+  - name: verify_promenade_schema_validation_is_ignored
+    desc: |
+      Verify that promenade-schema-validation is ignored.
+    GET: /api/v1.0/revisions/$HISTORY['create_vp_one_validation_extra'].$RESPONSE['$.[0].status.revision']/validations/promenade-schema-validation
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 1
+      $.[0].results[0].id: 0
+      $.[0].results[0].status: ignored [failure]
+
+  - name: verify_revision_with_extra_validation_list_view_is_ignored
+    desc: |
+      Verify that the list view shows that promenade-schema-validation is
+      ignored.
+    GET: /api/v1.0/revisions/$HISTORY['create_vp_one_validation_extra'].$RESPONSE['$.[0].status.revision']/validations
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].count: 2
+      # Sort the results by name alphabetically for reliable assertions.
+      $.[0].results[/name][0].name: deckhand-schema-validation
+      $.[0].results[/name][0].status: success
+      $.[0].results[/name][1].name: promenade-schema-validation
+      $.[0].results[/name][1].status: ignored [failure]
+
+  - name: verify_revision_with_extra_validation_detail_view_is_ignored
+    desc: |
+      Verify that details view for promenade-schema-validation indicates it
+      has been ignored, with a detailed message.
+    GET: /api/v1.0/revisions/$HISTORY['create_vp_one_validation_extra'].$RESPONSE['$.[0].status.revision']/validations/promenade-schema-validation/entries/0
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].name: promenade-schema-validation
+      $.[0].status: ignored [failure]
+      $.[0].createdAt: null
+      $.[0].expiresAfter: null
+      $.[0].errors.`len`: 2
+      $.[0].errors[/message][1].message: >-
+        The result for this validation was externally registered but has been
+        ignored because it is not found in the validations for
+        ValidationPolicy [deckhand/ValidationPolicy/v1] site-deploy-ready:
+        deckhand-schema-validation.
