@@ -2,10 +2,14 @@
 Deckhand
 ========
 
+|Doc Status|
+
 Deckhand is a storage service for YAML-based configuration documents, which are
 managed through version control and automatically validated. Deckhand provides
 users with a variety of different document types that describe complex
 configurations using the features listed below.
+
+Find more documentation for Deckhand on `Read the Docs <https://deckhand.readthedocs.io/>`_.
 
 Core Responsibilities
 =====================
@@ -89,3 +93,6 @@ Further Reading
 ===============
 
 `Undercloud Platform (UCP) <https://github.com/att-comdev/ucp-integration>`_.
+
+.. |Doc Status| image:: https://readthedocs.org/projects/deckhand/badge/?version=latest
+   :target: http://deckhand.readthedocs.io/
