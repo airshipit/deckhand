@@ -22,6 +22,7 @@ from oslo_config import cfg
 from oslo_log import log as logging
 import testtools
 
+from deckhand.conf import config  # noqa: Calls register_opts(CONF)
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.tests.unit import fixtures as dh_fixtures
 
