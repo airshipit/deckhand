@@ -133,7 +133,13 @@ def __build_tables(blob_type_obj, blob_type_list):
 
     class Document(BASE, DeckhandBase):
         UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
+
         __tablename__ = 'documents'
+
+        __table_args__ = (
+            UniqueConstraint(*UNIQUE_CONSTRAINTS,
+                             name='duplicate_document_constraint'),
+        )
 
         id = Column(Integer, primary_key=True)
         name = Column(String(64), nullable=False)
@@ -162,8 +168,6 @@ def __build_tables(blob_type_obj, blob_type_list):
         orig_revision_id = Column(
             Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
                                 nullable=True)
-
-        UniqueConstraint(*UNIQUE_CONSTRAINTS)
 
         @hybrid_property
         def bucket_name(self):

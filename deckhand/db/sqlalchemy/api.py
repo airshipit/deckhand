@@ -207,7 +207,12 @@ def documents_create(bucket_name, documents, validations=None,
                 doc['revision_id'] = revision['id']
 
                 # Save and mark the document as `deleted` in the database.
-                doc.save(session=session)
+                try:
+                    doc.save(session=session)
+                except db_exception.DBDuplicateEntry:
+                    raise errors.DuplicateDocumentExists(
+                        schema=doc['schema'], name=doc['name'],
+                        bucket=bucket['name'])
                 doc.safe_delete(session=session)
                 deleted_documents.append(doc)
             resp.append(doc.to_dict())
@@ -219,7 +224,14 @@ def documents_create(bucket_name, documents, validations=None,
             with session.begin():
                 doc['bucket_id'] = bucket['id']
                 doc['revision_id'] = revision['id']
-                doc.save(session=session)
+
+                try:
+                    doc.save(session=session)
+                except db_exception.DBDuplicateEntry:
+                    raise errors.DuplicateDocumentExists(
+                        schema=doc['schema'], name=doc['name'],
+                        bucket=bucket['name'])
+
             resp.append(doc.to_dict())
     # NOTE(fmontei): The orig_revision_id is not copied into the
     # revision_id for each created document, because the revision_id here
@@ -266,7 +278,7 @@ def _documents_create(bucket_name, values_list, session=None):
             if (existing_document['bucket_name'] != bucket_name and
                 not existing_document['schema'].startswith(
                     types.VALIDATION_POLICY_SCHEMA)):
-                raise errors.DocumentExists(
+                raise errors.DuplicateDocumentExists(
                     schema=existing_document['schema'],
                     name=existing_document['name'],
                     bucket=existing_document['bucket_name'])

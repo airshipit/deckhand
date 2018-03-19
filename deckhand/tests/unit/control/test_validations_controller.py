@@ -662,9 +662,10 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
             {'_GLOBAL_DATA_1_': {'data': {'a': 'fail'}}},
             global_abstract=False)[-1]
         fail_doc['schema'] = 'example/foo/v1'
-        fail_doc['metadata']['name'] = 'test_doc'
+        fail_doc['metadata']['name'] = 'fail_doc'
 
         pass_doc = copy.deepcopy(fail_doc)
+        pass_doc['metadata']['name'] = 'pass_doc'
         pass_doc['data']['a'] = 5
 
         revision_id = self._create_revision(
@@ -708,7 +709,7 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
         body = yaml.safe_load(resp.text)
         expected_errors = [{
             'error_section': {'a': 'fail'},
-            'name': 'test_doc',
+            'name': 'fail_doc',
             'path': '.data.a',
             'schema': 'example/foo/v1',
             'message': "'fail' is not of type 'integer'",

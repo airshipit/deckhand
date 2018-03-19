@@ -94,7 +94,7 @@ class BucketsResource(api_base.BaseResource):
         try:
             created_documents = db_api.documents_create(
                 bucket_name, documents, validations=validations)
-        except (deckhand_errors.DocumentExists,
+        except (deckhand_errors.DuplicateDocumentExists,
                 deckhand_errors.SingletonDocumentConflict) as e:
             raise falcon.HTTPConflict(description=e.format_message())
         except Exception as e:

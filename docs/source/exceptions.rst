@@ -29,13 +29,13 @@ Deckhand Exceptions
          :members:
          :show-inheritance:
          :undoc-members:
-  * - DocumentExists
-    - .. autoexception:: deckhand.errors.DocumentExists
+  * - DocumentNotFound
+    - .. autoexception:: deckhand.errors.DocumentNotFound
          :members:
          :show-inheritance:
          :undoc-members:
-  * - DocumentNotFound
-    - .. autoexception:: deckhand.errors.DocumentNotFound
+  * - DuplicateDocumentExists
+    - .. autoexception:: deckhand.errors.DuplicateDocumentExists
          :members:
          :show-inheritance:
          :undoc-members:

@@ -46,7 +46,14 @@ class TestDocumentsNegative(base.TestDbBase):
                           self.show_document,
                           id=-1)
 
-    def test_create_bucket_conflict(self):
+    def test_create_duplicate_document_same_bucket_raises_exc(self):
+        bucket_name = test_utils.rand_name('bucket')
+        document = base.DocumentFixture.get_minimal_fixture()
+        payload = [document, document.copy()]
+        self.assertRaises(errors.DuplicateDocumentExists,
+                          self.create_documents, bucket_name, payload)
+
+    def test_create_duplicate_document_in_another_bucket_raises_exc(self):
         # Create the document in one bucket.
         payload = base.DocumentFixture.get_minimal_fixture()
         bucket_name = test_utils.rand_name('bucket')
@@ -55,9 +62,9 @@ class TestDocumentsNegative(base.TestDbBase):
         # Verify that the document cannot be created in another bucket.
         alt_bucket_name = test_utils.rand_name('bucket')
         error_re = ("Document with schema %s and metadata.name "
-                    "%s already exists in bucket %s." % (
+                    "%s already exists in bucket: %s." % (
                         payload['schema'], payload['metadata']['name'],
                         bucket_name))
         self.assertRaisesRegex(
-            errors.DocumentExists, error_re, self.create_documents,
+            errors.DuplicateDocumentExists, error_re, self.create_documents,
             alt_bucket_name, payload)

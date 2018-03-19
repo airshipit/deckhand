@@ -317,14 +317,14 @@ class ValidationNotFound(DeckhandException):
     code = 404
 
 
-class DocumentExists(DeckhandException):
+class DuplicateDocumentExists(DeckhandException):
     """A document attempted to be put into a bucket where another document with
     the same schema and metadata.name already exist.
 
     **Troubleshoot:**
     """
     msg_fmt = ("Document with schema %(schema)s and metadata.name "
-               "%(name)s already exists in bucket %(bucket)s.")
+               "%(name)s already exists in bucket: %(bucket)s.")
     code = 409
 
 
