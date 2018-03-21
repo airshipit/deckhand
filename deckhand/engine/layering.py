@@ -469,6 +469,9 @@ class DocumentLayering(object):
             in both the parent and child documents being layered together.
         """
         for doc in self._sorted_documents:
+            # Control documents don't need to be layered.
+            if doc.is_control:
+                continue
 
             if doc.parent_selector:
                 parent_meta = self._parents.get((doc.schema, doc.name))

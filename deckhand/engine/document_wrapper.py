@@ -34,6 +34,10 @@ class DocumentDict(dict):
             self, 'metadata.layeringDefinition.abstract') is True
 
     @property
+    def is_control(self):
+        return self.metadata.get('schema', '').startswith('deckhand/Control')
+
+    @property
     def schema(self):
         return self.get('schema') or ''
 
