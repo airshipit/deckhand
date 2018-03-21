@@ -126,14 +126,16 @@ class TestRevisions(base.TestDbBase):
 
         # Validate that all revisions were deleted.
         for revision_id in all_revision_ids:
-            error_re = 'The requested revision %s was not found.' % revision_id
+            error_re = (r'^The requested revision=%s was not found.$'
+                        % revision_id)
             self.assertRaisesRegex(errors.RevisionNotFound, error_re,
                                    self.show_revision, revision_id)
 
         # Validate that the documents (children) were deleted.
         for doc in created_documents:
             filters = {'id': doc['id']}
-            error_re = 'The requested document %s was not found.' % filters
+            error_re = (r'^The requested document using filters: %s was not '
+                        'found.$' % filters)
             self.assertRaisesRegex(errors.DocumentNotFound, error_re,
                                    self.show_document, **filters)
 

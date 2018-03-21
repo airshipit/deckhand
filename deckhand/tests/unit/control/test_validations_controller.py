@@ -599,6 +599,7 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
                 'schema': doc_to_test['schema']
             },
             'name': 'test_doc',
+            'layer': 'global',
             'path': '.data',
             'schema': 'example/foo/v1',
             'message': "'b' is a required property",
@@ -607,6 +608,7 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
         }, {
             'error_section': {'a': 'fail'},
             'name': 'test_doc',
+            'layer': 'global',
             'path': '.data.a',
             'schema': 'example/foo/v1',
             'message': "'fail' is not of type 'integer'",
@@ -644,15 +646,18 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
             },
             'required': ['a']
         }
+
         expected_errors = [{
             'error_section': {'a': 'fail'},
-            'name': 'test_doc',
+            'name': 'fail_doc',
+            'layer': 'global',
             'path': '.data.a',
             'schema': 'example/foo/v1',
             'message': "'fail' is not of type 'integer'",
             'validation_schema': schema_to_use,
             'schema_path': '.properties.a.type'
         }]
+
         data_schema = data_schema_factory.gen_test(
             metadata_name, data=schema_to_use)
 
@@ -707,15 +712,6 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(200, resp.status_code)
         body = yaml.safe_load(resp.text)
-        expected_errors = [{
-            'error_section': {'a': 'fail'},
-            'name': 'fail_doc',
-            'path': '.data.a',
-            'schema': 'example/foo/v1',
-            'message': "'fail' is not of type 'integer'",
-            'validation_schema': schema_to_use,
-            'schema_path': '.properties.a.type'
-        }]
 
         self.assertIn('errors', body)
         self.assertEqual(expected_errors, body['errors'])
@@ -842,6 +838,7 @@ metadata:
   name: site-deploy-ready
   layeringDefinition:
     abstract: true
+    layer: site
 data:
   validations:
     - name: deckhand-schema-validation
@@ -881,6 +878,7 @@ metadata:
   name: site-deploy-ready
   layeringDefinition:
     abstract: true
+    layer: site
 data:
   validations:
     - name: deckhand-schema-validation
@@ -931,6 +929,7 @@ metadata:
   name: vp-1
   layeringDefinition:
     abstract: true
+    layer: site
 data:
   validations:
     - name: deckhand-schema-validation
@@ -941,6 +940,7 @@ metadata:
   name: vp-2
   layeringDefinition:
     abstract: true
+    layer: site
 data:
   validations:
     - name: promenade-schema-validation
@@ -990,6 +990,7 @@ metadata:
   name: site-deploy-ready
   layeringDefinition:
     abstract: true
+    layer: site
 data:
   validations:
     - name: deckhand-schema-validation
@@ -1070,6 +1071,7 @@ metadata:
   name: site-deploy-ready
   layeringDefinition:
     abstract: true
+    layer: site
 data:
   validations:
     - name: deckhand-schema-validation
@@ -1125,10 +1127,13 @@ data:
 
         expected_msg = ('The result for this validation was externally '
                         'registered but has been ignored because it is not '
-                        'found in the validations for ValidationPolicy [%s] '
-                        '%s: %s.' % (validation_policy['schema'],
-                                     validation_policy['metadata']['name'],
-                                     types.DECKHAND_SCHEMA_VALIDATION))
+                        'found in the validations for ValidationPolicy '
+                        '[%s, %s] %s: %s.' % (
+                            validation_policy['schema'],
+                            validation_policy['metadata'][
+                                'layeringDefinition']['layer'],
+                            validation_policy['metadata']['name'],
+                            types.DECKHAND_SCHEMA_VALIDATION))
         expected_errors = yaml.safe_load(VALIDATION_FAILURE_RESULT)['errors']
         expected_errors.append({'message': expected_msg})
 

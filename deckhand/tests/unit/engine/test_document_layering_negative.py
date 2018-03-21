@@ -266,9 +266,12 @@ class TestDocumentLayeringValidationNegative(
 
         layering_policy = copy.deepcopy(lp_template)
         del layering_policy['data']['layerOrder']
-        error_re = ("The provided document \[%s\] %s failed schema validation."
-                    " Errors: 'layerOrder' is a required property" % (
+        error_re = ("The provided document\(s\) schema=%s, layer=%s, name=%s "
+                    "failed schema validation. Errors: 'layerOrder' is a "
+                    "required property" % (
                         layering_policy['schema'],
+                        layering_policy['metadata']['layeringDefinition'][
+                            'layer'],
                         layering_policy['metadata']['name']))
         self.assertRaisesRegexp(
             errors.InvalidDocumentFormat, error_re, self._test_layering,

@@ -175,8 +175,8 @@ class InvalidDocumentFormat(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("The provided document [%(document_schema)s] %(document_name)s "
-               "failed schema validation. Errors: %(errors)s")
+    msg_fmt = ("The provided document(s) schema=%(schema)s, layer=%(layer)s, "
+               "name=%(name)s failed schema validation. Errors: %(errors)s")
     code = 400
 
 
@@ -213,7 +213,8 @@ class IndeterminateDocumentParent(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = "Too many parent documents found for document %(document)s."
+    msg_fmt = ("Too many parent documents found for document [%(schema)s, "
+               "%(layer)s] %(name)s. Found: %(found)s. Expected: 1.")
     code = 400
 
 
@@ -243,8 +244,9 @@ class MissingDocumentKey(DeckhandException):
       rendered data for a document can also complicate debugging this issue.
     """
     msg_fmt = ("Missing action path in %(action)s needed for layering from "
-               "either the data section of the parent [%(parent_schema)s] "
-               "%(parent_name)s or child [%(child_schema)s] %(child_name)s "
+               "either the data section of the parent [%(parent_schema)s, "
+               "%(parent_layer)s] %(parent_name)s or child [%(child_schema)s, "
+               "%(child_layer)s] %(child_name)s "
                "document.")
     code = 400
 
@@ -283,7 +285,8 @@ class DocumentNotFound(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("The requested document %(document)s was not found.")
+    msg_fmt = ("The requested document using filters: %(filters)s was not "
+               "found.")
     code = 404
 
 
@@ -292,7 +295,7 @@ class RevisionNotFound(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = "The requested revision %(revision)s was not found."
+    msg_fmt = "The requested revision=%(revision_id)s was not found."
     code = 404
 
 
@@ -323,8 +326,8 @@ class DuplicateDocumentExists(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("Document with schema %(schema)s and metadata.name "
-               "%(name)s already exists in bucket: %(bucket)s.")
+    msg_fmt = ("Document [%(schema)s, %(layer)s] %(name)s already exists in "
+               "bucket: %(bucket)s.")
     code = 409
 
 
@@ -334,9 +337,9 @@ class SingletonDocumentConflict(DeckhandException):
     **Troubleshoot:**
     """
 
-    msg_fmt = ("A singleton document by the name %(document)s already "
-               "exists in the system. The new document %(conflict)s cannot be "
-               "created. To create a document with a new name, delete the "
+    msg_fmt = ("A singleton document [%(schema)s, %(layer)s] %(name)s already "
+               "exists in the system. The new document(s) %(conflict)s cannot "
+               "be created. To create a document with a new name, delete the "
                "current one first.")
     code = 409
 
@@ -395,7 +398,7 @@ class UnknownSubstitutionError(DeckhandException):
     **Troubleshoot:**
     """
     msg_fmt = ('An unknown exception occurred while trying to perform '
-               'substitution using source document [%(src_schema)s] '
-               '%(src_name)s contained in document [%(document_schema)s] '
-               '%(document_name)s. Details: %(details)s')
+               'substitution using source document [%(src_schema)s, '
+               '%(src_layer)s] %(src_name)s contained in document ['
+               '%(schema)s, %(layer)s] %(name)s. Details: %(details)s')
     code = 500

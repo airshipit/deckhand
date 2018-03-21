@@ -16,8 +16,8 @@ import barbicanclient
 from oslo_log import log as logging
 
 from deckhand.barbican import client_wrapper
+from deckhand.common import utils
 from deckhand import errors
-from deckhand import utils
 
 LOG = logging.getLogger(__name__)
 

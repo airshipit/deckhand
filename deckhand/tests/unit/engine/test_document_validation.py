@@ -14,10 +14,10 @@
 
 import mock
 
+from deckhand.common import utils
 from deckhand.engine import document_validation
 from deckhand import factories
 from deckhand.tests.unit.engine import base as engine_test_base
-from deckhand import utils
 
 
 class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):

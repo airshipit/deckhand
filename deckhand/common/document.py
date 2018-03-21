@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
+import functools
+import inspect
+
 from oslo_serialization import jsonutils as json
 
-from deckhand import utils
+from deckhand.common import utils
 
 
 class DocumentDict(dict):
@@ -27,6 +31,22 @@ class DocumentDict(dict):
     exceptions getting thrown.
 
     """
+
+    @classmethod
+    def from_dict(self, documents):
+        """Convert a list of documents or single document into an instance of
+        this class.
+
+        :param documents: Documents to wrap in this class.
+        :type documents: list or dict
+        """
+        if isinstance(documents, collections.Iterable):
+            return [DocumentDict(d) for d in documents]
+        return DocumentDict(documents)
+
+    @property
+    def meta(self):
+        return (self.schema, self.layer, self.name)
 
     @property
     def is_abstract(self):
@@ -58,7 +78,7 @@ class DocumentDict(dict):
 
     @property
     def name(self):
-        return utils.jsonpath_parse(self, 'metadata.name') or ''
+        return utils.jsonpath_parse(self, 'metadata.name')
 
     @property
     def layering_definition(self):
@@ -105,3 +125,20 @@ class DocumentDict(dict):
 
     def __hash__(self):
         return hash(json.dumps(self, sort_keys=True))
+
+
+def wrap_documents(f):
+    """Decorator to wrap dictionary-formatted documents in instances of
+    ``DocumentDict``.
+    """
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        fargs = inspect.getargspec(f)
+        if 'documents' in fargs[0]:
+            pos = fargs[0].index('documents')
+            new_args = list(args)
+            if new_args[pos] and not isinstance(
+                    new_args[pos][0], DocumentDict):
+                new_args[pos] = DocumentDict.from_dict(args[pos])
+            return f(*tuple(new_args), **kwargs)
+    return wrapper

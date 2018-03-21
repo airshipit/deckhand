@@ -14,13 +14,13 @@
 
 import falcon
 
+from deckhand.common import utils
 from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 from deckhand import policy
-from deckhand import utils
 
 
 class RevisionsResource(api_base.BaseResource):

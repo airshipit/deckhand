@@ -93,7 +93,7 @@ class DocumentFactory(DeckhandFactory):
             "schema": "metadata/Control/v1",
             "layeringDefinition": {
                 "abstract": False,
-                "layer": ""
+                "layer": "layer"
             }
         },
         "schema": "deckhand/LayeringPolicy/v1"
@@ -105,7 +105,7 @@ class DocumentFactory(DeckhandFactory):
             "labels": {"": ""},
             "layeringDefinition": {
                 "abstract": False,
-                "layer": ""
+                "layer": "layer"
             },
             "name": "",
             "schema": "metadata/Document/v1"

@@ -21,13 +21,13 @@ from networkx.algorithms.dag import topological_sort
 from oslo_log import log as logging
 from oslo_log import versionutils
 
+from deckhand.common import document as document_wrapper
+from deckhand.common import utils
 from deckhand.engine import document_validation
-from deckhand.engine import document_wrapper
 from deckhand.engine import secrets_manager
 from deckhand.engine import utils as engine_utils
 from deckhand import errors
 from deckhand import types
-from deckhand import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -191,7 +191,9 @@ class DocumentLayering(object):
                          '. Each document must have exactly 1 parent.',
                          all_children[doc], doc.name, doc.schema, doc.layer,
                          doc.parent_selector)
-                raise errors.IndeterminateDocumentParent(document=doc)
+                raise errors.IndeterminateDocumentParent(
+                    name=doc.name, schema=doc.schema, layer=doc.layer,
+                    found=all_children[doc])
 
     def _get_layering_order(self, layering_policy):
         # Pre-processing stage that removes empty layers from the
@@ -260,17 +262,18 @@ class DocumentLayering(object):
         val_errors = []
         for result in results:
             val_errors.extend(
-                [(e['schema'], e['name'], e['message'])
+                [(e['schema'], e['layer'], e['name'], e['message'])
                     for e in result['errors']])
         if val_errors:
             for error in val_errors:
                 LOG.error(
-                    'Document [%s] %s failed with pre-validation error: %s.',
-                    *error)
+                    'Document [%s, %s] %s failed with pre-validation error: '
+                    '%s.', *error)
             raise errors.InvalidDocumentFormat(
-                document_schema=', '.join(v[0] for v in val_errors),
-                document_name=', '.join(v[1] for v in val_errors),
-                errors=', '.join(v[2] for v in val_errors))
+                schema=', '.join(v[0] for v in val_errors),
+                layer=', '.join(v[1] for v in val_errors),
+                name=', '.join(v[2] for v in val_errors),
+                errors=', '.join(v[3] for v in val_errors))
 
     def __init__(self, documents, substitution_sources=None, validate=True,
                  fail_on_missing_sub_src=True):
@@ -433,8 +436,10 @@ class DocumentLayering(object):
             if from_child is None:
                 raise errors.MissingDocumentKey(
                     child_schema=child_data.schema,
+                    child_layer=child_data.layer,
                     child_name=child_data.name,
                     parent_schema=overall_data.schema,
+                    parent_layer=overall_data.layer,
                     parent_name=overall_data.name,
                     action=action)
 
@@ -454,8 +459,10 @@ class DocumentLayering(object):
             if from_child is None:
                 raise errors.MissingDocumentKey(
                     child_schema=child_data.schema,
+                    child_layer=child_data.layer,
                     child_name=child_data.name,
                     parent_schema=overall_data.schema,
+                    parent_layer=overall_data.layer,
                     parent_name=overall_data.name,
                     action=action)
 

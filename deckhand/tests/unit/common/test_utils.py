@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from deckhand.common import utils
 from deckhand.tests.unit import base as test_base
-from deckhand import utils
 
 
 class TestUtils(test_base.DeckhandTestCase):

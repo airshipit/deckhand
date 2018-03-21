@@ -168,6 +168,7 @@ tests:
             schema_path: ".properties.b.maximum"
             name: bad
             schema: example/Doc/v1
+            layer: site
             path: ".data.b"
             message: 177 is greater than the maximum of 100
           name: deckhand-schema-validation
@@ -219,6 +220,7 @@ tests:
       $.[0].message:
         - errors:
           - name: bad
+            layer: site
             schema: example/Doc/v1
             path: .data.b
             schema_path: .properties.b.maximum

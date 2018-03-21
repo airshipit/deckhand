@@ -17,9 +17,10 @@ import yaml
 
 import mock
 from oslo_utils import uuidutils
+import testtools
 
-from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import secrets_manager
+from deckhand import errors
 from deckhand import factories
 from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base as test_base
@@ -129,19 +130,16 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self.document_factory = factories.DocumentFactory(1, [1])
         self.secrets_factory = factories.DocumentSecretFactory()
 
-    def _test_doc_substitution(self, document_mapping, secret_documents,
-                                  expected_data):
+    def _test_doc_substitution(self, document_mapping, substitution_sources,
+                               expected_data):
         payload = self.document_factory.gen_test(document_mapping,
                                                  global_abstract=False)
         bucket_name = test_utils.rand_name('bucket')
         documents = self.create_documents(
-            bucket_name, secret_documents + [payload[-1]])
+            bucket_name, substitution_sources + [payload[-1]])
 
         expected_document = copy.deepcopy(documents[-1])
         expected_document['data'] = expected_data
-
-        substitution_sources = db_api.document_get_all(
-            **{'metadata.layeringDefinition.abstract': False})
 
         secret_substitution = secrets_manager.SecretsSubstitution(
             substitution_sources)
@@ -704,3 +702,56 @@ data:
         secret_substitution = secrets_manager.SecretsSubstitution(documents)
         substituted_docs = list(secret_substitution.substitute_all(documents))
         self.assertEqual(expected, substituted_docs[0])
+
+
+class TestSecretsSubstitutionNegative(test_base.TestDbBase):
+
+    def setUp(self):
+        super(TestSecretsSubstitutionNegative, self).setUp()
+        self.document_factory = factories.DocumentFactory(1, [1])
+        self.secrets_factory = factories.DocumentSecretFactory()
+
+    def _test_secrets_substitution(self, secret_type, expected_exception):
+        secret_ref = ("http://127.0.0.1/key-manager/v1/secrets/%s"
+                      % test_utils.rand_uuid_hex())
+        certificate = self.secrets_factory.gen_test(
+            'Certificate', secret_type, data=secret_ref)
+        certificate['metadata']['name'] = 'example-cert'
+
+        document_mapping = {
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".chart.values.tls.certificate"
+                },
+                "src": {
+                    "schema": "deckhand/Certificate/v1",
+                    "name": "example-cert",
+                    "path": "."
+                }
+
+            }]
+        }
+        payload = self.document_factory.gen_test(document_mapping,
+                                                 global_abstract=False)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(
+            bucket_name, [certificate] + [payload[-1]])
+
+        secrets_substitution = secrets_manager.SecretsSubstitution(
+            [certificate])
+        with testtools.ExpectedException(expected_exception):
+            next(secrets_substitution.substitute_all(documents))
+
+    @mock.patch.object(secrets_manager, 'SecretsManager', autospec=True)
+    def test_barbican_exception_raises_unknown_error(
+            self, mock_secrets_manager):
+        mock_secrets_manager.get.side_effect = errors.BarbicanException
+        self._test_secrets_substitution(
+            'encrypted', errors.UnknownSubstitutionError)
+
+    @mock.patch('deckhand.engine.secrets_manager.utils', autospec=True)
+    def test_generic_exception_raises_unknown_error(
+            self, mock_utils):
+        mock_utils.jsonpath_replace.side_effect = Exception('test')
+        self._test_secrets_substitution(
+            'cleartext', errors.UnknownSubstitutionError)

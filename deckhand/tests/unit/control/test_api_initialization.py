@@ -17,6 +17,7 @@ import os
 
 import mock
 
+from deckhand.common import utils
 from deckhand.control import api
 from deckhand.control import buckets
 from deckhand.control import health
@@ -28,7 +29,6 @@ from deckhand.control import rollback
 from deckhand.control import validations
 from deckhand.control import versions
 from deckhand.tests.unit import base as test_base
-from deckhand import utils
 
 
 class TestApi(test_base.DeckhandTestCase):

@@ -184,8 +184,11 @@ class TestBucketsControllerNegative(test_base.BaseControllerTest):
 
         # Validate that a layering policy with a different, conflicting name
         # raises the expected exception.
-        error_re = ('.*A singleton document by the name %s already exists in '
-                    'the system.' % payload['metadata']['name'])
+        error_re = (r'.*A singleton document \[%s, %s\] %s already exists in '
+                    'the system.' % (payload['schema'],
+                                     payload['metadata']['layeringDefinition'][
+                                     'layer'],
+                                     payload['metadata']['name']))
         payload['metadata']['name'] = test_utils.rand_name('layering-policy')
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/mop/documents',

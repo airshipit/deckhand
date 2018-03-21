@@ -28,10 +28,11 @@ from oslo_serialization import jsonutils as json
 import sqlalchemy.orm as sa_orm
 from sqlalchemy import text
 
+from deckhand.common import document as document_wrapper
+from deckhand.common import utils
 from deckhand.db.sqlalchemy import models
 from deckhand import errors
 from deckhand import types
-from deckhand import utils
 
 LOG = logging.getLogger(__name__)
 CONF = cfg.CONF
@@ -133,20 +134,27 @@ def require_unique_document_schema(schema=None):
         def wrapper(bucket_name, documents, *args, **kwargs):
             existing_documents = revision_documents_get(
                 schema=schema, deleted=False, include_history=False)
-            existing_document_names = [x['name'] for x in existing_documents]
+            existing_document_names = [
+                x.meta for x in existing_documents
+            ]
             conflicting_names = [
-                x['metadata']['name'] for x in documents
-                if x['metadata']['name'] not in existing_document_names and
-                   x['schema'].startswith(schema)]
+                x.meta for x in documents
+                if x.meta not in existing_document_names and
+                   x.schema.startswith(schema)
+            ]
             if existing_document_names and conflicting_names:
                 raise errors.SingletonDocumentConflict(
-                    document=existing_document_names[0],
-                    conflict=conflicting_names)
+                    schema=existing_document_names[0][0],
+                    layer=existing_document_names[0][1],
+                    name=existing_document_names[0][2],
+                    conflict=', '.join(["[%s, %s] %s" % (x[0], x[1], x[2])
+                                       for x in conflicting_names]))
             return f(bucket_name, documents, *args, **kwargs)
         return wrapper
     return decorator
 
 
+@document_wrapper.wrap_documents
 @require_unique_document_schema(types.LAYERING_POLICY_SCHEMA)
 def documents_create(bucket_name, documents, validations=None,
                      session=None):
@@ -162,8 +170,8 @@ def documents_create(bucket_name, documents, validations=None,
     :param validation_policies: List of validation policies to be created.
     :param session: Database session object.
     :returns: List of created documents in dictionary format.
-    :raises DocumentExists: If the (document.schema, document.metadata.name)
-        already exists in another bucket.
+    :raises DocumentExists: If the document already exists in the DB for any
+        bucket.
     """
     session = session or get_session()
     documents_to_create = _documents_create(bucket_name, documents, session)
@@ -173,12 +181,13 @@ def documents_create(bucket_name, documents, validations=None,
     # The documents to be deleted are computed by comparing the documents for
     # the previous revision (if it exists) that belong to `bucket_name` with
     # `documents`: the difference between the former and the latter.
-    document_history = [(d['schema'], d['name'])
-                        for d in revision_documents_get(
-                            bucket_name=bucket_name)]
+    document_history = [
+        d for d in revision_documents_get(bucket_name=bucket_name)
+    ]
     documents_to_delete = [
-        h for h in document_history if h not in
-        [(d['schema'], d['metadata']['name']) for d in documents]]
+        h for h in document_history if h.meta not in [
+            d.meta for d in documents]
+    ]
 
     # Only create a revision if any docs have been created, changed or deleted.
     if any([documents_to_create, documents_to_delete]):
@@ -197,10 +206,11 @@ def documents_create(bucket_name, documents, validations=None,
             doc = models.Document()
             with session.begin():
                 # Store bare minimum information about the document.
-                doc['schema'] = d[0]
-                doc['name'] = d[1]
+                doc['schema'] = d.schema
+                doc['name'] = d.name
+                doc['layer'] = d.layer
                 doc['data'] = {}
-                doc['_metadata'] = {}
+                doc['meta'] = d.metadata
                 doc['data_hash'] = _make_hash({})
                 doc['metadata_hash'] = _make_hash({})
                 doc['bucket_id'] = bucket['id']
@@ -211,8 +221,8 @@ def documents_create(bucket_name, documents, validations=None,
                     doc.save(session=session)
                 except db_exception.DBDuplicateEntry:
                     raise errors.DuplicateDocumentExists(
-                        schema=doc['schema'], name=doc['name'],
-                        bucket=bucket['name'])
+                        schema=doc['schema'], layer=doc['layer'],
+                        name=doc['name'], bucket=bucket['name'])
                 doc.safe_delete(session=session)
                 deleted_documents.append(doc)
             resp.append(doc.to_dict())
@@ -224,13 +234,15 @@ def documents_create(bucket_name, documents, validations=None,
             with session.begin():
                 doc['bucket_id'] = bucket['id']
                 doc['revision_id'] = revision['id']
+                if not doc.get('orig_revision_id'):
+                    doc['orig_revision_id'] = doc['revision_id']
 
                 try:
                     doc.save(session=session)
                 except db_exception.DBDuplicateEntry:
                     raise errors.DuplicateDocumentExists(
-                        schema=doc['schema'], name=doc['name'],
-                        bucket=bucket['name'])
+                        schema=doc['schema'], layer=doc['layer'],
+                        name=doc['name'], bucket=bucket['name'])
 
             resp.append(doc.to_dict())
     # NOTE(fmontei): The orig_revision_id is not copied into the
@@ -241,31 +253,31 @@ def documents_create(bucket_name, documents, validations=None,
     return resp
 
 
-def _documents_create(bucket_name, values_list, session=None):
-    values_list = copy.deepcopy(values_list)
+def _documents_create(bucket_name, documents, session=None):
+    documents = copy.deepcopy(documents)
     session = session or get_session()
-    filters = ('name', 'schema')
+    filters = ('name', 'schema', 'layer')
     changed_documents = []
 
-    def _document_create(values):
-        document = models.Document()
+    def _document_create(document):
+        model = models.Document()
         with session.begin():
-            document.update(values)
-        return document
+            model.update(document)
+        return model
 
-    for values in values_list:
-        values.setdefault('data', {})
-        values = _fill_in_metadata_defaults(values)
+    for document in documents:
+        document.setdefault('data', {})
+        document = _fill_in_metadata_defaults(document)
 
         # Hash the document's metadata and data to later  efficiently check
         # whether those data have changed.
-        values['data_hash'] = _make_hash(values['data'])
-        values['metadata_hash'] = _make_hash(values['_metadata'])
+        document['data_hash'] = _make_hash(document['data'])
+        document['metadata_hash'] = _make_hash(document['meta'])
 
         try:
             existing_document = document_get(
                 raw_dict=True, deleted=False, revision_id='latest',
-                **{x: values[x] for x in filters})
+                **{x: document[x] for x in filters})
         except errors.DocumentNotFound:
             # Ignore bad data at this point. Allow creation to bubble up the
             # error related to bad data.
@@ -273,49 +285,51 @@ def _documents_create(bucket_name, values_list, session=None):
 
         if existing_document:
             # If the document already exists in another bucket, raise an error.
-            # Ignore redundant validation policies as they are allowed to exist
-            # in multiple buckets.
-            if (existing_document['bucket_name'] != bucket_name and
-                not existing_document['schema'].startswith(
-                    types.VALIDATION_POLICY_SCHEMA)):
+            if existing_document['bucket_name'] != bucket_name:
                 raise errors.DuplicateDocumentExists(
                     schema=existing_document['schema'],
                     name=existing_document['name'],
+                    layer=existing_document['layer'],
                     bucket=existing_document['bucket_name'])
 
-            if (existing_document['data_hash'] == values['data_hash'] and
-                existing_document['metadata_hash'] == values['metadata_hash']):
+            # By this point we know existing_document and document have the
+            # same name, schema and layer due to the filters passed to the DB
+            # query. But still want to check whether the document is precisely
+            # the same one by comparing metadata/data hashes.
+            if (existing_document['data_hash'] == document['data_hash'] and
+                existing_document['metadata_hash'] == document[
+                    'metadata_hash']):
                 # Since the document has not changed, reference the original
                 # revision in which it was created. This is necessary so that
                 # the correct revision history is maintained.
                 if existing_document['orig_revision_id']:
-                    values['orig_revision_id'] = existing_document[
+                    document['orig_revision_id'] = existing_document[
                         'orig_revision_id']
                 else:
-                    values['orig_revision_id'] = existing_document[
+                    document['orig_revision_id'] = existing_document[
                         'revision_id']
 
     # Create all documents, even unchanged ones, for the current revision. This
     # makes the generation of the revision diff a lot easier.
-    for values in values_list:
-        doc = _document_create(values)
+    for document in documents:
+        doc = _document_create(document)
         changed_documents.append(doc)
 
     return changed_documents
 
 
 def _fill_in_metadata_defaults(values):
-    values['_metadata'] = values.pop('metadata')
-    values['name'] = values['_metadata']['name']
+    values['meta'] = values.pop('metadata')
+    values['name'] = values['meta']['name']
 
-    if not values['_metadata'].get('storagePolicy', None):
-        values['_metadata']['storagePolicy'] = 'cleartext'
+    if not values['meta'].get('storagePolicy', None):
+        values['meta']['storagePolicy'] = 'cleartext'
 
-    if 'layeringDefinition' not in values['_metadata']:
-        values['_metadata'].setdefault('layeringDefinition', {})
+    values['meta'].setdefault('layeringDefinition', {})
+    values['layer'] = values['meta']['layeringDefinition'].get('layer')
 
-    if 'abstract' not in values['_metadata']['layeringDefinition']:
-        values['_metadata']['layeringDefinition']['abstract'] = False
+    if 'abstract' not in values['meta']['layeringDefinition']:
+        values['meta']['layeringDefinition']['abstract'] = False
 
     return values
 
@@ -371,7 +385,7 @@ def document_get(session=None, raw_dict=False, revision_id=None, **filters):
             return d
 
     filters.update(nested_filters)
-    raise errors.DocumentNotFound(document=filters)
+    raise errors.DocumentNotFound(filters=filters)
 
 
 def document_get_all(session=None, raw_dict=False, revision_id=None,
@@ -420,7 +434,7 @@ def document_get_all(session=None, raw_dict=False, revision_id=None,
         if utils.deepfilter(d, **nested_filters):
             final_documents.append(d)
 
-    return final_documents
+    return document_wrapper.DocumentDict.from_dict(final_documents)
 
 
 ####################
@@ -486,7 +500,7 @@ def revision_get(revision_id=None, session=None):
             .one()\
             .to_dict()
     except sa_orm.exc.NoResultFound:
-        raise errors.RevisionNotFound(revision=revision_id)
+        raise errors.RevisionNotFound(revision_id=revision_id)
 
     revision['documents'] = _update_revision_history(revision['documents'])
 
@@ -506,7 +520,7 @@ def revision_get_latest(session=None):
         .order_by(models.Revision.created_at.desc())\
         .first()
     if not latest_revision:
-        raise errors.RevisionNotFound(revision='latest')
+        raise errors.RevisionNotFound(revision_id='latest')
 
     latest_revision = latest_revision.to_dict()
 
@@ -586,23 +600,24 @@ def revision_delete_all():
         raw_query("DELETE FROM revisions;")
 
 
+@document_wrapper.wrap_documents
 def _exclude_deleted_documents(documents):
     """Excludes all documents that have been deleted including all documents
     earlier in the revision history with the same ``metadata.name`` and
     ``schema`` from ``documents``.
     """
-    _documents_map = {}  # (schema, metadata.name) => should be included?
+    documents_map = {}  # (document.meta) => should be included?
 
     for doc in sorted(documents, key=lambda x: x['created_at']):
         if doc['deleted'] is True:
-            previous_doc = _documents_map.get((doc['schema'], doc['name']))
+            previous_doc = documents_map.get(doc.meta)
             if previous_doc:
                 if doc['deleted_at'] >= previous_doc['created_at']:
-                    _documents_map[(doc['schema'], doc['name'])] = None
+                    documents_map[doc.meta] = None
         else:
-            _documents_map[(doc['schema'], doc['name'])] = doc
+            documents_map[doc.meta] = doc
 
-    return [d for d in _documents_map.values() if d is not None]
+    return [d for d in documents_map.values() if d is not None]
 
 
 def _filter_revision_documents(documents, unique_only, **filters):
@@ -616,7 +631,7 @@ def _filter_revision_documents(documents, unique_only, **filters):
     """
     # TODO(fmontei): Implement this as an sqlalchemy query.
     filtered_documents = {}
-    unique_filters = ('schema', 'name')
+    unique_filters = ('schema', 'name', 'layer')
     exclude_deleted = filters.pop('deleted', None) is False
 
     if exclude_deleted:
@@ -680,14 +695,14 @@ def revision_documents_get(revision_id=None, include_history=True,
                     revision_documents.extend(
                         relevant_revision.to_dict()['documents'])
     except sa_orm.exc.NoResultFound:
-        raise errors.RevisionNotFound(revision=revision_id)
+        raise errors.RevisionNotFound(revision_id=revision_id)
 
     revision_documents = _update_revision_history(revision_documents)
 
     filtered_documents = _filter_revision_documents(
         revision_documents, unique_only, **filters)
 
-    return filtered_documents
+    return document_wrapper.DocumentDict.from_dict(filtered_documents)
 
 
 # NOTE(fmontei): No need to include `@require_revision_exists` decorator as
@@ -991,11 +1006,11 @@ def revision_rollback(revision_id, latest_revision, session=None):
     # Create the documents for the revision.
     for orig_document in orig_revision['documents']:
         orig_document['revision_id'] = new_revision['id']
-        orig_document['_metadata'] = orig_document.pop('metadata')
+        orig_document['meta'] = orig_document.pop('metadata')
 
         new_document = models.Document()
         new_document.update({x: orig_document[x] for x in (
-            'name', '_metadata', 'data', 'data_hash', 'metadata_hash',
+            'name', 'meta', 'layer', 'data', 'data_hash', 'metadata_hash',
             'schema', 'bucket_id')})
         new_document['revision_id'] = new_revision['id']
 
@@ -1092,7 +1107,7 @@ def validation_get_all(revision_id, session=None):
     expected_validations = set()
     for vp in validation_policies:
         expected_validations = expected_validations.union(
-            list(v['name'] for v in vp['data'].get('validations', [])))
+            list(v['name'] for v in vp.data.get('validations', [])))
 
     missing_validations = expected_validations - actual_validations
     extra_validations = actual_validations - expected_validations
@@ -1135,7 +1150,7 @@ def validation_get_all_entries(revision_id, val_name, session=None):
     expected_validations = set()
     for vp in validation_policies:
         expected_validations |= set(
-            v['name'] for v in vp['data'].get('validations', []))
+            v['name'] for v in vp.data.get('validations', []))
 
     missing_validations = expected_validations - actual_validations
     extra_validations = actual_validations - expected_validations
@@ -1169,9 +1184,9 @@ def validation_get_all_entries(revision_id, val_name, session=None):
                     'message': (
                         'The result for this validation was externally '
                         'registered but has been ignored because it is not '
-                        'found in the validations for ValidationPolicy [%s]'
-                        ' %s: %s.' % (
-                            vp['schema'], vp['metadata']['name'],
+                        'found in the validations for ValidationPolicy '
+                        '[%s, %s] %s: %s.' % (
+                            vp.schema, vp.layer, vp.name,
                             ', '.join(v['name'] for v in vp['data'].get(
                                 'validations', []))
                         )

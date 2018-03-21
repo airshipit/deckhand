@@ -132,7 +132,7 @@ def __build_tables(blob_type_obj, blob_type_list):
             return d
 
     class Document(BASE, DeckhandBase):
-        UNIQUE_CONSTRAINTS = ('schema', 'name', 'revision_id')
+        UNIQUE_CONSTRAINTS = ('schema', 'layer', 'name', 'revision_id')
 
         __tablename__ = 'documents'
 
@@ -144,9 +144,10 @@ def __build_tables(blob_type_obj, blob_type_list):
         id = Column(Integer, primary_key=True)
         name = Column(String(64), nullable=False)
         schema = Column(String(64), nullable=False)
-        # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``_metadata``
-        # must be used to store document metadata information in the DB.
-        _metadata = Column(blob_type_obj, nullable=False)
+        layer = Column(String(64), nullable=True)
+        # NOTE(fmontei): ``metadata`` is reserved by the DB, so ``meta`` must
+        # be used to store document metadata information in the DB.
+        meta = Column(blob_type_obj, nullable=False)
         data = Column(blob_type_obj, nullable=True)
         data_hash = Column(String, nullable=False)
         metadata_hash = Column(String, nullable=False)
@@ -178,13 +179,13 @@ def __build_tables(blob_type_obj, blob_type_list):
         def to_dict(self, raw_dict=False):
             """Convert the object into dictionary format.
 
-            :param raw_dict: Renames the key "_metadata" to "metadata".
+            :param raw_dict: Renames the key "meta" to "metadata".
             """
             d = super(Document, self).to_dict()
             d['bucket_name'] = self.bucket_name
 
             if not raw_dict:
-                d['metadata'] = d.pop('_metadata')
+                d['metadata'] = d.pop('meta')
 
             if 'bucket' in d:
                 d.pop('bucket')

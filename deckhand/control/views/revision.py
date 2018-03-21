@@ -14,9 +14,9 @@
 
 import collections
 
+from deckhand.common import utils
 from deckhand.control import common
 from deckhand import types
-from deckhand import utils
 
 
 class ViewBuilder(common.ViewBuilder):

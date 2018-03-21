@@ -61,10 +61,7 @@ class TestDocumentsNegative(base.TestDbBase):
 
         # Verify that the document cannot be created in another bucket.
         alt_bucket_name = test_utils.rand_name('bucket')
-        error_re = ("Document with schema %s and metadata.name "
-                    "%s already exists in bucket: %s." % (
-                        payload['schema'], payload['metadata']['name'],
-                        bucket_name))
+        error_re = r"^Document .* already exists in bucket: %s.$" % bucket_name
         self.assertRaisesRegex(
             errors.DuplicateDocumentExists, error_re, self.create_documents,
             alt_bucket_name, payload)
