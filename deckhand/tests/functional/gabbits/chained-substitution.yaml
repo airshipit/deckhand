@@ -1,0 +1,51 @@
+# Tests to verify "chained" substitution from document A -> B -> C
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Creates a new revision with documents in it.
+# 3. Verifies first substitution (A -> B)
+# 4. Verifies second substitution (B -> C)
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: create
+    desc: Create documents.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/chained-substitution.yaml
+
+  - name: verify_intermediate_substitution
+    desc: Check for chained substitution
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort: schema
+    status: 200
+    query_parameters:
+      schema: example/Middle/v1
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data:
+        mid_key: original-data
+
+  - name: verify_final_substitution
+    desc: Check for chained substitution
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort: schema
+    status: 200
+    query_parameters:
+      schema: example/Dest/v1
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].data:
+        dest_key: original-data

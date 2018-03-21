@@ -1,0 +1,50 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - one
+---
+schema: example/Source/v1
+metadata:
+  schema: metadata/Document/v1
+  name: source
+  layeringDefinition:
+    abstract: false
+    layer: one
+data: original-data
+---
+schema: example/Middle/v1
+metadata:
+  schema: metadata/Document/v1
+  name: middle
+  layeringDefinition:
+    abstract: false
+    layer: one
+  substitutions:
+    - src:
+        schema: example/Source/v1
+        name: source
+        path: .
+      dest:
+        path: .mid_key
+data: {}
+---
+schema: example/Dest/v1
+metadata:
+  schema: metadata/Document/v1
+  name: dest
+  layeringDefinition:
+    abstract: false
+    layer: one
+  substitutions:
+    - src:
+        schema: example/Middle/v1
+        name: middle
+        path: .mid_key
+      dest:
+        path: .dest_key
+data: {}
+...

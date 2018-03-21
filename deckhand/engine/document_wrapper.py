@@ -39,15 +39,18 @@ class DocumentDict(dict):
 
     @property
     def schema(self):
-        return self.get('schema') or ''
+        schema = self.get('schema')
+        return schema if schema is not None else ''
 
     @property
     def metadata(self):
-        return self.get('metadata') or {}
+        metadata = self.get('metadata')
+        return metadata if metadata is not None else {}
 
     @property
     def data(self):
-        return self.get('data') or {}
+        data = self.get('data')
+        return data if data is not None else {}
 
     @data.setter
     def data(self, value):

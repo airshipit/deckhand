@@ -113,7 +113,8 @@ class RenderedDocumentsResource(api_base.BaseResource):
             # been pre-validated during ingestion. Documents are post-validated
             # below, regardless.
             document_layering = layering.DocumentLayering(
-                documents, substitution_sources, validate=False)
+                documents, substitution_sources=substitution_sources,
+                validate=False)
             rendered_documents = document_layering.render()
         except (errors.InvalidDocumentLayer,
                 errors.InvalidDocumentParent,
