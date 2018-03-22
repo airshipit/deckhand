@@ -16,6 +16,7 @@ import copy
 import yaml
 
 import mock
+from oslo_utils import uuidutils
 
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import secrets_manager
@@ -30,35 +31,45 @@ class TestSecretsManager(test_base.TestDbBase):
         super(TestSecretsManager, self).setUp()
         self.mock_barbican_driver = self.patchobject(
             secrets_manager.SecretsManager, 'barbican_driver')
-        self.secret_ref = 'https://path/to/fake_secret'
+        self.secret_ref = "https://barbican_host/v1/secrets/{secret_uuid}"\
+            .format(**{'secret_uuid': uuidutils.generate_uuid()})
         self.mock_barbican_driver.create_secret.return_value = (
             {'secret_ref': self.secret_ref})
-
-        self.secrets_manager = secrets_manager.SecretsManager()
         self.factory = factories.DocumentSecretFactory()
 
     def _test_create_secret(self, encryption_type, secret_type):
         secret_data = test_utils.rand_password()
         secret_doc = self.factory.gen_test(
             secret_type, encryption_type, secret_data)
+        payload = secret_doc['data']
+        self.mock_barbican_driver.get_secret.return_value = (
+            mock.Mock(payload=payload))
 
-        created_secret = self.secrets_manager.create(secret_doc)
+        created_secret = secrets_manager.SecretsManager.create(secret_doc)
 
         if encryption_type == 'cleartext':
             self.assertEqual(secret_data, created_secret)
         elif encryption_type == 'encrypted':
             expected_kwargs = {
                 'name': secret_doc['metadata']['name'],
-                'secret_type': ('private' if secret_type == 'CertificateKey'
-                                else secret_type.lower()),
-                'payload': secret_doc['data']
+                'secret_type': secrets_manager.SecretsManager._get_secret_type(
+                    'deckhand/' + secret_type),
+                'payload': payload
             }
             self.mock_barbican_driver.create_secret.assert_called_once_with(
                 **expected_kwargs)
             self.assertEqual(self.secret_ref, created_secret)
 
+        return created_secret, payload
+
     def test_create_cleartext_certificate(self):
         self._test_create_secret('cleartext', 'Certificate')
+
+    def test_create_cleartext_certificate_authority(self):
+        self._test_create_secret('cleartext', 'CertificateAuthority')
+
+    def test_create_cleartext_certificate_authority_key(self):
+        self._test_create_secret('cleartext', 'CertificateAuthorityKey')
 
     def test_create_cleartext_certificate_key(self):
         self._test_create_secret('cleartext', 'CertificateKey')
@@ -66,14 +77,49 @@ class TestSecretsManager(test_base.TestDbBase):
     def test_create_cleartext_passphrase(self):
         self._test_create_secret('cleartext', 'Passphrase')
 
+    def test_create_cleartext_private_key(self):
+        self._test_create_secret('cleartext', 'PrivateKey')
+
     def test_create_encrypted_certificate(self):
         self._test_create_secret('encrypted', 'Certificate')
+
+    def test_create_encrypted_certificate_authority(self):
+        self._test_create_secret('encrypted', 'CertificateAuthority')
+
+    def test_create_encrypted_certificate_authority_key(self):
+        self._test_create_secret('encrypted', 'CertificateAuthorityKey')
 
     def test_create_encrypted_certificate_key(self):
         self._test_create_secret('encrypted', 'CertificateKey')
 
     def test_create_encrypted_passphrase(self):
         self._test_create_secret('encrypted', 'Passphrase')
+
+    def test_create_encrypted_private_key(self):
+        self._test_create_secret('encrypted', 'PrivateKey')
+
+    def test_retrieve_barbican_secret(self):
+        secret_ref, expected_secret = self._test_create_secret(
+            'encrypted', 'Certificate')
+        secret_uuid = secret_ref.split('/')[-1]
+        secret_payload = secrets_manager.SecretsManager.get(secret_ref)
+
+        self.assertEqual(expected_secret, secret_payload)
+        self.mock_barbican_driver.get_secret.assert_called_once_with(
+            secret_ref=secret_uuid)
+
+
+class TestSecretsManagerNegative(test_base.TestDbBase):
+
+    def test_retrieve_barbican_secret_bad_reference_raises_exc(self):
+        """Verify that passing in an invalid reference to
+        ``SecretsManager.get`` returns gracefully with the original argument.
+        """
+        bad_refs = ('', 'a/b', 'a/12345', 'a/%s/b' % uuidutils.generate_uuid(),
+                    12345, False, None, {}, [])
+        for bad_ref in bad_refs:
+            self.assertEqual(
+                bad_ref, secrets_manager.SecretsManager.get(bad_ref))
 
 
 class TestSecretsSubstitution(test_base.TestDbBase):

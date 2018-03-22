@@ -123,7 +123,8 @@ class RenderedDocumentsResource(api_base.BaseResource):
         except (errors.LayeringPolicyNotFound,
                 errors.SubstitutionSourceNotFound) as e:
             raise falcon.HTTPConflict(description=e.format_message())
-        except errors.UnknownSubstitutionError as e:
+        except (errors.DeckhandException,
+                errors.UnknownSubstitutionError) as e:
             raise falcon.HTTPInternalServerError(
                 description=e.format_message())
 

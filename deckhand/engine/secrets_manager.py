@@ -17,6 +17,7 @@ import re
 
 from oslo_config import cfg
 from oslo_log import log as logging
+from oslo_utils import uuidutils
 import six
 
 from deckhand.barbican import driver
@@ -38,6 +39,9 @@ class SecretsManager(object):
     """
 
     barbican_driver = driver.BarbicanDriver()
+
+    _url_re = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|'
+                         '(?:%[0-9a-fA-F][0-9a-fA-F]))+')
 
     @classmethod
     def create(cls, secret_doc):
@@ -85,9 +89,51 @@ class SecretsManager(object):
         return created_secret
 
     @classmethod
+    def _is_barbican_ref(cls, secret_ref):
+        return (
+            isinstance(secret_ref, six.string_types) and
+                cls._url_re.match(secret_ref) and 'secrets' in secret_ref
+        )
+
+    @classmethod
     def get(cls, secret_ref):
-        secret = cls.barbican_driver.get_secret(secret_ref=secret_ref)
+        """Return a secret payload from Barbican if ``secret_ref`` is a
+        Barbican secret reference or else return ``secret_ref``.
+
+        Extracts {secret_uuid} from a secret reference and queries Barbican's
+        Secrets API with it.
+
+        :param str secret_ref:
+
+            * String formatted like:
+              "https://{barbican_host}/v1/secrets/{secret_uuid}"
+              which results in a Barbican query.
+            * Any other string which results in a pass-through.
+
+        :returns: Secret payload from Barbican or ``secret_ref``.
+        """
+
+        # TODO(fmontei): Query Keystone service catalog for Barbican endpoint
+        # and cache it if Keystone is enabled. For now, it should be enough
+        # to check that ``secret_ref`` is a valid URL, contains 'secrets'
+        # substring, ends in a UUID and that the source document from which
+        # the reference is extracted is encrypted.
+        if cls._is_barbican_ref(secret_ref):
+            LOG.debug('Resolving Barbican secret using source document '
+                      'reference...')
+            try:
+                secret_uuid = secret_ref.split('/')[-1]
+            except Exception:
+                secret_uuid = None
+            if not uuidutils.is_uuid_like(secret_uuid):
+                return secret_ref
+        else:
+            return secret_ref
+
+        # TODO(fmontei): Need to avoid this call if Keystone is disabled.
+        secret = cls.barbican_driver.get_secret(secret_ref=secret_uuid)
         payload = secret.payload
+        LOG.debug('Successfully retrieved Barbican secret using reference.')
         return payload
 
     @classmethod
@@ -118,6 +164,10 @@ class SecretsSubstitution(object):
 
     __slots__ = ('_fail_on_missing_sub_src', '_substitution_sources')
 
+    _insecure_reg_exps = (
+        re.compile(r'^.* is not of type .+$'),
+    )
+
     @staticmethod
     def sanitize_potential_secrets(error, document):
         """Sanitize all secret data that may have been substituted into the
@@ -133,15 +183,13 @@ class SecretsSubstitution(object):
         if not document.substitutions and not document.is_encrypted:
             return document
 
-        insecure_reg_exps = [
-            re.compile(r'^.* is not of type .+$')
-        ]
         to_sanitize = copy.deepcopy(document)
         safe_message = 'Sanitized to avoid exposing secret.'
 
         # Sanitize any secrets contained in `error.message` referentially.
         if error.message and any(
-                r.match(error.message) for r in insecure_reg_exps):
+                r.match(error.message)
+                for r in SecretsSubstitution._insecure_reg_exps):
             error.message = safe_message
 
         # Sanitize any secrets extracted from the document itself.
@@ -177,10 +225,6 @@ class SecretsSubstitution(object):
             if document.schema and document.name:
                 self._substitution_sources.setdefault(
                     (document.schema, document.name), document)
-
-    def _is_barbican_ref(self, src_secret):
-        return (isinstance(src_secret, six.string_types) and
-                    src_secret.startswith(CONF.barbican.api_endpoint))
 
     def substitute_all(self, documents):
         """Substitute all documents that have a `metadata.substitutions` field.
@@ -250,11 +294,23 @@ class SecretsSubstitution(object):
                 else:
                     src_secret = src_doc.get('data')
 
-                # Check if src_secret is Barbican secret reference.
-                if self._is_barbican_ref(src_secret):
-                    LOG.debug('Resolving Barbican reference for %s.',
-                              src_secret)
-                    src_secret = SecretsManager.get(src_secret)
+                # If the document has storagePolicy == encrypted then resolve
+                # the Barbican reference into the actual secret.
+                if src_doc.is_encrypted:
+                    try:
+                        src_secret = SecretsManager.get(src_secret)
+                    except errors.BarbicanException as e:
+                        LOG.error(
+                            'Failed to resolve a Barbican reference for '
+                            'substitution source document [%s] %s referenced '
+                            'in document [%s] %s. Details: %s', src_schema,
+                            src_name, document.schema, document.name,
+                            e.format_message())
+                        raise errors.UnknownSubstitutionError(
+                            src_schema=src_schema, src_name=src_name,
+                            document_name=document.name,
+                            document_schema=document.schema,
+                            details=e.format_message())
 
                 dest_path = sub['dest']['path']
                 dest_pattern = sub['dest'].get('pattern', None)
@@ -263,6 +319,7 @@ class SecretsSubstitution(object):
                           'into dest_path=%s, dest_pattern=%s', src_schema,
                           src_name, src_path, dest_path, dest_pattern)
                 try:
+                    exc_message = ''
                     substituted_data = utils.jsonpath_replace(
                         document['data'], src_secret, dest_path, dest_pattern)
                     if (isinstance(document['data'], dict)
@@ -271,35 +328,26 @@ class SecretsSubstitution(object):
                     elif substituted_data:
                         document['data'] = substituted_data
                     else:
-                        message = (
+                        exc_message = (
                             'Failed to create JSON path "%s" in the '
                             'destination document [%s] %s. No data was '
                             'substituted.', dest_path, document.schema,
                             document.name)
-                        LOG.error(message)
-                        raise errors.UnknownSubstitutionError(details=message)
-                except errors.BarbicanException as e:
-                    LOG.error('Failed to resolve a Barbican reference for '
-                              'substitution source document [%s] %s referenced'
-                              ' in document [%s] %s. Details: %s', src_schema,
-                              src_name, document.schema, document.name,
-                              e.format_message())
-                    raise errors.UnknownSubstitutionError(
-                        src_schema=src_schema, src_name=src_name,
-                        document_name=document.name,
-                        document_schema=document.schema,
-                        details=e.format_message())
+                        LOG.error(exc_message)
                 except Exception as e:
                     LOG.error('Unexpected exception occurred while attempting '
                               'substitution using source document [%s] %s '
                               'referenced in [%s] %s. Details: %s', src_schema,
                               src_name, document.schema, document.name,
                               six.text_type(e))
-                    raise errors.UnknownSubstitutionError(
-                        src_schema=src_schema, src_name=src_name,
-                        document_name=document.name,
-                        document_schema=document.schema,
-                        details=six.text_type(e))
+                    exc_message = six.text_type(e)
+                finally:
+                    if exc_message:
+                        raise errors.UnknownSubstitutionError(
+                            src_schema=src_schema, src_name=src_name,
+                            document_name=document.name,
+                            document_schema=document.schema,
+                            details=exc_message)
 
         yield document
 

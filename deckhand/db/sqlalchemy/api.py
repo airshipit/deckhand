@@ -1029,8 +1029,8 @@ def _get_validation_policies_for_revision(revision_id, session=None):
         schema=types.VALIDATION_POLICY_SCHEMA)
     if not validation_policies:
         # Otherwise return early.
-        LOG.info('Failed to find a ValidationPolicy for revision ID %s.'
-                 'Only the "%s" results will be included in the response.',
+        LOG.debug('Failed to find a ValidationPolicy for revision ID %s. '
+                  'Only the "%s" results will be included in the response.',
                  revision_id, types.DECKHAND_SCHEMA_VALIDATION)
         validation_policies = []
 

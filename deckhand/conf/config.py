@@ -26,15 +26,16 @@ Barbican options for allowing Deckhand to communicate with Barbican.
 """)
 
 barbican_opts = [
+    # TODO(fmontei): Drop these options and related group once Keystone
+    # endpoint lookup is used instead.
     cfg.StrOpt(
         'api_endpoint',
-        default='http://127.0.0.1/key-manager',
         sample_default='http://barbican.example.org:9311/',
         help='URL override for the Barbican API endpoint.'),
 ]
 
 
-context_opts = [
+default_opts = [
     cfg.BoolOpt('allow_anonymous_access', default=False,
                 help="""
 Allow limited access to unauthenticated users.
@@ -58,13 +59,13 @@ Possible values:
 def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
-    conf.register_opts(context_opts)
+    conf.register_opts(default_opts)
     ks_loading.register_auth_conf_options(conf, group=barbican_group.name)
     ks_loading.register_session_conf_options(conf, group=barbican_group.name)
 
 
 def list_opts():
-    opts = {None: context_opts,
+    opts = {None: default_opts,
             barbican_group: barbican_opts +
                             ks_loading.get_session_conf_options() +
                             ks_loading.get_auth_common_conf_options() +

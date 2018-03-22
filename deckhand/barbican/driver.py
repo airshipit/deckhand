@@ -54,6 +54,7 @@ class BarbicanDriver(object):
             return self.barbicanclient.call("secrets.get", secret_ref)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError,
-                barbicanclient.exceptions.HTTPServerError) as e:
+                barbicanclient.exceptions.HTTPServerError,
+                ValueError) as e:
             LOG.exception(str(e))
             raise errors.BarbicanException(details=str(e))
