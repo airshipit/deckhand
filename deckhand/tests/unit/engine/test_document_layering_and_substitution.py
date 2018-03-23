@@ -49,13 +49,13 @@ class TestDocumentLayeringWithSubstitution(
         certificate = secrets_factory.gen_test(
             'Certificate', 'cleartext', data='global-secret',
             name='global-cert')
+        documents.append(certificate)
 
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 'global-secret'}
         site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4, 'c': 'global-secret'}
 
         self._test_layering(documents, site_expected=site_expected,
-                            global_expected=global_expected,
-                            substitution_sources=[certificate])
+                            global_expected=global_expected)
 
     def test_layering_and_substitution_no_children(self):
         """Validate that a document with no children undergoes substitution.
@@ -86,17 +86,18 @@ class TestDocumentLayeringWithSubstitution(
         # Remove the labels from the global document so that the site document
         # (the child) has no parent.
         documents[1]['metadata']['labels'] = {}
+
         secrets_factory = factories.DocumentSecretFactory()
         certificate = secrets_factory.gen_test(
             'Certificate', 'cleartext', data='global-secret',
             name='global-cert')
+        documents.append(certificate)
 
         global_expected = {'a': {'x': 1, 'y': 2}, 'c': 'global-secret'}
         site_expected = {'b': 4}
 
         self._test_layering(documents, site_expected=site_expected,
-                            global_expected=global_expected,
-                            substitution_sources=[certificate])
+                            global_expected=global_expected)
 
     def test_substitution_without_parent_document(self):
         """Validate that a document with no parent undergoes substitution.
@@ -128,17 +129,18 @@ class TestDocumentLayeringWithSubstitution(
         # Remove the labels from the global document so that the site document
         # (the child) has no parent.
         documents[1]['metadata']['labels'] = {}
+
         secrets_factory = factories.DocumentSecretFactory()
         certificate = secrets_factory.gen_test(
             'Certificate', 'cleartext', data='site-secret',
             name='site-cert')
+        documents.append(certificate)
 
         global_expected = {'a': {'x': 1, 'y': 2}}
         site_expected = {'b': 4, 'c': 'site-secret'}
 
         self._test_layering(documents, site_expected=site_expected,
-                            global_expected=global_expected,
-                            substitution_sources=[certificate])
+                            global_expected=global_expected)
 
     def test_parent_and_child_layering_and_substitution_different_paths(self):
         """Validate that parent and child documents both undergo layering and
@@ -190,11 +192,11 @@ class TestDocumentLayeringWithSubstitution(
         certificate_key = secrets_factory.gen_test(
             'CertificateKey', 'cleartext', data='site-secret',
             name='site-cert')
+        documents.extend([certificate, certificate_key])
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected,
-            substitution_sources=[certificate, certificate_key])
+            global_expected=global_expected)
 
     def test_parent_and_child_layering_and_substitution_same_paths(self):
         """Validate that parent and child documents both undergo layering and
@@ -245,11 +247,11 @@ class TestDocumentLayeringWithSubstitution(
         certificate_key = secrets_factory.gen_test(
             'CertificateKey', 'cleartext', data='site-secret',
             name='site-cert')
+        documents.extend([certificate, certificate_key])
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected,
-            substitution_sources=[certificate, certificate_key])
+            global_expected=global_expected)
 
     def test_parent_with_multi_child_layering_and_sub_different_paths(self):
         """Validate that parent and children documents both undergo layering
@@ -319,11 +321,11 @@ class TestDocumentLayeringWithSubstitution(
                 name='site-%d-cert' % idx)
             for idx in range(1, 3)
         ]
+        documents.extend([certificate] + certificate_keys)
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected,
-            substitution_sources=[certificate] + certificate_keys)
+            global_expected=global_expected)
 
     def test_parent_with_multi_child_layering_and_sub_same_path(self):
         """Validate that parent and children documents both undergo layering
@@ -393,11 +395,11 @@ class TestDocumentLayeringWithSubstitution(
                 name='site-%d-cert' % idx)
             for idx in range(1, 3)
         ]
+        documents.extend([certificate] + certificate_keys)
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected,
-            substitution_sources=[certificate] + certificate_keys)
+            global_expected=global_expected)
 
     def test_parent_with_multi_child_layering_and_multi_substitutions(self):
         """Validate that parent and children documents both undergo layering
@@ -499,12 +501,11 @@ class TestDocumentLayeringWithSubstitution(
                 name='site-%d-cert' % idx)
             for idx in range(1, 3)
         ]
+        documents.extend([certificate] + certificate_keys + certificates)
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected,
-            substitution_sources=[certificate] + certificate_keys +
-                                 certificates)
+            global_expected=global_expected)
 
     @mock.patch('deckhand.engine.layering.LOG', autospec=True)
     def test_parent_and_child_undergo_layering_and_substitution_empty_layers(
@@ -571,11 +572,11 @@ class TestDocumentLayeringWithSubstitution(
         certificate_key = secrets_factory.gen_test(
             'CertificateKey', 'cleartext', data='site-secret',
             name='site-cert')
+        documents.extend([certificate] + [certificate_key])
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected,
-            substitution_sources=[certificate, certificate_key])
+            global_expected=global_expected)
 
         expected_message = (
             '%s is an empty layer with no documents. It will be discarded '
@@ -661,21 +662,19 @@ class TestDocumentLayeringWithSubstitution(
         certificate_key = secrets_factory.gen_test(
             'CertificateKey', 'cleartext', data='site-secret',
             name='site-cert')
+        documents.extend([certificate] + [certificate_key])
 
         # Pass in the documents in reverse order to ensure that the dependency
         # chain by default is not linear and thus requires sorting.
         self._test_layering(
             list(reversed(documents)), site_expected=site_expected,
-            global_expected=global_expected,
-            substitution_sources=[certificate, certificate_key] + documents)
+            global_expected=global_expected)
 
         # Try different permutations of document orders for good measure.
         for document_order in list(itertools.permutations(documents))[:10]:
             self._test_layering(
                 document_order, site_expected=site_expected,
-                global_expected=global_expected,
-                substitution_sources=[
-                    certificate, certificate_key] + documents)
+                global_expected=global_expected)
 
     def test_layering_and_substitution_site_abstract_and_global_concrete(self):
         """Verifies that if a global document is abstract, yet has
@@ -706,10 +705,10 @@ class TestDocumentLayeringWithSubstitution(
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test(mapping, site_abstract=False,
                                          global_abstract=True)
+        documents.append(certificate)
 
         site_expected = {"global": "random", "cert": "global-secret",
                          "site": "stuff"}
         global_expected = None
         self._test_layering(documents, site_expected,
-                            global_expected=global_expected,
-                            substitution_sources=[certificate])
+                            global_expected=global_expected)

@@ -106,15 +106,13 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         documents = self._retrieve_documents_for_rendering(revision_id,
                                                            **filters)
-        substitution_sources = self._retrieve_substitution_sources()
 
         try:
             # NOTE(fmontei): `validate` is False because documents have already
             # been pre-validated during ingestion. Documents are post-validated
             # below, regardless.
             document_layering = layering.DocumentLayering(
-                documents, substitution_sources=substitution_sources,
-                validate=False)
+                documents, validate=False)
             rendered_documents = document_layering.render()
         except (errors.InvalidDocumentLayer,
                 errors.InvalidDocumentParent,
@@ -175,11 +173,6 @@ class RenderedDocumentsResource(api_base.BaseResource):
                 documents.append(layering_policy)
 
         return documents
-
-    def _retrieve_substitution_sources(self):
-        # Return all concrete documents as potential substitution sources.
-        return db_api.document_get_all(
-            **{'metadata.layeringDefinition.abstract': False})
 
     def _post_validate(self, rendered_documents):
         # Perform schema validation post-rendering to ensure that rendering

@@ -19,6 +19,7 @@ import networkx
 from networkx.algorithms.cycles import find_cycle
 from networkx.algorithms.dag import topological_sort
 from oslo_log import log as logging
+from oslo_log import versionutils
 
 from deckhand.engine import document_validation
 from deckhand.engine import document_wrapper
@@ -359,8 +360,20 @@ class DocumentLayering(object):
         self._layer_order = self._get_layering_order(self._layering_policy)
         self._calc_all_document_children()
 
+        if substitution_sources:
+            versionutils.report_deprecated_feature(
+                LOG,
+                "Usage of `substitution_sources` has been deprecated. All "
+                "concrete documents will be used by default."
+            )
+        else:
+            substitution_sources = [
+                d for d in self._documents_by_index.values()
+                    if not d.is_abstract
+            ]
+
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
-            substitution_sources or [],
+            substitution_sources,
             fail_on_missing_sub_src=fail_on_missing_sub_src)
 
         self._sorted_documents = self._topologically_sort_documents(documents)

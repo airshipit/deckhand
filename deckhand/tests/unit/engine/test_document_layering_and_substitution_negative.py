@@ -80,7 +80,7 @@ class TestDocumentLayeringWithSubstitutionNegative(
         # chain by default is not linear and thus requires sorting.
         self.assertRaises(
             errors.SubstitutionDependencyCycle, layering.DocumentLayering,
-            documents, substitution_sources=documents)
+            documents)
 
     def test_layering_with_substitution_self_reference_fails(self):
         """Validate that a substitution self-reference fails.
@@ -111,8 +111,7 @@ class TestDocumentLayeringWithSubstitutionNegative(
         # Pass in the documents in reverse order to ensure that the dependency
         # chain by default is not linear and thus requires sorting.
         self.assertRaises(
-            errors.SubstitutionDependencyCycle, self._test_layering, documents,
-            substitution_sources=documents)
+            errors.SubstitutionDependencyCycle, self._test_layering, documents)
 
     def test_layering_with_missing_substitution_source_raises_exc(self):
         """Validate that a missing substitution source document fails."""

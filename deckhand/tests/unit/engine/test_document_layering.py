@@ -28,9 +28,9 @@ class TestDocumentLayering(test_base.DeckhandTestCase):
 
     def _test_layering(self, documents, site_expected=None,
                        region_expected=None, global_expected=None,
-                       substitution_sources=None, validate=False, **kwargs):
+                       validate=False, **kwargs):
         document_layering = layering.DocumentLayering(
-            documents, substitution_sources, validate=validate, **kwargs)
+            documents, validate=validate, **kwargs)
 
         site_docs = []
         region_docs = []
@@ -197,8 +197,7 @@ data:
         region_expected = None
         global_expected = None
         self._test_layering(
-            documents, site_expected, region_expected, global_expected,
-            substitution_sources=[documents[1]])
+            documents, site_expected, region_expected, global_expected)
 
     def test_layering_verify_that_substitution_dependencies_includes_parents(
             self):
@@ -284,8 +283,7 @@ data:
             {'application': {'conf': {'bar': 'override', 'foo': 'default'}}}
         ]
         self._test_layering(
-            documents, site_expected, region_expected, global_expected,
-            substitution_sources=[documents[1]])
+            documents, site_expected, region_expected, global_expected)
 
     @mock.patch.object(layering, 'LOG', autospec=True)
     def test_layering_document_with_parent_but_no_actions_skips_layering(
