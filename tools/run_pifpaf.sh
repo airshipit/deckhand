@@ -20,4 +20,4 @@ set -eo pipefail
 
 TESTRARGS=$1
 
-python setup.py testr --slowest --testr-args="--subunit --concurrency=1 $TESTRARGS" | subunit-trace -f
+stestr run --concurrency=1 --slowest $TESTRARGS

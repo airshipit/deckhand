@@ -33,8 +33,8 @@ export DATABASE_URL=postgresql+psycopg2://$(whoami):password@$POSTGRES_IP:5432/d
 set -e
 posargs=$@
 if [ ${#posargs} -ge 1 ]; then
-    ostestr --concurrency 1 --regex ${posargs}
+    stestr run --concurrency=1 ${posargs}
 else
-    ostestr --concurrency 1
+    stestr run --concurrency=1
 fi
 set +e
