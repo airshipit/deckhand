@@ -1332,6 +1332,7 @@ data:
 ---
 schema: aic/Versions/v1
 metadata:
+  schema: metadata/Document/v1
   name: a
   labels:
     selector: foo
@@ -1344,6 +1345,7 @@ data:
 ---
 schema: aic/Versions/v1
 metadata:
+  schema: metadata/Document/v1
   name: a
   labels:
     selector: baz
@@ -1362,6 +1364,7 @@ data:
 ---
 schema: armada/Chart/v1
 metadata:
+  schema: metadata/Document/v1
   name: c
   layeringDefinition:
     abstract: False

@@ -1,0 +1,117 @@
+# Tests success path for document replacement.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Adds initial documents with one site that that replaces its parent
+# 3. Verify that replacement of a substitution source works
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: create_documents_for_validating_replacement
+    desc: |
+      Create documents for validating replacement of a substitution source.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - global
+          - site
+      ---
+      schema: aic/Versions/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: a
+        labels:
+          selector: foo
+        layeringDefinition:
+          abstract: False
+          layer: global
+      data:
+        conf:
+          foo: default
+      ---
+      schema: aic/Versions/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: a
+        labels:
+          selector: baz
+        replacement: true
+        layeringDefinition:
+          abstract: False
+          layer: site
+          parentSelector:
+            selector: foo
+          actions:
+            - method: merge
+              path: .
+      data:
+        conf:
+          bar: override
+      ---
+      schema: armada/Chart/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: c
+        layeringDefinition:
+          abstract: False
+          layer: global
+        substitutions:
+          - src:
+              schema: aic/Versions/v1
+              name: a
+              path: .conf
+            dest:
+              path: .application.conf
+      data:
+        application:
+          conf: {}
+      ...
+
+  - name: verify_document_replaces_substitution_source
+    desc: |
+      Check that document replacement works when a document replaces a
+      substitution source -- in effect meaning that the replacement document
+      is used as the substitution source.
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort:
+        - metadata.name
+        - metadata.layeringDefinition.layer
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 3
+
+      $.[0].metadata.name: a
+      $.[0].metadata.layeringDefinition.layer: site
+      $.[0].metadata.replacement: true
+      $.[0].data:
+        conf:
+          foo: default
+          bar: override
+
+      $.[1].metadata.name: c
+      $.[1].metadata.layeringDefinition.layer: global
+      $.[1].data:
+        application:
+          conf:
+            foo: default
+            bar: override
+
+      $.[2].metadata.name: layering-policy

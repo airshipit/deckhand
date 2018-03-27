@@ -53,6 +53,8 @@ data:
           type: string
         labels:
           type: object
+        replacement:
+          type: boolean
         layeringDefinition:
           type: object
           properties:
