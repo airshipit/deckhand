@@ -211,30 +211,20 @@ def __build_tables(blob_type_obj, blob_type_list):
 
 
 def register_models(engine, connection_string):
+    global BASE
+
     blob_types = ((JSONB, JSONB) if 'postgresql' in connection_string
                   else (PickleType, oslo_types.JsonEncodedList()))
 
-    LOG.debug('Instantiating DB tables using %s, %s as the column type for '
-              'dictionaries, lists.', *blob_types)
+    LOG.debug('Instantiating DB tables using %s, %s as the column type '
+              'for dictionaries, lists.', *blob_types)
 
-    """Create database tables for all models with the given engine."""
     __build_tables(*blob_types)
-
-    this_module = sys.modules[__name__]
-    models = ['Bucket', 'Document', 'RevisionTag', 'Revision', 'Validation']
-
-    for model_name in models:
-        if hasattr(this_module, model_name):
-            model = getattr(this_module, model_name)
-            model.metadata.create_all(engine)
+    BASE.metadata.create_all(engine)
 
 
 def unregister_models(engine):
     """Drop database tables for all models with the given engine."""
-    this_module = sys.modules[__name__]
-    models = ['Bucket', 'Document', 'RevisionTag', 'Revision', 'Validation']
+    global BASE
 
-    for model_name in models:
-        if hasattr(this_module, model_name):
-            model = getattr(this_module, model_name)
-            model.metadata.drop_all(engine)
+    BASE.metadata.drop_all(engine)

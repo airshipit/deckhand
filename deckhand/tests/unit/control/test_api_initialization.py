@@ -105,6 +105,5 @@ class TestApi(test_base.DeckhandTestCase):
             mock.call('/versions', self.versions_resource())
         ], any_order=True)
 
-        mock_db_api.drop_db.assert_called_once_with()
         mock_db_api.setup_db.assert_called_once_with(
             str(mock.sentinel.db_connection))
