@@ -58,31 +58,66 @@ class DocumentLayering(object):
 
     def _calc_replacements_and_substitutions(
             self, substitution_sources):
+
+        def _check_document_with_replacement_field_has_parent(
+                parent_meta, parent, document):
+            if not parent_meta or not parent:
+                error_message = (
+                    'Document replacement requires that the document with '
+                    '`replacement: true` have a parent.')
+                raise errors.InvalidDocumentReplacement(
+                    schema=document.schema, name=document.name,
+                    layer=document.layer, reason=error_message)
+
+        def _check_replacement_and_parent_same_schema_and_name(
+                parent, document):
+            # This checks that a document can only be a replacement for
+            # another document with the same `metadata.name` and `schema`.
+            if not (document.schema == parent.schema and
+                    document.name == parent.name):
+                error_message = (
+                    'Document replacement requires that both documents '
+                    'have the same `schema` and `metadata.name`.')
+                raise errors.InvalidDocumentReplacement(
+                    schema=document.schema, name=document.name,
+                    layer=document.layer, reason=error_message)
+
+        def _check_non_replacement_and_parent_different_schema_and_name(
+                parent, document):
+            if (parent and document.schema == parent.schema and
+                    document.name == parent.name):
+                error_message = (
+                    'Non-replacement documents cannot have the same `schema` '
+                    'and `metadata.name` as their parent. Either add '
+                    '`replacement: true` to the document or give the document '
+                    'a different name.')
+                raise errors.InvalidDocumentReplacement(
+                    schema=document.schema, name=document.name,
+                    layer=document.layer, reason=error_message)
+
+        def _check_replacement_not_itself_replaced_by_another(src_ref):
+            # If the document has a replacement, use the replacement as the
+            # substitution source instead.
+            if src_ref.is_replacement:
+                error_message = ('A replacement document cannot itself'
+                                 ' be replaced by another document.')
+                raise errors.InvalidDocumentReplacement(
+                    schema=src_ref.schema, name=src_ref.name,
+                    layer=src_ref.layer, reason=error_message)
+
         for document in self._documents_by_index.values():
+            parent_meta = self._parents.get(document.meta)
+            parent = self._documents_by_index.get(parent_meta)
+
             if document.is_replacement:
-                parent_meta = self._parents.get(document.meta)
-                parent = self._documents_by_index.get(parent_meta)
-
-                if not parent_meta or not parent:
-                    error_message = (
-                        'Document replacement requires that the document with '
-                        '`replacement: true` have a parent.')
-                    raise errors.InvalidDocumentReplacement(
-                        schema=document.schema, name=document.name,
-                        layer=document.layer, reason=error_message)
-
-                # This checks that a document can only be a replacement for
-                # another document with the same `metadata.name` and `schema`.
-                if (document.schema == parent.schema and
-                        document.name == parent.name):
-                    parent.replaced_by = document
-                else:
-                    error_message = (
-                        'Document replacement requires that both documents '
-                        'have the same `schema` and `metadata.name`.')
-                    raise errors.InvalidDocumentReplacement(
-                        schema=document.schema, name=document.name,
-                        layer=document.layer, reason=error_message)
+                _check_document_with_replacement_field_has_parent(
+                    parent_meta, parent, document)
+                _check_replacement_and_parent_same_schema_and_name(
+                    parent, document)
+                parent.replaced_by = document
+            else:
+                _check_non_replacement_and_parent_different_schema_and_name(
+                    parent, document)
 
         # Since a substitution source only provides the document's
         # `metadata.name` and `schema`, their tuple acts as the dictionary key.
@@ -94,16 +129,8 @@ class DocumentLayering(object):
             src_ref = document_wrapper.DocumentDict(src)
             if src_ref.meta in self._documents_by_index:
                 src_ref = self._documents_by_index[src_ref.meta]
-                # If the document has a replacement, use the replacement as the
-                # substitution source instead.
                 if src_ref.has_replacement:
-                    if src_ref.is_replacement:
-                        error_message = ('A replacement document cannot itself'
-                                         ' be replaced by another document.')
-                        raise errors.InvalidDocumentReplacement(
-                            schema=src_ref.schema, name=src_ref.name,
-                            layer=src_ref.layer, reason=error_message)
-
+                    _check_replacement_not_itself_replaced_by_another(src_ref)
                     src_ref = src_ref.replaced_by
             substitution_source_map[(src_ref.schema, src_ref.name)] = src_ref
 
@@ -272,10 +299,12 @@ class DocumentLayering(object):
 
         g = networkx.DiGraph()
         for document in self._documents_by_index.values():
-            if document.parent_selector:
-                parent = self._parents.get(document.meta)
-                if parent:
-                    g.add_edge(document.meta, parent)
+            if document.has_replacement:
+                g.add_edge(document.meta, document.replaced_by.meta)
+            elif document.parent_selector and not document.is_replacement:
+                parent_meta = self._parents.get(document.meta)
+                if parent_meta:
+                    g.add_edge(document.meta, parent_meta)
 
             for sub in document.substitutions:
                 # Retrieve the correct substitution source using
@@ -556,6 +585,22 @@ class DocumentLayering(object):
 
         return overall_data
 
+    def _get_parent_or_replacement(self, doc, parent_meta):
+        """Returns the document's parent or the document's parent's
+        replacement.
+
+        :param DocumentDict doc: Document used to get parent.
+        :param tuple parent_meta: Unique parent identifier.
+        :returns: Parent document or its replacement if the parent has one.
+        :rtype: DocumentDict
+        """
+        parent = self._documents_by_index.get(parent_meta)
+        # Return the parent's replacement, but if that replacement is the
+        # document itself then return the parent.
+        if parent and parent.has_replacement and parent.replaced_by is not doc:
+            parent = parent.replaced_by
+        return parent
+
     def render(self):
         """Perform layering on the list of documents passed to ``__init__``.
 
@@ -582,7 +627,7 @@ class DocumentLayering(object):
                 parent_meta = self._parents.get(doc.meta)
 
                 if parent_meta:
-                    parent = self._documents_by_index[parent_meta]
+                    parent = self._get_parent_or_replacement(doc, parent_meta)
 
                     if doc.actions:
                         rendered_data = parent

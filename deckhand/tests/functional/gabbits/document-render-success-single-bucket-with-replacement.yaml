@@ -3,6 +3,11 @@
 # 1. Purges existing data to ensure test isolation
 # 2. Adds initial documents with one site that that replaces its parent
 # 3. Verify that replacement of a substitution source works
+# 4. Adds initial documents with one replacement site and one non-replacement
+#    site document.
+# 5. Verify that the replacement document replaces its parent and that the
+#    non-replacement site document in effect layers with the replacement
+#    document.
 
 defaults:
   request_headers:
@@ -17,7 +22,7 @@ tests:
     status: 204
     response_headers: null
 
-  - name: create_documents_for_validating_replacement
+  - name: create_documents_for_validating_replacement_of_sub_source
     desc: |
       Create documents for validating replacement of a substitution source.
     PUT: /api/v1.0/buckets/mop/documents
@@ -91,9 +96,7 @@ tests:
       is used as the substitution source.
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
     query_parameters:
-      sort:
-        - metadata.name
-        - metadata.layeringDefinition.layer
+      sort: metadata.name
     status: 200
     response_multidoc_jsonpaths:
       $.`len`: 3
@@ -115,3 +118,128 @@ tests:
             bar: override
 
       $.[2].metadata.name: layering-policy
+
+  - name: create_documents_for_validating_replacement_of_layering_source
+    desc: |
+      Create documents for validating replacement of a layering source.
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: |
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - global
+          - site
+      ---
+      schema: aic/Versions/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: a
+        labels:
+          selector: foo
+        layeringDefinition:
+          abstract: False
+          layer: global
+      data:
+        conf:
+          foo: default
+      ---
+      schema: aic/Versions/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: a
+        labels:
+          selector: baz
+        replacement: true
+        layeringDefinition:
+          abstract: False
+          layer: site
+          parentSelector:
+            selector: foo
+          actions:
+            - method: merge
+              path: .
+      data:
+        conf:
+          bar: override
+      ---
+      schema: aic/Versions/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: b
+        labels:
+          selector: qux
+        layeringDefinition:
+          abstract: False
+          layer: site
+          parentSelector:
+            selector: foo
+          actions:
+            - method: merge
+              path: .
+      data:
+        conf:
+          baz: another
+      ---
+      schema: armada/Chart/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: c
+        layeringDefinition:
+          abstract: False
+          layer: global
+        substitutions:
+          - src:
+              schema: aic/Versions/v1
+              name: a
+              path: .conf
+            dest:
+              path: .application.conf
+      data:
+        application:
+          conf: {}
+      ...
+
+  - name: verify_document_replaces_layering_source
+    desc: |
+      Check that document replacement works when a document replaces
+      its parent and yet another document layers with the same parent. In other
+      words, the non-replacement child document should in effect layer with the
+      other replacement child document.
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      sort: metadata.name
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 4
+
+      $.[0].metadata.name: a
+      $.[0].metadata.layeringDefinition.layer: site
+      $.[0].metadata.replacement: true
+      $.[0].data:
+        conf:
+          foo: default
+          bar: override
+
+      $.[1].metadata.name: b
+      $.[1].metadata.layeringDefinition.layer: site
+      $.[1].metadata.replacement: false
+      $.[1].data:
+        conf:
+          foo: default
+          bar: override
+          baz: another
+
+      $.[2].metadata.name: c
+      $.[2].metadata.layeringDefinition.layer: global
+      $.[2].data:
+        application:
+          conf:
+            foo: default
+            bar: override
+
+      $.[3].metadata.name: layering-policy

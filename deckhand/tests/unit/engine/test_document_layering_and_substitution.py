@@ -55,7 +55,7 @@ class TestDocumentLayeringWithSubstitution(
         site_expected = {'a': {'x': 1, 'y': 2}, 'b': 4, 'c': 'global-secret'}
 
         self._test_layering(documents, site_expected=site_expected,
-                            global_expected=global_expected)
+                            global_expected=global_expected, strict=False)
 
     def test_layering_and_substitution_no_children(self):
         """Validate that a document with no children undergoes substitution.
@@ -97,7 +97,7 @@ class TestDocumentLayeringWithSubstitution(
         site_expected = {'b': 4}
 
         self._test_layering(documents, site_expected=site_expected,
-                            global_expected=global_expected)
+                            global_expected=global_expected, strict=False)
 
     def test_substitution_without_parent_document(self):
         """Validate that a document with no parent undergoes substitution.
@@ -140,7 +140,7 @@ class TestDocumentLayeringWithSubstitution(
         site_expected = {'b': 4, 'c': 'site-secret'}
 
         self._test_layering(documents, site_expected=site_expected,
-                            global_expected=global_expected)
+                            global_expected=global_expected, strict=False)
 
     def test_parent_and_child_layering_and_substitution_different_paths(self):
         """Validate that parent and child documents both undergo layering and
@@ -196,7 +196,7 @@ class TestDocumentLayeringWithSubstitution(
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected)
+            global_expected=global_expected, strict=False)
 
     def test_parent_and_child_layering_and_substitution_same_paths(self):
         """Validate that parent and child documents both undergo layering and
@@ -251,7 +251,7 @@ class TestDocumentLayeringWithSubstitution(
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected)
+            global_expected=global_expected, strict=False)
 
     def test_parent_with_multi_child_layering_and_sub_different_paths(self):
         """Validate that parent and children documents both undergo layering
@@ -325,7 +325,7 @@ class TestDocumentLayeringWithSubstitution(
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected)
+            global_expected=global_expected, strict=False)
 
     def test_parent_with_multi_child_layering_and_sub_same_path(self):
         """Validate that parent and children documents both undergo layering
@@ -399,7 +399,7 @@ class TestDocumentLayeringWithSubstitution(
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected)
+            global_expected=global_expected, strict=False)
 
     def test_parent_with_multi_child_layering_and_multi_substitutions(self):
         """Validate that parent and children documents both undergo layering
@@ -505,7 +505,7 @@ class TestDocumentLayeringWithSubstitution(
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected)
+            global_expected=global_expected, strict=False)
 
     @mock.patch('deckhand.engine.layering.LOG', autospec=True)
     def test_parent_and_child_undergo_layering_and_substitution_empty_layers(
@@ -576,7 +576,7 @@ class TestDocumentLayeringWithSubstitution(
 
         self._test_layering(
             documents, site_expected=site_expected,
-            global_expected=global_expected)
+            global_expected=global_expected, strict=False)
 
         expected_message = (
             '%s is an empty layer with no documents. It will be discarded '
@@ -666,15 +666,14 @@ class TestDocumentLayeringWithSubstitution(
 
         # Pass in the documents in reverse order to ensure that the dependency
         # chain by default is not linear and thus requires sorting.
-        self._test_layering(
-            list(reversed(documents)), site_expected=site_expected,
-            global_expected=global_expected)
+        self._test_layering(documents, site_expected=site_expected,
+                            global_expected=global_expected, strict=False)
 
         # Try different permutations of document orders for good measure.
-        for document_order in list(itertools.permutations(documents))[:10]:
+        for documents in list(itertools.permutations(documents))[:10]:
             self._test_layering(
-                document_order, site_expected=site_expected,
-                global_expected=global_expected)
+                documents, site_expected=site_expected,
+                global_expected=global_expected, strict=False)
 
     def test_layering_and_substitution_site_abstract_and_global_concrete(self):
         """Verifies that if a global document is abstract, yet has
@@ -711,4 +710,4 @@ class TestDocumentLayeringWithSubstitution(
                          "site": "stuff"}
         global_expected = None
         self._test_layering(documents, site_expected,
-                            global_expected=global_expected)
+                            global_expected=global_expected, strict=False)

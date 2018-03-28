@@ -303,20 +303,23 @@ def _documents_create(bucket_name, documents, session=None):
     return changed_documents
 
 
-def _fill_in_metadata_defaults(values):
-    values['meta'] = values.pop('metadata')
-    values['name'] = values['meta']['name']
+def _fill_in_metadata_defaults(document):
+    document['meta'] = document.pop('metadata')
+    document['name'] = document['meta']['name']
 
-    if not values['meta'].get('storagePolicy', None):
-        values['meta']['storagePolicy'] = 'cleartext'
+    if not document['meta'].get('storagePolicy', None):
+        document['meta']['storagePolicy'] = 'cleartext'
 
-    values['meta'].setdefault('layeringDefinition', {})
-    values['layer'] = values['meta']['layeringDefinition'].get('layer')
+    document['meta'].setdefault('layeringDefinition', {})
+    document['layer'] = document['meta']['layeringDefinition'].get('layer')
 
-    if 'abstract' not in values['meta']['layeringDefinition']:
-        values['meta']['layeringDefinition']['abstract'] = False
+    if 'abstract' not in document['meta']['layeringDefinition']:
+        document['meta']['layeringDefinition']['abstract'] = False
 
-    return values
+    if 'replacement' not in document['meta']:
+        document['meta']['replacement'] = False
+
+    return document
 
 
 def _make_hash(data):
