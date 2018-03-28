@@ -32,7 +32,7 @@ spec:
           value: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | quote }}
       image: {{ .Values.images.tags.deckhand }}
       imagePullPolicy: {{ .Values.images.pull_policy }}
-{{ tuple . .Values.pod.resources.test.deckhand | include "helm-toolkit.snippets.kubernetes_resources" | indent 8 }}
+{{ tuple . .Values.pod.resources.test.deckhand | include "helm-toolkit.snippets.kubernetes_resources" | indent 6 }}
       command: ["/bin/bash", "-c", "curl -v -X GET --fail ${DECKHAND_URL}/api/v1.0/health; exit $?"]
 ...
 {{- end }}
