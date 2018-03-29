@@ -39,6 +39,7 @@ lint: pep8 helm_lint
 .PHONY: dry-run
 dry-run: clean
 	tools/helm_tk.sh $(HELM)
+	$(HELM) template charts/deckhand
 
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
