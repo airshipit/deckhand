@@ -19,6 +19,9 @@
 Document Layering
 =================
 
+Introduction
+------------
+
 Layering provides a restricted data inheritance model intended to help reduce
 duplication in configuration. Documents with different ``schema``'s are never
 layered together (see the :ref:`substitution` section if you need to combine data
@@ -39,21 +42,60 @@ When rendering each layer, the parent document is used as the starting point,
 so the entire contents of the parent are brought forward.  Then the list of
 `actions` will be applied in order.  Supported actions are:
 
-* ``merge`` - "deep" merge child data at the specified path into the existing data
+* ``merge`` - "deep" merge child data at the specified path into the existing
+  data
 * ``replace`` - overwrite existing data with child data at the specified path
 * ``delete`` - remove the existing data at the specified path
 
 After actions are applied for a given layer, substitutions are applied (see
 the Substitution section for details).
 
+.. _parent-selection:
+
+Parent Selection
+----------------
+
 Selection of document parents is controlled by the ``parentSelector`` field and
-works as follows. A given document, ``C``, that specifies a ``parentSelector``
-will have exactly one parent, ``P``. Document ``P`` will be the highest
-precedence (i.e. part of the lowest layer defined in the ``layerOrder`` list
-from the ``LayeringPolicy``) document that has the labels indicated by the
-``parentSelector`` (and possibly additional labels) from the set of all
-documents of the same ``schema`` as ``C`` that are in layers above the layer ``C``
-is in. For example, consider the following sample documents:
+works as follows:
+
+* A given document, ``C``, that specifies a ``parentSelector``, will have
+  exactly one parent, ``P``. If comparing layering with inheritance,
+  layering, then, does *not* allow multi-inheritance.
+* Both ``C`` and ``P`` must have the **same** ``schema``.
+* Both ``C`` and ``P`` should have **different** ``metadata.name`` values
+  except in the case of :ref:`replacement`.
+* Document ``P`` will be the highest-precedence document whose
+  ``metadata.labels`` are a **superset** of document C's ``parentSelector``.
+  Where:
+
+  * Highest precendence means that ``P`` belongs to the lowest layer
+    defined in the ``layerOrder`` list from the ``LayeringPolicy`` which is
+    at least one level higher than the layer for ``C``. For example, if ``C``
+    has layer ``site``, then its parent ``P`` must at least have layer ``type``
+    or above in the following ``layerOrder``:
+
+    ::
+
+      ---
+      ...
+      layerOrder:
+        - global # Highest layer
+        - type
+        - site   # Lowest layer
+
+  * Superset means that ``P`` **at least** has all the labels in its
+    ``metadata.labels`` that child ``C`` references via its ``parentSelector``.
+    In other words, parent ``P`` can have more labels than ``C`` uses
+    to reference it, but ``C`` must at least have one matching label in its
+    ``parentSelector`` with ``P``.
+
+* Deckhand will select ``P`` if it belongs to the highest-precedence layer.
+  For example, if ``C`` belongs to layer ``site``, ``P`` belongs to layer
+  ``type``, and ``G`` belongs to layer ``global``, then Deckhand will use
+  ``P`` as the parent for ``C``. If ``P`` is non-existent, then ``G``
+  will be selected instead.
+
+For example, consider the following sample documents:
 
 .. code-block:: yaml
 

@@ -141,3 +141,11 @@ and on demand provide the secrets to documents that need them. However,
 substitution can also apply to any data, not just secrets.
 
 For more information, see the :ref:`substitution` section.
+
+Replacement
+-----------
+
+Document replacement provides an advanced mechanism for reducing the overhead
+with data duplication across multiple documents.
+
+For more information, see the :ref:`replacement` section.

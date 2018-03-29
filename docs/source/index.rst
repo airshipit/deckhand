@@ -40,12 +40,13 @@ User's Guide
 
    getting-started
    overview
+   revision-history
    documents
-   document_types
+   document-types
    validation
    substitution
    layering
-   revision_history
+   replacement
    api_ref
    api_client
    exceptions
