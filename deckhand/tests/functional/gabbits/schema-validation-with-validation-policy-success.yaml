@@ -233,5 +233,5 @@ tests:
       $.[0].errors[/message][1].message: >-
         The result for this validation was externally registered but has been
         ignored because it is not found in the validations for
-        ValidationPolicy [deckhand/ValidationPolicy/v1] site-deploy-ready:
-        deckhand-schema-validation.
+        ValidationPolicy [deckhand/ValidationPolicy/v1, None]
+        site-deploy-ready: deckhand-schema-validation.
