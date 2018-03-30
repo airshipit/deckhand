@@ -17,7 +17,7 @@ import yaml
 import mock
 from oslo_config import cfg
 
-from deckhand.control import buckets
+from deckhand.engine import secrets_manager
 from deckhand import factories
 from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
@@ -100,7 +100,7 @@ class TestBucketsController(test_base.BaseControllerTest):
         secrets_factory = factories.DocumentSecretFactory()
         payload = [secrets_factory.gen_test('Certificate', 'encrypted')]
 
-        with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
+        with mock.patch.object(secrets_manager, 'SecretsManager',
                                autospec=True) as mock_secrets_mgr:
             mock_secrets_mgr.create.return_value = payload[0]['data']
             _do_test(payload)
@@ -115,7 +115,7 @@ class TestBucketsController(test_base.BaseControllerTest):
         data_schema_factory = factories.DataSchemaFactory()
         data_schema = data_schema_factory.gen_test(document['schema'], {})
 
-        with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
+        with mock.patch.object(secrets_manager, 'SecretsManager',
                                autospec=True) as mock_secrets_mgr:
             mock_secrets_mgr.create.return_value = document['data']
             _do_test([document, data_schema])
@@ -216,6 +216,31 @@ class TestBucketsControllerNegative(test_base.BaseControllerTest):
             headers={'Content-Type': 'application/x-yaml'},
             body=yaml.safe_dump_all([payload]))
         self.assertEqual(409, resp.status_code)
+
+    def test_bucket_with_empty_document_raises_bad_request(self):
+        rules = {'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Verify that 400 is returned for empty entries.
+        bucket_name = test_utils.rand_name('bucket')
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/%s/documents' % bucket_name,
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all([None, '', {}]))
+        self.assertEqual(400, resp.status_code)
+        self.assertRegex(
+            resp.text,
+            r'.*Invalid entries found at following indexes:\n.*1,2,3.')
+
+        # Verify that 400 is returned for non-object entries.
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/%s/documents' % bucket_name,
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all([{'foo': 'bar'}, 'foo', 5]))
+        self.assertEqual(400, resp.status_code)
+        self.assertRegex(
+            resp.text,
+            r'.*Invalid entries found at following indexes:\n.*2,3.')
 
 
 class TestBucketsControllerNegativeRBAC(test_base.BaseControllerTest):

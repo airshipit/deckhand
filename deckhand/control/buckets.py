@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import yaml
-
 import falcon
 from oslo_log import log as logging
 import six
@@ -34,18 +32,10 @@ class BucketsResource(api_base.BaseResource):
     """API resource for realizing CRUD operations for buckets."""
 
     view_builder = document_view.ViewBuilder()
-    secrets_mgr = secrets_manager.SecretsManager()
 
     @policy.authorize('deckhand:create_cleartext_documents')
     def on_put(self, req, resp, bucket_name=None):
-        document_data = req.stream.read(req.content_length or 0)
-        try:
-            documents = list(yaml.safe_load_all(document_data))
-        except yaml.YAMLError as e:
-            error_msg = ("Could not parse the document into YAML data. "
-                         "Details: %s." % e)
-            LOG.error(error_msg)
-            raise falcon.HTTPBadRequest(description=six.text_type(e))
+        documents = self.from_yaml(req, expect_list=True, allow_empty=True)
 
         # NOTE: Must validate documents before doing policy enforcement,
         # because we expect certain formatting of the documents while doing
@@ -86,7 +76,7 @@ class BucketsResource(api_base.BaseResource):
         for document in secret_documents:
             # TODO(fmontei): Move all of this to document validation directly.
             if document['metadata'].get('storagePolicy') == 'encrypted':
-                secret_data = self.secrets_mgr.create(document)
+                secret_data = secrets_manager.SecretsManager.create(document)
                 document['data'] = secret_data
 
     def _create_revision_documents(self, bucket_name, documents,

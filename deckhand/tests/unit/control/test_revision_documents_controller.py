@@ -16,7 +16,7 @@ import yaml
 
 import mock
 
-from deckhand.control import buckets
+from deckhand.engine import secrets_manager
 from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
 
@@ -62,7 +62,7 @@ class TestRevisionDocumentsControllerNegativeRBAC(
         # Create a document for a bucket.
         secrets_factory = factories.DocumentSecretFactory()
         payload = [secrets_factory.gen_test('Certificate', 'encrypted')]
-        with mock.patch.object(buckets.BucketsResource, 'secrets_mgr',
+        with mock.patch.object(secrets_manager, 'SecretsManager',
                                autospec=True) as mock_secrets_mgr:
             mock_secrets_mgr.create.return_value = payload[0]['data']
             resp = self.app.simulate_put(

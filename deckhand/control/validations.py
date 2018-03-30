@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import yaml
-
 import falcon
 from oslo_log import log as logging
-import six
 
 from deckhand.control import base as api_base
 from deckhand.control.views import validation as validation_view
@@ -34,19 +31,8 @@ class ValidationsResource(api_base.BaseResource):
 
     @policy.authorize('deckhand:create_validation')
     def on_post(self, req, resp, revision_id, validation_name):
-        validation_data = req.stream.read(req.content_length or 0)
-        try:
-            validation_data = yaml.safe_load(validation_data)
-        except yaml.YAMLError as e:
-            error_msg = ("Could not parse the validation into YAML data. "
-                         "Details: %s." % e)
-            LOG.error(error_msg)
-            raise falcon.HTTPBadRequest(description=six.text_type(e))
-
-        if not validation_data:
-            error_msg = 'Validation payload must be provided.'
-            LOG.error(error_msg)
-            raise falcon.HTTPBadRequest(description=error_msg)
+        validation_data = self.from_yaml(
+            req, expect_list=False, allow_empty=False)
 
         if not all([validation_data.get(x) for x in ('status', 'validator')]):
             error_msg = 'Validation payload must contain keys: %s.' % (

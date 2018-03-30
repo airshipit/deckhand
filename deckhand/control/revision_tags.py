@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import yaml
-
 import falcon
 from oslo_log import log as logging
 
@@ -32,15 +30,7 @@ class RevisionTagsResource(api_base.BaseResource):
     @policy.authorize('deckhand:create_tag')
     def on_post(self, req, resp, revision_id, tag=None):
         """Creates a revision tag."""
-        body = req.stream.read(req.content_length or 0)
-
-        try:
-            tag_data = yaml.safe_load(body)
-        except yaml.YAMLError as e:
-            error_msg = ("Could not parse the request body into YAML data. "
-                         "Details: %s." % e)
-            LOG.error(error_msg)
-            raise falcon.HTTPBadRequest(description=e)
+        tag_data = self.from_yaml(req, expect_list=False, allow_empty=True)
 
         try:
             resp_tag = db_api.revision_tag_create(revision_id, tag, tag_data)
