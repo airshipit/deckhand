@@ -43,15 +43,6 @@ _FACADE = None
 _LOCK = threading.Lock()
 
 
-def _retry_on_deadlock(exc):
-    """Decorator to retry a DB API call if Deadlock was received."""
-
-    if isinstance(exc, db_exception.DBDeadlock):
-        LOG.warn("Deadlock detected. Retrying...")
-        return True
-    return False
-
-
 def _create_facade_lazily():
     global _LOCK, _FACADE
     if _FACADE is None:
@@ -71,12 +62,6 @@ def get_session(autocommit=True, expire_on_commit=False):
     facade = _create_facade_lazily()
     return facade.get_session(autocommit=autocommit,
                               expire_on_commit=expire_on_commit)
-
-
-def clear_db_env():
-    """Unset global configuration variables for database."""
-    global _FACADE
-    _FACADE = None
 
 
 def drop_db():
