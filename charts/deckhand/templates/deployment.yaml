@@ -47,10 +47,15 @@ spec:
           env:
             - name: 'DECKHAND_API_TIMEOUT'
               value: {{ .Values.conf.uwsgi.timeout | default 600 | quote }}
+            # NOTE(fmontei): Deckhand's database is not configured to work with
+            # multiprocessing. Currently there is a data race on acquiring shared
+            # SQLAlchemy engine pooled connection strings when workers > 1. As a
+            # workaround, we use multiple threads but only 1 worker. For more
+            # information, see: https://github.com/att-comdev/deckhand/issues/20
             - name: 'DECKHAND_API_WORKERS'
-              value: {{ .Values.conf.uwsgi.workers | default 4 | quote }}
+              value: {{ .Values.conf.uwsgi.workers | default 1 | quote }}
             - name: 'DECKHAND_API_THREADS'
-              value: {{ .Values.conf.uwsgi.threads | default 1 | quote }}
+              value: {{ .Values.conf.uwsgi.threads | default 4 | quote }}
           image: {{ .Values.images.tags.deckhand }}
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}

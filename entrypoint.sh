@@ -20,10 +20,19 @@ set -ex
 PORT=${PORT:-9000}
 # How long uWSGI should wait for each deckhand response
 DECKHAND_API_TIMEOUT=${DECKHAND_API_TIMEOUT:-"600"}
+
+# NOTE(fmontei): Deckhand's database is not configured to work with
+# multiprocessing. Currently there is a data race on acquiring shared
+# SQLAlchemy engine pooled connection strings when workers > 1. As a
+# workaround, we use multiple threads but only 1 worker. For more
+# information, see: https://github.com/att-comdev/deckhand/issues/20
+
 # Number of uWSGI workers to handle API requests
-DECKHAND_API_WORKERS=${DECKHAND_API_WORKERS:-"4"}
+DECKHAND_API_WORKERS=${DECKHAND_API_WORKERS:-"1"}
 # Threads per worker
-DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"1"}
+DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"4"}
+# The Deckhand configuration directory containing deckhand.conf
+DECKHAND_CONFIG_DIR=${DECKHAND_CONFIG_DIR:-"/etc/deckhand/deckhand.conf"}
 
 # Start deckhand application
 exec uwsgi \

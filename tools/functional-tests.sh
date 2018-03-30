@@ -68,7 +68,7 @@ function gen_config {
     export DECKHAND_TEST_URL=http://localhost:9000
     export DATABASE_URL=postgresql+psycopg2://deckhand:password@$POSTGRES_IP:5432/deckhand
     # Used by Deckhand's initialization script to search for config files.
-    export OS_DECKHAND_CONFIG_DIR=$CONF_DIR
+    export DECKHAND_CONFIG_DIR=$CONF_DIR
 
     cp etc/deckhand/logging.conf.sample $CONF_DIR/logging.conf
 
@@ -198,19 +198,19 @@ gen_config
 gen_paste
 gen_policy
 
+ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 if [ -z "$DECKHAND_IMAGE" ]; then
     log_section "Running Deckhand via uwsgi"
-
-    # Set --workers 2, so that concurrency is always tested.
-    uwsgi \
-        --http :9000 \
-        -w deckhand.cmd \
-        --callable deckhand_callable \
-        --enable-threads \
-        --workers 2 \
-        --threads 1 \
-        -L \
-        --pyargv "--config-file $CONF_DIR/deckhand.conf" &
+    # NOTE(fmontei): Deckhand's database is not configured to work with
+    # multiprocessing. Currently there is a data race on acquiring shared
+    # SQLAlchemy engine pooled connection strings when workers > 1. As a
+    # workaround, we use multiple threads but only 1 worker. For more
+    # information, see: https://github.com/att-comdev/deckhand/issues/20
+    export DECKHAND_API_WORKERS=1
+    export DECKHAND_API_THREADS=4
+    source $ROOTDIR/../entrypoint.sh &
+    sleep 5
 else
     log_section "Running Deckhand via Docker"
     sudo docker run \
@@ -228,8 +228,6 @@ DECKHAND_ID=$(sudo docker ps | grep deckhand | awk '{print $1}')
 echo $DECKHAND_ID
 
 log_section Running tests
-
-ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Create folder for saving HTML test results.
 if [ ! -d $ROOTDIR/results ]; then

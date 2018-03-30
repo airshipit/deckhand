@@ -139,8 +139,8 @@ Create the directory ``/etc/deckhand`` and copy the config file there::
 
 To specify an alternative directory for the config file, run::
 
-    $ export OS_DECKHAND_CONFIG_DIR=<PATH>
-    $ [sudo] cp etc/deckhand/deckhand.conf.sample ${OS_DECKHAND_CONFIG_DIR}/deckhand.conf
+    $ export DECKHAND_CONFIG_DIR=<PATH>
+    $ [sudo] cp etc/deckhand/deckhand.conf.sample ${DECKHAND_CONFIG_DIR}/deckhand.conf
 
 To conveniently create an ephemeral PostgreSQL DB run::
 
@@ -152,7 +152,7 @@ Retrieve the environment variable which contains connection information::
     declare -x PIFPAF_POSTGRESQL_URL="postgresql://localhost/postgres?host=/tmp/tmpsg6tn3l9&port=9824"
 
 Substitute the connection information into the config file in
-``${OS_DECKHAND_CONFIG_DIR}``::
+``${DECKHAND_CONFIG_DIR}``::
 
     [database]
 

@@ -179,8 +179,13 @@ secrets:
 
 conf:
   uwsgi:
-    threads: 1
-    workers: 4
+    # NOTE(fmontei): Deckhand's database is not configured to work with
+    # multiprocessing. Currently there is a data race on acquiring shared
+    # SQLAlchemy engine pooled connection strings when workers > 1. As a
+    # workaround, we use multiple threads but only 1 worker. For more
+    # information, see: https://github.com/att-comdev/deckhand/issues/20
+    threads: 4
+    workers: 1
   policy:
     admin_api: role:admin
     deckhand:create_cleartext_documents: rule:admin_api
