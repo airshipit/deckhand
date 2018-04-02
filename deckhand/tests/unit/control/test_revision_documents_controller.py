@@ -21,6 +21,87 @@ from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
 
 
+class TestRevisionDocumentsController(test_base.BaseControllerTest):
+
+    def test_list_revision_documents_with_yaml_anchors_and_pointers(self):
+        """Test that Deckhand accepts and parses documents that use YAML
+        anchors and pointers.
+        """
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        documents = """
+---
+schema: aic/Versions/v1
+metadata:
+  name: with-anchor
+  schema: metadata/Document/v1
+  labels:
+    selector: foo1
+  layeringDefinition:
+    abstract: True
+    layer: global
+data:
+  conf: &anchor
+    path:
+      to:
+        something:
+          important:
+            value
+  copy: *anchor
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+...
+"""
+
+        expected_data_section = {
+            'conf': {
+                'path': {
+                    'to': {
+                        'something': {
+                            'important': 'value'
+                        }
+                    }
+                }
+            },
+            'copy': {
+                'path': {
+                    'to': {
+                        'something': {
+                            'important': 'value'
+                        }
+                    }
+                }
+            }
+        }
+
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=documents)
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/documents' % revision_id,
+            params={'sort': 'schema'}, params_csv=False,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        retrieved_documents = list(yaml.safe_load_all(resp.text))
+
+        self.assertEqual(2, len(retrieved_documents))
+        self.assertEqual(expected_data_section, retrieved_documents[0]['data'])
+
+
 class TestRevisionDocumentsControllerNegativeRBAC(
         test_base.BaseControllerTest):
     """Test suite for validating negative RBAC scenarios for revision documents
