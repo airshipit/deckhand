@@ -26,7 +26,9 @@ from deckhand import errors
 
 LOG = logging.getLogger(__name__)
 
-path_cache = dict()
+# Cache for JSON paths computed from path strings because jsonpath_ng
+# is computationally expensive.
+_PATH_CACHE = dict()
 
 
 def to_camel_case(s):
@@ -39,6 +41,28 @@ def to_snake_case(name):
     """Convert string to snake case."""
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
+def _normalize_jsonpath(jsonpath):
+    """Changes jsonpath starting with a `.` character with a `$`"""
+    if jsonpath == '.':
+        jsonpath = '$'
+    elif jsonpath.startswith('.'):
+        jsonpath = '$' + jsonpath
+    return jsonpath
+
+
+def _jsonpath_parse_cache(jsonpath):
+    """Retrieve the parsed jsonpath path
+
+    Utilizes a cache of parsed values to eliminate re-parsing
+    """
+    if jsonpath not in _PATH_CACHE:
+        p = jsonpath_ng.parse(jsonpath)
+        _PATH_CACHE[jsonpath] = p
+    else:
+        p = _PATH_CACHE[jsonpath]
+    return p
 
 
 def jsonpath_parse(data, jsonpath, match_all=False):
@@ -69,16 +93,8 @@ def jsonpath_parse(data, jsonpath, match_all=False):
         src_secret = utils.jsonpath_parse(src_doc['data'], src_path)
         # Do something with the extracted secret from the source document.
     """
-    if jsonpath == '.':
-        jsonpath = '$'
-    elif jsonpath.startswith('.'):
-        jsonpath = '$' + jsonpath
-
-    if jsonpath not in path_cache:
-        p = jsonpath_ng.parse(jsonpath)
-        path_cache[jsonpath] = p
-    else:
-        p = path_cache[jsonpath]
+    jsonpath = _normalize_jsonpath(jsonpath)
+    p = _jsonpath_parse_cache(jsonpath)
 
     matches = p.find(data)
     if matches:
@@ -152,10 +168,7 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
     data = copy.copy(data)
     value = copy.copy(value)
 
-    if jsonpath == '.':
-        jsonpath = '$'
-    elif jsonpath.startswith('.'):
-        jsonpath = '$' + jsonpath
+    jsonpath = _normalize_jsonpath(jsonpath)
 
     if not jsonpath == '$' and not jsonpath.startswith('$.'):
         LOG.error('The provided jsonpath %s does not begin with "." or "$"',
@@ -164,7 +177,7 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
                          'or "$"' % jsonpath)
 
     def _do_replace():
-        p = jsonpath_ng.parse(jsonpath)
+        p = _jsonpath_parse_cache(jsonpath)
         p_to_change = p.find(data)
 
         if p_to_change:
