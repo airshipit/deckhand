@@ -67,14 +67,16 @@ spec:
               path: /api/v1.0/health
               port: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
             initialDelaySeconds: 15
-            periodSeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               scheme: HTTP
               path: /api/v1.0/health
               port: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
             initialDelaySeconds: 15
-            periodSeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 10
           volumeMounts:
             - name: etc-deckhand
               mountPath: /etc/deckhand

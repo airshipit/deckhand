@@ -25,6 +25,9 @@ metadata:
   name: deckhand-ks-user
 spec:
   template:
+    metadata:
+      labels:
+{{ tuple $envAll "deckhand" "ks-user" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
