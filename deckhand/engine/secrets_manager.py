@@ -24,12 +24,10 @@ from deckhand.barbican import driver
 from deckhand.common import document as document_wrapper
 from deckhand.common import utils
 from deckhand import errors
+from deckhand import types
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
-
-CLEARTEXT = 'cleartext'
-ENCRYPTED = 'encrypted'
 
 
 class SecretsManager(object):
@@ -42,6 +40,31 @@ class SecretsManager(object):
 
     _url_re = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|'
                          '(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+
+    @staticmethod
+    def requires_encryption(document):
+        clazz = document_wrapper.DocumentDict
+        if not isinstance(document, clazz):
+            document = clazz(document)
+        return document.is_encrypted
+
+    @classmethod
+    def is_barbican_ref(cls, secret_ref):
+        # TODO(fmontei): Query Keystone service catalog for Barbican endpoint
+        # and cache it if Keystone is enabled. For now, it should be enough
+        # to check that ``secret_ref`` is a valid URL, contains 'secrets'
+        # substring, ends in a UUID and that the source document from which
+        # the reference is extracted is encrypted.
+        try:
+            secret_uuid = secret_ref.split('/')[-1]
+        except Exception:
+            secret_uuid = None
+        return (
+            isinstance(secret_ref, six.string_types) and
+                cls._url_re.match(secret_ref) and
+                'secrets' in secret_ref and
+                uuidutils.is_uuid_like(secret_uuid)
+        )
 
     @classmethod
     def create(cls, secret_doc):
@@ -75,67 +98,39 @@ class SecretsManager(object):
 
         encryption_type = secret_doc['metadata']['storagePolicy']
         secret_type = cls._get_secret_type(secret_doc['schema'])
+        created_secret = secret_doc['data']
 
-        if encryption_type == ENCRYPTED:
+        if encryption_type == types.ENCRYPTED:
             # Store secret_ref in database for `secret_doc`.
             kwargs = {
                 'name': secret_doc['metadata']['name'],
                 'secret_type': secret_type,
                 'payload': secret_doc['data']
             }
+            LOG.info('Storing encrypted document data in Barbican.')
             resp = cls.barbican_driver.create_secret(**kwargs)
 
             secret_ref = resp['secret_ref']
             created_secret = secret_ref
-        elif encryption_type == CLEARTEXT:
-            created_secret = secret_doc['data']
 
         return created_secret
 
     @classmethod
-    def _is_barbican_ref(cls, secret_ref):
-        return (
-            isinstance(secret_ref, six.string_types) and
-                cls._url_re.match(secret_ref) and 'secrets' in secret_ref
-        )
-
-    @classmethod
     def get(cls, secret_ref):
-        """Return a secret payload from Barbican if ``secret_ref`` is a
-        Barbican secret reference or else return ``secret_ref``.
+        """Return a secret payload from Barbican.
 
         Extracts {secret_uuid} from a secret reference and queries Barbican's
         Secrets API with it.
 
-        :param str secret_ref:
+        :param str secret_ref: A string formatted like:
+            "https://{barbican_host}/v1/secrets/{secret_uuid}"
+        :returns: Secret payload from Barbican.
 
-            * String formatted like:
-              "https://{barbican_host}/v1/secrets/{secret_uuid}"
-              which results in a Barbican query.
-            * Any other string which results in a pass-through.
-
-        :returns: Secret payload from Barbican or ``secret_ref``.
         """
-
-        # TODO(fmontei): Query Keystone service catalog for Barbican endpoint
-        # and cache it if Keystone is enabled. For now, it should be enough
-        # to check that ``secret_ref`` is a valid URL, contains 'secrets'
-        # substring, ends in a UUID and that the source document from which
-        # the reference is extracted is encrypted.
-        if cls._is_barbican_ref(secret_ref):
-            LOG.debug('Resolving Barbican secret using source document '
-                      'reference...')
-            try:
-                secret_uuid = secret_ref.split('/')[-1]
-            except Exception:
-                secret_uuid = None
-            if not uuidutils.is_uuid_like(secret_uuid):
-                return secret_ref
-        else:
-            return secret_ref
-
+        LOG.debug('Resolving Barbican secret using source document '
+                  'reference...')
         # TODO(fmontei): Need to avoid this call if Keystone is disabled.
-        secret = cls.barbican_driver.get_secret(secret_ref=secret_uuid)
+        secret = cls.barbican_driver.get_secret(secret_ref=secret_ref)
         payload = secret.payload
         LOG.debug('Successfully retrieved Barbican secret using reference.')
         return payload
@@ -204,6 +199,25 @@ class SecretsSubstitution(object):
                 to_sanitize['data'] = replaced_data
 
         return to_sanitize
+
+    @staticmethod
+    def get_encrypted_data(src_secret, src_doc, dest_doc):
+        try:
+            src_secret = SecretsManager.get(src_secret)
+        except errors.BarbicanException as e:
+            LOG.error(
+                'Failed to resolve a Barbican reference for substitution '
+                'source document [%s, %s] %s referenced in document [%s, %s] '
+                '%s. Details: %s', src_doc.schema, src_doc.layer, src_doc.name,
+                dest_doc.schema, dest_doc.layer, dest_doc.name,
+                e.format_message())
+            raise errors.UnknownSubstitutionError(
+                src_schema=src_doc.schema, src_layer=src_doc.layer,
+                src_name=src_doc.name, schema=dest_doc.schema,
+                layer=dest_doc.layer, name=dest_doc.name,
+                details=e.format_message())
+        else:
+            return src_secret
 
     def __init__(self, substitution_sources=None,
                  fail_on_missing_sub_src=True):
@@ -358,9 +372,10 @@ class SecretsSubstitution(object):
 
                 # If the document has storagePolicy == encrypted then resolve
                 # the Barbican reference into the actual secret.
-                if src_doc.is_encrypted:
-                    src_secret = self._get_encrypted_secret(
-                        src_secret, src_doc, document)
+                if src_doc.is_encrypted and SecretsManager.is_barbican_ref(
+                        src_secret):
+                    src_secret = self.get_encrypted_data(src_secret, src_doc,
+                                                         document)
 
                 dest_path = sub['dest']['path']
                 dest_pattern = sub['dest'].get('pattern', None)

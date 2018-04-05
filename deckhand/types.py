@@ -63,3 +63,12 @@ DECKHAND_VALIDATION_TYPES = (
 ) = (
     'deckhand-schema-validation',
 )
+
+
+ENCRYPTION_TYPES = (
+    CLEARTEXT,
+    ENCRYPTED
+) = (
+    'cleartext',
+    'encrypted'
+)

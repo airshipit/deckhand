@@ -102,25 +102,11 @@ class TestSecretsManager(test_base.TestDbBase):
     def test_retrieve_barbican_secret(self):
         secret_ref, expected_secret = self._test_create_secret(
             'encrypted', 'Certificate')
-        secret_uuid = secret_ref.split('/')[-1]
         secret_payload = secrets_manager.SecretsManager.get(secret_ref)
 
         self.assertEqual(expected_secret, secret_payload)
         self.mock_barbican_driver.get_secret.assert_called_once_with(
-            secret_ref=secret_uuid)
-
-
-class TestSecretsManagerNegative(test_base.TestDbBase):
-
-    def test_retrieve_barbican_secret_bad_reference_raises_exc(self):
-        """Verify that passing in an invalid reference to
-        ``SecretsManager.get`` returns gracefully with the original argument.
-        """
-        bad_refs = ('', 'a/b', 'a/12345', 'a/%s/b' % uuidutils.generate_uuid(),
-                    12345, False, None, {}, [])
-        for bad_ref in bad_refs:
-            self.assertEqual(
-                bad_ref, secrets_manager.SecretsManager.get(bad_ref))
+            secret_ref=secret_ref)
 
 
 class TestSecretsSubstitution(test_base.TestDbBase):

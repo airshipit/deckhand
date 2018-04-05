@@ -30,6 +30,8 @@ LOG = logging.getLogger(__name__)
 # is computationally expensive.
 _PATH_CACHE = dict()
 
+_ARRAY_RE = re.compile(r'.*\[\d+\].*')
+
 
 def to_camel_case(s):
     """Convert string to camel case."""
@@ -106,12 +108,10 @@ def _populate_data_with_attributes(jsonpath, data):
     # Populates ``data`` with any path specified in ``jsonpath``. For example,
     # if jsonpath is ".foo[0].bar.baz" then for each subpath -- foo[0], bar,
     # and baz -- that key will be added to ``data`` if missing.
-    array_re = re.compile(r'.*\[\d+\].*')
-
     d = data
     for path in jsonpath.split('.')[1:]:
         # Handle case where an array needs to be created.
-        if array_re.match(path):
+        if _ARRAY_RE.match(path):
             try:
                 path_pieces = path.split('[')
                 path_piece = path_pieces[0]

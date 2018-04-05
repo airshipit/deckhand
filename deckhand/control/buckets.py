@@ -52,13 +52,13 @@ class BucketsResource(api_base.BaseResource):
             raise falcon.HTTPBadRequest(description=e.format_message())
 
         for document in documents:
-            if document['metadata'].get('storagePolicy') == 'encrypted':
+            if secrets_manager.SecretsManager.requires_encryption(document):
                 policy.conditional_authorize(
                     'deckhand:create_encrypted_documents', req.context)
                 break
 
         try:
-            self._prepare_secret_documents(documents)
+            documents = self._prepare_secret_documents(documents)
         except deckhand_errors.BarbicanException as e:
             LOG.error('An unknown exception occurred while trying to store '
                       'a secret in Barbican.')
@@ -71,13 +71,13 @@ class BucketsResource(api_base.BaseResource):
         resp.body = self.view_builder.list(created_documents)
         resp.status = falcon.HTTP_200
 
-    def _prepare_secret_documents(self, secret_documents):
+    def _prepare_secret_documents(self, documents):
         # Encrypt data for secret documents, if any.
-        for document in secret_documents:
-            # TODO(fmontei): Move all of this to document validation directly.
-            if document['metadata'].get('storagePolicy') == 'encrypted':
-                secret_data = secrets_manager.SecretsManager.create(document)
-                document['data'] = secret_data
+        for document in documents:
+            if secrets_manager.SecretsManager.requires_encryption(document):
+                secret_ref = secrets_manager.SecretsManager.create(document)
+                document['data'] = secret_ref
+        return documents
 
     def _create_revision_documents(self, bucket_name, documents,
                                    validations):

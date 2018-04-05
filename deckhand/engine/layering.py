@@ -678,6 +678,17 @@ class DocumentLayering(object):
                     self.secrets_substitution.update_substitution_sources(
                         doc.schema, doc.name, rendered_data.data)
                     self._documents_by_index[doc.meta] = rendered_data
+            # Otherwise, retrieve the encrypted data for the document if its
+            # data has been encrypted so that future references use the actual
+            # secret payload, rather than the Barbican secret reference.
+            elif doc.is_encrypted:
+                encrypted_data = self.secrets_substitution.get_encrypted_data(
+                    doc.data, doc, doc)
+                if not doc.is_abstract:
+                    doc.data = encrypted_data
+                self.secrets_substitution.update_substitution_sources(
+                    doc.schema, doc.name, encrypted_data)
+                self._documents_by_index[doc.meta] = encrypted_data
 
         # Return only concrete documents and non-replacements.
         return [d for d in self._sorted_documents
