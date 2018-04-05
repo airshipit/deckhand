@@ -96,6 +96,14 @@ Substitute the connection information (which can be retrieved by running
     # (string value)
     connection = postgresql://localhost/postgres?host=/tmp/tmpsg6tn3l9&port=9824
 
+Run an update to the Database to bring it to the current code level::
+
+    $ [sudo] docker run --rm \
+        --net=host \
+        -v $CONF_DIR:/etc/deckhand \
+        quay.io/attcomdev/deckhand:latest \
+        alembic upgrade head
+
 Finally, run Deckhand via Docker::
 
     $ [sudo] docker run --rm \
@@ -210,6 +218,61 @@ deployment, execute (respectively)::
   $ tox -e genpolicy
 
 .. _Bandit: https://github.com/openstack/bandit
+
+Database Model Updates
+----------------------
+
+Deckhand utilizes `Alembic`_ to handle database setup and upgrades. Alembic
+provides a straightforward way to manage the migrations necessary from one
+database structure version to another through the use of scripts found in
+deckhand/alembic/versions.
+
+Setting up a migration can be automatic or manual. The `Alembic`_ documentation
+provides instructions for how to create a new migration.
+
+Creating automatic migrations requires that the Deckhand database model is
+updated in the source code first. With that database model in the code, and
+pointing to an existing Deckhand database structure, Alembic can produce the
+steps necessary to move from the current version to the next version.
+
+One way of creating an automatic migration is to deploy a development Deckhand
+database using the pre-updated data model and following the following steps::
+
+  Navigate to the root Deckhand directory
+  $ export DH_ROOT=$(pwd)
+  $ mkdir ${DH_ROOT}/alembic_tmp
+
+  Create a deckhand.conf file that will have the correct DB connection string.
+  $ tox -e genconfig
+  $ cp ${DH_ROOT}/etc/deckhand/deckhand.conf.sample ${DH_ROOT}/alembic_tmp/deckhand.conf
+
+  Update the connection string to the deckhand db instance e.g.::
+
+    [Database]
+    connection = postgresql+psycopg2://deckhand:password@postgresql.ucp.svc.cluster.local:5432/deckhand
+
+  $ export DECKHAND_CONFIG_DIR=${DH_ROOT}/alembic_tmp
+  $ alembic revision --autogenerate -m "The short description for this change"
+
+  $ rm -r ${DH_ROOT}/alembic_tmp
+
+This will create a new .py file in the deckhand/alembic/versions directory that
+can then be modified to indicate exact steps. The generated migration should
+always be inspected to ensure correctness.
+
+Migrations exist in a linked list of files (the files in versions). Each file
+is updated by Alembic to reference its revision linkage. E.g.::
+
+  # revision identifiers, used by Alembic.
+  revision = '918bbfd28185'
+  down_revision = None
+  branch_labels = None
+  depends_on = None
+
+Any manual changes to this linkage must be approached carefully or Alembic will
+fail to operate.
+
+.. _Alembic: http://alembic.zzzcomputing.com/en/latest/
 
 Troubleshooting
 ---------------

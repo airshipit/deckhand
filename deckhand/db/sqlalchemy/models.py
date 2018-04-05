@@ -211,15 +211,30 @@ def __build_tables(blob_type_obj, blob_type_list):
 
 
 def register_models(engine, connection_string):
-    global BASE
+    """Register the sqlalchemy tables itno the BASE.metadata
 
+    Sets up the database model objects. Does not create the tables in
+    the associated configured database. (see create_tables)
+    """
     blob_types = ((JSONB, JSONB) if 'postgresql' in connection_string
                   else (PickleType, oslo_types.JsonEncodedList()))
 
-    LOG.debug('Instantiating DB tables using %s, %s as the column type '
+    LOG.debug('Initializing DB tables using %s, %s as the column type '
               'for dictionaries, lists.', *blob_types)
 
     __build_tables(*blob_types)
+
+
+def create_tables(engine):
+    """Creates database tables for all models with the given engine.
+
+    This will be done only by tests that do not have their tables
+    set up by Alembic running during the associated helm chart db_sync job.
+    """
+    global BASE
+
+    LOG.debug('Creating DB tables')
+
     BASE.metadata.create_all(engine)
 
 

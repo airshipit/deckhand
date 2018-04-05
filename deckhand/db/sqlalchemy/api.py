@@ -68,8 +68,10 @@ def drop_db():
     models.unregister_models(get_engine())
 
 
-def setup_db(connection_string):
+def setup_db(connection_string, create_tables=False):
     models.register_models(get_engine(), connection_string)
+    if create_tables:
+        models.create_tables(get_engine())
 
 
 def raw_query(query, **kwargs):

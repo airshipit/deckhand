@@ -17,6 +17,15 @@
 Glossary
 ========
 
+A
+~
+
+.. glossary::
+
+   Alembic
+
+       Database migration software for Python and SQLAlchemy based databases.
+
 B
 ~
 
@@ -54,6 +63,25 @@ K
       The project that produces a secret storage and
       generation system capable of providing key management for
       services wishing to enable encryption features.
+
+M
+~
+
+.. glossary::
+
+   migration (databse)
+
+       A transformation of a databse from one version or structure to another.
+       Migrations for Deckhand's database are performed using Alembic.
+
+S
+~
+
+.. glossary::
+
+   SQLAlchemy
+
+      Databse toolkit for Python.
 
 U
 ~

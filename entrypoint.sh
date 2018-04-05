@@ -34,18 +34,25 @@ DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"4"}
 # The Deckhand configuration directory containing deckhand.conf
 DECKHAND_CONFIG_DIR=${DECKHAND_CONFIG_DIR:-"/etc/deckhand/deckhand.conf"}
 
+echo "Command: $1 with arguments $@"
 # Start deckhand application
-exec uwsgi \
-    -b 32768 \
-    --callable deckhand_callable \
-    --die-on-term \
-    --enable-threads \
-    --http :${PORT} \
-    --http-timeout $DECKHAND_API_TIMEOUT \
-    -L \
-    --lazy-apps \
-    --master \
-    --pyargv "--config-file ${DECKHAND_CONFIG_DIR}/deckhand.conf" \
-    --threads $DECKHAND_API_THREADS \
-    --workers $DECKHAND_API_WORKERS \
-    -w deckhand.cmd
+if [ "$1" = 'server' ]; then
+    exec uwsgi \
+        -b 32768 \
+        --callable deckhand_callable \
+        --die-on-term \
+        --enable-threads \
+        --http :${PORT} \
+        --http-timeout $DECKHAND_API_TIMEOUT \
+        -L \
+        --lazy-apps \
+        --master \
+        --pyargv "--config-file ${DECKHAND_CONFIG_DIR}/deckhand.conf" \
+        --threads $DECKHAND_API_THREADS \
+        --workers $DECKHAND_API_WORKERS \
+        -w deckhand.cmd
+elif [ "$1" = 'alembic' ]; then
+    exec alembic ${@:2}
+else
+    echo "Valid commands are 'alembic <command>' and 'server'"
+fi

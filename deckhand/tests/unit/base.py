@@ -112,5 +112,5 @@ class DeckhandWithDBTestCase(DeckhandTestCase):
         self.override_config(
             'connection', os.environ.get('PIFPAF_URL', 'sqlite://'),
             group='database')
-        db_api.setup_db(CONF.database.connection)
+        db_api.setup_db(CONF.database.connection, create_tables=True)
         self.addCleanup(db_api.drop_db)

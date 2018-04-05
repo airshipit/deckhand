@@ -202,6 +202,8 @@ ROOTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [ -z "$DECKHAND_IMAGE" ]; then
     log_section "Running Deckhand via uwsgi"
+
+    alembic upgrade head
     # NOTE(fmontei): Deckhand's database is not configured to work with
     # multiprocessing. Currently there is a data race on acquiring shared
     # SQLAlchemy engine pooled connection strings when workers > 1. As a
@@ -213,6 +215,11 @@ if [ -z "$DECKHAND_IMAGE" ]; then
     sleep 5
 else
     log_section "Running Deckhand via Docker"
+    sudo docker run \
+        --rm \
+        --net=host \
+        -v $CONF_DIR:/etc/deckhand \
+        $DECKHAND_IMAGE alembic upgrade head &> $STDOUT
     sudo docker run \
         --rm \
         --net=host \

@@ -71,3 +71,5 @@ USER deckhand
 
 # Execute entrypoint
 ENTRYPOINT ["/home/deckhand/entrypoint.sh"]
+
+CMD ["server"]

@@ -23,7 +23,7 @@ images:
     deckhand: quay.io/attcomdev/deckhand:latest
     dep_check: quay.io/stackanetes/kubernetes-entrypoint:v0.3.0
     db_init: docker.io/postgres:9.5
-    db_sync: docker.io/postgres:9.5
+    db_sync: quay.io/attcomdev/deckhand:latest
     ks_endpoints: docker.io/openstackhelm/heat:newton
     ks_service: docker.io/openstackhelm/heat:newton
     ks_user: docker.io/openstackhelm/heat:newton
