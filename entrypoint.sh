@@ -32,7 +32,7 @@ DECKHAND_API_WORKERS=${DECKHAND_API_WORKERS:-"1"}
 # Threads per worker
 DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"4"}
 # The Deckhand configuration directory containing deckhand.conf
-DECKHAND_CONFIG_DIR=${DECKHAND_CONFIG_DIR:-"/etc/deckhand/deckhand.conf"}
+DECKHAND_CONFIG_DIR=${DECKHAND_CONFIG_DIR:-"/etc/deckhand"}
 
 echo "Command: $1 with arguments $@"
 # Start deckhand application
