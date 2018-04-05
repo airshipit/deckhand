@@ -190,7 +190,7 @@ For example:
         - method: replace
           path: .debug
   data:
-    debug: True
+    debug: true
     ...
 
 And:

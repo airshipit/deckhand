@@ -94,6 +94,11 @@ Deckhand Exceptions
          :members:
          :show-inheritance:
          :undoc-members:
+  * - SubstitutionSourceDataNotFound
+    - .. autoexception:: deckhand.errors.SubstitutionSourceDataNotFound
+         :members:
+         :show-inheritance:
+         :undoc-members:
   * - SubstitutionSourceNotFound
     - .. autoexception:: deckhand.errors.SubstitutionSourceNotFound
          :members:

@@ -302,6 +302,26 @@ class RevisionTagBadFormat(DeckhandException):
     code = 400
 
 
+class SubstitutionSourceDataNotFound(DeckhandException):
+    """Required substitution source secret was not found in the substitution
+    source document at the path ``metadata.substitutions.[*].src.path`` in the
+    destination document.
+
+    **Troubleshoot:**
+
+    * Ensure that the missing source secret exists at the ``src.path``
+      specified under the given substitution in the destination document and
+      that the ``src.path`` itself exists in the source document.
+    """
+    msg_fmt = (
+        "Required substitution source secret was not found at path "
+        "%(src_path)s in source document [%(src_schema)s, %(src_layer)s] "
+        "%(src_name)s which is referenced by destination document "
+        "[%(dest_schema)s, %(dest_layer)s] %(dest_name)s under its "
+        "`metadata.substitutions`.")
+    code = 400
+
+
 class DocumentNotFound(DeckhandException):
     """The requested document could not be found.
 
@@ -376,7 +396,7 @@ class LayeringPolicyNotFound(DeckhandException):
 
 
 class SubstitutionSourceNotFound(DeckhandException):
-    """Required substitution source document was not found for layering.
+    """Required substitution source document was not found.
 
     **Troubleshoot:**
 

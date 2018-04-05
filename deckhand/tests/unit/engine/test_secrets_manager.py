@@ -737,8 +737,7 @@ class TestSecretsSubstitutionNegative(test_base.TestDbBase):
         documents = self.create_documents(
             bucket_name, [certificate] + [payload[-1]])
 
-        secrets_substitution = secrets_manager.SecretsSubstitution(
-            [certificate])
+        secrets_substitution = secrets_manager.SecretsSubstitution(documents)
         with testtools.ExpectedException(expected_exception):
             next(secrets_substitution.substitute_all(documents))
 
@@ -755,3 +754,35 @@ class TestSecretsSubstitutionNegative(test_base.TestDbBase):
         mock_utils.jsonpath_replace.side_effect = Exception('test')
         self._test_secrets_substitution(
             'cleartext', errors.UnknownSubstitutionError)
+
+    def test_secret_substititon_missing_src_path_in_src_doc_raises_exc(self):
+        """Validates that if a secret can't be found in a substitution
+        source document then an exception is raised.
+        """
+        certificate = self.secrets_factory.gen_test(
+            'Certificate', 'cleartext', data={})
+        certificate['metadata']['name'] = 'example-cert'
+
+        document_mapping = {
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".chart.values.tls.certificate"
+                },
+                "src": {
+                    "schema": "deckhand/Certificate/v1",
+                    "name": "example-cert",
+                    "path": ".path-to-nowhere"
+                }
+
+            }]
+        }
+        payload = self.document_factory.gen_test(document_mapping,
+                                                 global_abstract=False)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(
+            bucket_name, [certificate] + [payload[-1]])
+
+        secrets_substitution = secrets_manager.SecretsSubstitution(documents)
+        with testtools.ExpectedException(
+                errors.SubstitutionSourceDataNotFound):
+            next(secrets_substitution.substitute_all(documents))

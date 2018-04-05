@@ -90,6 +90,8 @@ class TestDocumentLayeringWithSubstitutionNegative(
         In the case below, a self-reference or cycle exists for site-1 with
         itself.
         """
+
+        # TODO(fmontei): Move to test_secrets_manager (negative)
         mapping = {
             "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}},
             "_SITE_NAME_1_": "site-1",
@@ -119,6 +121,8 @@ class TestDocumentLayeringWithSubstitutionNegative(
     def test_layering_with_missing_substitution_source_raises_exc(
             self, mock_log):
         """Validate that a missing substitution source document fails."""
+
+        # TODO(fmontei): Move to test_secrets_manager (negative)
         mapping = {
             "_GLOBAL_SUBSTITUTIONS_1_": [{
                 "dest": {
