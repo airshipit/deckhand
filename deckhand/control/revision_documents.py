@@ -119,6 +119,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
                 errors.InvalidDocumentReplacement,
                 errors.IndeterminateDocumentParent,
                 errors.MissingDocumentKey,
+                errors.SubstitutionSourceDataNotFound,
                 errors.UnsupportedActionMethod) as e:
             raise falcon.HTTPBadRequest(description=e.format_message())
         except (errors.LayeringPolicyNotFound,

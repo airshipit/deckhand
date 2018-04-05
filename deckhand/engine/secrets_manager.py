@@ -365,9 +365,10 @@ class SecretsSubstitution(object):
                 dest_path = sub['dest']['path']
                 dest_pattern = sub['dest'].get('pattern', None)
 
-                LOG.debug('Substituting from schema=%s name=%s src_path=%s '
-                          'into dest_path=%s, dest_pattern=%s', src_schema,
-                          src_name, src_path, dest_path, dest_pattern)
+                LOG.debug('Substituting from schema=%s layer=%s name=%s '
+                          'src_path=%s into dest_path=%s, dest_pattern=%s',
+                          src_schema, src_doc.layer, src_name, src_path,
+                          dest_path, dest_pattern)
                 try:
                     exc_message = ''
                     substituted_data = utils.jsonpath_replace(

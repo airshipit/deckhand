@@ -1,0 +1,37 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - one
+---
+schema: deckhand/Source/v1
+metadata:
+  name: src
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: one
+  storagePolicy: cleartext
+data:
+  a: AAA
+  b: BBB
+---
+schema: deckhand/Dest/v1
+metadata:
+  name: dest
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: one
+  substitutions:
+    - dest:
+        path: .out
+      src:
+        schema: deckhand/Source/v1
+        name: src
+        # NOTE(mark-burnett): This path does not exist in the source.
+        path: .c
+data:
+  d: DDD
+...
