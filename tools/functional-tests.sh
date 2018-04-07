@@ -211,8 +211,7 @@ if [ -z "$DECKHAND_IMAGE" ]; then
     # information, see: https://github.com/att-comdev/deckhand/issues/20
     export DECKHAND_API_WORKERS=1
     export DECKHAND_API_THREADS=4
-    source $ROOTDIR/../entrypoint.sh &
-    sleep 5
+    source $ROOTDIR/../entrypoint.sh server &
 else
     log_section "Running Deckhand via Docker"
     sudo docker run \
