@@ -154,6 +154,7 @@ function gen_paste {
     local disable_keystone=$1
 
     if $disable_keystone; then
+        log_section Disabling Keystone authentication.
         sed 's/authtoken api/api/' etc/deckhand/deckhand-paste.ini &> $CONF_DIR/deckhand-paste.ini
     else
         cp etc/deckhand/deckhand-paste.ini $CONF_DIR/deckhand-paste.ini

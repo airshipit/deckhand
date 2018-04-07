@@ -51,7 +51,7 @@ function deploy_deckhand {
     gen_policy
 
     if [ -z "$DECKHAND_IMAGE" ]; then
-        log_section "Running Deckhand via uwsgi"
+        log_section "Running Deckhand via uwsgi."
 
         alembic upgrade head
         # NOTE(fmontei): Deckhand's database is not configured to work with
@@ -63,7 +63,7 @@ function deploy_deckhand {
         export DECKHAND_API_THREADS=4
         source $ROOTDIR/../entrypoint.sh server &
     else
-        log_section "Running Deckhand via Docker"
+        log_section "Running Deckhand via Docker."
         sudo docker run \
             --rm \
             --net=host \

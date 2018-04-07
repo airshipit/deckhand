@@ -12,14 +12,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import atexit
 import os
+import shutil
+import tempfile
 import yaml
 
 from gabbi import driver
 from gabbi.driver import test_pytest  # noqa
 from gabbi.handlers import jsonhandler
 
-TESTS_DIR = 'gabbits'
+TEST_DIR = tempfile.mkdtemp(prefix='deckhand')
+
+
+def __create_temp_test_dir():
+    """Hack around the fact that gabbi doesn't support loading tests contained
+    in subdirectories. This inconvenience leads to poor test directory layout
+    in which all the test files are contained in one directory.
+
+    """
+    root_test_dir = os.path.join(os.path.dirname(__file__), 'gabbits')
+    test_files = []
+
+    for root, dirs, files in os.walk(root_test_dir):
+        is_test_file = (
+            'gabbits' in root and not root.endswith('gabbits')
+        )
+        if is_test_file:
+            test_files.extend([os.path.abspath(os.path.join(root, f))
+                              for f in files])
+
+    resources_dir = os.path.join(TEST_DIR, 'resources')
+    if not os.path.exists(resources_dir):
+        os.makedirs(resources_dir)
+
+    for test_file in test_files:
+        basename = os.path.basename(test_file)
+        if 'resources' in test_file:
+            os.symlink(test_file, os.path.join(resources_dir, basename))
+        else:
+            os.symlink(test_file, os.path.join(TEST_DIR, basename))
+
+
+__create_temp_test_dir()
+
+
+@atexit.register
+def __remove_temp_test_dir():
+    if os.path.exists(TEST_DIR):
+        shutil.rmtree(TEST_DIR)
 
 
 # This is quite similar to the existing JSONHandler, so use it as the base
@@ -47,12 +88,11 @@ class MultidocJsonpaths(jsonhandler.JSONHandler):
 
 
 def pytest_generate_tests(metafunc):
-    test_dir = os.path.join(os.path.dirname(__file__), TESTS_DIR)
     # NOTE(fmontei): While only `url` or `host` is needed, strangely both
     # are needed because we use `pytest-html` which throws an error without
     # `host`.
     driver.py_test_generator(
-        test_dir, url=os.environ['DECKHAND_TEST_URL'], host='localhost',
+        TEST_DIR, url=os.environ['DECKHAND_TEST_URL'], host='localhost',
         # NOTE(fmontei): When there are multiple handlers listed that accept
         # the same content-type, the one that is earliest in the list will be
         # used. Thus, we cannot specify multiple content handlers for handling
