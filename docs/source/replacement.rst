@@ -30,6 +30,11 @@ replacing its *parent*. That is, the *entire* child document replaces its
 parent document. Replacement aims to lessen data duplication by taking
 advantage of :ref:`document-abstraction` and document layering patterns.
 
+Unlike the :ref:`layering` ``replace`` action, which allows a child document
+to selectively replace portions of the parent's ``data`` section with that of
+its own, document replacement allows a child document to replace the *entire*
+parent document.
+
 .. todo::
 
   Elaborate on these patterns in a separate section.
