@@ -121,10 +121,10 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
                     'message': "The Content-Type header is required."
                 }]
             },
-            'kind': 'status',
+            'kind': 'Status',
             'message': "The Content-Type header is required.",
             'metadata': {},
-            'reason': 'Missing header value',
+            'reason': 'Unspecified',
             'retry': False,
             'status': 'Failure'
         }
@@ -153,11 +153,11 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
                         "content types are: ['application/x-yaml'].")
                 }]
             },
-            'kind': 'status',
+            'kind': 'Status',
             'message': ("Unexpected content type: application/json. Expected "
                         "content types are: ['application/x-yaml']."),
             'metadata': {},
-            'reason': 'Unsupported media type',
+            'reason': 'Unspecified',
             'retry': False,
             'status': 'Failure'
         }
@@ -188,11 +188,11 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
                         "content types are: ['application/x-yaml'].")
                 }]
             },
-            'kind': 'status',
+            'kind': 'Status',
             'message': ("Unexpected content type: application/yaml. Expected "
                         "content types are: ['application/x-yaml']."),
             'metadata': {},
-            'reason': 'Unsupported media type',
+            'reason': 'Unspecified',
             'retry': False,
             'status': 'Failure'
         }

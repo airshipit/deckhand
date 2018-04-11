@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import traceback
 import yaml
 
 import falcon
@@ -34,7 +33,7 @@ def format_error_resp(req,
                       resp,
                       status_code=falcon.HTTP_500,
                       message="",
-                      reason="",
+                      reason=None,
                       error_type=None,
                       error_list=None,
                       info_list=None):
@@ -63,21 +62,20 @@ def format_error_resp(req,
                       'error': ``False`` field.
     """
 
-    if error_type is None:
-        error_type = 'Unspecified Exception'
+    error_type = error_type or 'Unspecified Exception'
+    reason = reason or 'Unspecified'
 
     # Since we're handling errors here, if error list is None, set up a default
     # error item. If we have info items, add them to the message list as well.
     # In both cases, if the error flag is not set, set it appropriately.
-    if error_list is None:
-        error_list = [{'message': 'An error occurred, but was not specified',
-                       'error': True}]
+    if not error_list:
+        error_list = [{'message': message, 'error': True}]
     else:
         for error_item in error_list:
             if 'error' not in error_item:
                 error_item['error'] = True
 
-    if info_list is None:
+    if not info_list:
         info_list = []
     else:
         for info_item in info_list:
@@ -87,7 +85,7 @@ def format_error_resp(req,
     message_list = error_list + info_list
 
     error_response = {
-        'kind': 'status',
+        'kind': 'Status',
         'apiVersion': get_version_from_request(req),
         'metadata': {},
         'status': 'Failure',
@@ -104,23 +102,35 @@ def format_error_resp(req,
         'retry': True if status_code is falcon.HTTP_500 else False
     }
 
-    resp.body = yaml.safe_dump(error_response)
+    # Don't use yaml.safe_dump to handle unicode correctly.
+    resp.body = yaml.dump(error_response)
     resp.status = status_code
 
 
 def default_exception_handler(ex, req, resp, params):
-    """Catch-all execption handler for standardized output.
+    """Catch-all exception handler for standardized output.
 
     If this is a standard falcon HTTPError, rethrow it for handling by
     ``default_exception_serializer`` below.
     """
     if isinstance(ex, falcon.HTTPError):
-        # Allow the falcon http errors to bubble up and get handled.
+        # Allow the falcon HTTP errors to bubble up and get handled.
         raise ex
+    elif isinstance(ex, DeckhandException):
+        status_code = (getattr(falcon, 'HTTP_%d' % ex.code, falcon.HTTP_500)
+                       if hasattr(ex, 'code') else falcon.HTTP_500)
+
+        format_error_resp(
+            req,
+            resp,
+            status_code=status_code,
+            message=ex.message,
+            error_type=ex.__class__.__name__,
+            error_list=getattr(ex, 'error_list', None),
+            reason=getattr(ex, 'reason', None)
+        )
     else:
         # Take care of the uncaught stuff.
-        exc_string = traceback.format_exc()
-        LOG.error('Unhanded Exception being handled: \n%s', exc_string)
         format_error_resp(
             req,
             resp,
@@ -139,9 +149,9 @@ def default_exception_serializer(req, resp, exception):
         status_code=exception.status,
         # TODO(fmontei): Provide an overall error message instead.
         message=exception.description,
-        reason=exception.title,
         error_type=exception.__class__.__name__,
-        error_list=[{'message': exception.description, 'error': True}]
+        error_list=getattr(exception, 'error_list', None),
+        reason=getattr(exception, 'reason', None)
     )
 
 
@@ -164,6 +174,18 @@ class DeckhandException(Exception):
                 message = self.msg_fmt
 
         self.message = message
+        self.reason = kwargs.pop('reason', None)
+
+        error_list = kwargs.pop('error_list', [])
+        self.error_list = []
+
+        for error in error_list:
+            if isinstance(error, str):
+                error = {'message': error, 'error': True}
+            else:
+                error = error.format_message()
+            self.error_list.append(error)
+
         super(DeckhandException, self).__init__(message)
 
     def format_message(self):
@@ -175,8 +197,7 @@ class InvalidDocumentFormat(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("The provided document(s) schema=%(schema)s, layer=%(layer)s, "
-               "name=%(name)s failed schema validation. Errors: %(errors)s")
+    msg_fmt = ("The provided documents failed schema validation.")
     code = 400
 
 
@@ -206,6 +227,7 @@ class InvalidDocumentParent(DeckhandException):
     msg_fmt = ("The document parent [%(parent_schema)s] %(parent_name)s is "
                "invalid for document [%(document_schema)s] %(document_name)s. "
                "Reason: %(reason)s")
+    code = 400
 
 
 class IndeterminateDocumentParent(DeckhandException):

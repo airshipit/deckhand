@@ -13,11 +13,15 @@
 # limitations under the License.
 
 import falcon
+from oslo_log import log as logging
+from oslo_utils import excutils
 
 from deckhand.control import base as api_base
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 from deckhand import policy
+
+LOG = logging.getLogger(__name__)
 
 
 class RevisionDiffingResource(api_base.BaseResource):
@@ -33,8 +37,9 @@ class RevisionDiffingResource(api_base.BaseResource):
         try:
             resp_body = db_api.revision_diff(
                 revision_id, comparison_revision_id)
-        except (errors.RevisionNotFound) as e:
-            raise falcon.HTTPNotFound(description=e.format_message())
+        except errors.RevisionNotFound as e:
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         resp.status = falcon.HTTP_200
         resp.body = resp_body

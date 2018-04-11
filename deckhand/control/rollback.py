@@ -13,12 +13,16 @@
 # limitations under the License.
 
 import falcon
+from oslo_log import log as logging
+from oslo_utils import excutils
 
 from deckhand.control import base as api_base
 from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 from deckhand import policy
+
+LOG = logging.getLogger(__name__)
 
 
 class RollbackResource(api_base.BaseResource):
@@ -31,7 +35,8 @@ class RollbackResource(api_base.BaseResource):
         try:
             latest_revision = db_api.revision_get_latest()
         except errors.RevisionNotFound as e:
-            raise falcon.HTTPNotFound(description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         for document in latest_revision['documents']:
             if document['metadata'].get('storagePolicy') == 'encrypted':
@@ -43,7 +48,8 @@ class RollbackResource(api_base.BaseResource):
             rollback_revision = db_api.revision_rollback(
                 revision_id, latest_revision)
         except errors.InvalidRollback as e:
-            raise falcon.HTTPBadRequest(description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         revision_resp = self.view_builder.show(rollback_revision)
         resp.status = falcon.HTTP_201

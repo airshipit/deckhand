@@ -35,14 +35,14 @@ class ViewBuilder(common.ViewBuilder):
         attrs = ['id', 'metadata', 'data', 'schema']
 
         for document in documents:
-            if document['deleted']:
+            if document.get('deleted'):
                 continue
             if document['schema'].startswith(types.VALIDATION_POLICY_SCHEMA):
                 continue
-            resp_obj = {x: document[x] for x in attrs}
+            resp_obj = {x: document.get(x) for x in attrs}
             resp_obj.setdefault('status', {})
-            resp_obj['status']['bucket'] = document['bucket_name']
-            resp_obj['status']['revision'] = document['revision_id']
+            resp_obj['status']['bucket'] = document.get('bucket_name')
+            resp_obj['status']['revision'] = document.get('revision_id')
             resp_list.append(resp_obj)
 
         # Edge case for when all documents are deleted from a bucket. To detect
@@ -53,8 +53,8 @@ class ViewBuilder(common.ViewBuilder):
         # across all the documents in ``documents``.
         if not resp_list and documents:
             resp_obj = {'status': {}}
-            resp_obj['status']['bucket'] = documents[0]['bucket_name']
-            resp_obj['status']['revision'] = documents[0]['revision_id']
+            resp_obj['status']['bucket'] = documents[0].get('bucket_name')
+            resp_obj['status']['revision'] = documents[0].get('revision_id')
             return [resp_obj]
 
         return resp_list

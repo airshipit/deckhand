@@ -145,37 +145,22 @@ tests:
     status: 400
     response_multidoc_jsonpaths:
       $.`len`: 1
+      $.[0].apiVersion: v1.0
+      $.[0].code: 400 Bad Request
+      $.[0].details.errorCount: 1
+      $.[0].details.errorType: InvalidDocumentFormat
+      $.[0].details.messageList[0].documents:
+        - layer: site
+          name: bad
+          schema: example/Doc/v1
+      $.[0].details.messageList[0].error: true
+      $.[0].details.messageList[0].kind: ValidationMessage
+      $.[0].details.messageList[0].level: Error
+      $.[0].details.messageList[0].name: Deckhand validation error
+      $.[0].kind: Status
+      $.[0].message: The provided documents failed schema validation.
+      $.[0].reason: Validation
       $.[0].status: Failure
-      $.[0].message:
-        - errors:
-          - validation_schema:
-              "$schema": http://json-schema.org/schema#
-              properties:
-                a:
-                  type: string
-                b:
-                  maximum: 100
-                  type: integer
-                  minimum: 0
-              type: object
-              required:
-              - a
-              - b
-              additionalProperties: false
-            error_section:
-              a: this-one-is-required-and-can-be-different
-              b: 177
-            schema_path: ".properties.b.maximum"
-            name: bad
-            schema: example/Doc/v1
-            layer: site
-            path: ".data.b"
-            message: 177 is greater than the maximum of 100
-          name: deckhand-schema-validation
-          validator:
-            name: deckhand
-            version: '1.0'
-          status: failure
 
   - name: add_invalid_document_with_substitutions
     desc: Add a document that does not follow the schema
@@ -216,34 +201,9 @@ tests:
     status: 400
     response_multidoc_jsonpaths:
       $.`len`: 1
-      $.[0].status: Failure
-      $.[0].message:
-        - errors:
-          - name: bad
-            layer: site
-            schema: example/Doc/v1
-            path: .data.b
-            schema_path: .properties.b.maximum
-            error_section:
-              a: Sanitized to avoid exposing secret.
-              b: 177
-            message: 177 is greater than the maximum of 100
-            validation_schema:
-              $schema: http://json-schema.org/schema#
-              additionalProperties: False
-              properties:
-                a:
-                  type: string
-                b:
-                  maximum: 100
-                  minimum: 0
-                  type: integer
-              required:
-                - a
-                - b
-              type: object
-          name: deckhand-schema-validation
-          validator:
-            name: deckhand
-            version: '1.0'
-          status: failure
+      $.[0].code: 400 Bad Request
+      $.[0].details.errorCount: 1
+      $.[0].details.errorType: InvalidDocumentFormat
+      $.[0].details.messageList[0].diagnostic.error_section:
+        a: 'Sanitized to avoid exposing secret.'
+        b: 177

@@ -14,9 +14,11 @@
 
 import falcon
 from oslo_log import log as logging
+from oslo_utils import excutils
 import six
 
 from deckhand.common import utils
+from deckhand.common.validation_message import ValidationMessage
 from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import document as document_view
@@ -118,17 +120,14 @@ class RenderedDocumentsResource(api_base.BaseResource):
                 errors.InvalidDocumentParent,
                 errors.InvalidDocumentReplacement,
                 errors.IndeterminateDocumentParent,
+                errors.LayeringPolicyNotFound,
                 errors.MissingDocumentKey,
                 errors.SubstitutionSourceDataNotFound,
+                errors.SubstitutionSourceNotFound,
+                errors.UnknownSubstitutionError,
                 errors.UnsupportedActionMethod) as e:
-            raise falcon.HTTPBadRequest(description=e.format_message())
-        except (errors.LayeringPolicyNotFound,
-                errors.SubstitutionSourceNotFound) as e:
-            raise falcon.HTTPConflict(description=e.format_message())
-        except (errors.DeckhandException,
-                errors.UnknownSubstitutionError) as e:
-            raise falcon.HTTPInternalServerError(
-                description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all
@@ -187,12 +186,37 @@ class RenderedDocumentsResource(api_base.BaseResource):
         try:
             validations = doc_validator.validate_all()
         except errors.InvalidDocumentFormat as e:
-            LOG.error('Failed to post-validate rendered documents.')
-            LOG.exception(e.format_message())
-            raise falcon.HTTPInternalServerError(
-                description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                # Post-rendering validation errors likely indicate an internal
+                # rendering bug, so override the default code to 500.
+                e.code = 500
+                LOG.error('Failed to post-validate rendered documents.')
+                LOG.exception(e.format_message())
         else:
-            failed_validations = [
-                v for v in validations if v['status'] == 'failure']
-            if failed_validations:
-                raise falcon.HTTPBadRequest(description=failed_validations)
+            error_list = []
+
+            for validation in validations:
+                if validation['status'] == 'failure':
+                    error_list.extend([
+                        ValidationMessage(
+                            error=True,
+                            message=error['message'],
+                            doc_schema=error['schema'],
+                            doc_name=error['name'],
+                            doc_layer=error['layer'],
+                            diagnostic={
+                                k: v for k, v in error.items() if k in (
+                                    'schema_path',
+                                    'validation_schema',
+                                    'error_section'
+                                )
+                            }
+                        )
+                        for error in validation['errors']
+                    ])
+
+            if error_list:
+                raise errors.InvalidDocumentFormat(
+                    error_list=error_list,
+                    reason='Validation'
+                )

@@ -25,6 +25,7 @@ import six
 
 from deckhand.common import document as document_wrapper
 from deckhand.common import utils
+from deckhand.common.validation_message import ValidationMessage
 from deckhand.engine.secrets_manager import SecretsSubstitution
 from deckhand import errors
 from deckhand import types
@@ -107,6 +108,11 @@ class GenericValidator(BaseValidator):
 
     __slots__ = ('base_schema')
 
+    _diagnostic = (
+        'Ensure that each document has a metadata, schema and data section. '
+        'Each document must pass the schema defined under: '
+        'http://deckhand.readthedocs.io/en/latest/validation.html#base-schema')
+
     def __init__(self):
         super(GenericValidator, self).__init__()
         self.base_schema = self._schema_map['v1']['deckhand/Base']
@@ -149,8 +155,16 @@ class GenericValidator(BaseValidator):
                     'Details: %s', document.schema, document.layer,
                     document.name, error_messages)
                 raise errors.InvalidDocumentFormat(
-                    schema=document.schema, name=document.name,
-                    layer=document.layer, errors=', '.join(error_messages))
+                    error_list=[
+                        ValidationMessage(message=message,
+                                          doc_schema=document.schema,
+                                          doc_name=document.name,
+                                          doc_layer=document.layer,
+                                          diagnostic=self._diagnostic)
+                        for message in error_messages
+                    ],
+                    reason='Validation'
+                )
 
 
 class DataSchemaValidator(GenericValidator):
@@ -430,6 +444,7 @@ class DocumentValidation(object):
         }
 
         formatted_results = []
+
         for result in results:
             formatted_result = {
                 'name': types.DECKHAND_SCHEMA_VALIDATION,
@@ -459,8 +474,7 @@ class DocumentValidation(object):
                 error_outputs = validator.validate(
                     document, pre_validate=self._pre_validate)
                 if error_outputs:
-                    for error_output in error_outputs:
-                        result['errors'].append(error_output)
+                    result['errors'].extend(error_outputs)
 
         if result['errors']:
             result.setdefault('status', 'failure')
@@ -503,5 +517,4 @@ class DocumentValidation(object):
             result = self._validate_one(document)
             validation_results.append(result)
 
-        validations = self._format_validation_results(validation_results)
-        return validations
+        return self._format_validation_results(validation_results)

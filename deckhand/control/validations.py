@@ -14,6 +14,7 @@
 
 import falcon
 from oslo_log import log as logging
+from oslo_utils import excutils
 
 from deckhand.control import base as api_base
 from deckhand.control.views import validation as validation_view
@@ -44,7 +45,8 @@ class ValidationsResource(api_base.BaseResource):
             resp_body = db_api.validation_create(
                 revision_id, validation_name, validation_data)
         except errors.RevisionNotFound as e:
-            raise falcon.HTTPNotFound(description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         resp.status = falcon.HTTP_201
         resp.append_header('Content-Type', 'application/x-yaml')
@@ -77,8 +79,10 @@ class ValidationsResource(api_base.BaseResource):
         try:
             entry = db_api.validation_get_entry(
                 revision_id, validation_name, entry_id)
-        except (errors.RevisionNotFound, errors.ValidationNotFound) as e:
-            raise falcon.HTTPNotFound(description=e.format_message())
+        except (errors.RevisionNotFound,
+                errors.ValidationNotFound) as e:
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         resp_body = self.view_builder.show_entry(entry)
         return resp_body
@@ -90,7 +94,8 @@ class ValidationsResource(api_base.BaseResource):
             entries = db_api.validation_get_all_entries(revision_id,
                                                         validation_name)
         except errors.RevisionNotFound as e:
-            raise falcon.HTTPNotFound(description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         resp_body = self.view_builder.list_entries(entries)
         return resp_body
@@ -100,7 +105,8 @@ class ValidationsResource(api_base.BaseResource):
         try:
             validations = db_api.validation_get_all(revision_id)
         except errors.RevisionNotFound as e:
-            raise falcon.HTTPNotFound(description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         resp_body = self.view_builder.list(validations)
         return resp_body

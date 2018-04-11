@@ -149,21 +149,22 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
             parts = property_to_remove.split('.')
             missing_property = parts[-1]
 
-            expected_err = "'%s' is a required property" % missing_property
-            self.assertIn(expected_err, e.message)
+            error_re = r"%s is a required property" % missing_property
+            self.assertRegex(str(e.error_list).replace("\'", ""), error_re)
 
     def test_document_invalid_layering_definition_action(self):
         document = self._read_data('sample_document')
         missing_data = self._corrupt_data(
             document, 'metadata.layeringDefinition.actions.0.method',
             'invalid', op='replace')
-        expected_err = (
-            r".+ 'invalid' is not one of \['replace', 'delete', 'merge'\]")
+        error_re = (
+            r".*invalid is not one of \[replace, delete, merge\]")
 
         payload = [missing_data]
         doc_validator = document_validation.DocumentValidation(payload)
-        self.assertRaisesRegexp(errors.InvalidDocumentFormat, expected_err,
-                                doc_validator.validate_all)
+        e = self.assertRaises(errors.InvalidDocumentFormat,
+                              doc_validator.validate_all)
+        self.assertRegex(str(e.error_list[0]).replace("\'", ""), error_re)
 
     def test_layering_policy_missing_required_sections(self):
         properties_to_remove = (

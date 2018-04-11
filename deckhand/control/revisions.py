@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import falcon
+from oslo_log import log as logging
+from oslo_utils import excutils
 
 from deckhand.common import utils
 from deckhand.control import base as api_base
@@ -21,6 +23,8 @@ from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 from deckhand import policy
+
+LOG = logging.getLogger(__name__)
 
 
 class RevisionsResource(api_base.BaseResource):
@@ -50,7 +54,8 @@ class RevisionsResource(api_base.BaseResource):
         try:
             revision = db_api.revision_get(revision_id)
         except errors.RevisionNotFound as e:
-            raise falcon.HTTPNotFound(description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         revision_resp = self.view_builder.show(revision)
         resp.status = falcon.HTTP_200

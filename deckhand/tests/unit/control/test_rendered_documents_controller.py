@@ -200,8 +200,8 @@ class TestRenderedDocumentsControllerNegative(
         test_base.BaseControllerTest):
 
     def test_rendered_documents_fail_schema_validation(self):
-        """Validates that when fully rendered documents fail schema validation,
-        the controller raises a 500 Internal Server Error.
+        """Validates that when fully rendered documents fail basic schema
+        validation (sanity-checking), a 500 is raised.
         """
         rules = {'deckhand:list_cleartext_documents': '@',
                  'deckhand:list_encrypted_documents': '@',
@@ -231,6 +231,61 @@ class TestRenderedDocumentsControllerNegative(
         # Verify that a 500 Internal Server Error is thrown following failed
         # schema validation.
         self.assertEqual(500, resp.status_code)
+
+    def test_rendered_documents_fail_post_validation(self):
+        """Validates that when fully rendered documents fail schema validation,
+        a 400 is raised.
+
+        For this scenario a DataSchema checks that the relevant document has
+        a key in its data section, a key which is removed during the rendering
+        process as the document uses a delete action. This triggers
+        post-rendering validation failure.
+        """
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a document for a bucket.
+        documents_factory = factories.DocumentFactory(2, [1, 1])
+        payload = documents_factory.gen_test({
+            "_GLOBAL_DATA_1_": {"data": {"a": "b"}},
+            "_SITE_DATA_1_": {"data": {"a": "b"}},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "delete", "path": "."}]
+            }
+        }, site_abstract=False)
+
+        data_schema_factory = factories.DataSchemaFactory()
+        metadata_name = payload[-1]['schema']
+        schema_to_use = {
+            '$schema': 'http://json-schema.org/schema#',
+            'type': 'object',
+            'properties': {
+                'a': {
+                    'type': 'string'
+                }
+            },
+            'required': ['a'],
+            'additionalProperties': False
+        }
+        data_schema = data_schema_factory.gen_test(
+            metadata_name, data=schema_to_use)
+        payload.append(data_schema)
+
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+
+        self.assertEqual(400, resp.status_code)
 
 
 class TestRenderedDocumentsControllerNegativeRBAC(

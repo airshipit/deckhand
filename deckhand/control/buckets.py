@@ -14,7 +14,7 @@
 
 import falcon
 from oslo_log import log as logging
-import six
+from oslo_utils import excutils
 
 from deckhand.control import base as api_base
 from deckhand.control.views import document as document_view
@@ -48,8 +48,8 @@ class BucketsResource(api_base.BaseResource):
                 documents, data_schemas, pre_validate=True)
             validations = doc_validator.validate_all()
         except deckhand_errors.InvalidDocumentFormat as e:
-            LOG.exception(e.format_message())
-            raise falcon.HTTPBadRequest(description=e.format_message())
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         for document in documents:
             if secrets_manager.SecretsManager.requires_encryption(document):
@@ -59,11 +59,10 @@ class BucketsResource(api_base.BaseResource):
 
         try:
             documents = self._prepare_secret_documents(documents)
-        except deckhand_errors.BarbicanException as e:
-            LOG.error('An unknown exception occurred while trying to store '
-                      'a secret in Barbican.')
-            raise falcon.HTTPInternalServerError(
-                description=e.format_message())
+        except deckhand_errors.BarbicanException:
+            with excutils.save_and_reraise_exception():
+                LOG.error('An unknown exception occurred while trying to store'
+                          ' a secret in Barbican.')
 
         created_documents = self._create_revision_documents(
             bucket_name, documents, validations)
@@ -86,8 +85,7 @@ class BucketsResource(api_base.BaseResource):
                 bucket_name, documents, validations=validations)
         except (deckhand_errors.DuplicateDocumentExists,
                 deckhand_errors.SingletonDocumentConflict) as e:
-            raise falcon.HTTPConflict(description=e.format_message())
-        except Exception as e:
-            raise falcon.HTTPInternalServerError(description=six.text_type(e))
+            with excutils.save_and_reraise_exception():
+                LOG.exception(e.format_message())
 
         return created_documents
