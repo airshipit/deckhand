@@ -27,22 +27,43 @@ CONF = cfg.CONF
 logging.register_options(CONF)
 LOG = logging.getLogger(__name__)
 
-CONFIG_FILES = ['deckhand.conf', 'deckhand-paste.ini']
+CONFIG_FILES = {
+    'conf': 'deckhand.conf',
+    'paste': 'deckhand-paste.ini'
+}
+_NO_AUTH_CONFIG = 'noauth-paste.ini'
 
 
 def _get_config_files(env=None):
     if env is None:
         env = os.environ
+
+    config_files = CONFIG_FILES.copy()
     dirname = env.get('DECKHAND_CONFIG_DIR', '/etc/deckhand').strip()
-    return [os.path.join(dirname, config_file) for config_file in CONFIG_FILES]
+
+    # Workaround the fact that this reads from a config file to determine which
+    # paste.ini file to use for server instantiation. This chicken and egg
+    # problem is solved by using ConfigParser below.
+    conf_path = os.path.join(dirname, config_files['conf'])
+    temp_conf = {}
+    config_parser = cfg.ConfigParser(conf_path, temp_conf)
+    config_parser.parse()
+    use_development_mode = (
+        temp_conf['DEFAULT'].get('development_mode') == ['true']
+    )
+
+    if use_development_mode:
+        config_files['paste'] = _NO_AUTH_CONFIG
+        LOG.warning('Development mode enabled - Keystone authentication '
+                    'disabled.')
+
+    return {
+        key: os.path.join(dirname, file) for key, file in config_files.items()
+    }
 
 
 def setup_logging(conf):
-    # Add additional dependent libraries that have unhelp bug levels
-    extra_log_level_defaults = []
-
-    logging.set_defaults(default_log_levels=logging.get_default_log_levels() +
-                         extra_log_level_defaults)
+    logging.set_defaults(default_log_levels=logging.get_default_log_levels())
     logging.setup(conf, 'deckhand')
     py_logging.captureWarnings(True)
 
@@ -53,9 +74,12 @@ def init_application():
     Create routes for the v1.0 API and sets up logging.
     """
     config_files = _get_config_files()
-    paste_file = config_files[-1]
+    paste_file = config_files['paste']
 
-    CONF([], project='deckhand', default_config_files=config_files)
+    CONF([],
+         project='deckhand',
+         default_config_files=list(config_files.values()))
+
     setup_logging(CONF)
 
     policy.Enforcer(CONF)

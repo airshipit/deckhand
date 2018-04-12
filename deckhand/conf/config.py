@@ -36,22 +36,12 @@ barbican_opts = [
 
 
 default_opts = [
-    cfg.BoolOpt('allow_anonymous_access', default=False,
-                help="""
-Allow limited access to unauthenticated users.
-
-Assign a boolean to determine API access for unauthenticated
-users. When set to False, the API cannot be accessed by
-unauthenticated users. When set to True, unauthenticated users can
-access the API with read-only privileges.
-
-Possible values:
-    * True
-    * False
-"""),
     cfg.BoolOpt('profiler', default=False,
-                help="Enabling profiling of API requests. Do NOT "
-                     "use in production."),
+                help="Enables profiling of API requests. Do NOT use in "
+                     "production."),
+    cfg.BoolOpt('development_mode', default=False,
+                help="Enables development mode, which disables Keystone "
+                     "authentication. Do NOT use in production.")
 ]
 
 

@@ -141,7 +141,7 @@ function deploy_deckhand {
     openstack service list | grep deckhand
     openstack endpoint list | grep deckhand
 
-    gen_config $deckhand_endpoint
+    gen_config false $deckhand_endpoint
     gen_paste false
 
     # NOTE(fmontei): Generate an admin token instead of hacking a policy

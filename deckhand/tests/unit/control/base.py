@@ -31,9 +31,9 @@ class BaseControllerTest(test_base.DeckhandWithDBTestCase,
         self.app = falcon_testing.TestClient(
             service.deckhand_app_factory(None))
         self.policy = self.useFixture(fixtures.RealPolicyFixture())
-        # NOTE: allow_anonymous_access allows these unit tests to get around
+        # NOTE: development_mode allows these unit tests to get around
         # Keystone authentication.
-        self.useFixture(fixtures.ConfPatcher(allow_anonymous_access=True))
+        self.useFixture(fixtures.ConfPatcher(development_mode=True))
 
     def _read_data(self, file_name):
         # Reads data from a file in the resources directory

@@ -46,9 +46,8 @@ trap cleanup_deckhand EXIT
 
 
 function deploy_deckhand {
-    gen_config "http://localhost:9000"
+    gen_config true "127.0.0.1:9000"
     gen_paste true
-    gen_policy
 
     if [ -z "$DECKHAND_IMAGE" ]; then
         log_section "Running Deckhand via uwsgi."
@@ -64,6 +63,13 @@ function deploy_deckhand {
         source $ROOTDIR/../entrypoint.sh server &
     else
         log_section "Running Deckhand via Docker."
+
+        # If container is already running, kill it.
+        DECKHAND_ID=$(sudo docker ps --filter ancestor=$DECKHAND_IMAGE --format "{{.ID}}")
+        if [ -n "$DECKHAND_ID" ]; then
+            sudo docker stop $DECKHAND_ID
+        fi
+
         sudo docker run \
             --rm \
             --net=host \
@@ -75,13 +81,13 @@ function deploy_deckhand {
             -p 9000:9000 \
             -v $CONF_DIR:/etc/deckhand \
             $DECKHAND_IMAGE server &> $STDOUT &
+
+        DECKHAND_ID=$(sudo docker ps | grep deckhand | awk '{print $1}')
+        echo $DECKHAND_ID
     fi
 
     # Give the server a chance to come up. Better to poll a health check.
     sleep 5
-
-    DECKHAND_ID=$(sudo docker ps | grep deckhand | awk '{print $1}')
-    echo $DECKHAND_ID
 }
 
 

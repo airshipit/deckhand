@@ -49,10 +49,12 @@ class TestApi(test_base.DeckhandTestCase):
         curr_path = os.path.dirname(os.path.realpath(__file__))
         repo_path = os.path.join(
             curr_path, os.pardir, os.pardir, os.pardir, os.pardir)
-        temp_config_files = [
-            os.path.join(repo_path, 'etc', 'deckhand', 'deckhand.conf.sample'),
-            os.path.join(repo_path, 'etc', 'deckhand', 'deckhand-paste.ini')
-        ]
+        temp_config_files = {
+            'conf': os.path.join(
+                repo_path, 'etc', 'deckhand', 'deckhand.conf.sample'),
+            'paste': os.path.join(
+                repo_path, 'etc', 'deckhand', 'deckhand-paste.ini')
+        }
         mock_get_config_files = self.patchobject(
             api, '_get_config_files', autospec=True)
         mock_get_config_files.return_value = temp_config_files

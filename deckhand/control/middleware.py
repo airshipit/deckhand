@@ -54,7 +54,7 @@ class ContextMiddleware(object):
             if req.headers.get('X-IDENTITY-STATUS') == 'Confirmed':
                 req.context = deckhand.context.RequestContext.from_environ(
                     req.env)
-            elif CONF.allow_anonymous_access:
+            elif CONF.development_mode:
                 req.context = deckhand.context.get_context()
             else:
                 raise falcon.HTTPUnauthorized()

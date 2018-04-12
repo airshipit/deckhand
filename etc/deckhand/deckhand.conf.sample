@@ -4,20 +4,12 @@
 # From deckhand.conf
 #
 
-#
-# Allow limited access to unauthenticated users.
-#
-# Assign a boolean to determine API access for unathenticated
-# users. When set to False, the API cannot be accessed by
-# unauthenticated users. When set to True, unauthenticated users can
-# access the API with read-only privileges. This however only applies
-# when using ContextMiddleware.
-#
-# Possible values:
-#     * True
-#     * False
-#  (boolean value)
-#allow_anonymous_access = false
+# Enables profiling of API requests. Do NOT use in production. (boolean value)
+#profiler = false
+
+# Enables development mode, which disables Keystone authentication. Do NOT use
+# in production. (boolean value)
+#development_mode = false
 
 #
 # From oslo.log
@@ -75,6 +67,10 @@
 # Syslog facility to receive log lines. This option is ignored if
 # log_config_append is set. (string value)
 #syslog_log_facility = LOG_USER
+
+# Use JSON formatting for logging. This option is ignored if log_config_append
+# is set. (boolean value)
+#use_json = false
 
 # Log output to standard error. This option is ignored if log_config_append is
 # set. (boolean value)
@@ -164,6 +160,9 @@
 
 # Authentication URL (string value)
 #auth_url = <None>
+
+# Scope for system operations (string value)
+#system_scope = <None>
 
 # Domain ID to scope to (string value)
 #domain_id = <None>
@@ -337,6 +336,10 @@
 # raised. Set to -1 to specify an infinite retry count. (integer value)
 #db_max_retries = 20
 
+# Optional URL parameters to append onto the connection URL at connect time;
+# specify as param1=value1&param2=value2&... (string value)
+#connection_parameters =
+
 
 [healthcheck]
 
@@ -379,6 +382,22 @@
 # you're using a versioned v2 endpoint here, then this should *not* be the same
 # endpoint the service user utilizes for validating tokens, because normal end
 # users may not be able to reach that endpoint. (string value)
+# Deprecated group/name - [keystone_authtoken]/auth_uri
+#www_authenticate_uri = <None>
+
+# DEPRECATED: Complete "public" Identity API endpoint. This endpoint should not
+# be an "admin" endpoint, as it should be accessible by all end users.
+# Unauthenticated clients are redirected to this endpoint to authenticate.
+# Although this endpoint should ideally be unversioned, client support in the
+# wild varies. If you're using a versioned v2 endpoint here, then this should
+# *not* be the same endpoint the service user utilizes for validating tokens,
+# because normal end users may not be able to reach that endpoint. This option
+# is deprecated in favor of www_authenticate_uri and will be removed in the S
+# release. (string value)
+# This option is deprecated for removal since Queens.
+# Its value may be silently ignored in the future.
+# Reason: The auth_uri option is deprecated in favor of www_authenticate_uri and
+# will be removed in the S  release.
 #auth_uri = <None>
 
 # API version of the admin Identity API endpoint. (string value)
@@ -451,7 +470,10 @@
 # in the cache. If ENCRYPT, token data is encrypted and authenticated in the
 # cache. If the value is not one of these options or empty, auth_token will
 # raise an exception on initialization. (string value)
-# Allowed values: None, MAC, ENCRYPT
+# Possible values:
+# None - <No description provided>
+# MAC - <No description provided>
+# ENCRYPT - <No description provided>
 #memcache_security_strategy = None
 
 # (Optional, mandatory if memcache_security_strategy is defined) This string is
@@ -568,6 +590,14 @@
 # From oslo.policy
 #
 
+# This option controls whether or not to enforce scope when evaluating policies.
+# If ``True``, the scope of the token used in the request is compared to the
+# ``scope_types`` of the policy being enforced. If the scopes do not match, an
+# ``InvalidScope`` exception will be raised. If ``False``, a message will be
+# logged informing operators that policies are being invoked with mismatching
+# scope. (boolean value)
+#enforce_scope = false
+
 # The file that defines policies. (string value)
 #policy_file = policy.json
 
@@ -580,3 +610,22 @@
 # directories to be searched.  Missing or empty directories are ignored. (multi
 # valued)
 #policy_dirs = policy.d
+
+# Content Type to send and receive data for REST based policy check (string
+# value)
+# Possible values:
+# application/x-www-form-urlencoded - <No description provided>
+# application/json - <No description provided>
+#remote_content_type = application/x-www-form-urlencoded
+
+# server identity verification for REST based policy check (boolean value)
+#remote_ssl_verify_server_crt = false
+
+# Absolute path to ca cert file for REST based policy check (string value)
+#remote_ssl_ca_crt_file = <None>
+
+# Absolute path to client cert for REST based policy check (string value)
+#remote_ssl_client_crt_file = <None>
+
+# Absolute path client key file REST based policy check (string value)
+#remote_ssl_client_key_file = <None>

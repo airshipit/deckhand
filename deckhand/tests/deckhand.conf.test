@@ -2,10 +2,7 @@
 debug = true
 publish_errors = true
 use_stderr = true
-# NOTE: allow_anonymous_access allows these functional tests to get around
-# Keystone authentication, but the context that is provided has zero privileges
-# so we must also override the policy file for authorization to pass.
-allow_anonymous_access = true
+development_mode = false
 
 [oslo_policy]
 policy_file = policy.yaml

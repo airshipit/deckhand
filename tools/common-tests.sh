@@ -10,6 +10,16 @@ function log_section {
 
 
 function deploy_postgre {
+    #######################################
+    # Deploy an ephemeral PostgreSQL DB.
+    # Globals:
+    #   POSTGRES_ID
+    #   POSTGRES_IP
+    # Arguments:
+    #   None
+    # Returns:
+    #   None
+    #######################################
     set -xe
 
     POSTGRES_ID=$(
@@ -31,6 +41,19 @@ function deploy_postgre {
 
 
 function gen_config {
+    #######################################
+    # Generate sample configuration file
+    # Globals:
+    #   CONF_DIR
+    #   DECKHAND_TEST_URL
+    #   DATABASE_URL
+    #   DECKHAND_CONFIG_DIR
+    # Arguments:
+    #   disable_keystone: true or false
+    #   Deckhand test URL: URL to Deckhand wsgi server
+    # Returns:
+    #   None
+    #######################################
     set -xe
 
     log_section "Creating config directory and test deckhand.conf"
@@ -38,7 +61,8 @@ function gen_config {
     CONF_DIR=$(mktemp -d -p $(pwd))
     sudo chmod 777 -R $CONF_DIR
 
-    export DECKHAND_TEST_URL=$1
+    local disable_keystone=$1
+    export DECKHAND_TEST_URL=$2
     export DATABASE_URL=postgresql+psycopg2://deckhand:password@$POSTGRES_IP:5432/deckhand
     # Used by Deckhand's initialization script to search for config files.
     export DECKHAND_CONFIG_DIR=$CONF_DIR
@@ -54,6 +78,11 @@ function gen_config {
         sed '1 a log_config_append = '"$CONF_DIR"'/logging.conf' $conf_file
     fi
 
+    if $disable_keystone; then
+        log_section "Toggling development_mode on to disable Keystone authentication."
+        sed -i -e 's/development_mode = false/development_mode = true/g' $conf_file
+    fi
+
     echo $conf_file 1>&2
     cat $conf_file 1>&2
 
@@ -63,33 +92,23 @@ function gen_config {
 
 
 function gen_paste {
+    #######################################
+    # Generate sample paste.ini file
+    # Globals:
+    #   CONF_DIR
+    # Arguments:
+    #   disable_keystone: true or false
+    # Returns:
+    #   None
+    #######################################
     set -xe
 
     local disable_keystone=$1
 
     if $disable_keystone; then
-        log_section Disabling Keystone authentication.
-        sed 's/authtoken api/api/' etc/deckhand/deckhand-paste.ini &> $CONF_DIR/deckhand-paste.ini
+        log_section "Using noauth-paste.ini to disable Keystone authentication."
+        cp etc/deckhand/noauth-paste.ini $CONF_DIR/noauth-paste.ini
     else
         cp etc/deckhand/deckhand-paste.ini $CONF_DIR/deckhand-paste.ini
     fi
-}
-
-
-function gen_policy {
-    set -xe
-
-    log_section "Creating policy file with liberal permissions"
-
-    policy_file='etc/deckhand/policy.yaml.sample'
-    policy_pattern="deckhand\:"
-
-    touch $CONF_DIR/policy.yaml
-
-    sed -n "/$policy_pattern/p" "$policy_file" \
-        | sed 's/^../\"/' \
-        | sed 's/rule\:[A-Za-z\_\-]*/@/' > $CONF_DIR/policy.yaml
-
-    echo $CONF_DIR/'policy.yaml' 1>&2
-    cat $CONF_DIR/'policy.yaml' 1>&2
 }

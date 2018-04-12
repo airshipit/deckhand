@@ -175,11 +175,36 @@ Substitute the connection information into the config file in
 Finally, run Deckhand::
 
     $ chmod +x entrypoint.sh
-    $ ./entrypoint.sh
+    $ ./entrypoint.sh server
 
 To kill the ephemeral DB afterward::
 
     $ pifpaf_stop
+
+Development Mode
+----------------
+
+Development mode means running Deckhand without Keystone authentication.
+Note that enabling development mode will effectively disable all authN
+and authZ in Deckhand.
+
+To enable development mode, add the following to the ``deckhand.conf``
+inside ``$CONF_DIR``:
+
+.. code-block:: ini
+
+  [DEFAULT]
+  development_mode = True
+
+After, from the command line, execute:
+
+.. code-block:: console
+
+    $ [sudo] docker run --rm \
+        --net=host \
+        -p 9000:9000 \
+        -v $CONF_DIR:/etc/deckhand \
+        quay.io/attcomdev/deckhand:latest server
 
 Development Utilities
 ---------------------
