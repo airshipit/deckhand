@@ -61,6 +61,14 @@ Developer's Guide
    policy-enforcement
    testing
 
+Release Notes
+=============
+
+.. toctree::
+   :maxdepth: 1
+
+   releasenotes/index.rst
+
 Glossary
 ========
 
