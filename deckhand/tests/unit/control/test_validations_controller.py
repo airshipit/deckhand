@@ -53,7 +53,7 @@ validator:
 """
 
 
-class ValidationsControllerBaseTest(test_base.BaseControllerTest):
+class BaseValidationsControllerTest(test_base.BaseControllerTest):
 
     def _create_revision(self, payload=None):
         if not payload:
@@ -97,14 +97,8 @@ class ValidationsControllerBaseTest(test_base.BaseControllerTest):
         self.addCleanup(mock.patch.stopall)
 
 
-class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
-    """Test suite for validating positive scenarios for post-validations with
-    Validations controller.
-    """
-
-    def setUp(self):
-        super(TestValidationsControllerPostValidate, self).setUp()
-        self._monkey_patch_document_validation()
+class TestValidationsController(BaseValidationsControllerTest):
+    """Test suite for validating Validations API."""
 
     def test_create_validation(self):
         rules = {'deckhand:create_cleartext_documents': '@',
@@ -194,7 +188,7 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
         revision_id = self._create_revision()
 
         # Validate that 3 entries (1 for each of the 3 documents created)
-        # exists for
+        # exists for:
         # /api/v1.0/revisions/1/validations/deckhand-schema-validation
         resp = self.app.simulate_get(
             '/api/v1.0/revisions/%s/validations/%s' % (
@@ -363,6 +357,98 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
             headers={'Content-Type': 'application/x-yaml'})
         self.assertEqual(404, resp.status_code)
         self.assertEqual(expected_error, yaml.safe_load(resp.text)['message'])
+
+    def test_list_validations_details(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_validations': '@'}
+        self.policy.set_rules(rules)
+
+        revision_id = self._create_revision()
+
+        # Validate that 3 entries (1 for each of the 3 documents created)
+        # exists for
+        # /api/v1.0/revisions/1/validations/deckhand-schema-validation
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations/detail' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'results': [{
+                'createdAt': None,
+                'errors': [],
+                'expiresAfter': None,
+                'id': idx,
+                'name': 'deckhand-schema-validation',
+                'status': 'success'
+
+            } for idx in range(3)],
+            'count': 3
+        }
+        self.assertEqual(expected_body, body)
+
+
+class TestValidationsControllerPreValidate(BaseValidationsControllerTest):
+    """Test suite for validating positive scenarios for pre-validations with
+    Validations controller.
+    """
+
+    def test_pre_validate_flag_skips_registered_dataschema_validations(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_validations': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a `DataSchema` against which the test document will be
+        # validated.
+        data_schema_factory = factories.DataSchemaFactory()
+        metadata_name = 'example/foo/v1'
+        schema_to_use = {
+            '$schema': 'http://json-schema.org/schema#',
+            'type': 'object',
+            'properties': {
+                'a': {
+                    'type': 'integer'  # Test doc will fail b/c of wrong type.
+                }
+            },
+            'required': ['a']
+        }
+        data_schema = data_schema_factory.gen_test(
+            metadata_name, data=schema_to_use)
+
+        # Create a document that passes validation and another that fails it.
+        doc_factory = factories.DocumentFactory(1, [1])
+        fail_doc = doc_factory.gen_test(
+            {'_GLOBAL_DATA_1_': {'data': {'a': 'fail'}}},
+            global_abstract=False)[-1]
+        fail_doc['schema'] = 'example/foo/v1'
+        fail_doc['metadata']['name'] = 'test_doc'
+
+        revision_id = self._create_revision(payload=[data_schema, fail_doc])
+
+        # Validate that the validation reports success because `fail_doc`
+        # isn't validated by the `DataSchema`.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/validations' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        body = yaml.safe_load(resp.text)
+        expected_body = {
+            'count': 1,
+            'results': [
+                {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'success'}
+            ]
+        }
+        self.assertEqual(expected_body, body)
+
+
+class TestValidationsControllerPostValidate(BaseValidationsControllerTest):
+    """Test suite for validating positive scenarios for post-validations with
+    Validations controller.
+    """
+
+    def setUp(self):
+        super(TestValidationsControllerPostValidate, self).setUp()
+        self._monkey_patch_document_validation()
 
     def test_validation_with_registered_data_schema(self):
         rules = {'deckhand:create_cleartext_documents': '@',
@@ -817,7 +903,7 @@ class TestValidationsControllerPostValidate(ValidationsControllerBaseTest):
 
 
 class TestValidationsControllerWithValidationPolicy(
-        ValidationsControllerBaseTest):
+        BaseValidationsControllerTest):
 
     def setUp(self):
         super(TestValidationsControllerWithValidationPolicy, self).setUp()
@@ -1157,56 +1243,3 @@ data:
 
         _do_test(VALIDATION_SUCCESS_RESULT, 'success')
         _do_test(VALIDATION_FAILURE_RESULT, 'failure')
-
-
-class TestValidationsControllerPreValidate(ValidationsControllerBaseTest):
-    """Test suite for validating positive scenarios for pre-validations with
-    Validations controller.
-    """
-
-    def test_pre_validate_flag_skips_registered_dataschema_validations(self):
-        rules = {'deckhand:create_cleartext_documents': '@',
-                 'deckhand:list_validations': '@'}
-        self.policy.set_rules(rules)
-
-        # Create a `DataSchema` against which the test document will be
-        # validated.
-        data_schema_factory = factories.DataSchemaFactory()
-        metadata_name = 'example/foo/v1'
-        schema_to_use = {
-            '$schema': 'http://json-schema.org/schema#',
-            'type': 'object',
-            'properties': {
-                'a': {
-                    'type': 'integer'  # Test doc will fail b/c of wrong type.
-                }
-            },
-            'required': ['a']
-        }
-        data_schema = data_schema_factory.gen_test(
-            metadata_name, data=schema_to_use)
-
-        # Create a document that passes validation and another that fails it.
-        doc_factory = factories.DocumentFactory(1, [1])
-        fail_doc = doc_factory.gen_test(
-            {'_GLOBAL_DATA_1_': {'data': {'a': 'fail'}}},
-            global_abstract=False)[-1]
-        fail_doc['schema'] = 'example/foo/v1'
-        fail_doc['metadata']['name'] = 'test_doc'
-
-        revision_id = self._create_revision(payload=[data_schema, fail_doc])
-
-        # Validate that the validation reports success because `fail_doc`
-        # isn't validated by the `DataSchema`.
-        resp = self.app.simulate_get(
-            '/api/v1.0/revisions/%s/validations' % revision_id,
-            headers={'Content-Type': 'application/x-yaml'})
-        self.assertEqual(200, resp.status_code)
-        body = yaml.safe_load(resp.text)
-        expected_body = {
-            'count': 1,
-            'results': [
-                {'name': types.DECKHAND_SCHEMA_VALIDATION, 'status': 'success'}
-            ]
-        }
-        self.assertEqual(expected_body, body)

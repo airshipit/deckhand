@@ -49,7 +49,6 @@ class ValidationsResource(api_base.BaseResource):
                 LOG.exception(e.format_message())
 
         resp.status = falcon.HTTP_201
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = self.view_builder.show(resp_body)
 
     def on_get(self, req, resp, revision_id, validation_name=None,
@@ -64,7 +63,6 @@ class ValidationsResource(api_base.BaseResource):
             resp_body = self._list_all_validations(req, resp, revision_id)
 
         resp.status = falcon.HTTP_200
-        resp.append_header('Content-Type', 'application/x-yaml')
         resp.body = resp_body
 
     @policy.authorize('deckhand:show_validation')
@@ -110,3 +108,20 @@ class ValidationsResource(api_base.BaseResource):
 
         resp_body = self.view_builder.list(validations)
         return resp_body
+
+
+class ValidationsDetailsResource(api_base.BaseResource):
+    """API resource for listing revision validations with details."""
+
+    view_builder = validation_view.ViewBuilder()
+
+    @policy.authorize('deckhand:list_validations')
+    def on_get(self, req, resp, revision_id):
+        try:
+            entries = db_api.validation_get_all_entries(revision_id,
+                                                        val_name=None)
+        except errors.RevisionNotFound as e:
+            raise falcon.HTTPNotFound(description=e.format_message())
+
+        resp.status = falcon.HTTP_200
+        resp.body = self.view_builder.detail(entries)

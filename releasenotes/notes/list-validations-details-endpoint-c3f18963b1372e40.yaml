@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Adds a new endpoint to the Deckhand Validations API,
+    GET /api/v1.0/{revision_id}/validations/detail, which allows for the
+    possibility of listing all validations for a revision with details.
+    The response body includes all details returned by retrieving
+    validation details for a specific validation entry.

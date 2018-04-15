@@ -28,6 +28,19 @@ class ViewBuilder(common.ViewBuilder):
             ]
         }
 
+    def detail(self, entries):
+        results = []
+
+        for idx, entry in enumerate(entries):
+            formatted_entry = self.show_entry(entry)
+            formatted_entry.setdefault('id', idx)
+            results.append(formatted_entry)
+
+        return {
+            'count': len(results),
+            'results': results
+        }
+
     def list_entries(self, entries):
         results = []
 

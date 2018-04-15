@@ -336,6 +336,35 @@ Sample response:
       url: https://deckhand/api/v1.0/revisions/4/validations/promenade-site-validation
       status: failure
 
+GET ``/revisions/{{revision_id}}/validations/detail``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Gets the list of validations, with details, which have been reported for this
+revision.
+
+Sample response:
+
+.. code-block:: yaml
+
+  ---
+  count: 1
+  next: null
+  prev: null
+  results:
+    - name: promenade-site-validation
+      url: https://deckhand/api/v1.0/revisions/4/validations/promenade-site-validation/entries/0
+      status: failure
+      createdAt: 2017-07-16T02:03Z
+      expiresAfter: null
+      expiresAt: null
+      errors:
+        - documents:
+            - schema: promenade/Node/v1
+              name: node-document-name
+            - schema: promenade/Masters/v1
+              name: kubernetes-masters
+          message: Node has master role, but not included in cluster masters list.
+
 GET ``/revisions/{{revision_id}}/validations/{{name}}``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

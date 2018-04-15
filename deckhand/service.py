@@ -54,6 +54,8 @@ def configure_app(app, version=''):
             revision_tags.RevisionTagsResource()),
         ('revisions/{revision_id}/validations',
             validations.ValidationsResource()),
+        ('revisions/{revision_id}/validations/detail',
+            validations.ValidationsDetailsResource()),
         ('revisions/{revision_id}/validations/{validation_name}',
             validations.ValidationsResource()),
         ('revisions/{revision_id}/validations/{validation_name}'

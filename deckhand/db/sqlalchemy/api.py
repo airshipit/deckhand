@@ -1116,14 +1116,10 @@ def validation_get_all(revision_id, session=None):
     return result.values()
 
 
-@require_revision_exists
-def validation_get_all_entries(revision_id, val_name, session=None):
+def _check_validation_entries_against_validation_policies(
+        revision_id, entries, val_name=None, session=None):
     session = session or get_session()
 
-    entries = session.query(models.Validation)\
-        .filter_by(**{'revision_id': revision_id, 'name': val_name})\
-        .order_by(models.Validation.created_at.asc())\
-        .all()
     result = [e.to_dict() for e in entries]
     result_map = {}
     for r in result:
@@ -1148,7 +1144,7 @@ def validation_get_all_entries(revision_id, val_name, session=None):
     # If an entry in the ValidationPolicy was never POSTed, set its status
     # to failure.
     for missing_name in missing_validations:
-        if missing_name == val_name:
+        if val_name is None or missing_name == val_name:
             result.append({
                 'id': len(result),
                 'name': val_name,
@@ -1184,6 +1180,21 @@ def validation_get_all_entries(revision_id, val_name, session=None):
                 })
 
     return result
+
+
+@require_revision_exists
+def validation_get_all_entries(revision_id, val_name=None, session=None):
+    session = session or get_session()
+
+    entries = session.query(models.Validation)\
+        .filter_by(revision_id=revision_id)
+    if val_name:
+        entries = entries.filter_by(name=val_name)
+    entries.order_by(models.Validation.created_at.asc())\
+        .all()
+
+    return _check_validation_entries_against_validation_policies(
+        revision_id, entries, val_name=val_name, session=session)
 
 
 @require_revision_exists
