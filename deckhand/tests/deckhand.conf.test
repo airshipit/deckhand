@@ -1,0 +1,37 @@
+[DEFAULT]
+debug = true
+publish_errors = true
+use_stderr = true
+# NOTE: allow_anonymous_access allows these functional tests to get around
+# Keystone authentication, but the context that is provided has zero privileges
+# so we must also override the policy file for authorization to pass.
+allow_anonymous_access = true
+
+[oslo_policy]
+policy_file = policy.yaml
+
+[barbican]
+
+[database]
+connection = ${DATABASE_URL}
+
+[keystone_authtoken]
+# NOTE(fmontei): Values taken from clouds.yaml. Values only used for
+# integration testing.
+#
+# clouds.yaml (snippet):
+#
+# username: 'admin'
+# password: 'password'
+# project_name: 'admin'
+# project_domain_name: 'default'
+# user_domain_name: 'default'
+# auth_url: 'http://keystone.openstack.svc.cluster.local/v3'
+
+username = admin
+password = password
+project_name = admin
+project_domain_name = Default
+user_domain_name = Default
+auth_url = http://keystone.openstack.svc.cluster.local/v3
+auth_type = password

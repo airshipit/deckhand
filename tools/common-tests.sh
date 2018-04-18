@@ -33,7 +33,7 @@ function deploy_postgre {
 function gen_config {
     set -xe
 
-    log_section Creating config directory and test deckhand.conf
+    log_section "Creating config directory and test deckhand.conf"
 
     CONF_DIR=$(mktemp -d -p $(pwd))
     sudo chmod 777 -R $CONF_DIR
@@ -43,108 +43,22 @@ function gen_config {
     # Used by Deckhand's initialization script to search for config files.
     export DECKHAND_CONFIG_DIR=$CONF_DIR
 
+    local conf_file=${CONF_DIR}/deckhand.conf
+
     cp etc/deckhand/logging.conf.sample $CONF_DIR/logging.conf
+    envsubst '${DATABASE_URL}' < deckhand/tests/deckhand.conf.test > $conf_file
 
-# Create a logging config file to dump everything to stdout/stderr.
-cat <<EOCONF > $CONF_DIR/logging.conf
-[loggers]
-keys = root, deckhand, error
+    # Only set up logging if running Deckhand via uwsgi. The container already has
+    # values for logging.
+    if [ -z "$DECKHAND_IMAGE" ]; then
+        sed '1 a log_config_append = '"$CONF_DIR"'/logging.conf' $conf_file
+    fi
 
-[handlers]
-keys = null, stderr, stdout
-
-[formatters]
-keys = simple, context
-
-[logger_deckhand]
-level = DEBUG
-handlers = stdout
-qualname = deckhand
-
-[logger_error]
-level = ERROR
-handlers = stderr
-
-[logger_root]
-level = WARNING
-handlers = null
-
-[handler_stderr]
-class = StreamHandler
-args = (sys.stderr,)
-formatter = context
-
-[handler_stdout]
-class = StreamHandler
-args = (sys.stdout,)
-formatter = context
-
-[handler_null]
-class = logging.NullHandler
-formatter = context
-args = ()
-
-[formatter_context]
-class = oslo_log.formatters.ContextFormatter
-
-[formatter_simple]
-format=%(asctime)s.%(msecs)03d %(process)d %(levelname)s: %(message)s
-EOCONF
-
-# Create a Deckhand config file with bare minimum options.
-cat <<EOCONF > $CONF_DIR/deckhand.conf
-[DEFAULT]
-debug = true
-publish_errors = true
-use_stderr = true
-# NOTE: allow_anonymous_access allows these functional tests to get around
-# Keystone authentication, but the context that is provided has zero privileges
-# so we must also override the policy file for authorization to pass.
-allow_anonymous_access = true
-
-[oslo_policy]
-policy_file = policy.yaml
-
-[barbican]
-
-[database]
-connection = $DATABASE_URL
-
-[keystone_authtoken]
-# NOTE(fmontei): Values taken from clouds.yaml. Values only used for
-# integration testing.
-#
-# clouds.yaml (snippet):
-#
-# username: 'admin'
-# password: 'password'
-# project_name: 'admin'
-# project_domain_name: 'default'
-# user_domain_name: 'default'
-# auth_url: 'http://keystone.openstack.svc.cluster.local/v3'
-
-username = admin
-password = password
-project_name = admin
-project_domain_name = Default
-user_domain_name = Default
-auth_url = http://keystone.openstack.svc.cluster.local/v3
-auth_type = password
-EOCONF
-
-# Only set up logging if running Deckhand via uwsgi. The container already has
-# values for logging.
-if [ -z "$DECKHAND_IMAGE" ]; then
-    sed '1 a log_config_append = '"$CONF_DIR"'/logging.conf' $CONF_DIR/deckhand.conf
-fi
-
-    echo $CONF_DIR/deckhand.conf 1>&2
-    cat $CONF_DIR/deckhand.conf 1>&2
+    echo $conf_file 1>&2
+    cat $conf_file 1>&2
 
     echo $CONF_DIR/logging.conf 1>&2
     cat $CONF_DIR/logging.conf 1>&2
-
-    log_section Starting server
 }
 
 
@@ -165,7 +79,7 @@ function gen_paste {
 function gen_policy {
     set -xe
 
-    log_section Creating policy file with liberal permissions
+    log_section "Creating policy file with liberal permissions"
 
     policy_file='etc/deckhand/policy.yaml.sample'
     policy_pattern="deckhand\:"

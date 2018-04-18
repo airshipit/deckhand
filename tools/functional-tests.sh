@@ -26,12 +26,12 @@ function cleanup_deckhand {
     if [ -n "$POSTGRES_ID" ]; then
         sudo docker stop $POSTGRES_ID
     fi
+
     if [ -n "$DECKHAND_ID" ]; then
         sudo docker stop $DECKHAND_ID
     fi
-    if [ -d "$CONF_DIR" ]; then
-        rm -rf $CONF_DIR
-    fi
+
+    rm -rf $CONF_DIR
 
     # Kill all processes and child processes (for example, if workers > 1)
     # if using uwsgi only.
@@ -92,16 +92,16 @@ deploy_deckhand
 log_section Running tests
 
 # Create folder for saving HTML test results.
-if [ ! -d $ROOTDIR/results ]; then
-    mkdir $ROOTDIR/results
-fi
+mkdir -p $ROOTDIR/results
+
+export DECKHAND_TESTS_DIR=${ROOTDIR}/../deckhand/tests/functional/gabbits
 
 set +e
 posargs=$@
 if [ ${#posargs} -ge 1 ]; then
-    py.test -k $1 -svx $( dirname $ROOTDIR )/deckhand/tests/functional/test_gabbi.py --html=results/index.html
+    py.test -k $1 -svx $( dirname $ROOTDIR )/deckhand/tests/common/test_gabbi.py --html=results/index.html
 else
-    py.test -svx $( dirname $ROOTDIR )/deckhand/tests/functional/test_gabbi.py --html=results/index.html
+    py.test -svx $( dirname $ROOTDIR )/deckhand/tests/common/test_gabbi.py --html=results/index.html
 fi
 TEST_STATUS=$?
 set -e

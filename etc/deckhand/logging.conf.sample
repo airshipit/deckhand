@@ -1,36 +1,39 @@
 [loggers]
-keys = root, deckhand
+keys = root, deckhand, error
 
 [handlers]
-keys = file, null, syslog
+keys = null, stderr, stdout
 
 [formatters]
 keys = simple, context
 
 [logger_deckhand]
 level = DEBUG
-handlers = file
+handlers = stdout
 qualname = deckhand
+
+[logger_error]
+level = ERROR
+handlers = stderr
 
 [logger_root]
 level = WARNING
 handlers = null
 
-[handler_file]
-class = FileHandler
-level = DEBUG
-args = ('deckhand.log', 'w+')
+[handler_stderr]
+class = StreamHandler
+args = (sys.stderr,)
+formatter = context
+
+[handler_stdout]
+class = StreamHandler
+args = (sys.stdout,)
 formatter = context
 
 [handler_null]
 class = logging.NullHandler
 formatter = context
 args = ()
-
-[handler_syslog]
-class = handlers.SysLogHandler
-level = ERROR
-args = ('/dev/log', handlers.SysLogHandler.LOG_USER)
 
 [formatter_context]
 class = oslo_log.formatters.ContextFormatter

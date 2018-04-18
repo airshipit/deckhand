@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test runner for functional and integration tests."""
+
 import atexit
 import os
 import shutil
@@ -22,7 +24,7 @@ from gabbi import driver
 from gabbi.driver import test_pytest  # noqa
 from gabbi.handlers import jsonhandler
 
-TEST_DIR = tempfile.mkdtemp(prefix='deckhand')
+TEST_DIR = None
 
 
 def __create_temp_test_dir():
@@ -31,7 +33,11 @@ def __create_temp_test_dir():
     in which all the test files are contained in one directory.
 
     """
-    root_test_dir = os.path.join(os.path.dirname(__file__), 'gabbits')
+    global TEST_DIR
+
+    TEST_DIR = tempfile.mkdtemp(prefix='deckhand')
+
+    root_test_dir = os.getenv('DECKHAND_TESTS_DIR', 'gabbits')
     test_files = []
 
     for root, dirs, files in os.walk(root_test_dir):
@@ -59,7 +65,9 @@ __create_temp_test_dir()
 
 @atexit.register
 def __remove_temp_test_dir():
-    if os.path.exists(TEST_DIR):
+    global TEST_DIR
+
+    if TEST_DIR is not None and os.path.exists(TEST_DIR):
         shutil.rmtree(TEST_DIR)
 
 
@@ -84,13 +92,15 @@ class MultidocJsonpaths(jsonhandler.JSONHandler):
         # NOTE: The simple approach to handling dictionary versus list response
         # bodies is to always parse the response body as a list and index into
         # the first element using [0] throughout the tests.
-        return list(yaml.safe_load_all(string))
+        return list(yaml.load_all(string))
 
 
 def pytest_generate_tests(metafunc):
     # NOTE(fmontei): While only `url` or `host` is needed, strangely both
     # are needed because we use `pytest-html` which throws an error without
     # `host`.
+    global TEST_DIR
+
     driver.py_test_generator(
         TEST_DIR, url=os.environ['DECKHAND_TEST_URL'], host='localhost',
         # NOTE(fmontei): When there are multiple handlers listed that accept
