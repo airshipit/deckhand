@@ -23,7 +23,7 @@
 apiVersion: apps/v1beta1
 kind: Deployment
 metadata:
-  name: deckhand
+  name: deckhand-api
 spec:
   replicas: {{ .Values.pod.replicas.deckhand }}
 {{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
@@ -43,7 +43,7 @@ spec:
       initContainers:
 {{ tuple $envAll $dependencies $mounts_deckhand_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       containers:
-        - name: deckhand
+        - name: deckhand-api
           env:
             - name: 'DECKHAND_API_TIMEOUT'
               value: {{ .Values.conf.uwsgi.timeout | default 600 | quote }}
