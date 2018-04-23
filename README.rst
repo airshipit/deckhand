@@ -14,15 +14,20 @@ Find more documentation for Deckhand on `Read the Docs <https://deckhand.readthe
 Core Responsibilities
 =====================
 
-* layering - helps reduce duplication in configuration while maintaining
-  auditability across many sites
+* layering - helps reduce duplication in configuration by applying the notion
+  of inheritance to documents
 * substitution - provides separation between secret data and other
-  configuration data, while allowing a simple interface for clients
-* revision history - improves auditability and enables services to provide
-  functional validation of a well-defined collection of documents that are
-  meant to operate together
+  configuration data for security purposes and reduces data duplication by
+  allowing common data to be defined once and substituted elsewhere dynamically
+* revision history - maintains well-defined collections of documents within
+  immutable revisions that are meant to operate together, while providing the
+  ability to rollback to previous revisions
 * validation - allows services to implement and register different kinds of
   validations and report errors
+* secret management - leverages existing OpenStack APIs -- namely
+  `Barbican`_ -- to reliably and securely store sensitive data
+
+.. _Barbican: https://docs.openstack.org/barbican/latest/api/
 
 Getting Started
 ===============
@@ -65,11 +70,13 @@ You can also run a subset of tests via a regex:
 
     $ tox -e functional -- gabbi.suitemaker.test_gabbi_document-crud-success-multi-bucket
 
-Intgration Points
-=================
+Integration Points
+==================
 
 Deckhand has the following integration points:
 
+  * `Barbican (OpenStack Key Manager) <https://github.com/openstack/barbican>`_
+    provides secure storage for sensitive data.
   * `Keystone (OpenStack Identity service) <https://github.com/openstack/keystone>`_
     provides authentication and support for role based authorization.
   * `PostgreSQL <https://www.postgresql.org>`_ is used to persist information
@@ -77,7 +84,7 @@ Deckhand has the following integration points:
 
   .. note::
 
-    Currently, other database backends are not supported.
+    Currently, other database back-ends are not supported.
 
 Though, being a low-level service, has many other UCP services that integrate
 with it, including:
