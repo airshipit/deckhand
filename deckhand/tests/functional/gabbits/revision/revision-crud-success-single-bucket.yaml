@@ -10,7 +10,8 @@ defaults:
   request_headers:
     content-type: application/x-yaml
   response_headers:
-      content-type: application/x-yaml
+    content-type: application/x-yaml
+  verbose: true
 
 tests:
   - name: purge
