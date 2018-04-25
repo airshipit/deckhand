@@ -106,6 +106,9 @@ ENV/
 # mypy
 .mypy_cache/
 
+#pycharm-ide
+.idea/
+
 # makefile build/lint artifacts
 /charts/deckhand/*.tgz
 /charts/deckhand/*.lock
