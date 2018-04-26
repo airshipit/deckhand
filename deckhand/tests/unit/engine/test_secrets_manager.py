@@ -362,6 +362,43 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
+    def test_create_destination_with_stringified_subpath(self):
+        """Validate that a subpath like 'filter:authtoken' in a JSON path like
+        ".values.conf.paste.'filter:authtoken'.password" works correctly.
+        """
+        certificate = self.secrets_factory.gen_test(
+            'Passphrase', 'cleartext', data='admin-passphrase')
+        certificate['metadata']['name'] = 'example-passphrase'
+        document_mapping = {
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    # NOTE(fmontei): Usage of special characters like this
+                    # without quotes need not be handled because it is not
+                    # valid YAML to include ":" without quotes.
+                    "path": ".values.conf.paste.'filter:authtoken'.password"
+                },
+                "src": {
+                    "schema": "deckhand/Passphrase/v1",
+                    "name": "example-passphrase",
+                    "path": "."
+                }
+
+            }]
+        }
+        expected_data = {
+            'values': {
+                'conf': {
+                    'paste': {
+                        'filter:authtoken': {
+                            'password': 'admin-passphrase'
+                        }
+                    }
+                }
+            }
+        }
+        self._test_doc_substitution(
+            document_mapping, [certificate], expected_data)
+
     def test_doc_substitution_single_cleartext_with_pattern(self):
         passphrase = self.secrets_factory.gen_test(
             'Passphrase', 'cleartext', data='my-secret-password')

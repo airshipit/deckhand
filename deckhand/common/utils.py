@@ -128,6 +128,10 @@ def _populate_data_with_attributes(jsonpath, data):
                 pass
         # Handle case where an object needs to be created.
         elif path not in d:
+            if '\'' or '\"' in path:
+                LOG.info('Stripping subpath %s of start and end quotes during '
+                         'path vivification for jsonpath: %s.', path, jsonpath)
+                path = path.strip('\'').strip('\"')
             d.setdefault(path, {})
         d = d.get(path)
 

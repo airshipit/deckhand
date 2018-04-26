@@ -397,8 +397,8 @@ class SecretsSubstitution(object):
                         exc_message = (
                             'Failed to create JSON path "%s" in the '
                             'destination document [%s, %s] %s. No data was '
-                            'substituted.', dest_path, document.schema,
-                            document.layer, document.name)
+                            'substituted.' % (dest_path, document.schema,
+                                              document.layer, document.name))
                 except Exception as e:
                     LOG.error('Unexpected exception occurred while attempting '
                               'substitution using source document [%s, %s] %s '
