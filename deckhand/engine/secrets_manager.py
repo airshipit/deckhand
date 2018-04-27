@@ -141,20 +141,26 @@ class SecretsManager(object):
 
         ``deckhand/Certificate/v1`` => certificate
         ``deckhand/CertificateKey/v1`` => private
+        ``deckhand/CertificateAuthority/v1`` => certificate
+        ``deckhand/CertificateAuthorityKey/v1`` => private
         ``deckhand/Passphrase/v1`` => passphrase
+        ``deckhand/PrivateKey/v1`` => private
+        ``deckhand/PublicKey/v1`` => public
 
         :param schema: The document's schema.
         :returns: The value corresponding to the mapping above.
         """
         _schema = schema.split('/')[1].lower().strip()
-        if _schema == 'certificatekey':
+        if _schema in [
+            'certificateauthoritykey', 'certificatekey', 'privatekey'
+        ]:
             return 'private'
         elif _schema == 'certificateauthority':
             return 'certificate'
-        elif _schema == 'certificateauthoritykey':
-            return 'private'
         elif _schema == 'publickey':
             return 'public'
+        # NOTE(fmontei): This branch below handles certificate and passphrase,
+        # both of which are supported secret types in Barbican.
         return _schema
 
 
