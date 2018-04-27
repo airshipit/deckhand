@@ -17,10 +17,9 @@ import re
 
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_utils import uuidutils
 import six
 
-from deckhand.barbican import driver
+from deckhand.barbican.driver import BarbicanDriver
 from deckhand.common import document as document_wrapper
 from deckhand.common import utils
 from deckhand import errors
@@ -36,10 +35,7 @@ class SecretsManager(object):
     Currently only supports Barbican.
     """
 
-    barbican_driver = driver.BarbicanDriver()
-
-    _url_re = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|'
-                         '(?:%[0-9a-fA-F][0-9a-fA-F]))+')
+    barbican_driver = BarbicanDriver()
 
     @staticmethod
     def requires_encryption(document):
@@ -49,75 +45,39 @@ class SecretsManager(object):
         return document.is_encrypted
 
     @classmethod
-    def is_barbican_ref(cls, secret_ref):
-        # TODO(fmontei): Query Keystone service catalog for Barbican endpoint
-        # and cache it if Keystone is enabled. For now, it should be enough
-        # to check that ``secret_ref`` is a valid URL, contains 'secrets'
-        # substring, ends in a UUID and that the source document from which
-        # the reference is extracted is encrypted.
-        try:
-            secret_uuid = secret_ref.split('/')[-1]
-        except Exception:
-            secret_uuid = None
-        return (
-            isinstance(secret_ref, six.string_types) and
-            cls._url_re.match(secret_ref) and
-            'secrets' in secret_ref and
-            uuidutils.is_uuid_like(secret_uuid)
-        )
-
-    @classmethod
     def create(cls, secret_doc):
         """Securely store secrets contained in ``secret_doc``.
-
-        Ordinarily, Deckhand documents are stored directly in Deckhand's
-        database. However, secret data (contained in the data section for the
-        documents with the schemas enumerated below) must be stored using a
-        secure storage service like Barbican.
 
         Documents with ``metadata.storagePolicy`` == "clearText" have their
         secrets stored directly in Deckhand.
 
         Documents with ``metadata.storagePolicy`` == "encrypted" are stored in
         Barbican directly. Deckhand in turn stores the reference returned
-        by Barbican in Deckhand.
+        by Barbican in its own DB.
 
-        :param secret_doc: A Deckhand document with one of the following
-            schemas:
+        :param secret_doc: A Deckhand document with a schema that belongs to
+            ``types.DOCUMENT_SECRET_TYPES``.
 
-                * ``deckhand/Certificate/v1``
-                * ``deckhand/CertificateKey/v1``
-                * ``deckhand/Passphrase/v1``
-
-        :returns: Dictionary representation of
-            ``deckhand.db.sqlalchemy.models.DocumentSecret``.
+        :returns: Unecrypted data section from ``secret_doc`` if the document's
+            ``storagePolicy`` is "cleartext" or a Barbican secret reference
+            if the ``storagePolicy`` is "encrypted'.
         """
         # TODO(fmontei): Look into POSTing Deckhand metadata into Barbican's
         # Secrets Metadata API to make it easier to track stale secrets from
         # prior revisions that need to be deleted.
+        if not isinstance(secret_doc, document_wrapper.DocumentDict):
+            secret_doc = document_wrapper.DocumentDict(secret_doc)
 
-        encryption_type = secret_doc['metadata']['storagePolicy']
-        secret_type = cls._get_secret_type(secret_doc['schema'])
-        created_secret = secret_doc['data']
+        if secret_doc.storage_policy == types.ENCRYPTED:
+            payload = cls.barbican_driver.create_secret(secret_doc)
+        else:
+            payload = secret_doc.data
 
-        if encryption_type == types.ENCRYPTED:
-            # Store secret_ref in database for `secret_doc`.
-            kwargs = {
-                'name': secret_doc['metadata']['name'],
-                'secret_type': secret_type,
-                'payload': secret_doc['data']
-            }
-            LOG.info('Storing encrypted document data in Barbican.')
-            resp = cls.barbican_driver.create_secret(**kwargs)
-
-            secret_ref = resp['secret_ref']
-            created_secret = secret_ref
-
-        return created_secret
+        return payload
 
     @classmethod
-    def get(cls, secret_ref):
-        """Return a secret payload from Barbican.
+    def get(cls, secret_ref, src_doc, dest_doc):
+        """Retrieve a secret payload from Barbican.
 
         Extracts {secret_uuid} from a secret reference and queries Barbican's
         Secrets API with it.
@@ -125,43 +85,13 @@ class SecretsManager(object):
         :param str secret_ref: A string formatted like:
             "https://{barbican_host}/v1/secrets/{secret_uuid}"
         :returns: Secret payload from Barbican.
-
         """
         LOG.debug('Resolving Barbican secret using source document '
                   'reference...')
-        # TODO(fmontei): Need to avoid this call if Keystone is disabled.
-        secret = cls.barbican_driver.get_secret(secret_ref=secret_ref)
-        payload = secret.payload
+        secret = cls.barbican_driver.get_secret(src_doc, dest_doc,
+                                                secret_ref=secret_ref)
         LOG.debug('Successfully retrieved Barbican secret using reference.')
-        return payload
-
-    @classmethod
-    def _get_secret_type(cls, schema):
-        """Get the Barbican secret type based on the following mapping:
-
-        ``deckhand/Certificate/v1`` => certificate
-        ``deckhand/CertificateKey/v1`` => private
-        ``deckhand/CertificateAuthority/v1`` => certificate
-        ``deckhand/CertificateAuthorityKey/v1`` => private
-        ``deckhand/Passphrase/v1`` => passphrase
-        ``deckhand/PrivateKey/v1`` => private
-        ``deckhand/PublicKey/v1`` => public
-
-        :param schema: The document's schema.
-        :returns: The value corresponding to the mapping above.
-        """
-        _schema = schema.split('/')[1].lower().strip()
-        if _schema in [
-            'certificateauthoritykey', 'certificatekey', 'privatekey'
-        ]:
-            return 'private'
-        elif _schema == 'certificateauthority':
-            return 'certificate'
-        elif _schema == 'publickey':
-            return 'public'
-        # NOTE(fmontei): This branch below handles certificate and passphrase,
-        # both of which are supported secret types in Barbican.
-        return _schema
+        return secret
 
 
 class SecretsSubstitution(object):
@@ -209,7 +139,7 @@ class SecretsSubstitution(object):
     @staticmethod
     def get_encrypted_data(src_secret, src_doc, dest_doc):
         try:
-            src_secret = SecretsManager.get(src_secret)
+            src_secret = SecretsManager.get(src_secret, src_doc, dest_doc)
         except errors.BarbicanException as e:
             LOG.error(
                 'Failed to resolve a Barbican reference for substitution '
@@ -269,24 +199,6 @@ class SecretsSubstitution(object):
                 layer=dest_doc.layer, name=dest_doc.name, details=exc_message)
         else:
             LOG.warning(exc_message)
-
-    def _get_encrypted_secret(self, src_secret, src_doc, dest_doc):
-        try:
-            src_secret = SecretsManager.get(src_secret)
-        except errors.BarbicanException as e:
-            LOG.error(
-                'Failed to resolve a Barbican reference for substitution '
-                'source document [%s, %s] %s referenced in document [%s, %s] '
-                '%s. Details: %s', src_doc.schema, src_doc.layer, src_doc.name,
-                dest_doc.schema, dest_doc.layer, dest_doc.name,
-                e.format_message())
-            raise errors.UnknownSubstitutionError(
-                src_schema=src_doc.schema, src_layer=src_doc.layer,
-                src_name=src_doc.name, schema=dest_doc.schema,
-                layer=dest_doc.layer, name=dest_doc.name,
-                details=e.format_message())
-        else:
-            return src_secret
 
     def _check_src_secret_is_not_none(self, src_secret, src_path, src_doc,
                                       dest_doc):
@@ -378,7 +290,7 @@ class SecretsSubstitution(object):
 
                 # If the document has storagePolicy == encrypted then resolve
                 # the Barbican reference into the actual secret.
-                if src_doc.is_encrypted and SecretsManager.is_barbican_ref(
+                if src_doc.is_encrypted and BarbicanDriver.is_barbican_ref(
                         src_secret):
                     src_secret = self.get_encrypted_data(src_secret, src_doc,
                                                          document)

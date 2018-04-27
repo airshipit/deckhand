@@ -71,8 +71,8 @@ Supported query string parameters:
 * ``metadata.name`` - string, optional
 * ``metadata.layeringDefinition.abstract`` - string, optional - Valid values are
   the "true" and "false".
-* ``metadata.layeringDefinition.layer`` - string, optional - Only return documents from
-  the specified layer.
+* ``metadata.layeringDefinition.layer`` - string, optional - Only return
+  documents from the specified layer.
 * ``metadata.label`` - string, optional, repeatable - Uses the format
   ``metadata.label=key=value``. Repeating this parameter indicates all
   requested labels must apply (AND not OR).
@@ -86,7 +86,8 @@ Supported query string parameters:
   "asc". Controls the order in which the ``sort`` result is returned: "asc"
   returns sorted results in ascending order, while "desc" returns results in
   descending order.
-* ``limit`` - int - Controls number of documents returned by this endpoint.
+* ``limit`` - int, optional - Controls number of documents returned by this
+   endpoint.
 
 GET ``/revisions/{revision_id}/rendered-documents``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

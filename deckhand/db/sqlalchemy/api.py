@@ -186,7 +186,8 @@ def documents_create(bucket_name, documents, validations=None,
                                   validation)
 
     if documents_to_delete:
-        LOG.debug('Deleting documents: %s.', documents_to_delete)
+        LOG.debug('Deleting documents: %s.',
+                  [d.meta for d in documents_to_delete])
         deleted_documents = []
 
         for d in documents_to_delete:
@@ -215,8 +216,9 @@ def documents_create(bucket_name, documents, validations=None,
             resp.append(doc.to_dict())
 
     if documents_to_create:
-        LOG.debug('Creating documents: %s.',
-                  [(d['schema'], d['name']) for d in documents_to_create])
+        LOG.debug(
+            'Creating documents: %s.', [(d['schema'], d['layer'], d['name'])
+                                        for d in documents_to_create])
         for doc in documents_to_create:
             with session.begin():
                 doc['bucket_id'] = bucket['id']

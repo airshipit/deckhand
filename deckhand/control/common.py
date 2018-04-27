@@ -56,21 +56,26 @@ def sanitize_params(allowed_params):
             # This maps which type should be enforced per query parameter.
             # Everything not included in type dict below is assumed to be a
             # string or a list of strings.
-            type_dict = {'limit': int}
+            type_dict = {
+                'limit': {
+                    'func': lambda x: abs(int(x)),
+                    'type': int
+                }
+            }
 
             def _enforce_query_filter_type(key, val):
-                if key in type_dict:
-                    cast_type = type_dict[key]
+                cast_func = type_dict.get(key)
+                if cast_func:
                     try:
-                        cast_val = cast_type(val)
+                        cast_val = cast_func['func'](val)
                     except Exception:
                         raise falcon.HTTPInvalidParam(
                             'Query parameter %s must be of type %s.' % (
-                                key, cast_type),
+                                key, cast_func['type']),
                             key)
-                    return cast_val
                 else:
-                    return val
+                    cast_val = val
+                return cast_val
 
             def _convert_to_dict(sanitized_params, filter_key, filter_val):
                 # Key-value pairs like metadata.label=foo=bar need to be

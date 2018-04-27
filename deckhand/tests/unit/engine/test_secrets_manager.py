@@ -16,9 +16,13 @@ import copy
 import yaml
 
 import mock
+from oslo_serialization import base64
 from oslo_utils import uuidutils
+import six
 import testtools
 
+from deckhand.barbican import driver
+from deckhand.common import document as document_wrapper
 from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import factories
@@ -30,38 +34,45 @@ class TestSecretsManager(test_base.TestDbBase):
 
     def setUp(self):
         super(TestSecretsManager, self).setUp()
-        self.mock_barbican_driver = self.patchobject(
-            secrets_manager.SecretsManager, 'barbican_driver')
+        self.mock_barbicanclient = self.patchobject(
+            secrets_manager.SecretsManager.barbican_driver, 'barbicanclient')
         self.secret_ref = "https://barbican_host/v1/secrets/{secret_uuid}"\
             .format(**{'secret_uuid': uuidutils.generate_uuid()})
-        self.mock_barbican_driver.create_secret.return_value = (
-            {'secret_ref': self.secret_ref})
         self.factory = factories.DocumentSecretFactory()
 
-    def _test_create_secret(self, encryption_type, secret_type):
-        secret_data = test_utils.rand_password()
-        secret_doc = self.factory.gen_test(
-            secret_type, encryption_type, secret_data)
-        payload = secret_doc['data']
-        self.mock_barbican_driver.get_secret.return_value = (
-            mock.Mock(payload=payload))
+    def _mock_barbican_client_call(self, payload):
+        def fake_call(action, *args, **kwargs):
+            if action == "secrets.create":
+                return mock.Mock(**{'store.return_value': self.secret_ref})
+            elif action == "secrets.get":
+                return mock.Mock(payload=payload)
 
-        created_secret = secrets_manager.SecretsManager.create(secret_doc)
+        fake_secret_obj = self.mock_barbicanclient.call
+        fake_secret_obj.side_effect = fake_call
+
+    def _test_create_secret(self, encryption_type, secret_type):
+        secret_payload = test_utils.rand_password()
+        secret_doc = self.factory.gen_test(
+            secret_type, encryption_type, secret_payload)
+        payload = secret_doc['data']
+
+        self._mock_barbican_client_call(payload)
+        secret_ref = secrets_manager.SecretsManager.create(secret_doc)
 
         if encryption_type == 'cleartext':
-            self.assertEqual(secret_data, created_secret)
+            self.assertEqual(secret_payload, secret_ref)
         elif encryption_type == 'encrypted':
             expected_kwargs = {
                 'name': secret_doc['metadata']['name'],
-                'secret_type': secrets_manager.SecretsManager._get_secret_type(
+                'secret_type': driver.BarbicanDriver._get_secret_type(
                     'deckhand/' + secret_type),
                 'payload': payload
             }
-            self.mock_barbican_driver.create_secret.assert_called_once_with(
-                **expected_kwargs)
-            self.assertEqual(self.secret_ref, created_secret)
+            self.assertEqual(self.secret_ref, secret_ref)
+            self.mock_barbicanclient.call.assert_called_once_with(
+                'secrets.create', **expected_kwargs)
 
-        return created_secret, payload
+        return secret_ref, payload
 
     def test_create_cleartext_certificate(self):
         self._test_create_secret('cleartext', 'Certificate')
@@ -102,11 +113,59 @@ class TestSecretsManager(test_base.TestDbBase):
     def test_retrieve_barbican_secret(self):
         secret_ref, expected_secret = self._test_create_secret(
             'encrypted', 'Certificate')
-        secret_payload = secrets_manager.SecretsManager.get(secret_ref)
+        self.mock_barbicanclient.get_secret.return_value = (
+            mock.Mock(payload=expected_secret))
+
+        secret_payload = secrets_manager.SecretsManager.get(secret_ref, {}, {})
 
         self.assertEqual(expected_secret, secret_payload)
-        self.mock_barbican_driver.get_secret.assert_called_once_with(
-            secret_ref=secret_ref)
+        self.mock_barbicanclient.call.assert_called_with(
+            'secrets.get', secret_ref)
+
+    def test_empty_payload_skips_encryption(self):
+        for empty_payload in ('', {}, []):
+            secret_doc = self.factory.gen_test(
+                'Certificate', 'encrypted', empty_payload)
+
+            self._mock_barbican_client_call(empty_payload)
+            retrieved_payload = secrets_manager.SecretsManager.create(
+                secret_doc)
+
+            self.assertEqual(empty_payload, retrieved_payload)
+            self.assertEqual('cleartext',
+                             secret_doc['metadata']['storagePolicy'])
+            self.mock_barbicanclient.call.assert_not_called()
+
+    def test_create_and_retrieve_base64_encoded_payload(self):
+        # Validate base64-encoded encryption.
+        payload = {'foo': 'bar'}
+        secret_doc = self.factory.gen_test(
+            'Certificate', 'encrypted', payload)
+
+        expected_payload = base64.encode_as_text(six.text_type({'foo': 'bar'}))
+        expected_kwargs = {
+            'name': secret_doc['metadata']['name'],
+            'secret_type': 'opaque',
+            'payload': expected_payload
+        }
+
+        self._mock_barbican_client_call(payload)
+        secret_ref = secrets_manager.SecretsManager.create(secret_doc)
+
+        self.assertEqual(self.secret_ref, secret_ref)
+        self.assertEqual('encrypted',
+                         secret_doc['metadata']['storagePolicy'])
+        self.mock_barbicanclient.call.assert_called_once_with(
+            "secrets.create", **expected_kwargs)
+
+        # Validate base64-encoded decryption.
+        self.mock_barbicanclient.get_secret.return_value = (
+            mock.Mock(payload=expected_payload, secret_type='opaque'))
+
+        dummy_document = document_wrapper.DocumentDict({})
+        retrieved_payload = secrets_manager.SecretsManager.get(
+            secret_ref, dummy_document, dummy_document)
+        self.assertEqual(payload, retrieved_payload)
 
 
 class TestSecretsSubstitution(test_base.TestDbBase):
@@ -197,7 +256,8 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         }
         self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
-        mock_secrets_manager.get.assert_called_once_with(secret_ref=secret_ref)
+        mock_secrets_manager.get.assert_called_once_with(
+            secret_ref, certificate, mock.ANY)
 
     def test_create_destination_path_with_array(self):
         # Validate that the destination data will be populated with an array
