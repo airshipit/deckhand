@@ -383,40 +383,52 @@ class SecretsSubstitution(object):
                     src_secret = self.get_encrypted_data(src_secret, src_doc,
                                                          document)
 
-                dest_path = sub['dest']['path']
-                dest_pattern = sub['dest'].get('pattern', None)
+                if not isinstance(sub['dest'], list):
+                    dest_array = [sub['dest']]
+                else:
+                    dest_array = sub['dest']
 
-                LOG.debug('Substituting from schema=%s layer=%s name=%s '
-                          'src_path=%s into dest_path=%s, dest_pattern=%s',
-                          src_schema, src_doc.layer, src_name, src_path,
-                          dest_path, dest_pattern)
-                try:
-                    exc_message = ''
-                    substituted_data = utils.jsonpath_replace(
-                        document['data'], src_secret, dest_path, dest_pattern)
-                    if (isinstance(document['data'], dict)
-                            and isinstance(substituted_data, dict)):
-                        document['data'].update(substituted_data)
-                    elif substituted_data:
-                        document['data'] = substituted_data
-                    else:
-                        exc_message = (
-                            'Failed to create JSON path "%s" in the '
-                            'destination document [%s, %s] %s. No data was '
-                            'substituted.' % (dest_path, document.schema,
-                                              document.layer, document.name))
-                except Exception as e:
-                    LOG.error('Unexpected exception occurred while attempting '
-                              'substitution using source document [%s, %s] %s '
-                              'referenced in [%s, %s] %s. Details: %s',
-                              src_schema, src_name, src_doc.layer,
-                              document.schema, document.layer, document.name,
-                              six.text_type(e))
-                    exc_message = six.text_type(e)
-                finally:
-                    if exc_message:
-                        self._handle_unknown_substitution_exc(
-                            exc_message, src_doc, document)
+                for each_dest_path in dest_array:
+                    dest_path = each_dest_path['path']
+                    dest_pattern = each_dest_path.get('pattern', None)
+
+                    LOG.debug('Substituting from schema=%s layer=%s name=%s '
+                              'src_path=%s into dest_path=%s, dest_pattern=%s',
+                              src_schema, src_doc.layer, src_name, src_path,
+                              dest_path, dest_pattern)
+
+                    try:
+                        exc_message = ''
+                        substituted_data = utils.jsonpath_replace(
+                            document['data'], src_secret,
+                            dest_path, dest_pattern)
+                        if (isinstance(document['data'], dict)
+                                and isinstance(substituted_data, dict)):
+                            document['data'].update(substituted_data)
+                        elif substituted_data:
+                            document['data'] = substituted_data
+                        else:
+                            exc_message = (
+                                'Failed to create JSON path "%s" in the '
+                                'destination document [%s, %s] %s. '
+                                'No data was substituted.' % (
+                                    dest_path, document.schema,
+                                    document.layer, document.name))
+                    except Exception as e:
+                        LOG.error('Unexpected exception occurred '
+                                  'while attempting '
+                                  'substitution using '
+                                  'source document [%s, %s] %s '
+                                  'referenced in [%s, %s] %s. Details: %s',
+                                  src_schema, src_name, src_doc.layer,
+                                  document.schema, document.layer,
+                                  document.name,
+                                  six.text_type(e))
+                        exc_message = six.text_type(e)
+                    finally:
+                        if exc_message:
+                            self._handle_unknown_substitution_exc(
+                                exc_message, src_doc, document)
 
         yield document
 

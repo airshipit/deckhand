@@ -327,6 +327,43 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
+    def test_doc_substitution_single_source_feeds_multiple_destinations(self):
+        certificate = self.secrets_factory.gen_test(
+            'Certificate', 'cleartext', data='CERTIFICATE DATA')
+        certificate['metadata']['name'] = 'example-cert'
+
+        document_mapping = {
+            "_GLOBAL_SUBSTITUTIONS_1_": [
+                {
+                    "dest": [
+                        {
+                            "path": ".chart[0].values.tls.certificate"
+                        },
+                        {
+                            "path": ".chart[0].values.tls.same_certificate"
+                        }
+                    ],
+                    "src": {
+                        "schema": "deckhand/Certificate/v1",
+                        "name": "example-cert",
+                        "path": "."
+                    }
+                }
+            ]
+        }
+        expected_data = {
+            'chart': [{
+                'values': {
+                    'tls': {
+                        'certificate': 'CERTIFICATE DATA',
+                        'same_certificate': 'CERTIFICATE DATA',
+                    }
+                }
+            }]
+        }
+        self._test_doc_substitution(
+            document_mapping, [certificate], expected_data)
+
     def test_create_destination_path_with_nested_arrays(self):
         # Validate that the destination data will be populated with an array
         # that contains yet another array.
