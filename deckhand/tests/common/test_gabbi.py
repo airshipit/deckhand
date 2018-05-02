@@ -41,9 +41,7 @@ def __create_temp_test_dir():
     test_files = []
 
     for root, dirs, files in os.walk(root_test_dir):
-        is_test_file = (
-            'gabbits' in root and not root.endswith('gabbits')
-        )
+        is_test_file = 'gabbits' in root
         if is_test_file:
             test_files.extend([os.path.abspath(os.path.join(root, f))
                               for f in files])
