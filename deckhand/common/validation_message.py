@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Indicates document sanity-check validation failure pre- or post-rendering.
+DOCUMENT_SANITY_CHECK_FAILURE = 'D001'
+# Indicates document post-rendering validation failure.
+DOCUMENT_POST_RENDERING_FAILURE = 'D002'
+
 
 class ValidationMessage(object):
     """ValidationMessage per UCP convention:

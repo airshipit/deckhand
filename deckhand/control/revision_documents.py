@@ -18,7 +18,7 @@ from oslo_utils import excutils
 import six
 
 from deckhand.common import utils
-from deckhand.common.validation_message import ValidationMessage
+from deckhand.common import validation_message as vm
 from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import document as document_view
@@ -198,9 +198,9 @@ class RenderedDocumentsResource(api_base.BaseResource):
             for validation in validations:
                 if validation['status'] == 'failure':
                     error_list.extend([
-                        ValidationMessage(
-                            error=True,
+                        vm.ValidationMessage(
                             message=error['message'],
+                            name=vm.DOCUMENT_POST_RENDERING_FAILURE,
                             doc_schema=error['schema'],
                             doc_name=error['name'],
                             doc_layer=error['layer'],

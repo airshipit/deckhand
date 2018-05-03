@@ -25,7 +25,7 @@ import six
 
 from deckhand.common import document as document_wrapper
 from deckhand.common import utils
-from deckhand.common.validation_message import ValidationMessage
+from deckhand.common import validation_message as vm
 from deckhand.engine.secrets_manager import SecretsSubstitution
 from deckhand import errors
 from deckhand import types
@@ -156,11 +156,13 @@ class GenericValidator(BaseValidator):
                     document.name, error_messages)
                 raise errors.InvalidDocumentFormat(
                     error_list=[
-                        ValidationMessage(message=message,
-                                          doc_schema=document.schema,
-                                          doc_name=document.name,
-                                          doc_layer=document.layer,
-                                          diagnostic=self._diagnostic)
+                        vm.ValidationMessage(
+                            message=message,
+                            name=vm.DOCUMENT_SANITY_CHECK_FAILURE,
+                            doc_schema=document.schema,
+                            doc_name=document.name,
+                            doc_layer=document.layer,
+                            diagnostic=self._diagnostic)
                         for message in error_messages
                     ],
                     reason='Validation'

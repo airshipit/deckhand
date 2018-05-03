@@ -157,7 +157,7 @@ tests:
       $.[0].details.messageList[0].error: true
       $.[0].details.messageList[0].kind: ValidationMessage
       $.[0].details.messageList[0].level: Error
-      $.[0].details.messageList[0].name: Deckhand validation error
+      $.[0].details.messageList[0].name: D002
       $.[0].kind: Status
       $.[0].message: The provided documents failed schema validation.
       $.[0].reason: Validation

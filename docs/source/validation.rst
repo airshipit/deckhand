@@ -41,7 +41,7 @@ Here is a list of internal validations:
 * ``deckhand-document-schema-validation`` - All concrete documents in the
   revision successfully pass their JSON schema validations. Will cause
   this to report an error.
-* ``deckhand-policy-validation`` - All required policy documents are in-place,
+* ``deckhand-policy-validation`` (TODO) - All required policy documents are in-place,
   and existing documents conform to those policies.  E.g. if a 3rd party
   document specifies a ``layer`` that is not present in the layering policy,
   that will cause this validation to report an error.
@@ -55,6 +55,19 @@ documents are used to register a new validation mapping that other services
 can reference to verify whether a Deckhand bucket is in a valid configuration.
 For more information, refer to the ``DataSchema`` section in
 :ref:`document-types`.
+
+Validation Codes
+^^^^^^^^^^^^^^^^
+
+* D001 - Indicates document sanity-check validation failure pre- or
+  post-rendering. This means that the document structure is fundamentally
+  broken.
+* D002 - Indicates document post-rendering validation failure. This means
+  that after a document has rendered, the document may fail validation.
+  For example, if a ``DataSchema`` document for a given revision indicates
+  that ``.data.a`` is a required field but a layering action during rendering
+  deletes ``.data.a``, then post-rendering validation will necessarily
+  fail. This implies a conflict in the set of document requirements.
 
 Schema Validations
 ------------------

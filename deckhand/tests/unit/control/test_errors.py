@@ -139,7 +139,8 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                         'kind': 'ValidationMessage',
                         'level': 'Error',
                         'message': mock.ANY,
-                        'name': 'Deckhand validation error'
+                        # Indicates sanity-check failure pre-rendering.
+                        'name': 'D001'
                     },
                     {
                         'diagnostic': mock.ANY,
@@ -152,7 +153,7 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                         'kind': 'ValidationMessage',
                         'level': 'Error',
                         'message': mock.ANY,
-                        'name': 'Deckhand validation error'
+                        'name': 'D001'
                     }
                 ]
             },
@@ -216,7 +217,8 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                         'kind': 'ValidationMessage',
                         'level': 'Error',
                         'message': mock.ANY,
-                        'name': 'Deckhand validation error'
+                        # Indicates sanity-check failure post-rendering.
+                        'name': 'D001'
                     }
                 ]
             },
