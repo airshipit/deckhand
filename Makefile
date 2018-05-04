@@ -41,6 +41,10 @@ dry-run: clean
 	tools/helm_tk.sh $(HELM)
 	$(HELM) template charts/deckhand
 
+.PHONY: tests
+tests:
+	tox
+
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
 build_deckhand:
