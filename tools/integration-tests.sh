@@ -147,7 +147,13 @@ function deploy_deckhand {
     # NOTE(fmontei): Generate an admin token instead of hacking a policy
     # file with no permissions to test authN as well as authZ.
     export TEST_AUTH_TOKEN=$( openstack token issue --format value -c id )
-    export TEST_BARBICAN_URL=$( openstack endpoint list --format value | grep barbican | grep public | awk '{print $7}' )
+    local test_barbican_url=$( openstack endpoint list --format value | grep barbican | grep public | awk '{print $7}' )
+
+    if [[ $test_barbican_url == */ ]]; then
+        test_barbican_url=$( echo $test_barbican_url | sed 's/.$//' )
+    fi
+
+    export TEST_BARBICAN_URL=$test_barbican_url
 
     log_section "Running Deckhand via Docker"
     sudo docker run \
