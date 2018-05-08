@@ -208,3 +208,21 @@ tests:
         - deckhand/LayeringPolicy/v1
         - example/Kind/v1
         - example/Kind/v1
+
+  - name: limit_by_permitted_int_value
+    desc: Verify revision documents limited by int value
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      sort:
+        - metadata.name
+        - schema
+      limit: 2
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 2
+      $.[*].metadata.name:
+        - global-1234
+        - layering-policy
+      $.[*].schema:
+        - example/Kind/v1
+        - deckhand/LayeringPolicy/v1

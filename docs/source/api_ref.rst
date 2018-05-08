@@ -86,6 +86,7 @@ Supported query string parameters:
   "asc". Controls the order in which the ``sort`` result is returned: "asc"
   returns sorted results in ascending order, while "desc" returns results in
   descending order.
+* ``limit`` - int - Controls number of documents returned by this endpoint.
 
 GET ``/revisions/{revision_id}/rendered-documents``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -96,7 +97,7 @@ consumers will interact with for their configuration.
 
 Valid query parameters are the same as for
 ``/revisions/{revision_id}/documents``, minus the parameters in
-``metadata.layeringDetinition``, which are not supported.
+``metadata.layeringDefinition``, which are not supported.
 
 Raises a ``409 Conflict`` if a ``layeringPolicy`` document could not be found.
 

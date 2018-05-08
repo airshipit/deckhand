@@ -46,3 +46,10 @@ tests:
       schema: example/Kind/v2
     status: 200
     response_multidoc_jsonpaths: null
+
+  - name: filter_by_limit_illegal_value
+    desc: Verify that illegal limit value returns 400
+    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
+    query_parameters:
+      limit: 'illegal'
+    status: 400

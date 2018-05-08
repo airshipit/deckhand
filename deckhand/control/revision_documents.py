@@ -41,7 +41,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
     @common.sanitize_params([
         'schema', 'metadata.name', 'metadata.layeringDefinition.abstract',
         'metadata.layeringDefinition.layer', 'metadata.label',
-        'status.bucket', 'order', 'sort'])
+        'status.bucket', 'order', 'sort', 'limit'])
     def on_get(self, req, resp, sanitized_params, revision_id):
         """Returns all documents for a `revision_id`.
 
@@ -55,6 +55,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
 
         order_by = sanitized_params.pop('order', None)
         sort_by = sanitized_params.pop('sort', None)
+        limit = sanitized_params.pop('limit', None)
 
         filters = sanitized_params.copy()
         filters['metadata.storagePolicy'] = ['cleartext']
@@ -71,6 +72,8 @@ class RevisionDocumentsResource(api_base.BaseResource):
 
         # Sorts by creation date by default.
         documents = utils.multisort(documents, sort_by, order_by)
+        if limit is not None:
+            documents = documents[:limit]
 
         resp.status = falcon.HTTP_200
         resp.body = self.view_builder.list(documents)
@@ -95,7 +98,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
     @policy.authorize('deckhand:list_cleartext_documents')
     @common.sanitize_params([
         'schema', 'metadata.name', 'metadata.layeringDefinition.layer',
-        'metadata.label', 'status.bucket', 'order', 'sort'])
+        'metadata.label', 'status.bucket', 'order', 'sort', 'limit'])
     def on_get(self, req, resp, sanitized_params, revision_id):
         include_encrypted = policy.conditional_authorize(
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
@@ -135,6 +138,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
         # returns concrete documents, so no filtering for that is needed here.
         order_by = sanitized_params.pop('order', None)
         sort_by = sanitized_params.pop('sort', None)
+        limit = sanitized_params.pop('limit', None)
         user_filters = sanitized_params.copy()
 
         rendered_documents = [
@@ -144,6 +148,9 @@ class RenderedDocumentsResource(api_base.BaseResource):
         if sort_by:
             rendered_documents = utils.multisort(
                 rendered_documents, sort_by, order_by)
+
+        if limit is not None:
+            rendered_documents = rendered_documents[:limit]
 
         resp.status = falcon.HTTP_200
         resp.body = self.view_builder.list(rendered_documents)

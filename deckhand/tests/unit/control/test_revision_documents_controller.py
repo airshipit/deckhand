@@ -276,3 +276,43 @@ class TestRevisionDocumentsControllerSorting(test_base.BaseControllerTest):
         self.assertEqual(3, len(retrieved_documents))
         self.assertEqual(expected_schemas,
                          [d['schema'] for d in retrieved_documents])
+
+    def test_list_revision_documents_sorting_by_schema_then_limit(self):
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@'}
+        self.policy.set_rules(rules)
+
+        documents_factory = factories.DocumentFactory(2, [1, 1])
+        documents = documents_factory.gen_test({
+            '_SITE_ACTIONS_1_': {
+                'actions': [{'method': 'merge', 'path': '.'}]
+            }
+        })
+        schemas = ['deckhand/Certificate/v1',
+                   'deckhand/CertificateKey/v1',
+                   'deckhand/LayeringPolicy/v1']
+        for idx in range(len(documents)):
+            documents[idx]['schema'] = schemas[idx]
+
+        for limit in (0, 1, 2, 3):
+            expected_schemas = schemas[:limit]
+
+            resp = self.app.simulate_put(
+                '/api/v1.0/buckets/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=yaml.safe_dump_all(documents))
+            self.assertEqual(200, resp.status_code)
+            revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+                'revision']
+
+            resp = self.app.simulate_get(
+                '/api/v1.0/revisions/%s/documents' % revision_id,
+                params={'sort': 'schema', 'limit': limit}, params_csv=False,
+                headers={'Content-Type': 'application/x-yaml'})
+            self.assertEqual(200, resp.status_code)
+            retrieved_documents = list(yaml.safe_load_all(resp.text))
+
+            self.assertEqual(limit, len(retrieved_documents))
+            self.assertEqual(expected_schemas,
+                             [d['schema'] for d in retrieved_documents])

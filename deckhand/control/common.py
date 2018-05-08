@@ -14,6 +14,8 @@
 
 import functools
 
+import falcon
+
 
 class ViewBuilder(object):
     """Model API responses as dictionaries."""
@@ -51,6 +53,24 @@ def sanitize_params(allowed_params):
         def wrapper(self, req, *func_args, **func_kwargs):
             req_params = req.params or {}
             sanitized_params = {}
+            # This maps which type should be enforced per query parameter.
+            # Everything not included in type dict below is assumed to be a
+            # string or a list of strings.
+            type_dict = {'limit': int}
+
+            def _enforce_query_filter_type(key, val):
+                if key in type_dict:
+                    cast_type = type_dict[key]
+                    try:
+                        cast_val = cast_type(val)
+                    except Exception:
+                        raise falcon.HTTPInvalidParam(
+                            'Query parameter %s must be of type %s.' % (
+                                key, cast_type),
+                            key)
+                    return cast_val
+                else:
+                    return val
 
             def _convert_to_dict(sanitized_params, filter_key, filter_val):
                 # Key-value pairs like metadata.label=foo=bar need to be
@@ -68,21 +88,25 @@ def sanitize_params(allowed_params):
                             pass
 
             for key, val in req_params.items():
+                param_val = _enforce_query_filter_type(key, val)
+
                 if not isinstance(val, list):
                     val = [val]
-                is_key_val_pair = '=' in val[0]
+
+                is_key_val_pair = isinstance(val, list) and '=' in val[0]
+
                 if key in allowed_params:
                     if key in _mapping:
                         if is_key_val_pair:
                             _convert_to_dict(
                                 sanitized_params, _mapping[key], val)
                         else:
-                            sanitized_params[_mapping[key]] = req_params[key]
+                            sanitized_params[_mapping[key]] = param_val
                     else:
                         if is_key_val_pair:
                             _convert_to_dict(sanitized_params, key, val)
                         else:
-                            sanitized_params[key] = req_params[key]
+                            sanitized_params[key] = param_val
 
             func_args = func_args + (sanitized_params,)
             return func(self, req, *func_args, **func_kwargs)
