@@ -288,8 +288,8 @@ def deepfilter(dct, **filters):
             # Else if both the filter value and the actual value in the doc
             # are dictionaries, check whether the filter dict is a subset
             # of the actual dict.
-            if (isinstance(actual_val, dict)
-                and isinstance(filter_val, dict)):
+            if (isinstance(actual_val, dict) and
+                    isinstance(filter_val, dict)):
                 is_subset = set(
                     filter_val.items()).issubset(set(actual_val.items()))
                 if not is_subset:

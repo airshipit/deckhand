@@ -563,8 +563,8 @@ class DocumentLayering(object):
                     parent_name=overall_data.name,
                     action=action)
 
-            if (isinstance(from_parent, dict)
-                    and isinstance(from_child, dict)):
+            if (isinstance(from_parent, dict) and
+                    isinstance(from_child, dict)):
                 engine_utils.deep_merge(from_parent, from_child)
 
             if from_parent is not None:

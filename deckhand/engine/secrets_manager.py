@@ -402,8 +402,8 @@ class SecretsSubstitution(object):
                         substituted_data = utils.jsonpath_replace(
                             document['data'], src_secret,
                             dest_path, dest_pattern)
-                        if (isinstance(document['data'], dict)
-                                and isinstance(substituted_data, dict)):
+                        if (isinstance(document['data'], dict) and
+                                isinstance(substituted_data, dict)):
                             document['data'].update(substituted_data)
                         elif substituted_data:
                             document['data'] = substituted_data
