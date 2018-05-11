@@ -36,7 +36,7 @@ spec:
       targetPort: {{ .Values.network.port }}
     {{ end }}
   selector:
-{{ tuple $envAll "deckhand-api" "server" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
+{{ tuple $envAll "deckhand" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
   {{ if .Values.network.enable_node_port }}
   type: NodePort
   {{ end }}
