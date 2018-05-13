@@ -1,0 +1,51 @@
+# Tests success path for advanced replacement scenario, where
+# parent-replacement document receives substitutions and is then layered
+# with by its child-replacement document, which replaces its parent.
+#
+# 1. Purges existing data to ensure test isolation.
+# 2. Adds initial documents with replacement scenario described above.
+# 3. Verifies correctly layered, substituted and replaced data.
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+  verbose: true
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: initialize
+    desc: Create initial documents
+    PUT: /api/v1.0/buckets/mop/documents
+    status: 200
+    data: <@resources/replacement.yaml
+
+  - name: verify_replacement_document_receives_substitution
+    desc: |
+      Tests success path for advanced replacement scenario, where
+      parent-replacement document receives substitutions and is then layered
+      with by its child-replacement document, which replaces its parent.
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      schema: armada/Chart/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[*].metadata.name: example-chart-01
+      $.[*].metadata.layeringDefinition.layer: site
+      $.[*].data:
+        chart:
+          details:
+            data: bar
+          values:
+            tls:
+              certificate: |
+                CERTIFICATE DATA
+              key: |
+                KEY DATA

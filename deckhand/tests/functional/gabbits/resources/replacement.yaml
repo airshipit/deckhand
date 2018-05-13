@@ -1,0 +1,76 @@
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - region
+    - site
+---
+schema: deckhand/Certificate/v1
+metadata:
+  name: example-cert
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: |
+  CERTIFICATE DATA
+---
+schema: deckhand/CertificateKey/v1
+metadata:
+  name: example-key
+  schema: metadata/Document/v1
+  layeringDefinition:
+    layer: site
+  storagePolicy: cleartext
+data: |
+  KEY DATA
+---
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  schema: metadata/Document/v1
+  labels:
+    name: parent-chart
+  layeringDefinition:
+    layer: region
+  substitutions:
+    - dest:
+        path: .chart.values.tls.certificate
+      src:
+        schema: deckhand/Certificate/v1
+        name: example-cert
+        path: .
+data:
+  chart:
+    details:
+      data: foo
+    values: {}
+---
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  schema: metadata/Document/v1
+  replacement: true
+  layeringDefinition:
+    layer: site
+    parentSelector:
+      name: parent-chart
+    actions:
+      - method: merge
+        path: .
+  substitutions:
+    - dest:
+        path: .chart.values.tls.key
+      src:
+        schema: deckhand/CertificateKey/v1
+        name: example-key
+        path: .
+data:
+  chart:
+    details:
+      data: bar
+    values: {}
+...

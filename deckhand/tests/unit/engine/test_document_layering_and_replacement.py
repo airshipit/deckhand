@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import itertools
+import os
 import yaml
 
 from deckhand.tests.unit.engine import test_document_layering
@@ -106,10 +107,11 @@ data:
         # The replacer should be used as the source.
         self._test_layering(self.documents, site_expected,
                             global_expected=global_expected)
-        # Attempt the same scenario but reverse the order of the documents,
-        # which verifies that the replacer always takes priority.
-        self._test_layering(self.documents, site_expected,
-                            global_expected=global_expected)
+        # Try different permutations of document orders for good measure.
+        for documents in list(itertools.permutations(self.documents))[:10]:
+            self._test_layering(
+                documents, site_expected=site_expected,
+                global_expected=global_expected)
 
     def test_replacement_with_layering_with_replacer(self):
         """Verify that replacement works alongside layering. This scenario
@@ -212,3 +214,40 @@ data:
             self._test_layering(
                 documents, site_expected=site_expected,
                 global_expected=global_expected)
+
+    def test_replacement_document_receives_substitution(self):
+        """Verifies that the parent-replacement receives substitution data
+        prior to the child-replacement layering with it, which in turn is
+        done prior to any other document attempting to substitute from or
+        layer with the child-replacement (which replaces its parent).
+        """
+        test_path = os.path.join(
+            os.getcwd(), 'deckhand', 'tests', 'functional', 'gabbits',
+            'resources', 'replacement.yaml')
+        with open(test_path) as f:
+            self.documents = list(yaml.safe_load_all(f))
+
+        site_expected = [
+            "CERTIFICATE DATA\n",
+            "KEY DATA\n",
+            {
+                'chart': {
+                    'details': {'data': 'bar'},
+                    'values': {
+                        'tls': {
+                            'certificate': 'CERTIFICATE DATA\n',
+                            'key': 'KEY DATA\n'
+                        }
+                    }
+                }
+            }
+        ]
+
+        self._test_layering(self.documents, site_expected=site_expected,
+                            region_expected=None)
+
+        # Try different permutations of document orders for good measure.
+        for documents in list(itertools.permutations(self.documents))[:10]:
+            self._test_layering(
+                documents, site_expected=site_expected,
+                region_expected=None)

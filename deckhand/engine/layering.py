@@ -298,14 +298,32 @@ class DocumentLayering(object):
         """
         result = []
 
+        def _get_ancestor(doc, parent_meta):
+            parent = self._documents_by_index.get(parent_meta)
+            # Return the parent's replacement, but if that replacement is the
+            # document itself then return the parent.
+            use_replacement = (
+                parent and parent.has_replacement and
+                    parent.replaced_by is not doc
+            )
+            if use_replacement:
+                parent = parent.replaced_by
+            return parent
+
         g = networkx.DiGraph()
         for document in self._documents_by_index.values():
-            if document.has_replacement:
-                g.add_edge(document.meta, document.replaced_by.meta)
-            elif document.parent_selector and not document.is_replacement:
+            if document.parent_selector:
+                # NOTE: A child-replacement depends on its parent-replacement
+                # the same way any child depends on its parent: so that the
+                # child layers with its parent only after the parent has
+                # received all layering and substitution data. But other
+                # non-replacement child documents must first wait for the
+                # child-relacement to layer with the parent, so that they
+                # can use the replaced data.
                 parent_meta = self._parents.get(document.meta)
-                if parent_meta:
-                    g.add_edge(document.meta, parent_meta)
+                ancestor = _get_ancestor(document, parent_meta)
+                if ancestor:
+                    g.add_edge(document.meta, ancestor.meta)
 
             for sub in document.substitutions:
                 # Retrieve the correct substitution source using
@@ -591,22 +609,6 @@ class DocumentLayering(object):
 
         return overall_data
 
-    def _get_parent_or_replacement(self, doc, parent_meta):
-        """Returns the document's parent or the document's parent's
-        replacement.
-
-        :param DocumentDict doc: Document used to get parent.
-        :param tuple parent_meta: Unique parent identifier.
-        :returns: Parent document or its replacement if the parent has one.
-        :rtype: DocumentDict
-        """
-        parent = self._documents_by_index.get(parent_meta)
-        # Return the parent's replacement, but if that replacement is the
-        # document itself then return the parent.
-        if parent and parent.has_replacement and parent.replaced_by is not doc:
-            parent = parent.replaced_by
-        return parent
-
     def render(self):
         """Perform layering on the list of documents passed to ``__init__``.
 
@@ -629,11 +631,14 @@ class DocumentLayering(object):
             if doc.is_control:
                 continue
 
+            LOG.debug("Rendering document %s:%s:%s", *doc.meta)
+
             if doc.parent_selector:
                 parent_meta = self._parents.get(doc.meta)
 
                 if parent_meta:
-                    parent = self._get_parent_or_replacement(doc, parent_meta)
+                    LOG.debug("Using parent %s:%s:%s", *parent_meta)
+                    parent = self._documents_by_index[parent_meta]
 
                     if doc.actions:
                         rendered_data = parent
@@ -652,8 +657,7 @@ class DocumentLayering(object):
                                             doc, parent, action)
                                     except Exception:  # nosec
                                         pass
-                        if not doc.is_abstract:
-                            doc.data = rendered_data.data
+                        doc.data = rendered_data.data
                         self.secrets_substitution.update_substitution_sources(
                             doc.schema, doc.name, rendered_data.data)
                         self._documents_by_index[doc.meta] = rendered_data
@@ -679,10 +683,10 @@ class DocumentLayering(object):
                 if substituted_data:
                     rendered_data = substituted_data[0]
                     # Update the actual document data if concrete.
-                    if not doc.is_abstract:
-                        doc.data = rendered_data.data
-                    self.secrets_substitution.update_substitution_sources(
-                        doc.schema, doc.name, rendered_data.data)
+                    doc.data = rendered_data.data
+                    if not doc.has_replacement:
+                        self.secrets_substitution.update_substitution_sources(
+                            doc.schema, doc.name, rendered_data.data)
                     self._documents_by_index[doc.meta] = rendered_data
             # Otherwise, retrieve the encrypted data for the document if its
             # data has been encrypted so that future references use the actual
@@ -695,6 +699,13 @@ class DocumentLayering(object):
                 self.secrets_substitution.update_substitution_sources(
                     doc.schema, doc.name, encrypted_data)
                 self._documents_by_index[doc.meta] = encrypted_data
+
+            # NOTE: Since the child-replacement is always prioritized, before
+            # other children, as soon as the child-replacement layers with the
+            # parent (which already has undergone layering and substitution
+            # itself), replace the parent data with that of the replacement.
+            if doc.is_replacement:
+                parent.data = doc.data
 
         # Return only concrete documents and non-replacements.
         return [d for d in self._sorted_documents

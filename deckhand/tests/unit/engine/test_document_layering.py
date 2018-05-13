@@ -323,8 +323,9 @@ data:
         site_expected = 'should not change'
         self._test_layering(documents, site_expected, global_expected=None)
 
-        error_re = r'^Skipped layering for document.*'
-        self.assertRegex(mock_log.debug.mock_calls[0][1][0], error_re)
+        msg_re = 'Skipped layering for document'
+        mock_calls = [x[1][0] for x in mock_log.debug.mock_calls]
+        self.assertTrue(any(x.startswith(msg_re) for x in mock_calls))
 
 
 class TestDocumentLayering2Layers(TestDocumentLayering):
