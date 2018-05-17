@@ -22,6 +22,7 @@ function deploy_postgre {
     #######################################
     set -xe
 
+    # TODO(felipemonteiro): Use OSH PostgreSQL chart.
     POSTGRES_ID=$(
         sudo docker run \
             --detach \

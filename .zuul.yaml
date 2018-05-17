@@ -16,10 +16,8 @@
         - airship-deckhand-linter
         - airship-deckhand-ubuntu:
             voting: false
-            irrelevant-files:
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^releasenotes/.*$
+        - airship-deckhand-tox-functional
+        - airship-deckhand-tox-functional-py35
     gate:
       jobs:
         - airship-deckhand-linter
@@ -29,19 +27,23 @@
         #       - ^.*\.rst$
         #       - ^doc/.*$
         #       - ^releasenotes/.*$
+        - airship-deckhand-tox-functional
+        - airship-deckhand-tox-functional-py35
 
 - job:
     name: airship-deckhand-linter
+    description: |
+      Lints all files by checking them for whitespace.
     run: tools/gate/playbooks/zuul-linter.yaml
     nodeset: openstack-helm-single-node
 
 - job:
-    name: airship-deckhand
+    name: airship-deckhand-base
     roles:
       - zuul: openstack/openstack-helm-infra
     vars:
       zuul_osh_infra_relative_path: ../openstack-helm-infra/
-    timeout: 7200
+    timeout: 3600
     pre-run:
       - tools/gate/playbooks/osh-infra-upgrade-host.yaml
       - tools/gate/playbooks/osh-infra-deploy-docker.yaml
@@ -54,5 +56,48 @@
 
 - job:
     name: airship-deckhand-ubuntu
-    parent: airship-deckhand
+    parent: airship-deckhand-base
     nodeset: openstack-helm-single-node
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^releasenotes/.*$
+
+- job:
+    name: airship-deckhand-tox-functional-base
+    description: |
+      Base job for running airship-deckhand functional tests. Runs tests
+      against Docker image generated from source code.
+    roles:
+      - zuul: openstack/openstack-helm-infra
+    timeout: 3600
+    pre-run:
+      - tools/gate/playbooks/osh-infra-upgrade-host.yaml
+      - tools/gate/playbooks/osh-infra-deploy-docker.yaml
+    run: tools/gate/playbooks/run-functional-tests.yaml
+    required-projects:
+      - openstack/openstack-helm-infra
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^releasenotes/.*$
+
+- job:
+    name: airship-deckhand-tox-functional
+    description: |
+      Run tox-based functional tests for the Airship Deckhand project under
+      cPython version 2.7. Uses tox with the ``functional`` environment.
+    parent: airship-deckhand-tox-functional-base
+    nodeset: openstack-helm-single-node
+    vars:
+      tox_envlist: functional
+
+- job:
+    name: airship-deckhand-tox-functional-py35
+    description: |
+      Run tox-based functional tests for the Airship Deckhand project under
+      cPython version 3.5. Uses tox with the ``functional-py35`` environment.
+    parent: airship-deckhand-tox-functional-base
+    nodeset: openstack-helm-single-node
+    vars:
+      tox_envlist: functional-py35

@@ -33,11 +33,13 @@ function cleanup_deckhand {
 
     rm -rf $CONF_DIR
 
-    # Kill all processes and child processes (for example, if workers > 1)
-    # if using uwsgi only.
-    PGID=$(ps -o comm -o pgid | grep uwsgi | grep -o [0-9]* | head -n 1)
-    if [ -n "$PGID" ]; then
-        setsid kill -- -$PGID
+    if [ -z "$DECKHAND_IMAGE" ]; then
+        # Kill uwsgi service if it is still running.
+        PID=$( sudo netstat -tulpn | grep ":9000" | head -n 1 | awk '{print $NF}' )
+        if [ -n $PID ]; then
+            PID=${PID%/*}
+            sudo kill -9 $PID
+        fi
     fi
 }
 

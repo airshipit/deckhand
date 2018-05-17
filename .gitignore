@@ -109,6 +109,9 @@ ENV/
 #pycharm-ide
 .idea/
 
+# osx
+.DS_Store
+
 # makefile build/lint artifacts
 /charts/deckhand/*.tgz
 /charts/deckhand/*.lock
