@@ -77,7 +77,7 @@ The following result in validation errors:
 * A document with ``replacement: true`` doesn't have a parent.
 * A document with ``replacement: true`` doesn't have the same
   ``metadata.name`` and ``schema`` as its parent.
-* A replacement document cannot iself be replaced. That is, only one level
+* A replacement document cannot itself be replaced. That is, only one level
   of replacement is allowed.
 
 Note that each key in the examples below is *mandatory* and that the
@@ -91,7 +91,7 @@ Document **replacer** (child):
   # Note that the schema and metadata.name keys are the same as below.
   schema: armada/Chart/v1
   metadata:
-    name: ucp-deckhand
+    name: airship-deckhand
     # The replacement: true key is mandatory.
     replacement: true
     layeringDefinition:
@@ -114,7 +114,7 @@ Which replaces the document **replacee** (parent):
   # Note that the schema and metadata.name keys are the same as above.
   schema: armada/Chart/v1
   metadata:
-    name: ucp-deckhand
+    name: airship-deckhand
     labels:
       selector: foo
     layeringDefinition:
@@ -140,7 +140,7 @@ To achieve this, two top-layer documents can be created:
   ---
   schema: armada/Chart/v1
   metadata:
-    name: ucp-deckhand-1
+    name: airship-deckhand-1
     layeringDefinition:
       layer: global
       ...
@@ -156,7 +156,7 @@ And:
   ---
   schema: armada/Chart/v1
   metadata:
-    name: ucp-deckhand-2
+    name: airship-deckhand-2
     layeringDefinition:
       layer: global
       ...
@@ -183,7 +183,7 @@ For example:
   ---
   schema: armada/Chart/v1
   metadata:
-    name: ucp-deckhand
+    name: airship-deckhand
     replacement: true
     layeringDefinition:
       layer: site
@@ -206,7 +206,7 @@ And:
   ---
   schema: armada/Chart/v1
   metadata:
-    name: ucp-deckhand
+    name: airship-deckhand
     labels:
       selector: foo
     layeringDefinition:

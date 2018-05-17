@@ -55,7 +55,7 @@ plugins:
     auth = v3.Token(**keystone_auth)
     deckhandclient = client.Client(auth=auth)
 
-Which will allow you to authenticate using a pre-exsting, project-scoped
+Which will allow you to authenticate using a pre-existing, project-scoped
 token.
 
 Alternatively, you can use non-session authentication to instantiate the
