@@ -127,7 +127,7 @@ def require_unique_document_schema(schema=None):
             conflicting_names = [
                 x.meta for x in documents
                 if x.meta not in existing_document_names and
-                   x.schema.startswith(schema)
+                x.schema.startswith(schema)
             ]
             if existing_document_names and conflicting_names:
                 raise errors.SingletonDocumentConflict(
@@ -976,7 +976,7 @@ def revision_rollback(revision_id, latest_revision, session=None):
     doc_diff = {}
     for orig_doc in orig_revision['documents']:
         if ((orig_doc['data_hash'], orig_doc['metadata_hash'])
-            not in latest_revision_hashes):
+                not in latest_revision_hashes):
             doc_diff[orig_doc['id']] = True
         else:
             doc_diff[orig_doc['id']] = False
@@ -1036,7 +1036,7 @@ def _get_validation_policies_for_revision(revision_id, session=None):
         # Otherwise return early.
         LOG.debug('Failed to find a ValidationPolicy for revision ID %s. '
                   'Only the "%s" results will be included in the response.',
-                 revision_id, types.DECKHAND_SCHEMA_VALIDATION)
+                  revision_id, types.DECKHAND_SCHEMA_VALIDATION)
         validation_policies = []
 
     return validation_policies

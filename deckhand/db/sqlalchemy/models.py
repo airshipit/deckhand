@@ -155,8 +155,9 @@ def __build_tables(blob_type_obj, blob_type_list):
                                                ondelete='CASCADE'),
                            nullable=False)
         revision_id = Column(
-            Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
-                                nullable=False)
+            Integer,
+            ForeignKey('revisions.id', ondelete='CASCADE'),
+            nullable=False)
         # Used for documents that haven't changed across revisions but still
         # have been carried over into newer revisions. This is necessary in
         # order to roll back to previous revisions or to generate a revision
@@ -167,8 +168,9 @@ def __build_tables(blob_type_obj, blob_type_list):
         # still being able to roll back to all the documents that exist in a
         # specific revision or generate an accurate revision diff report.
         orig_revision_id = Column(
-            Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
-                                nullable=True)
+            Integer,
+            ForeignKey('revisions.id', ondelete='CASCADE'),
+            nullable=True)
 
         @hybrid_property
         def bucket_name(self):
@@ -201,8 +203,9 @@ def __build_tables(blob_type_obj, blob_type_list):
         validator = Column(blob_type_obj, nullable=False)
         errors = Column(blob_type_list, nullable=False, default=[])
         revision_id = Column(
-            Integer, ForeignKey('revisions.id', ondelete='CASCADE'),
-                                nullable=False)
+            Integer,
+            ForeignKey('revisions.id', ondelete='CASCADE'),
+            nullable=False)
 
     this_module = sys.modules[__name__]
     tables = [Bucket, Document, Revision, RevisionTag, Validation]

@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Removed indentation rules E127, E128, E129 and E131 from pep8 exclusion.

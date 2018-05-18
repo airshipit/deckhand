@@ -186,8 +186,8 @@ class DataSchemaValidator(GenericValidator):
                 continue
             if 'data' not in data_schema:
                 continue
-            schema_prefix, schema_version = _get_schema_parts(data_schema,
-                                                             'metadata.name')
+            schema_prefix, schema_version = _get_schema_parts(
+                data_schema, 'metadata.name')
             schema_map[schema_version].setdefault(schema_prefix,
                                                   data_schema.data)
 
@@ -308,7 +308,7 @@ class DataSchemaValidator(GenericValidator):
         if not schemas_to_use:
             LOG.debug('Document schema %s not recognized by %s. No further '
                       'validation required.', document.schema,
-                                              self.__class__.__name__)
+                      self.__class__.__name__)
 
         for schema in schemas_to_use:
             is_builtin_schema = schema not in self._external_data_schemas

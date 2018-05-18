@@ -191,7 +191,7 @@ class Manager(object):
         try:
             return (
                 list(yaml.safe_load_all(body))
-                    if many else yaml.safe_load(body)
+                if many else yaml.safe_load(body)
             )
         except yaml.YAMLError:
             return None

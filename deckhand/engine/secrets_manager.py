@@ -61,9 +61,9 @@ class SecretsManager(object):
             secret_uuid = None
         return (
             isinstance(secret_ref, six.string_types) and
-                cls._url_re.match(secret_ref) and
-                'secrets' in secret_ref and
-                uuidutils.is_uuid_like(secret_uuid)
+            cls._url_re.match(secret_ref) and
+            'secrets' in secret_ref and
+            uuidutils.is_uuid_like(secret_uuid)
         )
 
     @classmethod

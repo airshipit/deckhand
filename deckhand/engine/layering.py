@@ -146,7 +146,7 @@ class DocumentLayering(object):
         current_parent = self._documents_by_index.get(parent_meta, None)
         if current_parent:
             if (self._layer_order.index(parent.layer) >
-                self._layer_order.index(current_parent.layer)):
+                    self._layer_order.index(current_parent.layer)):
                 self._parents[child.meta] = parent.meta
                 all_children[child] -= 1
         else:
@@ -304,7 +304,7 @@ class DocumentLayering(object):
             # document itself then return the parent.
             use_replacement = (
                 parent and parent.has_replacement and
-                    parent.replaced_by is not doc
+                parent.replaced_by is not doc
             )
             if use_replacement:
                 parent = parent.replaced_by
@@ -481,7 +481,7 @@ class DocumentLayering(object):
         else:
             substitution_sources = [
                 d for d in self._documents_by_index.values()
-                    if not d.is_abstract
+                if not d.is_abstract
             ]
 
         substitution_sources = self._calc_replacements_and_substitutions(
@@ -709,7 +709,7 @@ class DocumentLayering(object):
 
         # Return only concrete documents and non-replacements.
         return [d for d in self._sorted_documents
-                    if d.is_abstract is False and d.has_replacement is False]
+                if d.is_abstract is False and d.has_replacement is False]
 
     @property
     def documents(self):

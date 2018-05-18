@@ -214,7 +214,7 @@ class TestDocuments(base.TestDbBase):
         # Verify that all the expected documents were deleted.
         self.assertEqual(
             sorted([(d['metadata']['name'], d['schema'])
-                        for d in created_documents]),
+                    for d in created_documents]),
             sorted([(d['name'], d['schema']) for d in deleted_documents]))
 
         # Verify that all their attributes have been cleared and that the

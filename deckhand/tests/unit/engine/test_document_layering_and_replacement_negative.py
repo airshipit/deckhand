@@ -34,7 +34,7 @@ class TestDocumentLayeringReplacementNegative(
         documents[2]['metadata']['name'] = 'bar'
 
         error_re = (r'.*Document replacement requires that both documents '
-                     'have the same `schema` and `metadata.name`.')
+                    'have the same `schema` and `metadata.name`.')
         self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
                                 self._test_layering, documents)
 
@@ -44,7 +44,7 @@ class TestDocumentLayeringReplacementNegative(
         documents[2]['metadata']['schema'] = 'example/Other/v1'
 
         error_re = (r'Document replacement requires that both documents '
-                     'have the same `schema` and `metadata.name`.')
+                    'have the same `schema` and `metadata.name`.')
         self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
                                 self._test_layering, documents)
 
@@ -76,7 +76,7 @@ class TestDocumentLayeringReplacementNegative(
         documents[2]['metadata']['layeringDefinition'].pop('parentSelector')
 
         error_re = (r'Document replacement requires that the document with '
-                     '`replacement: true` have a parent.')
+                    '`replacement: true` have a parent.')
         self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
                                 self._test_layering, documents)
 
@@ -96,6 +96,6 @@ class TestDocumentLayeringReplacementNegative(
         documents[3]['metadata']['replacement'] = True
 
         error_re = (r'A replacement document cannot itself be replaced by '
-                     'another document.')
+                    'another document.')
         self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
                                 self._test_layering, documents)

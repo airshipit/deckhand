@@ -145,7 +145,7 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
 
         if requires_content_type:
             content_type = (req.content_type.split(';', 1)[0].strip()
-                        if req.content_type else '')
+                            if req.content_type else '')
 
             if not content_type:
                 raise falcon.HTTPMissingHeader('Content-Type')

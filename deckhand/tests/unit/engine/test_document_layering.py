@@ -916,8 +916,8 @@ class TestDocumentLayering3LayersAbstractConcrete(TestDocumentLayering):
                 "actions": [{"method": "replace", "path": ".b"}]}
         }
         doc_factory = factories.DocumentFactory(3, [1, 1, 1])
-        documents = doc_factory.gen_test(mapping, site_abstract=False,
-                                    region_abstract=False)
+        documents = doc_factory.gen_test(
+            mapping, site_abstract=False, region_abstract=False)
 
         site_expected = {"a": {"x": 1, "y": 2, "z": 3}, "b": 4}
         region_expected = {"a": {"x": 1, "y": 2, "z": 3}, "b": 5}

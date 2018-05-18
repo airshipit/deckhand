@@ -108,7 +108,8 @@ class RealPolicyFixture(fixtures.Fixture):
         """
         if not (set(self.expected_policy_actions) ==
                 set(self.actual_policy_actions)):
-            error_msg = ('The expected policy actions passed to '
+            error_msg = (
+                'The expected policy actions passed to '
                 '`self.policy.set_rules` do not match the policy actions '
                 'that were actually enforced by Deckhand. Set of expected '
                 'policies %s should be equal to set of actual policies: %s. '

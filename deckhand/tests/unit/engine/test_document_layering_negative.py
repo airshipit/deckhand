@@ -114,9 +114,10 @@ class TestDocumentLayeringNegative(
                 'parentSelector'] = parent_selector
 
             layering.DocumentLayering(documents, validate=False)
-            self.assertTrue(any('Could not find parent for document' in
-                mock_log.debug.mock_calls[x][1][0])
-                    for x in range(len(mock_log.debug.mock_calls)))
+            self.assertTrue(
+                any('Could not find parent for document' in
+                    mock_log.debug.mock_calls[x][1][0])
+                for x in range(len(mock_log.debug.mock_calls)))
             mock_log.debug.reset_mock()
 
     @mock.patch.object(layering, 'LOG', autospec=True)
@@ -129,9 +130,10 @@ class TestDocumentLayeringNegative(
             documents[1]['metadata']['labels'] = parent_label
 
             layering.DocumentLayering(documents, validate=False)
-            self.assertTrue(any('Could not find parent for document' in
-                mock_log.debug.mock_calls[x][1][0])
-                    for x in range(len(mock_log.debug.mock_calls)))
+            self.assertTrue(
+                any('Could not find parent for document' in
+                    mock_log.debug.mock_calls[x][1][0])
+                for x in range(len(mock_log.debug.mock_calls)))
             mock_log.debug.reset_mock()
 
     def test_layering_duplicate_parent_selector_2_layer(self):
@@ -168,9 +170,10 @@ class TestDocumentLayeringNegative(
             'parentSelector'] = self_ref
 
         layering.DocumentLayering(documents, validate=False)
-        self.assertTrue(any('Could not find parent for document' in
-            mock_log.debug.mock_calls[x][1][0])
-                for x in range(len(mock_log.debug.mock_calls)))
+        self.assertTrue(
+            any('Could not find parent for document' in
+                mock_log.debug.mock_calls[x][1][0])
+            for x in range(len(mock_log.debug.mock_calls)))
 
     def test_layering_without_layering_policy_raises_exc(self):
         doc_factory = factories.DocumentFactory(1, [1])
