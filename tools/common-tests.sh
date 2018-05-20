@@ -38,6 +38,8 @@ function deploy_postgre {
             --format='{{ .NetworkSettings.Networks.bridge.IPAddress }}' \
                 $POSTGRES_ID
     )
+
+    echo $POSTGRES_IP
 }
 
 

@@ -12,4 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: build-deckhand-image.yaml
+- name: Deploy PostgreSQL
+  shell: |-
+        set -e;
+        ./tools/gate/scripts/020-deploy-postgresql.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}"
+  register: _airship_deckhand_database_url
+  become: yes
+
+- name: Register PostgreSQL database IP address
+  set_fact:
+    airship_deckhand_database_url: "{{ _airship_deckhand_database_url.stdout_lines | last }}"
+  environment:
+    AIRSHIP_DECKHAND_DATABASE_URL: "{{ airship_deckhand_database_url }}"

@@ -12,4 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: build-deckhand-image.yaml
+- include: generate-test-config.yaml
+- include: generate-test-paste.yaml

@@ -12,4 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: build-deckhand-image.yaml
+- name: Generate test paste.ini file when disable_keystone is true
+  when: disable_keystone == true
+  shell: |-
+    set -ex;
+    echo "Using noauth-paste.ini to disable Keystone authentication."
+    cp etc/deckhand/noauth-paste.ini "{{ deckhand_conf_dir.stdout }}"/noauth-paste.ini
+  args:
+    chdir: "{{ airship_deckhand_path.stdout }}"
+
+- name: Generate test paste.ini file when disable_keystone is false
+  when: disable_keystone == false
+  shell: |-
+    set -ex;
+    cp etc/deckhand/deckhand-paste.ini "{{ deckhand_conf_dir.stdout }}"/deckhand-paste.ini
+  args:
+    chdir: "{{ airship_deckhand_path.stdout }}"

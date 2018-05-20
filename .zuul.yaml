@@ -16,8 +16,7 @@
         - airship-deckhand-linter
         - airship-deckhand-ubuntu:
             voting: false
-        - airship-deckhand-tox-functional
-        - airship-deckhand-tox-functional-py35
+        - airship-deckhand-functional-docker-py35
     gate:
       jobs:
         - airship-deckhand-linter
@@ -27,8 +26,7 @@
         #       - ^.*\.rst$
         #       - ^doc/.*$
         #       - ^releasenotes/.*$
-        - airship-deckhand-tox-functional
-        - airship-deckhand-tox-functional-py35
+        - airship-deckhand-functional-docker-py35
 
 - job:
     name: airship-deckhand-linter
@@ -64,7 +62,7 @@
       - ^releasenotes/.*$
 
 - job:
-    name: airship-deckhand-tox-functional-base
+    name: airship-deckhand-functional-docker-base
     description: |
       Base job for running airship-deckhand functional tests. Runs tests
       against Docker image generated from source code.
@@ -74,7 +72,7 @@
     pre-run:
       - tools/gate/playbooks/osh-infra-upgrade-host.yaml
       - tools/gate/playbooks/osh-infra-deploy-docker.yaml
-    run: tools/gate/playbooks/run-functional-tests.yaml
+    run: tools/gate/playbooks/run-functional-tests-docker.yaml
     required-projects:
       - openstack/openstack-helm-infra
     irrelevant-files:
@@ -83,21 +81,12 @@
       - ^releasenotes/.*$
 
 - job:
-    name: airship-deckhand-tox-functional
-    description: |
-      Run tox-based functional tests for the Airship Deckhand project under
-      cPython version 2.7. Uses tox with the ``functional`` environment.
-    parent: airship-deckhand-tox-functional-base
-    nodeset: openstack-helm-single-node
-    vars:
-      tox_envlist: functional
-
-- job:
-    name: airship-deckhand-tox-functional-py35
+    name: airship-deckhand-functional-docker-py35
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.5. Uses tox with the ``functional-py35`` environment.
-    parent: airship-deckhand-tox-functional-base
+    parent: airship-deckhand-functional-docker-base
     nodeset: openstack-helm-single-node
     vars:
-      tox_envlist: functional-py35
+      tox_envlist: functional
+      disable_keystone: true

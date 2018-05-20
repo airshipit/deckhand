@@ -14,6 +14,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-set -xe
+set -e;
 
-make charts
+POSTGRES_ID=$(
+    sudo docker run \
+        --detach \
+        --publish :5432 \
+        -e POSTGRES_DB=deckhand \
+        -e POSTGRES_USER=deckhand \
+        -e POSTGRES_PASSWORD=password \
+            postgres:9.5
+)
+
+POSTGRES_IP=$(
+    sudo docker inspect \
+        --format='{{ .NetworkSettings.Networks.bridge.IPAddress }}' \
+            $POSTGRES_ID
+)
+
+echo "postgresql+psycopg2://deckhand:password@$POSTGRES_IP:5432/deckhand"

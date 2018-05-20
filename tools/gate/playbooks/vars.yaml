@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-null: null
+zuul_airship_deckhand_relative_path: ../airship-deckhand

@@ -10,7 +10,7 @@ policy_file = policy.yaml
 [barbican]
 
 [database]
-connection = ${DATABASE_URL}
+connection = ${AIRSHIP_DECKHAND_DATABASE_URL}
 
 [keystone_authtoken]
 # NOTE(fmontei): Values taken from clouds.yaml. Values only used for

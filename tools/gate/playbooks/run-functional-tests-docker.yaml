@@ -12,4 +12,38 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: build-deckhand-image.yaml
+- hosts: all
+  gather_facts: False
+  become: yes
+  roles:
+    - build-images
+  tags:
+    - build-images
+
+- hosts: all
+  gather_facts: False
+  roles:
+    - deploy-postgresql
+  tags:
+    - deploy-postgresql
+
+- hosts: all
+  gather_facts: False
+  roles:
+    - generate-test-config
+  tags:
+    - generate-test-config
+
+- hosts: all
+  gather_facts: False
+  roles:
+    - deploy-deckhand
+  tags:
+    - deploy-deckhand
+
+- hosts: all
+  gather_facts: False
+  roles:
+    - run-tests
+  tags:
+    - run-tests

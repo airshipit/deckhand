@@ -179,7 +179,7 @@ function deploy_deckhand {
 function run_tests {
     set +e
 
-    export DECKHAND_TESTS_DIR=${CURRENT_DIR}/deckhand/tests/integration/gabbits
+    export DECKHAND_TEST_DIR=${CURRENT_DIR}/deckhand/tests/integration/gabbits
 
     posargs=$@
     if [ ${#posargs} -ge 1 ]; then

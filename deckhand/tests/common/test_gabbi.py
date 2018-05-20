@@ -37,7 +37,7 @@ def __create_temp_test_dir():
 
     TEST_DIR = tempfile.mkdtemp(prefix='deckhand')
 
-    root_test_dir = os.getenv('DECKHAND_TESTS_DIR', 'gabbits')
+    root_test_dir = os.getenv('DECKHAND_TEST_DIR', 'gabbits')
     test_files = []
 
     for root, dirs, files in os.walk(root_test_dir):
@@ -100,9 +100,12 @@ def pytest_generate_tests(metafunc):
     global TEST_DIR
 
     driver.py_test_generator(
-        TEST_DIR, url=os.environ['DECKHAND_TEST_URL'], host='localhost',
+        TEST_DIR,
+        url=os.environ.get('DECKHAND_TEST_URL', '127.0.0.1:9000'),
+        host='localhost',
         # NOTE(fmontei): When there are multiple handlers listed that accept
         # the same content-type, the one that is earliest in the list will be
         # used. Thus, we cannot specify multiple content handlers for handling
         # list/dictionary responses from the server using different handlers.
-        content_handlers=[MultidocJsonpaths], metafunc=metafunc)
+        content_handlers=[MultidocJsonpaths],
+        metafunc=metafunc)

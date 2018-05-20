@@ -27,7 +27,6 @@
       shell: cd "{{ work_dir }}"; pwd
       register: airship_deckhand_path
       vars:
-        zuul_airship_deckhand_relative_path: ../airship-deckhand
         work_dir: "{{ zuul.project.src_dir }}/{{ zuul_airship_deckhand_relative_path | default('') }}"
 
     - name: Airship-Deckhand image build path
@@ -53,4 +52,6 @@
       shell: |-
               set -e;
               echo $( docker images --filter label=zuul | awk '{print $3}' | head -2 | tail -1 )
-      register: deckhand_image_id
+      register: airship_deckhand_image_id
+      args:
+        chdir: "{{ airship_deckhand_path.stdout }}"

@@ -12,17 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- hosts: all
-  gather_facts: False
-  become: yes
-  roles:
-    - build-images
-  tags:
-    - build-images
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - run-tests
-  tags:
-    - run-tests
+- include: deploy-postgresql.yaml

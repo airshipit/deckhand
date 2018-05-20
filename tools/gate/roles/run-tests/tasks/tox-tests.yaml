@@ -15,8 +15,9 @@
 - name: Run Tox Tests
   shell: |
     set -xe;
-    tox -e {{ tox_envlist }}
+    tox -e "{{ tox_envlist }}"
   args:
     chdir: "{{ zuul.project.src_dir }}"
   environment:
-    DECKHAND_IMAGE: "{{ deckhand_image_id.stdout }}"
+    DECKHAND_TEST_URL: "127.0.0.1:9000"
+    DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/functional/gabbits"
