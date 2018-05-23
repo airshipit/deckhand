@@ -74,7 +74,7 @@ dependencies:
     - service: key_manager
       endpoint: internal
 
-# typically overriden by environmental
+# typically overridden by environmental
 # values, but should include all endpoints
 # required by this chart
 endpoints:
