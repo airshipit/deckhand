@@ -21,10 +21,8 @@
     - helm-release-status
     - describe-kubernetes-objects
     - gather-pod-logs
-    - gather-prom-metrics
   tags:
     - gather-host-logs
     - helm-release-status
     - describe-kubernetes-objects
     - gather-pod-logs
-    - gather-prom-metrics
