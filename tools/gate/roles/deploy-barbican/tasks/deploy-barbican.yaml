@@ -1,0 +1,46 @@
+# Copyright 2018 AT&T Intellectual Property.  All other rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+- name: Deploy Barbican
+  shell: |
+    set -xe;
+
+    # Pull images and lint chart
+    make pull-images barbican
+
+    # Deploy command
+    helm upgrade --install barbican ./barbican \
+      --namespace=openstack
+
+    # Wait for deploy
+    ./tools/deployment/common/wait-for-pods.sh openstack
+
+    # Validate deployment info
+    helm status barbican
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+
+- name: Retrieve Barbican URL for integration tests
+  shell: |-
+    set -e;
+
+    test_barbican_url=$(
+      openstack endpoint list \
+        --format value | grep barbican | grep public | awk '{print $7}' | sed 's/\(.*\)\//\1 /'
+    )
+
+    echo $test_barbican_url
+  register: test_barbican_url
+  environment:
+    OS_CLOUD: openstack_helm

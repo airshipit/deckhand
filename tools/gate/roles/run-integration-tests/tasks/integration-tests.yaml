@@ -12,7 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Run Integration Tests
+- name: Install pip3 and gabbi
+  shell: |
+    set -xe;
+    apt-get install -y python3-pip
+    pip3 install --upgrade pip
+    # Includes required requirements for testing.
+    pip3 install -r test-requirements.txt
+  args:
+    chdir: "{{ zuul.project.src_dir }}"
+  become: yes
+
+- name: Run Integration Tests with Docker
+  when: disable_keystone == false
+  block:
+    - name: Generate Keystone token for integration tests
+      shell: |-
+        set -e;
+        echo $( openstack token issue --format value -c id )
+      args:
+        chdir: "{{ zuul.project.src_dir }}"
+      register: test_auth_token
+      environment:
+        OS_CLOUD: openstack_helm
+
+    - name: Run Integration Tests
+      shell: |
+        set -ex;
+        py.test -svx "{{ airship_deckhand_path.stdout }}"/deckhand/tests/common/test_gabbi.py \
+          && echo "Done SUCCESS" || echo "Done FAILURE"
+      args:
+        chdir: "{{ zuul.project.src_dir }}"
+      environment:
+        DECKHAND_IMAGE: "{{ airship_deckhand_image_id.stdout }}"
+        DECKHAND_TEST_URL: "127.0.0.1:9000"
+        DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/integration/gabbits"
+        TEST_AUTH_TOKEN: "{{ test_auth_token.stdout }}"
+        TEST_BARBICAN_URL: "{{ test_barbican_url.stdout }}"
+      register: result
+      failed_when: "result.rc != 0"
+
+- name: Run Integration Tests with uwsgi
+  when: disable_keystone == true
   shell: |
     set -xe;
     # NOTE(felipemonteiro): We don't use a venv because they don't play nicely
@@ -27,4 +68,4 @@
     DECKHAND_TEST_URL: "127.0.0.1:9000"
     DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/integration/gabbits"
   register: result
-  failed_when: "'commands failed' in result.stdout"
+  failed_when: "result.rc != 0"

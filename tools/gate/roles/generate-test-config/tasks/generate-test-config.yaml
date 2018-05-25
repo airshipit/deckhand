@@ -13,27 +13,27 @@
 # limitations under the License.
 
 - name: Create temporary deckhand conf directory
-  shell: |-
-    set - ex;
-    echo $( mktemp -d -p "{{ airship_deckhand_path.stdout }}" )
-  register: deckhand_conf_dir
+  tempfile:
+    state: directory
+    suffix: airship-deckhand
+  register: _deckhand_conf_dir
+
+- name: Store deckhand_conf_dir in variable
+  set_fact:
+    deckhand_conf_dir: "{{ _deckhand_conf_dir.path }}"
   environment:
     # Used by Deckhand's initialization script to search for config files.
-    AIRSHIP_DECKHAND_CONFIG_DIR: "{{ deckhand_conf_dir.stdout }}"
-  args:
-    chdir: "{{ airship_deckhand_path.stdout }}"
+    AIRSHIP_DECKHAND_CONFIG_DIR: "{{ deckhand_conf_dir }}"
 
 - name: Generate test deckhand.conf file when disable_keystone is true
   when: disable_keystone == true
   shell: |-
     set -ex;
 
-    chmod 777 -R "{{ deckhand_conf_dir.stdout }}"
-    conf_file="{{ deckhand_conf_dir.stdout }}"/deckhand.conf
+    chmod 777 -R "{{ deckhand_conf_dir }}"
+    conf_file="{{ deckhand_conf_dir }}"/deckhand.conf
 
-    echo "{{ airship_deckhand_database_url }}"
-
-    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir.stdout }}"/logging.conf
+    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir }}"/logging.conf
     envsubst '$AIRSHIP_DECKHAND_DATABASE_URL' < deckhand/tests/deckhand.conf.test > $conf_file
 
     echo "Toggling development_mode on to disable Keystone authentication."
@@ -42,8 +42,8 @@
     echo $conf_file 1>&2
     cat $conf_file 1>&2
 
-    echo "{{ deckhand_conf_dir.stdout }}"/logging.conf 1>&2
-    cat "{{ deckhand_conf_dir.stdout }}"/logging.conf 1>&2
+    echo "{{ deckhand_conf_dir }}"/logging.conf 1>&2
+    cat "{{ deckhand_conf_dir }}"/logging.conf 1>&2
   args:
     chdir: "{{ airship_deckhand_path.stdout }}"
   environment:
@@ -55,18 +55,20 @@
   shell: |-
     set -ex;
 
-    conf_file="{{ deckhand_conf_dir.stdout }}"/deckhand.conf
+    chmod 777 -R "{{ deckhand_conf_dir }}"
+    conf_file="{{ deckhand_conf_dir }}"/deckhand.conf
 
-    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir.stdout }}"/logging.conf
-    envsubst '$AIRSHIP_DECKHAND_DATABASE_URL' < deckhand/tests/deckhand.conf.test > $conf_file
+    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir }}"/logging.conf
+    envsubst '$AIRSHIP_DECKHAND_DATABASE_URL $TEST_BARBICAN_URL' < deckhand/tests/deckhand.conf.test > $conf_file
 
     echo $conf_file 1>&2
     cat $conf_file 1>&2
 
-    echo "{{ deckhand_conf_dir.stdout }}"/logging.conf 1>&2
-    cat "{{ deckhand_conf_dir.stdout }}"/logging.conf 1>&2
+    echo "{{ deckhand_conf_dir }}"/logging.conf 1>&2
+    cat "{{ deckhand_conf_dir }}"/logging.conf 1>&2
   args:
     chdir: "{{ airship_deckhand_path.stdout }}"
   environment:
     AIRSHIP_DECKHAND_DATABASE_URL: "{{ airship_deckhand_database_url }}"
+    TEST_BARBICAN_URL: "{{ test_barbican_url.stdout }}"
   become: yes

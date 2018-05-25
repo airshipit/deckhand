@@ -48,8 +48,6 @@
       args:
         chdir: "{{ airship_deckhand_path.stdout }}"
         executable: /bin/bash
-      register: result
-      failed_when: "'permission denied' in result.stdout"
       become: yes
 
     - name: Build Airship-Deckhand Image Behind Proxy
@@ -74,8 +72,6 @@
       args:
         chdir: "{{ airship_deckhand_path.stdout }}"
         executable: /bin/bash
-      register: result
-      failed_when: "'permission denied' in result.stdout"
       become: yes
 
     - name: Register Deckhand Image ID
@@ -83,7 +79,6 @@
               set -e;
               echo $( docker images --filter label=zuul | awk '{print $3}' | head -2 | tail -1 )
       register: airship_deckhand_image_id
-      failed_when: "'permission denied' in airship_deckhand_image_id.stdout"
       args:
         chdir: "{{ airship_deckhand_path.stdout }}"
       become: yes

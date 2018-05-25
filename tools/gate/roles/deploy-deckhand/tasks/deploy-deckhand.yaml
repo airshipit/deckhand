@@ -12,32 +12,67 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Deploy Deckhand using Docker
+- name: Perform Database Migrations
   shell: |-
     set -ex;
 
-    echo "Running Deckhand via Docker."
-
     # Do database migrations.
     docker run \
-        --rm \
-        --net=host \
-        -v "{{ deckhand_conf_dir.stdout }}":/etc/deckhand \
-        "{{ airship_deckhand_image_id.stdout }}" alembic upgrade head &
+      --rm \
+      --net=host \
+      -v "{{ deckhand_conf_dir }}":/etc/deckhand "{{ airship_deckhand_image_id.stdout }}" alembic upgrade head
 
     # Allow migrations to complete.
-    sleep 5
+    sleep 10
+  become: yes
 
-    # Start Deckhand container.
+- name: Deploy Deckhand Container
+  shell: |-
     docker run \
-        --rm \
-        --net=host \
-        -p 9000:9000 \
-        -v "{{ deckhand_conf_dir.stdout }}":/etc/deckhand \
-        "{{ airship_deckhand_image_id.stdout }}" server &
+      --rm \
+      --net=host \
+      -p 9000:9000 \
+      -v "{{ deckhand_conf_dir }}":/etc/deckhand "{{ airship_deckhand_image_id.stdout }}" server &
 
     # Give the server a chance to come up. Better to poll a health check.
-    sleep 5
+    sleep 10
   args:
     chdir: "{{ airship_deckhand_path.stdout }}"
   become: yes
+
+- name: Register Deckhand Service and Endpoints
+  when: disable_keystone == false
+  block:
+    - name: Register Keystone Deckhand Service
+      shell: |-
+        set -ex;
+
+        if [ -z "$( openstack service list --format value | grep deckhand )" ]; then
+          openstack service create --enable --name deckhand deckhand
+        fi
+      environment:
+        OS_CLOUD: openstack_helm
+      register: result
+      failed_when: "'permission denied' in result.stdout"
+
+    - name: Register Keystone Deckhand Endpoints
+      shell: |-
+        set -ex;
+
+        echo "Registering Deckhand endpoint: {{ item }}"
+
+        deckhand_endpoint="http://127.0.0.1:9000"
+
+        if [ -z "$( openstack endpoint list --format value | grep deckhand | grep {{ item }} )" ]; then
+          openstack endpoint create --enable \
+            --region RegionOne \
+            deckhand "{{ item }}" $deckhand_endpoint/api/v1.0
+        fi
+      with_items:
+        - "admin"
+        - "public"
+        - "internal"
+      environment:
+        OS_CLOUD: openstack_helm
+      register: result
+      failed_when: "'permission denied' in result.stdout"
