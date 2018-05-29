@@ -9,47 +9,13 @@ function log_section {
 }
 
 
-function deploy_postgre {
-    #######################################
-    # Deploy an ephemeral PostgreSQL DB.
-    # Globals:
-    #   POSTGRES_ID
-    #   POSTGRES_IP
-    # Arguments:
-    #   None
-    # Returns:
-    #   None
-    #######################################
-    set -xe
-
-    # TODO(felipemonteiro): Use OSH PostgreSQL chart.
-    POSTGRES_ID=$(
-        sudo docker run \
-            --detach \
-            --publish :5432 \
-            -e POSTGRES_DB=deckhand \
-            -e POSTGRES_USER=deckhand \
-            -e POSTGRES_PASSWORD=password \
-                postgres:9.5
-    )
-
-    POSTGRES_IP=$(
-        sudo docker inspect \
-            --format='{{ .NetworkSettings.Networks.bridge.IPAddress }}' \
-                $POSTGRES_ID
-    )
-
-    echo $POSTGRES_IP
-}
-
-
 function gen_config {
     #######################################
     # Generate sample configuration file
     # Globals:
     #   CONF_DIR
     #   DECKHAND_TEST_URL
-    #   DATABASE_URL
+    #   AIRSHIP_DECKHAND_DATABASE_URL
     #   DECKHAND_CONFIG_DIR
     # Arguments:
     #   disable_keystone: true or false
@@ -57,7 +23,7 @@ function gen_config {
     # Returns:
     #   None
     #######################################
-    set -xe
+    set -xe;
 
     log_section "Creating config directory and test deckhand.conf"
 
@@ -66,14 +32,13 @@ function gen_config {
 
     local disable_keystone=$1
     export DECKHAND_TEST_URL=$2
-    export DATABASE_URL=postgresql+psycopg2://deckhand:password@$POSTGRES_IP:5432/deckhand
     # Used by Deckhand's initialization script to search for config files.
     export DECKHAND_CONFIG_DIR=$CONF_DIR
 
     local conf_file=${CONF_DIR}/deckhand.conf
 
     cp etc/deckhand/logging.conf.sample $CONF_DIR/logging.conf
-    envsubst '${DATABASE_URL}' < deckhand/tests/deckhand.conf.test > $conf_file
+    envsubst '${AIRSHIP_DECKHAND_DATABASE_URL}' < deckhand/tests/deckhand.conf.test > $conf_file
 
     # Only set up logging if running Deckhand via uwsgi. The container already has
     # values for logging.
@@ -104,7 +69,7 @@ function gen_paste {
     # Returns:
     #   None
     #######################################
-    set -xe
+    set -xe;
 
     local disable_keystone=$1
 

@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- hosts: all
-  gather_facts: False
-  roles:
-    - install-postgresql
-    - run-tests
-  tags:
-    - install-postgresql
-    - run-tests
+- name: Install PostgreSQL
+  shell: |-
+    set -xe;
+    if [ -z $(which pg_config) ]; then
+      apt-get update -y
+      apt-get install postgresql postgresql-contrib -y
+      apt-get install libpq-dev -y
+    fi
+  become: yes

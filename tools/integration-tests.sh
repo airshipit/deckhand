@@ -206,7 +206,7 @@ source ${CURRENT_DIR}/tools/common-tests.sh
 deploy_osh_keystone_barbican
 
 # Deploy PostgreSQL and Deckhand.
-deploy_postgre
+deploy_postgresql
 deploy_deckhand
 
 run_tests "$@"

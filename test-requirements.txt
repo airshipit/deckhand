@@ -15,5 +15,4 @@ testrepository>=0.0.20 # Apache-2.0/BSD
 testtools>=2.3.0 # MIT
 bandit>=1.4.0 # Apache-2.0
 gabbi==1.35.1
-pytest-html==1.16.1
-pifpaf==2.0.5
+pifpaf>=0.10.0 # Apache-2.0
