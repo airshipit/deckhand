@@ -12,38 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- hosts: all
-  gather_facts: False
-  become: yes
-  roles:
-    - build-images
-  tags:
-    - build-images
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - deploy-postgresql
-  tags:
-    - deploy-postgresql
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - generate-test-config
-  tags:
-    - generate-test-config
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - deploy-deckhand
-  tags:
-    - deploy-deckhand
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - run-functional-tests
-  tags:
-    - run-functional-tests
+- name: Run Functional Tests
+  shell: |
+    set -xe;
+    tox -e "{{ tox_envlist }}"
+  args:
+    chdir: "{{ zuul.project.src_dir }}"
+  environment:
+    DECKHAND_TEST_URL: "127.0.0.1:9000"
+    DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/functional/gabbits"
+  register: result
+  failed_when: "'Done SUCCESS' not in result.stdout and 'PASSED' not in result.stdout"

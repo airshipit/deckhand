@@ -14,36 +14,9 @@
 
 - hosts: all
   gather_facts: False
-  become: yes
   roles:
-    - build-images
+    - install-postgresql
+    - run-integration-tests
   tags:
-    - build-images
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - deploy-postgresql
-  tags:
-    - deploy-postgresql
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - generate-test-config
-  tags:
-    - generate-test-config
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - deploy-deckhand
-  tags:
-    - deploy-deckhand
-
-- hosts: all
-  gather_facts: False
-  roles:
-    - run-functional-tests
-  tags:
-    - run-functional-tests
+    - install-postgresql
+    - run-integration-tests

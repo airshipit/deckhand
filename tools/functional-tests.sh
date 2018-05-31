@@ -36,11 +36,11 @@ function deploy_deckhand {
 
     source ${CURRENT_DIR}/entrypoint.sh alembic upgrade head &
     # Give time for migrations to complete.
-    sleep 5
+    sleep 10
 
     source ${CURRENT_DIR}/entrypoint.sh server &
     # Give the server a chance to come up. Better to poll a health check.
-    sleep 5
+    sleep 10
 }
 
 

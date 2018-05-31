@@ -18,6 +18,7 @@
             voting: false
         - airship-deckhand-functional-docker-py35
         - airship-deckhand-functional-uwsgi-py35
+        - airship-deckhand-integration-uwsgi-py35
     gate:
       jobs:
         - airship-deckhand-linter
@@ -29,6 +30,7 @@
         #       - ^releasenotes/.*$
         - airship-deckhand-functional-docker-py35
         - airship-deckhand-functional-uwsgi-py35
+        - airship-deckhand-integration-uwsgi-py35
 
 - job:
     name: airship-deckhand-linter
@@ -103,3 +105,12 @@
     vars:
       tox_envlist: functional
       disable_keystone: true
+
+- job:
+    name: airship-deckhand-integration-uwsgi-py35
+    description: |
+      Run tox-based integration tests for the Airship Deckhand project using a
+      minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
+      for ephemeral PostgreSQL DB, under cPython version 3.5.
+    run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
+    nodeset: openstack-helm-single-node

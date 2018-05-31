@@ -16,7 +16,7 @@
   gather_facts: False
   roles:
     - install-postgresql
-    - run-tests
+    - run-functional-tests
   tags:
     - install-postgresql
-    - run-tests
+    - run-functional-tests
