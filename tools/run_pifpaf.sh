@@ -4,7 +4,8 @@
 # upon test failure.
 
 function cleanup {
-    pifpaf_stop
+  set +e
+  pifpaf_stop || deactivate
 }
 
 trap cleanup EXIT

@@ -13,6 +13,8 @@
 - project:
     check:
       jobs:
+        - airship-deckhand-tox-py27-postgresql
+        - airship-deckhand-tox-py35-postgresql
         - airship-deckhand-linter
         - airship-deckhand-ubuntu:
             voting: false
@@ -21,6 +23,8 @@
         - airship-deckhand-integration-uwsgi-py35
     gate:
       jobs:
+        - airship-deckhand-tox-py27-postgresql
+        - airship-deckhand-tox-py35-postgresql
         - airship-deckhand-linter
         # NOTE(portdirect): enable when voting enabled.
         # - airship-deckhand-ubuntu:
@@ -31,6 +35,22 @@
         - airship-deckhand-functional-docker-py35
         - airship-deckhand-functional-uwsgi-py35
         - airship-deckhand-integration-uwsgi-py35
+
+- job:
+    name: airship-deckhand-tox-py27-postgresql
+    parent: openstack-tox-py27
+    pre-run:
+      - tools/gate/playbooks/install-postgresql.yaml
+    vars:
+      tox_envlist: py27-postgresql
+
+- job:
+    name: airship-deckhand-tox-py35-postgresql
+    parent: openstack-tox-py35
+    pre-run:
+      - tools/gate/playbooks/install-postgresql.yaml
+    vars:
+      tox_envlist: py35-postgresql
 
 - job:
     name: airship-deckhand-linter
@@ -90,6 +110,7 @@
       Run tox-based functional tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
       for ephemeral PostgreSQL DB, under cPython version 3.5.
+    timeout: 3600
     run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
     nodeset: openstack-helm-single-node
     vars:
@@ -112,5 +133,6 @@
       Run tox-based integration tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
       for ephemeral PostgreSQL DB, under cPython version 3.5.
+    timeout: 3600
     run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     nodeset: openstack-helm-single-node
