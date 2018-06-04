@@ -23,7 +23,7 @@ Control Documents
 -----------------
 
 Control documents (documents which have ``metadata.schema=metadata/Control/v1``),
-are special, and are used to control the behavior of Deckhand at runtime.  Only
+are special, and are used to control the behavior of Deckhand at runtime. Only
 the following types of control documents are allowed.
 
 DataSchema
@@ -143,6 +143,40 @@ Certificate
     -----END CERTIFICATE-----
   ...
 
+CertificateAuthority
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: yaml
+
+  ---
+  schema: deckhand/CertificateAuthority/v1
+  metadata:
+    schema: metadata/Document/v1
+    name: application-ca
+    storagePolicy: cleartext
+  data: some-ca
+  ...
+
+CertificateAuthorityKey
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: yaml
+
+  ---
+  schema: deckhand/CertificateAuthorityKey/v1
+  metadata:
+    schema: metadata/Document/v1
+    name: application-ca-key
+    storagePolicy: encrypted
+  data: |-
+    -----BEGIN CERTIFICATE-----
+    MIIDYDCCAkigAwIBAgIUKG41PW4VtiphzASAMY4/3hL8OtAwDQYJKoZIhvcNAQEL
+    ...snip...
+    P3WT9CfFARnsw2nKjnglQcwKkKLYip0WY2wh3FE7nrQZP6xKNaSRlh6p2pCGwwwH
+    HkvVwA==
+    -----END CERTIFICATE-----
+  ...
+
 CertificateKey
 ^^^^^^^^^^^^^^
 
@@ -173,5 +207,33 @@ Passphrase
     schema: metadata/Document/v1
     name: application-admin-password
     storagePolicy: encrypted
+  data: some-password
+  ...
+
+PrivateKey
+^^^^^^^^^^
+
+.. code-block:: yaml
+
+  ---
+  schema: deckhand/PrivateKey/v1
+  metadata:
+    schema: metadata/Document/v1
+    name: application-private-key
+    storagePolicy: encrypted
+  data: some-private-key
+  ...
+
+PublicKey
+^^^^^^^^^
+
+.. code-block:: yaml
+
+  ---
+  schema: deckhand/PublicKey/v1
+  metadata:
+    schema: metadata/Document/v1
+    name: application-public-key
+    storagePolicy: cleartext
   data: some-password
   ...

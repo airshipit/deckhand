@@ -11,6 +11,8 @@
 # limitations under the License.
 
 - project:
+    templates:
+      - docs-on-readthedocs
     check:
       jobs:
         - airship-deckhand-tox-py27-postgresql
