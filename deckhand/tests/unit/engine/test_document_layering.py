@@ -134,7 +134,7 @@ class TestDocumentLayeringScenarios(TestDocumentLayering):
         self._test_layering(documents, site_expected={},
                             fail_on_missing_sub_src=False)
         self.assertTrue(m_log.warning.called)
-        self.assertRegex(m_log.warning.mock_calls[0][1][0][0],
+        self.assertRegex(m_log.warning.mock_calls[0][1][0],
                          r'Could not find substitution source document .*')
 
     def test_layering_substitution_source_skips_layering(self):

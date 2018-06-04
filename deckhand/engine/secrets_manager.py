@@ -353,7 +353,7 @@ class SecretsSubstitution(object):
                 else:
                     message = ('Could not find substitution source document '
                                '[%s] %s among the provided substitution '
-                               'sources.', src_schema, src_name)
+                               'sources.' % (src_schema, src_name))
                     if self._fail_on_missing_sub_src:
                         LOG.error(message)
                         raise errors.SubstitutionSourceNotFound(
