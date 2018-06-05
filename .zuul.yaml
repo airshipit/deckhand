@@ -90,7 +90,28 @@
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*$
+      - ^etc/.*$
       - ^releasenotes/.*$
+      - ^setup.cfg$
+      - ^deckhand/tests/unit/.*$
+
+- job:
+    name: airship-deckhand-functional-uwsgi-py35
+    description: |
+      Run tox-based functional tests for the Airship Deckhand project using a
+      minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
+      for ephemeral PostgreSQL DB, under cPython version 3.5.
+    run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
+    nodeset: openstack-helm-single-node
+    vars:
+      tox_envlist: functional-dev
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
+      - ^deckhand/tests/unit/.*$
 
 - job:
     name: airship-deckhand-functional-docker-base
@@ -106,22 +127,6 @@
     run: tools/gate/playbooks/run-functional-tests-docker.yaml
     required-projects:
       - openstack/openstack-helm-infra
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^releasenotes/.*$
-
-- job:
-    name: airship-deckhand-functional-uwsgi-py35
-    description: |
-      Run tox-based functional tests for the Airship Deckhand project using a
-      minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
-      for ephemeral PostgreSQL DB, under cPython version 3.5.
-    timeout: 3600
-    run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
-    nodeset: openstack-helm-single-node
-    vars:
-      tox_envlist: functional-dev
 
 - job:
     name: airship-deckhand-functional-docker-py35
@@ -133,6 +138,13 @@
     vars:
       tox_envlist: functional
       disable_keystone: true
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
+      - ^deckhand/tests/unit/.*$
 
 - job:
     name: airship-deckhand-integration-uwsgi-py35
@@ -143,6 +155,13 @@
     timeout: 3600
     run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     nodeset: openstack-helm-single-node
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
+      - ^deckhand/tests/unit/.*$
 
 - job:
     name: airship-deckhand-docker-build-gate
@@ -150,8 +169,12 @@
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: openstack-helm-single-node
     irrelevant-files:
-      - '^doc/.*'
-      - '^charts/.*'
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^charts/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
     vars:
       publish: false
       tags:
@@ -166,8 +189,12 @@
     secrets:
       - airship_deckhand_quay_creds
     irrelevant-files:
-      - '^doc/.*'
-      - '^charts/.*'
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^charts/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
     vars:
       publish: true
       tags:
