@@ -171,7 +171,7 @@ Carried out during document ingestion.
 
 For pre-rendering validation 3 types of behavior are possible:
 
-#. Successfully validated docuemnts are stored in Deckhand's database.
+#. Successfully validated documents are stored in Deckhand's database.
 #. Failure to validate a document's basic properties will result in a 400
    Bad Request error getting raised.
 #. Failure to validate a document's schema-specific properties will result
@@ -185,7 +185,7 @@ Carried out after rendering all documents.
 
 For post-rendering validation, 2 types of behavior are possible:
 
-#. Successfully valdiated post-rendered documents are returned to the user.
+#. Successfully validated post-rendered documents are returned to the user.
 #. Failure to validate post-rendered documents results in a 500 Internal Server
    Error getting raised.
 
