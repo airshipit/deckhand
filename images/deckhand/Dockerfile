@@ -18,6 +18,18 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV container docker
 ENV PORT 9000
 
+ARG HTTP_PROXY=""
+ENV HTTP_PROXY ${HTTP_PROXY}
+ENV http_proxy ${HTTP_PROXY}
+
+ARG HTTPS_PROXY=""
+ENV HTTPS_PROXY ${HTTPS_PROXY}
+ENV https_proxy ${HTTPS_PROXY}
+
+ARG NO_PROXY="127.0.0.1,localhost,.svc.cluster.local"
+ENV NO_PROXY ${NO_PROXY}
+ENV no_proxy ${NO_PROXY}
+
 # Expose port 9000 for application
 EXPOSE $PORT
 
