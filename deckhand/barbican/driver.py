@@ -200,3 +200,17 @@ class BarbicanDriver(object):
             secret = payload
 
         return secret
+
+    def delete_secret(self, secret_ref):
+        """Delete a secret."""
+        try:
+            return self.barbicanclient.call("secrets.delete", secret_ref)
+        except (barbicanclient.exceptions.HTTPAuthError,
+                barbicanclient.exceptions.HTTPServerError) as e:
+            LOG.exception(str(e))
+            raise errors.BarbicanException(details=str(e))
+        except barbicanclient.exceptions.HTTPClientError as e:
+            if e.status_code == 404:
+                LOG.warning('Could not delete secret %s because it was not '
+                            'found. Assuming it no longer exists.', secret_ref)
+            raise
