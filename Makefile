@@ -17,6 +17,9 @@ IMAGE_NAME                 ?= deckhand
 IMAGE_PREFIX               ?= attcomdev
 IMAGE_TAG                  ?= latest
 HELM                       ?= helm
+PROXY                      ?= http://proxy.foo.com:8000
+USE_PROXY                  ?= false
+PUSH_IMAGE                 ?= false
 LABEL                      ?= commit-id
 
 IMAGE := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
@@ -48,7 +51,14 @@ tests:
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
 build_deckhand:
-	docker build -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile .
+ifeq ($(USE_PROXY), true)
+	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile . --build-arg http_proxy=$(PROXY) --build-arg https_proxy=$(PROXY)
+else
+	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile .
+endif
+ifeq ($(PUSH_IMAGE), true)
+	docker push $(IMAGE)
+endif
 
 .PHONY: clean
 clean:
