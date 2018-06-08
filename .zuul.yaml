@@ -23,6 +23,7 @@
         - airship-deckhand-functional-docker-py35
         - airship-deckhand-functional-uwsgi-py35
         - airship-deckhand-integration-uwsgi-py35
+        - airship-deckhand-docker-build-gate
     gate:
       jobs:
         - airship-deckhand-tox-py27-postgresql
@@ -37,6 +38,10 @@
         - airship-deckhand-functional-docker-py35
         - airship-deckhand-functional-uwsgi-py35
         - airship-deckhand-integration-uwsgi-py35
+        - airship-deckhand-docker-build-gate
+    post:
+      jobs:
+        - airship-deckhand-docker-publish
 
 - job:
     name: airship-deckhand-tox-py27-postgresql
@@ -138,3 +143,62 @@
     timeout: 3600
     run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     nodeset: openstack-helm-single-node
+
+- job:
+    name: airship-deckhand-docker-build-gate
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-build.yaml
+    nodeset: openstack-helm-single-node
+    irrelevant-files:
+      - '^doc/.*'
+      - '^charts/.*'
+    vars:
+      publish: false
+      tags:
+        dynamic:
+          patch_set: true
+
+- job:
+    name: airship-deckhand-docker-publish
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-build.yaml
+    nodeset: openstack-helm-single-node
+    secrets:
+      - airship_deckhand_quay_creds
+    irrelevant-files:
+      - '^doc/.*'
+      - '^charts/.*'
+    vars:
+      publish: true
+      tags:
+        dynamic:
+          branch: true
+          commit: true
+        static:
+          - latest
+
+- secret:
+    name: airship_deckhand_quay_creds
+    data:
+      username: !encrypted/pkcs1-oaep
+        - eC+ZaBS1TN37yuvL2WoGkJQ8OFBSLiXxV0wAkH+2l9wLNjmT3QxwnjXTNSw883zEkE9C/
+          XPDUxgv7RMLO/Bfs7uXKH1QjCbIJREPJ7Vk6WY9BUvn6olT/JCafpRcsmAkIS4W8p0l7J
+          ZxelQnGm/Z2zcq4eWeKzKsFLGiAHyoFASXqlDf93NesR+lZ4xnZkO24+oPMpZq6o2Xr2D
+          eWrxEcEsn817o7bA5d9mHb3u2e4tgyxhRevz43VD+0p1bK1thjRnUVpmOvHNjGI+jphAT
+          Vf2+Zqys0+xJ4yJ62bhnayvLZeaKD96rLIXCsbm4xYWsyrzCYvJQ4nESY7McYoDEG6PgL
+          3Gr/6oyNUzobQNAxuwo0GpecaBVy5Z1/8Ihlb8r1nNM3J0a7oz1PyPS4O7WRlQmXgHJ/x
+          jJJmh66ruDxi1bcarmn4AR6lWmfyFqHwIlptsvX9AcJd4FWII9ZYdTUiidJ9ob4KmchIY
+          G0wdqGDaekNR01VgB+JD05IM4UMLjwRnFmLUKIvo0H9YU5X253rv/GXNks1Ov2OevIlch
+          RnnnpCESNso+xup0IztfWBkcGPGBpgmIh6T5s5bfg0n9CYEzsJMGiJuMKgeZcBvnif6Qb
+          y1mzFxQiyEUUPzngF6ger7sBdXSrkCv8cqWsxdeVf2xEXLCDl/x2rhfj7fa5C8=
+      password: !encrypted/pkcs1-oaep
+        - TL/cjk3UCv2QQTk/QX6ujvLpHQDgijFmBWG3r9Hg/migT1Iry/eQi/HftHhShWjF0lk6Y
+          kesdX49H8wXHkRutGxrmcb4HMde4clebtT0dIvVFU7/Ieoq5OnxVLdIPP3YBLZYLy5Ah5
+          jLtfV1FJsuRN5gVGJeOXQUhPitrEnNrcj50ke1+llvfRl7PIR1byAM/6gQLbV3oUtOgk6
+          jmpieqxq55yO+o76bXOp8YNNVr0eqI1nISfBoku2GL7nipAcfxDIeR3a5J4pdaJEEhJR7
+          qqgp1RMt/aADkBUDqw1xbF86V2Mh2l60mWtYUHm4EvOFotrzeOd6Th73K9y57cBuQRJwT
+          qP+T+3yuTtuwvzjgTG+h5deppsRb3EFtPYSI6TqWVKtH2zwRbTJCSbgdY03Tjrwn9vZJK
+          QA4O1fRLBhchBqaIcpOFj8AFNPYCtz6cvL0uzAHXfQoQ3r9icNlPg0N5W2VINxYvDIiOc
+          Lfpty/EyKOJJpOXoBiJlsGHFLi/8gdMAAtMDf72yrQH6KxdNxdRGs5oALkUQ1IcuLbXng
+          ySP8WG+DBiwjt4IAtwd/sF+jyVBzDaywxdbS6RJycI+lRThvibQ5UFpr349yOhUdETB6p
+          yzFswIVmx1tHM7NhD80zwdSEj4EjG0AL3GXuwfLHGbr5WIeCaVEuCMW+XUwQpw=
