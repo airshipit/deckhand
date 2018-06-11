@@ -60,6 +60,8 @@ Developer's Guide
    :maxdepth: 2
 
    HACKING
+   REVIEWING
+   developer-overview
    policy-enforcement
    testing
 

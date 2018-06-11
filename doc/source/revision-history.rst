@@ -29,6 +29,8 @@ documents.
 Revisions can be thought of as commits in a linear git history, thus looking
 at a revision includes all content from previous revisions.
 
+.. _revision-diffing:
+
 Revision Diffing
 ----------------
 
