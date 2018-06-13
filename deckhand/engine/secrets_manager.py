@@ -270,24 +270,6 @@ class SecretsSubstitution(object):
         else:
             LOG.warning(exc_message)
 
-    def _get_encrypted_secret(self, src_secret, src_doc, dest_doc):
-        try:
-            src_secret = SecretsManager.get(src_secret)
-        except errors.BarbicanException as e:
-            LOG.error(
-                'Failed to resolve a Barbican reference for substitution '
-                'source document [%s, %s] %s referenced in document [%s, %s] '
-                '%s. Details: %s', src_doc.schema, src_doc.layer, src_doc.name,
-                dest_doc.schema, dest_doc.layer, dest_doc.name,
-                e.format_message())
-            raise errors.UnknownSubstitutionError(
-                src_schema=src_doc.schema, src_layer=src_doc.layer,
-                src_name=src_doc.name, schema=dest_doc.schema,
-                layer=dest_doc.layer, name=dest_doc.name,
-                details=e.format_message())
-        else:
-            return src_secret
-
     def _check_src_secret_is_not_none(self, src_secret, src_path, src_doc,
                                       dest_doc):
         if src_secret is None:
