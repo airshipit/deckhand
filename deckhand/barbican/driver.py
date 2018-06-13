@@ -13,12 +13,11 @@
 # limitations under the License.
 
 import ast
-import re
 
 import barbicanclient
 from oslo_log import log as logging
 from oslo_serialization import base64
-from oslo_utils import uuidutils
+from oslo_utils import excutils
 import six
 
 from deckhand.barbican import client_wrapper
@@ -30,29 +29,8 @@ LOG = logging.getLogger(__name__)
 
 class BarbicanDriver(object):
 
-    _url_re = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|'
-                         '(?:%[0-9a-fA-F][0-9a-fA-F]))+')
-
     def __init__(self):
         self.barbicanclient = client_wrapper.BarbicanClientWrapper()
-
-    @classmethod
-    def is_barbican_ref(cls, secret_ref):
-        # TODO(felipemonteiro): Query Keystone service catalog for Barbican
-        # endpoint and cache it if Keystone is enabled. For now, it should be
-        # enough to check that ``secret_ref`` is a valid URL, contains
-        # 'secrets' substring, ends in a UUID and that the source document from
-        # which the reference is extracted is encrypted.
-        try:
-            secret_uuid = secret_ref.split('/')[-1]
-        except Exception:
-            secret_uuid = None
-        return (
-            isinstance(secret_ref, six.string_types) and
-            cls._url_re.match(secret_ref) and
-            'secrets' in secret_ref and
-            uuidutils.is_uuid_like(secret_uuid)
-        )
 
     @staticmethod
     def _get_secret_type(schema):
@@ -170,54 +148,54 @@ class BarbicanDriver(object):
             secret = self.barbicanclient.call("secrets.create", **kwargs)
             secret_ref = secret.store()
         except (barbicanclient.exceptions.HTTPAuthError,
-                barbicanclient.exceptions.HTTPClientError,
-                barbicanclient.exceptions.HTTPServerError) as e:
+                barbicanclient.exceptions.HTTPClientError) as e:
+            LOG.exception(str(e))
+            raise errors.BarbicanClientException(code=e.status_code,
+                                                 details=str(e))
+        except barbicanclient.exceptions.HTTPServerError as e:
             LOG.error('Caught %s error from Barbican, likely due to a '
                       'configuration or deployment issue.',
                       e.__class__.__name__)
-            raise errors.BarbicanException(details=str(e))
+            raise errors.BarbicanServerException(details=str(e))
         except barbicanclient.exceptions.PayloadException as e:
             LOG.error('Caught %s error from Barbican, because the secret '
                       'payload type is unsupported.', e.__class__.__name__)
-            raise errors.BarbicanException(details=str(e))
+            raise errors.BarbicanServerException(details=str(e))
 
         return secret_ref
 
-    def _base64_decode_payload(self, src_doc, dest_doc, payload):
+    def _base64_decode_payload(self, payload):
+        # If the secret_type is 'opaque' then this implies the
+        # payload was encoded to base64 previously. Reverse the
+        # operation.
         try:
-            # If the secret_type is 'opaque' then this implies the
-            # payload was encoded to base64 previously. Reverse the
-            # operation.
-            payload = ast.literal_eval(base64.decode_as_text(payload))
+            return ast.literal_eval(base64.decode_as_text(payload))
         except Exception:
-            message = ('Failed to unencode the original payload that '
-                       'presumably was encoded to base64 with '
-                       'secret_type=opaque for document [%s, %s] %s.' %
-                       src_doc.meta)
-            LOG.error(message)
-            raise errors.UnknownSubstitutionError(
-                src_schema=src_doc.schema, src_layer=src_doc.layer,
-                src_name=src_doc.name, schema=dest_doc.schema,
-                layer=dest_doc.layer, name=dest_doc.name,
-                details=message)
-        return payload
+            with excutils.save_and_reraise_exception():
+                message = ('Failed to unencode the original payload that '
+                           'presumably was encoded to base64 with '
+                           'secret_type: opaque.')
+                LOG.error(message)
 
-    def get_secret(self, src_doc, dest_doc, secret_ref):
+    def get_secret(self, secret_ref, src_doc):
         """Get a secret."""
         try:
             secret = self.barbicanclient.call("secrets.get", secret_ref)
         except (barbicanclient.exceptions.HTTPAuthError,
-                barbicanclient.exceptions.HTTPClientError,
-                barbicanclient.exceptions.HTTPServerError,
+                barbicanclient.exceptions.HTTPClientError) as e:
+            LOG.exception(str(e))
+            raise errors.BarbicanClientException(code=e.status_code,
+                                                 details=str(e))
+        except (barbicanclient.exceptions.HTTPServerError,
                 ValueError) as e:
             LOG.exception(str(e))
-            raise errors.BarbicanException(details=str(e))
+            raise errors.BarbicanServerException(details=str(e))
 
         payload = secret.payload
         if secret.secret_type == 'opaque':
             LOG.debug('Forcibly base64-decoding original non-string payload '
                       'for document [%s, %s] %s.', *src_doc.meta)
-            secret = self._base64_decode_payload(src_doc, dest_doc, payload)
+            secret = self._base64_decode_payload(payload)
         else:
             secret = payload
 

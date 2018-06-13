@@ -63,7 +63,8 @@ class BarbicanClientWrapper(object):
 
         except barbican_exc.HTTPAuthError as e:
             LOG.exception(str(e))
-            raise errors.BarbicanException(details=str(e))
+            raise errors.BarbicanClientException(code=e.status_code,
+                                                 details=str(e))
 
         return cli
 

@@ -25,6 +25,7 @@ from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import document_validation
 from deckhand.engine import layering
+from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import policy
 from deckhand import types
@@ -111,15 +112,19 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         documents = self._retrieve_documents_for_rendering(revision_id,
                                                            **filters)
+        encryption_sources = self._retrieve_encrypted_documents(documents)
 
         try:
             # NOTE(fmontei): `validate` is False because documents have already
             # been pre-validated during ingestion. Documents are post-validated
             # below, regardless.
             document_layering = layering.DocumentLayering(
-                documents, validate=False)
+                documents, encryption_sources=encryption_sources,
+                validate=False)
             rendered_documents = document_layering.render()
-        except (errors.InvalidDocumentLayer,
+        except (errors.BarbicanClientException,
+                errors.BarbicanServerException,
+                errors.InvalidDocumentLayer,
                 errors.InvalidDocumentParent,
                 errors.InvalidDocumentReplacement,
                 errors.IndeterminateDocumentParent,
@@ -131,6 +136,12 @@ class RenderedDocumentsResource(api_base.BaseResource):
                 errors.UnsupportedActionMethod) as e:
             with excutils.save_and_reraise_exception():
                 LOG.exception(e.format_message())
+        except errors.EncryptionSourceNotFound as e:
+            # This branch should be unreachable, but if an encryption source
+            # wasn't found, then this indicates the controller fed bad data
+            # to the engine, in which case this is a 500.
+            e.code = 500
+            raise e
 
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all
@@ -183,6 +194,25 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         return documents
 
+    def _retrieve_encrypted_documents(self, documents):
+        encryption_sources = {}
+        for document in documents:
+            if document.is_encrypted and document.has_barbican_ref:
+                try:
+                    unecrypted_data = secrets_manager.SecretsManager.get(
+                        secret_ref=document.data, src_doc=document)
+                except Exception as e:
+                    LOG.error(
+                        'An unknown exception occurred while trying to resolve'
+                        ' a secret reference for substitution source document '
+                        '[%s, %s] %s.', document.schema, document.layer,
+                        document.name)
+                    raise errors.UnknownSubstitutionError(
+                        src_schema=document.schema, src_layer=document.layer,
+                        src_name=document.name, details=str(e))
+                encryption_sources.setdefault(document.data, unecrypted_data)
+        return encryption_sources
+
     def _post_validate(self, rendered_documents):
         # Perform schema validation post-rendering to ensure that rendering
         # and substitution didn't break anything.
@@ -193,12 +223,12 @@ class RenderedDocumentsResource(api_base.BaseResource):
         try:
             validations = doc_validator.validate_all()
         except errors.InvalidDocumentFormat as e:
-            with excutils.save_and_reraise_exception():
-                # Post-rendering validation errors likely indicate an internal
-                # rendering bug, so override the default code to 500.
-                e.code = 500
-                LOG.error('Failed to post-validate rendered documents.')
-                LOG.exception(e.format_message())
+            # Post-rendering validation errors likely indicate an internal
+            # rendering bug, so override the default code to 500.
+            e.code = 500
+            LOG.error('Failed to post-validate rendered documents.')
+            LOG.exception(e.format_message())
+            raise e
         else:
             error_list = []
 

@@ -76,7 +76,7 @@ class SecretsManager(object):
         return payload
 
     @classmethod
-    def get(cls, secret_ref, src_doc, dest_doc):
+    def get(cls, secret_ref, src_doc):
         """Retrieve a secret payload from Barbican.
 
         Extracts {secret_uuid} from a secret reference and queries Barbican's
@@ -88,8 +88,8 @@ class SecretsManager(object):
         """
         LOG.debug('Resolving Barbican secret using source document '
                   'reference...')
-        secret = cls.barbican_driver.get_secret(src_doc, dest_doc,
-                                                secret_ref=secret_ref)
+        secret = cls.barbican_driver.get_secret(secret_ref=secret_ref,
+                                                src_doc=src_doc)
         LOG.debug('Successfully retrieved Barbican secret using reference.')
         return secret
 
@@ -97,7 +97,8 @@ class SecretsManager(object):
 class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
-    __slots__ = ('_fail_on_missing_sub_src', '_substitution_sources')
+    __slots__ = ('_fail_on_missing_sub_src', '_substitution_sources',
+                 '_encryption_sources')
 
     _insecure_reg_exps = (
         re.compile(r'^.* is not of type .+$'),
@@ -136,27 +137,21 @@ class SecretsSubstitution(object):
 
         return to_sanitize
 
-    @staticmethod
-    def get_encrypted_data(src_secret, src_doc, dest_doc):
-        try:
-            src_secret = SecretsManager.get(src_secret, src_doc, dest_doc)
-        except errors.BarbicanException as e:
+    def get_unencrypted_data(self, secret_ref, src_doc, dest_doc):
+        if secret_ref not in self._encryption_sources:
             LOG.error(
-                'Failed to resolve a Barbican reference for substitution '
-                'source document [%s, %s] %s referenced in document [%s, %s] '
-                '%s. Details: %s', src_doc.schema, src_doc.layer, src_doc.name,
-                dest_doc.schema, dest_doc.layer, dest_doc.name,
-                e.format_message())
-            raise errors.UnknownSubstitutionError(
-                src_schema=src_doc.schema, src_layer=src_doc.layer,
-                src_name=src_doc.name, schema=dest_doc.schema,
-                layer=dest_doc.layer, name=dest_doc.name,
-                details=e.format_message())
-        else:
-            return src_secret
+                'Secret reference %s not found among `encryption_sources`, '
+                'referenced by source document [%s, %s] %s, needed by '
+                'destination document [%s, %s] %s.', secret_ref,
+                src_doc.schema, src_doc.layer, src_doc.name,
+                dest_doc.schema, dest_doc.layer, dest_doc.name)
+            raise errors.EncryptionSourceNotFound(
+                secret_ref=secret_ref, schema=src_doc.schema,
+                layer=src_doc.layer, name=src_doc.name)
+        return self._encryption_sources[secret_ref]
 
     def __init__(self, substitution_sources=None,
-                 fail_on_missing_sub_src=True):
+                 fail_on_missing_sub_src=True, encryption_sources=None):
         """SecretSubstitution constructor.
 
         This class will automatically detect documents that require
@@ -170,6 +165,11 @@ class SecretsSubstitution(object):
         :type substitution_sources: List[dict] or dict
         :param bool fail_on_missing_sub_src: Whether to fail on a missing
             substitution source. Default is True.
+        :param encryption_sources: A dictionary that maps the reference
+            contained in the destination document's data section to the
+            actual unecrypted data. If encrypting data with Barbican, the
+            reference will be a Barbican secret reference.
+        :type encryption_sources: List[dict]
         """
 
         # This maps a 2-tuple of (schema, name) to a document from which the
@@ -177,6 +177,7 @@ class SecretsSubstitution(object):
         # name). This is necessary since the substitution format in the
         # document itself only provides a 2-tuple of (schema, name).
         self._substitution_sources = {}
+        self._encryption_sources = encryption_sources or {}
         self._fail_on_missing_sub_src = fail_on_missing_sub_src
 
         if isinstance(substitution_sources, dict):
@@ -290,10 +291,9 @@ class SecretsSubstitution(object):
 
                 # If the document has storagePolicy == encrypted then resolve
                 # the Barbican reference into the actual secret.
-                if src_doc.is_encrypted and BarbicanDriver.is_barbican_ref(
-                        src_secret):
-                    src_secret = self.get_encrypted_data(src_secret, src_doc,
-                                                         document)
+                if src_doc.is_encrypted and src_doc.has_barbican_ref:
+                    src_secret = self.get_unencrypted_data(src_secret, src_doc,
+                                                           document)
 
                 if not isinstance(sub['dest'], list):
                     dest_array = [sub['dest']]

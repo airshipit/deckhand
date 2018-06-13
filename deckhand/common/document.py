@@ -15,10 +15,17 @@
 import collections
 import functools
 import inspect
+import re
 
 from oslo_serialization import jsonutils as json
+from oslo_utils import uuidutils
+import six
 
 from deckhand.common import utils
+
+
+_URL_RE = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|'
+                     '(?:%[0-9a-fA-F][0-9a-fA-F]))+')
 
 
 class DocumentDict(dict):
@@ -135,6 +142,20 @@ class DocumentDict(dict):
     @property
     def is_encrypted(self):
         return self.storage_policy == 'encrypted'
+
+    @property
+    def has_barbican_ref(self):
+        try:
+            secret_ref = self.data
+            secret_uuid = secret_ref.split('/')[-1]
+        except Exception:
+            secret_uuid = None
+        return (
+            isinstance(secret_ref, six.string_types) and
+            _URL_RE.match(secret_ref) and
+            'secrets' in secret_ref and
+            uuidutils.is_uuid_like(secret_uuid)
+        )
 
     @property
     def is_replacement(self):

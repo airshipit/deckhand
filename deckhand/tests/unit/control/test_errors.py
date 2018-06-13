@@ -18,6 +18,7 @@ import yaml
 import falcon
 import mock
 
+from deckhand.common import document as document_wrapper
 from deckhand import policy
 from deckhand.tests.unit.control import base as test_base
 
@@ -187,7 +188,8 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
         with mock.patch('deckhand.control.revision_documents.db_api'
                         '.revision_documents_get', autospec=True) \
                 as mock_get_rev_documents:
-            invalid_document = yaml.safe_load(payload)
+            invalid_document = document_wrapper.DocumentDict(
+                yaml.safe_load(payload))
             invalid_document.pop('metadata')
 
             mock_get_rev_documents.return_value = [invalid_document]

@@ -374,7 +374,7 @@ def document_get(session=None, raw_dict=False, revision_id=None, **filters):
     for doc in documents:
         d = doc.to_dict(raw_dict=raw_dict)
         if utils.deepfilter(d, **nested_filters):
-            return d
+            return document_wrapper.DocumentDict(d)
 
     filters.update(nested_filters)
     raise errors.DocumentNotFound(filters=filters)

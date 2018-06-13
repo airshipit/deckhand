@@ -382,7 +382,7 @@ class DocumentLayering(object):
             raise errors.InvalidDocumentFormat(error_list=error_list)
 
     def __init__(self, documents, substitution_sources=None, validate=True,
-                 fail_on_missing_sub_src=True):
+                 fail_on_missing_sub_src=True, encryption_sources=None):
         """Contructor for ``DocumentLayering``.
 
         :param layering_policy: The document with schema
@@ -401,6 +401,11 @@ class DocumentLayering(object):
         :param fail_on_missing_sub_src: Whether to fail on a missing
             substitution source. Default is True.
         :type fail_on_missing_sub_src: bool
+        :param encryption_sources: A dictionary that maps the reference
+            contained in the destination document's data section to the
+            actual unecrypted data. If encrypting data with Barbican, the
+            reference will be a Barbican secret reference.
+        :type encryption_sources: List[dict]
 
         :raises LayeringPolicyNotFound: If no LayeringPolicy was found among
             list of ``documents``.
@@ -489,6 +494,7 @@ class DocumentLayering(object):
 
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
             substitution_sources,
+            encryption_sources=encryption_sources,
             fail_on_missing_sub_src=fail_on_missing_sub_src)
 
         self._sorted_documents = self._topologically_sort_documents(
@@ -692,8 +698,8 @@ class DocumentLayering(object):
             # data has been encrypted so that future references use the actual
             # secret payload, rather than the Barbican secret reference.
             elif doc.is_encrypted:
-                encrypted_data = self.secrets_substitution.get_encrypted_data(
-                    doc.data, doc, doc)
+                encrypted_data = self.secrets_substitution\
+                    .get_unencrypted_data(doc.data, doc, doc)
                 if not doc.is_abstract:
                     doc.data = encrypted_data
                 self.secrets_substitution.update_substitution_sources(

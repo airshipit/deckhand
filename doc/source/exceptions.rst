@@ -24,8 +24,13 @@ Deckhand Exceptions
 
   * - Exception Name
     - Description
-  * - BarbicanException
-    - .. autoexception:: deckhand.errors.BarbicanException
+  * - BarbicanClientException
+    - .. autoexception:: deckhand.errors.BarbicanClientException
+         :members:
+         :show-inheritance:
+         :undoc-members:
+  * - BarbicanServerException
+    - .. autoexception:: deckhand.errors.BarbicanServerException
          :members:
          :show-inheritance:
          :undoc-members:
@@ -36,6 +41,11 @@ Deckhand Exceptions
          :undoc-members:
   * - DuplicateDocumentExists
     - .. autoexception:: deckhand.errors.DuplicateDocumentExists
+         :members:
+         :show-inheritance:
+         :undoc-members:
+  * - EncryptionSourceNotFound
+    - .. autoexception:: deckhand.errors.EncryptionSourceNotFound
          :members:
          :show-inheritance:
          :undoc-members:

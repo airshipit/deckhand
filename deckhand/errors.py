@@ -190,10 +190,9 @@ class DeckhandException(Exception):
     with the keyword arguments provided to the constructor.
     """
     msg_fmt = "An unknown exception occurred."
-    code = 500
 
-    def __init__(self, message=None, **kwargs):
-        kwargs.setdefault('code', DeckhandException.code)
+    def __init__(self, message=None, code=500, **kwargs):
+        kwargs.setdefault('code', code)
 
         if not message:
             try:
@@ -372,6 +371,20 @@ class SubstitutionSourceDataNotFound(DeckhandException):
     code = 400
 
 
+class EncryptionSourceNotFound(DeckhandException):
+    """Required encryption source reference was not found.
+
+    **Troubleshoot:**
+
+    * Ensure that the secret reference exists among the encryption sources.
+    """
+    msg_fmt = (
+        "Required encryption source reference could not be resolved into a "
+        "secret because it was not found among encryption sources. Ref: "
+        "%(secret_ref)s. Referenced by: [%(schema)s, %(layer)s] %(name)s.")
+    code = 400  # Indicates bad data was passed in, causing a lookup to fail.
+
+
 class DocumentNotFound(DeckhandException):
     """The requested document could not be found.
 
@@ -469,8 +482,8 @@ class PolicyNotAuthorized(DeckhandException):
     code = 403
 
 
-class BarbicanException(DeckhandException):
-    """An error occurred with Barbican.
+class BarbicanClientException(DeckhandException):
+    """A client-side 4xx error occurred with Barbican.
 
     **Troubleshoot:**
 
@@ -479,8 +492,13 @@ class BarbicanException(DeckhandException):
     * Ensure that Deckhand and Barbican are contained in the Keystone service
       catalog.
     """
-    msg_fmt = ('An exception occurred while trying to communicate with '
-               'Barbican. Details: %(details)s')
+    msg_fmt = 'Barbican raised a client error. Details: %(details)s'
+    code = 400  # Needs to be overridden.
+
+
+class BarbicanServerException(DeckhandException):
+    """A server-side 5xx error occurred with Barbican."""
+    msg_fmt = ('Barbican raised a server error. Details: %(details)s')
     code = 500
 
 
@@ -489,8 +507,16 @@ class UnknownSubstitutionError(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ('An unknown exception occurred while trying to perform '
-               'substitution using source document [%(src_schema)s, '
-               '%(src_layer)s] %(src_name)s contained in document ['
-               '%(schema)s, %(layer)s] %(name)s. Details: %(details)s')
     code = 500
+
+    def __init__(self, *args, **kwargs):
+        super(UnknownSubstitutionError, self).__init__(*args, **kwargs)
+        dest_args = ('schema', 'layer', 'name')
+        msg_format = ('An unknown exception occurred while trying to perform '
+                      'substitution using source document [%(src_schema)s, '
+                      '%(src_layer)s] %(src_name)s')
+        if all(x in args for x in dest_args):
+            msg_format += (' contained in document [%(schema)s, %(layer)s]'
+                           ' %(name)s')
+        msg_format += '. Details: %(detail)s'
+        self.msg_fmt = msg_format

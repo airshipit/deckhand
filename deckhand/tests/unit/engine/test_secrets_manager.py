@@ -116,7 +116,7 @@ class TestSecretsManager(test_base.TestDbBase):
         self.mock_barbicanclient.get_secret.return_value = (
             mock.Mock(payload=expected_secret))
 
-        secret_payload = secrets_manager.SecretsManager.get(secret_ref, {}, {})
+        secret_payload = secrets_manager.SecretsManager.get(secret_ref, {})
 
         self.assertEqual(expected_secret, secret_payload)
         self.mock_barbicanclient.call.assert_called_with(
@@ -164,7 +164,7 @@ class TestSecretsManager(test_base.TestDbBase):
 
         dummy_document = document_wrapper.DocumentDict({})
         retrieved_payload = secrets_manager.SecretsManager.get(
-            secret_ref, dummy_document, dummy_document)
+            secret_ref, dummy_document)
         self.assertEqual(payload, retrieved_payload)
 
 
@@ -176,7 +176,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self.secrets_factory = factories.DocumentSecretFactory()
 
     def _test_doc_substitution(self, document_mapping, substitution_sources,
-                               expected_data):
+                               expected_data, encryption_sources=None):
         payload = self.document_factory.gen_test(document_mapping,
                                                  global_abstract=False)
         bucket_name = test_utils.rand_name('bucket')
@@ -187,7 +187,8 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         expected_document['data'] = expected_data
 
         secret_substitution = secrets_manager.SecretsSubstitution(
-            substitution_sources)
+            encryption_sources=encryption_sources,
+            substitution_sources=substitution_sources)
         substituted_docs = list(secret_substitution.substitute_all(documents))
         self.assertIn(expected_document, substituted_docs)
 
@@ -221,9 +222,7 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
-    @mock.patch.object(secrets_manager, 'SecretsManager', autospec=True)
-    def test_doc_substitution_single_encrypted(self, mock_secrets_manager):
-        mock_secrets_manager.get.return_value = 'test-certificate'
+    def test_doc_substitution_with_encryption_source(self):
         secret_ref = test_utils.rand_uuid_hex()
 
         secret_ref = ("http://127.0.0.1/key-manager/v1/secrets/%s"
@@ -255,9 +254,9 @@ class TestSecretsSubstitution(test_base.TestDbBase):
             }
         }
         self._test_doc_substitution(
-            document_mapping, [certificate], expected_data)
-        mock_secrets_manager.get.assert_called_once_with(
-            secret_ref, certificate, mock.ANY)
+            document_mapping, substitution_sources=[certificate],
+            encryption_sources={secret_ref: 'test-certificate'},
+            expected_data=expected_data)
 
     def test_create_destination_path_with_array(self):
         # Validate that the destination data will be populated with an array
@@ -883,8 +882,7 @@ class TestSecretsSubstitutionNegative(test_base.TestDbBase):
         self.secrets_factory = factories.DocumentSecretFactory()
 
     def _test_secrets_substitution(self, secret_type, expected_exception):
-        secret_ref = ("http://127.0.0.1/key-manager/v1/secrets/%s"
-                      % test_utils.rand_uuid_hex())
+        secret_ref = test_utils.rand_barbican_ref()
         certificate = self.secrets_factory.gen_test(
             'Certificate', secret_type, data=secret_ref)
         certificate['metadata']['name'] = 'example-cert'
@@ -911,13 +909,6 @@ class TestSecretsSubstitutionNegative(test_base.TestDbBase):
         secrets_substitution = secrets_manager.SecretsSubstitution(documents)
         with testtools.ExpectedException(expected_exception):
             next(secrets_substitution.substitute_all(documents))
-
-    @mock.patch.object(secrets_manager, 'SecretsManager', autospec=True)
-    def test_barbican_exception_raises_unknown_error(
-            self, mock_secrets_manager):
-        mock_secrets_manager.get.side_effect = errors.BarbicanException
-        self._test_secrets_substitution(
-            'encrypted', errors.UnknownSubstitutionError)
 
     @mock.patch('deckhand.engine.secrets_manager.utils', autospec=True)
     def test_generic_exception_raises_unknown_error(
@@ -956,4 +947,37 @@ class TestSecretsSubstitutionNegative(test_base.TestDbBase):
         secrets_substitution = secrets_manager.SecretsSubstitution(documents)
         with testtools.ExpectedException(
                 errors.SubstitutionSourceDataNotFound):
+            next(secrets_substitution.substitute_all(documents))
+
+    def test_secret_substitution_missing_encryption_sources_raises_exc(self):
+        """Validate that when ``encryption_sources`` doesn't contain a
+        reference that a ``EncryptionSourceNotFound`` is raised.
+        """
+        secret_ref = test_utils.rand_barbican_ref()
+        certificate = self.secrets_factory.gen_test(
+            'Certificate', 'encrypted', data=secret_ref)
+        certificate['metadata']['name'] = 'example-cert'
+
+        document_mapping = {
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".chart.values.tls.certificate"
+                },
+                "src": {
+                    "schema": "deckhand/Certificate/v1",
+                    "name": "example-cert",
+                    "path": ".path-to-nowhere"
+                }
+
+            }]
+        }
+        payload = self.document_factory.gen_test(document_mapping,
+                                                 global_abstract=False)
+        bucket_name = test_utils.rand_name('bucket')
+        documents = self.create_documents(
+            bucket_name, [certificate] + [payload[-1]])
+
+        secrets_substitution = secrets_manager.SecretsSubstitution(
+            documents, encryption_sources={'foo': 'bar'})
+        with testtools.ExpectedException(errors.EncryptionSourceNotFound):
             next(secrets_substitution.substitute_all(documents))

@@ -84,3 +84,8 @@ def rand_password(length=15):
     pre = upper + digit + punc
     password = pre + ''.join(random.choice(seed) for x in range(length - 3))
     return password
+
+
+def rand_barbican_ref():
+    secret_ref = "http://127.0.0.1/key-manager/v1/secrets/%s" % rand_uuid_hex()
+    return secret_ref
