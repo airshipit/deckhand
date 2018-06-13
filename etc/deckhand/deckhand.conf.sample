@@ -151,6 +151,12 @@
 # Timeout value for http requests (integer value)
 #timeout = <None>
 
+# Collect per-API call timing information. (boolean value)
+#collect_timing = false
+
+# Log requests to multiple loggers. (boolean value)
+#split_loggers = false
+
 # Authentication type to load (string value)
 # Deprecated group/name - [barbican]/auth_plugin
 #auth_type = <None>
@@ -275,9 +281,14 @@
 # Deprecated group/name - [sql]/idle_timeout
 #connection_recycle_time = 3600
 
-# Minimum number of SQL connections to keep open in a pool. (integer value)
+# DEPRECATED: Minimum number of SQL connections to keep open in a pool. (integer
+# value)
 # Deprecated group/name - [DEFAULT]/sql_min_pool_size
 # Deprecated group/name - [DATABASE]/sql_min_pool_size
+# This option is deprecated for removal.
+# Its value may be silently ignored in the future.
+# Reason: The option to set the minimum pool size is not supported by
+# sqlalchemy.
 #min_pool_size = 1
 
 # Maximum number of SQL connections to keep open in a pool. Setting a value of 0
@@ -370,6 +381,92 @@
 
 
 [keystone_authtoken]
+
+#
+# From deckhand.conf
+#
+
+# PEM encoded Certificate Authority to use when verifying HTTPs connections.
+# (string value)
+#cafile = <None>
+
+# PEM encoded client certificate cert file (string value)
+#certfile = <None>
+
+# PEM encoded client certificate key file (string value)
+#keyfile = <None>
+
+# Verify HTTPS connections. (boolean value)
+#insecure = false
+
+# Timeout value for http requests (integer value)
+#timeout = <None>
+
+# Collect per-API call timing information. (boolean value)
+#collect_timing = false
+
+# Log requests to multiple loggers. (boolean value)
+#split_loggers = false
+
+# Authentication type to load (string value)
+# Deprecated group/name - [keystone_authtoken]/auth_plugin
+#auth_type = <None>
+
+# Config Section from which to load plugin specific options (string value)
+#auth_section = <None>
+
+# Authentication URL (string value)
+#auth_url = <None>
+
+# Scope for system operations (string value)
+#system_scope = <None>
+
+# Domain ID to scope to (string value)
+#domain_id = <None>
+
+# Domain name to scope to (string value)
+#domain_name = <None>
+
+# Project ID to scope to (string value)
+#project_id = <None>
+
+# Project name to scope to (string value)
+#project_name = <None>
+
+# Domain ID containing project (string value)
+#project_domain_id = <None>
+
+# Domain name containing project (string value)
+#project_domain_name = <None>
+
+# Trust ID (string value)
+#trust_id = <None>
+
+# Optional domain ID to use with v3 and v2 parameters. It will be used for both
+# the user and project domain in v3 and ignored in v2 authentication. (string
+# value)
+#default_domain_id = <None>
+
+# Optional domain name to use with v3 API and v2 parameters. It will be used for
+# both the user and project domain in v3 and ignored in v2 authentication.
+# (string value)
+#default_domain_name = <None>
+
+# User ID (string value)
+#user_id = <None>
+
+# Username (string value)
+# Deprecated group/name - [keystone_authtoken]/user_name
+#username = <None>
+
+# User's domain id (string value)
+#user_domain_id = <None>
+
+# User's domain name (string value)
+#user_domain_name = <None>
+
+# User's password (string value)
+#password = <None>
 
 #
 # From keystonemiddleware.auth_token
