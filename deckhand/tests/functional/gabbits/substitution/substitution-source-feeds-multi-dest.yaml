@@ -1,0 +1,82 @@
+# Tests success path for substitutions involving a single substitution source
+# feeding multiple destionation paths.
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Creates necessary substitution documents.
+# 3. Validates that the destination document has the expected data across all
+#    expected destination paths.
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+  verbose: true
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: add_substitution_source_with_single_source_multi_dest
+    desc: |-
+      Create documents to test a single substitution source document feeding
+      multiple destination paths.
+    PUT: /api/v1.0/buckets/a/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - site
+      ---
+      schema: deckhand/Certificate/v1
+      metadata:
+        name: example-cert
+        schema: metadata/Document/v1
+        layeringDefinition:
+          layer: site
+        storagePolicy: cleartext
+      data: |
+        CERTIFICATE DATA
+      ---
+      schema: armada/Chart/v1
+      metadata:
+        name: example-chart-01
+        schema: metadata/Document/v1
+        layeringDefinition:
+          layer: site
+        substitutions:
+          - dest:
+              - path: .chart.values.tls.certificate
+              - path: .chart.values.tls.duplicate_certificate
+            src:
+              schema: deckhand/Certificate/v1
+              name: example-cert
+              path: .
+      data: {}
+      ...
+
+  - name: verify_substitutions
+    desc: Check for expected substitutions
+    GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
+    query_parameters:
+      schema: armada/Chart/v1
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[*].metadata.name: example-chart-01
+      $.[*].data:
+        chart:
+          values:
+            tls:
+              certificate: |
+                CERTIFICATE DATA
+              duplicate_certificate: |
+                CERTIFICATE DATA
