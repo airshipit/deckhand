@@ -51,9 +51,8 @@ function deploy_osh_keystone_barbican {
     make dev-deploy setup-host
     make dev-deploy k8s
 
-    # NOTE(fmontei): Use this version because newer versions might
-    # be slightly different in terms of test syntax in YAML files.
-    sudo -H -E pip install gabbi==1.35.1
+    cd ${CURRENT_DIR}
+    sudo -H -E pip install -r test-requirements.txt
 
     cd ${OSH_PATH}
     # Setup clients on the host and assemble the charts¶
