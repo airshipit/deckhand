@@ -127,7 +127,8 @@ This type of metadata allows the following metadata hierarchy:
 * ``storagePolicy`` - string, required - Either ``cleartext`` or ``encrypted``.
   If ``encyrpted`` is specified, then the ``data`` section of the document will
   be stored in a secure backend (likely via OpenStack Barbican). ``metadata``
-  and ``schema`` fields are always stored in cleartext.
+  and ``schema`` fields are always stored in cleartext. More information
+  on document encryption is available :ref:`here <encryption>`.
 * ``layeringDefinition`` - dict, required - Specifies layering details. See the
   Layering section below for details.
 

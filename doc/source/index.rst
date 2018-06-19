@@ -43,7 +43,9 @@ User's Guide
    revision-history
    documents
    document-types
+   encryption
    validation
+   rendering
    substitution
    layering
    replacement
