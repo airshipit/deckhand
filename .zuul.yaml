@@ -17,7 +17,6 @@
       jobs:
         - airship-deckhand-tox-py27-postgresql
         - airship-deckhand-tox-py35-postgresql
-        - airship-deckhand-linter
         - airship-deckhand-ubuntu:
             voting: false
         - airship-deckhand-functional-docker-py35
@@ -28,7 +27,6 @@
       jobs:
         - airship-deckhand-tox-py27-postgresql
         - airship-deckhand-tox-py35-postgresql
-        - airship-deckhand-linter
         # NOTE(portdirect): enable when voting enabled.
         # - airship-deckhand-ubuntu:
         #     irrelevant-files:
@@ -58,13 +56,6 @@
       - tools/gate/playbooks/install-postgresql.yaml
     vars:
       tox_envlist: py35-postgresql
-
-- job:
-    name: airship-deckhand-linter
-    description: |
-      Lints all files by checking them for whitespace.
-    run: tools/gate/playbooks/zuul-linter.yaml
-    nodeset: openstack-helm-single-node
 
 - job:
     name: airship-deckhand-base
