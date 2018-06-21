@@ -344,11 +344,36 @@ class SecretsSubstitution(object):
 
         yield document
 
-    def update_substitution_sources(self, schema, name, data):
+    def update_substitution_sources(self, meta, data):
+        """Update substitution sources with rendered data so that future
+        layering and substitution sources reference the latest rendered data
+        rather than stale data.
+
+        :param meta: Tuple of (schema, layer, name).
+        :type meta: tuple
+        :param data: Dictionary of just-rendered document data that belongs
+            to the document uniquely identified by ``meta``.
+        :type data: dict
+        :returns None
+        """
+        schema, layer, name = meta
+
         if (schema, name) not in self._substitution_sources:
             return
 
+        # Substitution sources only use schema/name which doesn't uniquely
+        # identify replacement documents. The check below ensures that the
+        # exact document is selected. Note that Deckhand prioritizes the
+        # child-replacement to be rendered immediately after the
+        # parent-replacement document, meaning that the child-replacement
+        # document will be the one who correctly updates the substitution
+        # sources below (which don't include parent-replacement documents).
+        # Afterward, all other documents that reference the parent-replacement
+        # should get the correct data.
         substitution_src = self._substitution_sources[(schema, name)]
+        if substitution_src.meta != meta:
+            return
+
         if isinstance(data, dict) and isinstance(substitution_src.data, dict):
             substitution_src.data.update(data)
         else:

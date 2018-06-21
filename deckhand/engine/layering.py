@@ -659,7 +659,7 @@ class DocumentLayering(object):
                                         pass
                         doc.data = rendered_data.data
                         self.secrets_substitution.update_substitution_sources(
-                            doc.schema, doc.name, rendered_data.data)
+                            doc.meta, rendered_data.data)
                         self._documents_by_index[doc.meta] = rendered_data
                     else:
                         LOG.debug(
@@ -686,7 +686,7 @@ class DocumentLayering(object):
                     doc.data = rendered_data.data
                     if not doc.has_replacement:
                         self.secrets_substitution.update_substitution_sources(
-                            doc.schema, doc.name, rendered_data.data)
+                            doc.meta, rendered_data.data)
                     self._documents_by_index[doc.meta] = rendered_data
             # Otherwise, retrieve the encrypted data for the document if its
             # data has been encrypted so that future references use the actual
@@ -697,7 +697,7 @@ class DocumentLayering(object):
                 if not doc.is_abstract:
                     doc.data = encrypted_data
                 self.secrets_substitution.update_substitution_sources(
-                    doc.schema, doc.name, encrypted_data)
+                    doc.meta, encrypted_data)
                 self._documents_by_index[doc.meta] = encrypted_data
 
             # NOTE: Since the child-replacement is always prioritized, before
