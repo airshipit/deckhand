@@ -52,7 +52,7 @@ tests:
 .PHONY: build_deckhand
 build_deckhand:
 ifeq ($(USE_PROXY), true)
-	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile . --build-arg http_proxy=$(PROXY) --build-arg https_proxy=$(PROXY)
+	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile . --build-arg HTTP_PROXY=$(PROXY) --build-arg HTTPS_PROXY=$(PROXY)
 else
 	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile .
 endif
