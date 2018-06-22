@@ -7,6 +7,8 @@ RES=$(find . \
   -not -path "*/releasenotes/build/*" \
   -not -path "*/doc/build/*" \
   -not -name "*.tgz" \
+  -not -name "*.html" \
+  -not -name "*.pyc" \
   -type f -exec egrep -l " +$" {} \;)
 
 if [[ -n $RES ]]; then

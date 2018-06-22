@@ -251,3 +251,115 @@ data:
             self._test_layering(
                 documents, site_expected=site_expected,
                 region_expected=None)
+
+    def test_multi_layer_replacement(self):
+        """Validate the following scenario:
+
+        * Global document called nova-global
+        * Region document called nova (layers with nova-global)
+        * Site document (replaces nova)
+        """
+        self.documents = list(yaml.safe_load_all("""
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - region
+    - site
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: nova-global
+  labels:
+    name: nova-global
+    component: nova
+  layeringDefinition:
+    abstract: false
+    layer: global
+data:
+  values:
+    pod:
+      replicas:
+        server: 16
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: nova
+  labels:
+    name: nova-5ec
+    component: nova
+  layeringDefinition:
+    abstract: false
+    layer: region
+    parentSelector:
+      name: nova-global
+    actions:
+      - method: merge
+        path: .
+data: {}
+---
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  replacement: true
+  name: nova
+  layeringDefinition:
+    abstract: false
+    layer: site
+    parentSelector:
+      name: nova-5ec
+    actions:
+      - method: merge
+        path: .
+data:
+  values:
+    pod:
+      replicas:
+        api_metadata: 16
+        placement: 2
+        osapi: 16
+        conductor: 16
+        consoleauth: 2
+        scheduler: 2
+        novncproxy: 2
+"""))
+
+        site_expected = [
+            {
+                "values": {
+                    "pod": {
+                        "replicas": {
+                            "api_metadata": 16,
+                            "placement": 2,
+                            "osapi": 16,
+                            "conductor": 16,
+                            "consoleauth": 2,
+                            "scheduler": 2,
+                            "novncproxy": 2,
+                            "server": 16
+                        }
+                    }
+                }
+            }
+        ]
+        global_expected = [
+            {
+                "values": {
+                    "pod": {
+                        "replicas": {
+                            "server": 16
+                        }
+                    }
+                }
+            }
+        ]
+        self._test_layering(self.documents,
+                            site_expected=site_expected,
+                            region_expected=None,
+                            global_expected=global_expected)
