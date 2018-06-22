@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-DOCKER_REGISTRY            ?= quay.io
-IMAGE_NAME                 ?= deckhand
-IMAGE_PREFIX               ?= attcomdev
-IMAGE_TAG                  ?= latest
-HELM                       ?= helm
-PROXY                      ?= http://proxy.foo.com:8000
-USE_PROXY                  ?= false
-PUSH_IMAGE                 ?= false
-LABEL                      ?= commit-id
+DOCKER_REGISTRY ?= quay.io
+IMAGE_NAME      ?= deckhand
+IMAGE_PREFIX    ?= attcomdev
+IMAGE_TAG       ?= latest
+HELM            ?= helm
+PROXY           ?= http://proxy.foo.com:8000
+NO_PROXY        ?= localhost,127.0.0.1,.svc.cluster.local
+USE_PROXY       ?= false
+PUSH_IMAGE      ?= false
+LABEL           ?= commit-id
 
 IMAGE := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
 
@@ -52,7 +53,13 @@ tests:
 .PHONY: build_deckhand
 build_deckhand:
 ifeq ($(USE_PROXY), true)
-	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile . --build-arg HTTP_PROXY=$(PROXY) --build-arg HTTPS_PROXY=$(PROXY)
+	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile \
+		--build-arg http_proxy=$(PROXY) \
+		--build-arg https_proxy=$(PROXY) \
+		--build-arg HTTP_PROXY=$(PROXY) \
+		--build-arg HTTPS_PROXY=$(PROXY) \
+		--build-arg no_proxy=$(NO_PROXY) \
+		--build-arg NO_PROXY=$(NO_PROXY) .
 else
 	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile .
 endif
