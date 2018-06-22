@@ -133,9 +133,9 @@ function run_tests {
 
     posargs=$@
     if [ ${#posargs} -ge 1 ]; then
-        py.test -k $1 -svx ${CURRENT_DIR}/deckhand/tests/common/test_gabbi.py
+        stestr --test-path deckhand/tests/common/ run --serial --slowest --force-subunit-trace --color $1
     else
-        py.test -svx ${CURRENT_DIR}/deckhand/tests/common/test_gabbi.py
+        stestr --test-path deckhand/tests/common/ run --serial --slowest --force-subunit-trace --color
     fi
     TEST_STATUS=$?
 

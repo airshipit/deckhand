@@ -21,7 +21,6 @@ import tempfile
 import yaml
 
 from gabbi import driver
-from gabbi.driver import test_pytest  # noqa
 from gabbi.handlers import jsonhandler
 
 TEST_DIR = None
@@ -93,19 +92,18 @@ class MultidocJsonpaths(jsonhandler.JSONHandler):
         return list(yaml.load_all(string))
 
 
-def pytest_generate_tests(metafunc):
-    # NOTE(fmontei): While only `url` or `host` is needed, strangely both
-    # are needed because we use `pytest-html` which throws an error without
-    # `host`.
+def load_tests(loader, tests, pattern):
+    """Provide a TestSuite to the discovery process."""
     global TEST_DIR
 
-    driver.py_test_generator(
+    return driver.build_tests(
         TEST_DIR,
-        url=os.environ.get('DECKHAND_TEST_URL', '127.0.0.1:9000'),
+        loader,
         host='localhost',
+        url=os.environ.get('DECKHAND_TEST_URL', '127.0.0.1:9000'),
         # NOTE(fmontei): When there are multiple handlers listed that accept
         # the same content-type, the one that is earliest in the list will be
         # used. Thus, we cannot specify multiple content handlers for handling
         # list/dictionary responses from the server using different handlers.
         content_handlers=[MultidocJsonpaths],
-        metafunc=metafunc)
+        verbose=True)
