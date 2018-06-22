@@ -22,6 +22,12 @@ A
 
 .. glossary::
 
+   Airship
+
+       Airship is a collection of interoperable and loosely coupled open source
+       tools, among which is Deckhand, that provide automated cloud
+       provisioning and management in a declarative way.
+
    Alembic
 
        Database migration software for Python and SQLAlchemy based databases.
@@ -39,7 +45,8 @@ B
    bucket
 
       A bucket manages collections of documents together, providing write
-      protections around them.
+      protections around them. Any bucket can read documents from any other
+      bucket.
 
 D
 ~
@@ -82,12 +89,3 @@ S
    SQLAlchemy
 
       Databse toolkit for Python.
-
-U
-~
-
-.. glossary::
-
-   UCP
-
-      Acronym for the Undercloud Platform.

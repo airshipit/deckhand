@@ -30,7 +30,7 @@ in the document.
   Note that encryption of document data incurs **runtime overhead** as the
   price of encryption is performance. As a general rule, the more documents
   with ``storagePolicy: encrypted``, the longer it will take to render the
-  documents, particularly because Barbican has a built-in `restriction`_
+  documents, particularly because `Barbican`_ has a built-in `restriction`_
   around retrieving only one encrypted payload a time. This means that
   if 50 documents have ``storagePolicy: encrypted`` within a revision, then
   Deckhand must perform 50 API calls to Barbican when rendering the documents
@@ -40,13 +40,10 @@ Encrypted documents, like cleartext documents, are stored in Deckhand's
 database, except the ``data`` section of each encrypted document is replaced
 with a reference to Barbican.
 
-.. _Barbican: https://docs.openstack.org/barbican/latest/api/
-.. _restriction: https://docs.openstack.org/barbican/latest/api/reference/secrets.html#get-v1-secrets
-
 Supported Data Types
 --------------------
 
-Barbican supports encrypting `any`_ data type via its "opaque" secret type.
+`Barbican`_ supports encrypting `any`_ data type via its "opaque" secret type.
 Thus, Deckhand supports encryption of any data type by utilizing this
 secret type.
 
@@ -54,5 +51,7 @@ However, Deckhand will attempt to use Barbican's `other`_ secret types where
 possible. For example, Deckhand will use "public" for document types with kind
 ``PublicKey``.
 
+.. _Barbican: https://docs.openstack.org/barbican/latest/api/
+.. _restriction: https://docs.openstack.org/barbican/latest/api/reference/secrets.html#get-v1-secrets
 .. _any: https://github.com/openstack/barbican/blob/7991f8b4850d76d97c3482428638f788f5798a56/barbican/plugin/interface/secret_store.py#L272
 .. _other: https://docs.openstack.org/barbican/latest/api/reference/secret_types.html

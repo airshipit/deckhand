@@ -20,7 +20,7 @@ Document Rendering
 ==================
 
 Document rendering involves extracting all raw revision documents from
-Deckhand's database, retrieving encrypted information from Barbican,
+Deckhand's database, retrieving encrypted information from `Barbican`_,
 and applying substitution, layering and replacement algorithms on the
 data.
 
@@ -43,3 +43,5 @@ reduce duplication in configuration.
 
 Replacement builds on top of layering to provide yet another mechanism
 for reducing data duplication.
+
+.. _Barbican: https://docs.openstack.org/barbican/latest/api/

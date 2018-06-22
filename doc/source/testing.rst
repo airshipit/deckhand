@@ -46,7 +46,7 @@ Overview
 --------
 
 Unit testing currently uses an in-memory SQLite database. Since Deckhand's
-primary function is to serve as the back-end storage for UCP, the majority
+primary function is to serve as the back-end storage for Airship, the majority
 of unit tests perform actual database operations. Mocking is used sparingly
 because Deckhand is a fairly insular application that lives at the bottom
 of a very deep stack; Deckhand only communicates with Keystone and Barbican.
