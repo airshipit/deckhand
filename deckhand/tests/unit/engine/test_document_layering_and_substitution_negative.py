@@ -91,7 +91,7 @@ class TestDocumentLayeringWithSubstitutionNegative(
         itself.
         """
 
-        # TODO(fmontei): Move to test_secrets_manager (negative)
+        # TODO(felipemonteiro): Move to test_secrets_manager (negative)
         mapping = {
             "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}},
             "_SITE_NAME_1_": "site-1",
@@ -122,7 +122,7 @@ class TestDocumentLayeringWithSubstitutionNegative(
             self, mock_log):
         """Validate that a missing substitution source document fails."""
 
-        # TODO(fmontei): Move to test_secrets_manager (negative)
+        # TODO(felipemonteiro): Move to test_secrets_manager (negative)
         mapping = {
             "_GLOBAL_SUBSTITUTIONS_1_": [{
                 "dest": {

@@ -519,8 +519,8 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         document_mapping = {
             "_GLOBAL_SUBSTITUTIONS_1_": [{
                 "dest": {
-                    # NOTE(fmontei): Usage of special characters like this
-                    # without quotes need not be handled because it is not
+                    # NOTE(felipemonteiro): Usage of special characters like
+                    # this without quotes need not be handled because it is not
                     # valid YAML to include ":" without quotes.
                     "path": ".values.conf.paste.'filter:authtoken'.password"
                 },
