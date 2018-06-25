@@ -424,6 +424,57 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self._test_doc_substitution(
             document_mapping, [certificate], expected_data)
 
+    def test_doc_substitution_array_with_multi_digit_index(self):
+        """Validates that substitutions work for indices >= [10]."""
+        certificate = self.secrets_factory.gen_test(
+            'Certificate', 'cleartext', data='CERTIFICATE DATA')
+        certificate['metadata']['name'] = 'example-cert'
+
+        document_mapping = {
+            "_GLOBAL_SUBSTITUTIONS_1_": [
+                {
+                    "dest": [
+                        {
+                            "path": ".chart[10].values.tls.certificate"
+                        },
+                        {
+                            "path": ".chart[11].values.tls.same_certificate"
+                        }
+                    ],
+                    "src": {
+                        "schema": "deckhand/Certificate/v1",
+                        "name": "example-cert",
+                        "path": "."
+                    }
+                }
+            ]
+        }
+
+        # 10 dummy values for [0-9] because [10] is really 11th position, which
+        # is where actual data begins.
+        chart_array = [{}] * 10
+        chart_array.extend([
+            {
+                'values': {
+                    'tls': {
+                        'certificate': 'CERTIFICATE DATA',
+                    }
+                }
+            },
+            {
+                'values': {
+                    'tls': {
+                        'same_certificate': 'CERTIFICATE DATA',
+                    }
+                }
+            }
+        ])
+        expected_data = {
+            'chart': chart_array
+        }
+        self._test_doc_substitution(
+            document_mapping, [certificate], expected_data)
+
     def test_create_destination_path_with_nested_arrays(self):
         # Validate that the destination data will be populated with an array
         # that contains yet another array.
