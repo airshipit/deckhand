@@ -49,16 +49,27 @@ def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
     conf.register_opts(default_opts)
+    ks_loading.register_auth_conf_options(conf, group='keystone_authtoken')
     ks_loading.register_auth_conf_options(conf, group=barbican_group.name)
     ks_loading.register_session_conf_options(conf, group=barbican_group.name)
 
 
 def list_opts():
-    opts = {None: default_opts,
-            barbican_group: barbican_opts +
+    opts = {
+        None: default_opts,
+        'keystone_authtoken': (
             ks_loading.get_session_conf_options() +
             ks_loading.get_auth_common_conf_options() +
-            ks_loading.get_auth_plugin_conf_options('v3password')}
+            ks_loading.get_auth_plugin_conf_options('password') +
+            ks_loading.get_auth_plugin_conf_options('v3password')
+        ),
+        barbican_group: (
+            barbican_opts +
+            ks_loading.get_session_conf_options() +
+            ks_loading.get_auth_common_conf_options() +
+            ks_loading.get_auth_plugin_conf_options('v3password')
+        )
+    }
     return opts
 
 
