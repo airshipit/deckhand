@@ -165,6 +165,13 @@ endpoints:
       default: http
     host_fqdn_override:
       default: null
+      # NOTE(lamt): This chart supports TLS for fqdn overriden public
+      # endpoints using the following format:
+      # public:
+      #   host: null
+      #   tls:
+      #     crt: null
+      #     key: null
   postgresql:
     name: postgresql
     auth:
@@ -215,6 +222,10 @@ secrets:
   postgresql:
     admin: deckhand-db-admin
     user: deckhand-db-user
+  tls:
+    deckhand:
+      api:
+        public: deckhand-tls-public
 
 conf:
   uwsgi:
@@ -386,6 +397,7 @@ manifests:
   job_ks_service: true
   job_ks_user: true
   secret_db: true
+  secret_ingress_tls: true
   secret_keystone: true
   service_api: true
   service_ingress_api: true
