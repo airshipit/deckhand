@@ -34,6 +34,8 @@ Detailed documentation for :ref:`layering`, :ref:`substitution`,
 :ref:`revision-history` and :ref:`validation` should be reviewed for a more
 thorough understanding of each concept.
 
+.. _document-format:
+
 Document Format
 ---------------
 
