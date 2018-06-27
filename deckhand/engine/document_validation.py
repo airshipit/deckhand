@@ -240,14 +240,18 @@ class DataSchemaValidator(GenericValidator):
         parent_path_to_error_in_document = '.'.join(
             path_to_error_in_document.split('.')[:-1]) or '.'
         try:
-            # NOTE(fmontei): Because validation is performed on fully rendered
-            # documents, it is necessary to omit the parts of the data section
-            # where substitution may have occurred to avoid exposing any
-            # secrets. While this may make debugging a few validation failures
-            # more difficult, it is a necessary evil.
+            # NOTE(felipemonteiro): Because validation is performed on fully
+            # rendered documents, it is necessary to omit the parts of the data
+            # section where substitution may have occurred to avoid exposing
+            # any secrets. While this may make debugging a few validation
+            # failures more difficult, it is a necessary evil.
             sanitized_document = (
                 SecretsSubstitution.sanitize_potential_secrets(
                     error, document))
+            # This incurs some degree of overhead as caching here won't make
+            # a big difference as we are not parsing commonly referenced
+            # JSON paths -- but this branch is only hit during error handling
+            # so this should be OK.
             parent_error_section = utils.jsonpath_parse(
                 sanitized_document, parent_path_to_error_in_document)
         except Exception:
