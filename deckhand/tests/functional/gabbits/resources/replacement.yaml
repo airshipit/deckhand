@@ -32,6 +32,7 @@ schema: armada/Chart/v1
 metadata:
   name: example-chart-01
   schema: metadata/Document/v1
+  storagePolicy: cleartext
   labels:
     name: parent-chart
   layeringDefinition:
@@ -53,6 +54,7 @@ schema: armada/Chart/v1
 metadata:
   name: example-chart-01
   schema: metadata/Document/v1
+  storagePolicy: cleartext
   replacement: true
   layeringDefinition:
     layer: site

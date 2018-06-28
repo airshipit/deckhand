@@ -89,14 +89,6 @@ class BaseValidator(object):
         self._schema_map = _DEFAULT_SCHEMAS
 
     @abc.abstractmethod
-    def matches(self, document):
-        """Whether this Validator should be used to validate ``document``.
-
-        :param dict document: Document to validate.
-        :returns: True if Validator applies to ``document``, else False.
-        """
-
-    @abc.abstractmethod
     def validate(self, document):
         """Validate whether ``document`` passes schema validation."""
 
@@ -117,9 +109,32 @@ class GenericValidator(BaseValidator):
         super(GenericValidator, self).__init__()
         self.base_schema = self._schema_map['v1']['deckhand/Base']
 
-    def matches(self, document):
-        # Applies to all schemas, so unconditionally returns True.
-        return True
+    def validate_metadata(self, metadata):
+        """Validate ``metadata`` against the given schema.
+
+        The ``metadata`` section of a Deckhand document describes a schema
+        defining just the ``metadata`` section. Use that declaration to
+        choose a schema for validating ``metadata``.
+
+        :param dict metadata: Document metadata section to validate
+        :returns: list of validation errors or empty list for success
+        """
+        errors = list()
+
+        schema_name, schema_ver = _get_schema_parts(metadata)
+        schema = self._schema_map.get(schema_ver, {}).get(schema_name, {})
+
+        if not schema:
+            return ['Invalid metadata schema %s version %s specified.'
+                    % (schema_name, schema_ver)]
+
+        LOG.debug("Validating document metadata with schema %s/%s.",
+                  schema_name, schema_ver)
+        jsonschema.Draft4Validator.check_schema(schema)
+        schema_validator = jsonschema.Draft4Validator(schema)
+        errors.extend([e.message
+                       for e in schema_validator.iter_errors(metadata)])
+        return errors
 
     def validate(self, document, **kwargs):
         """Validate ``document``against basic schema validation.
@@ -144,6 +159,10 @@ class GenericValidator(BaseValidator):
             schema_validator = jsonschema.Draft4Validator(self.base_schema)
             error_messages = [
                 e.message for e in schema_validator.iter_errors(document)]
+
+            if not error_messages:
+                error_messages.extend(
+                    self.validate_metadata(document.metadata))
         except Exception as e:
             raise RuntimeError(
                 'Unknown error occurred while attempting to use Deckhand '
@@ -200,14 +219,6 @@ class DataSchemaValidator(GenericValidator):
         self._default_schema_map = _DEFAULT_SCHEMAS
         self._external_data_schemas = [d.data for d in data_schemas]
         self._schema_map = self._build_schema_map(data_schemas)
-
-    def matches(self, document):
-        if document.is_abstract:
-            LOG.info('Skipping schema validation for abstract document [%s]: '
-                     '%s.', document.schema, document.name)
-            return False
-        schema_prefix, schema_version = _get_schema_parts(document)
-        return schema_prefix in self._schema_map.get(schema_version, {})
 
     def _generate_validation_error_output(self, schema, document, error,
                                           root_path):
@@ -308,6 +319,18 @@ class DataSchemaValidator(GenericValidator):
         :rtype: Generator[Tuple[str, str]]
 
         """
+        super(DataSchemaValidator, self).validate(document)
+
+        # if this is a pre_validate, the only validation needed is structural
+        # for non-control documents
+        if not document.is_control and pre_validate:
+            return
+
+        if document.is_abstract:
+            LOG.info('Skipping schema validation for abstract document [%s, '
+                     '%s] %s.', *document.meta)
+            return
+
         schemas_to_use = self._get_schemas(document)
         if not schemas_to_use:
             LOG.debug('Document schema %s not recognized by %s. No further '
@@ -315,28 +338,12 @@ class DataSchemaValidator(GenericValidator):
                       self.__class__.__name__)
 
         for schema in schemas_to_use:
-            is_builtin_schema = schema not in self._external_data_schemas
-            # NOTE(fmontei): The purpose of this `continue` is to not
-            # PRE-validate documents against externally registered
-            # `DataSchema` documents, in order to avoid raising spurious
-            # errors. These spurious errors arise from `DataSchema` documents
-            # really only applying post-rendering, when documents have all
-            # the substitutions they need to pass externally registered
-            # `DataSchema` validations.
-            if not is_builtin_schema and pre_validate:
-                continue
-
-            if is_builtin_schema:
-                root_path = '.'
-                to_validate = document
-            else:
-                root_path = '.data'
-                to_validate = document.get('data', {})
+            root_path = '.data'
 
             try:
                 jsonschema.Draft4Validator.check_schema(schema)
                 schema_validator = jsonschema.Draft4Validator(schema)
-                errors = schema_validator.iter_errors(to_validate)
+                errors = schema_validator.iter_errors(document.get('data', {}))
             except Exception as e:
                 LOG.exception(six.text_type(e))
                 raise RuntimeError(
@@ -417,10 +424,7 @@ class DocumentValidation(object):
 
             self._documents.append(document)
 
-        # NOTE(fmontei): The order of the validators is important. The
-        # ``GenericValidator`` must come first.
         self._validators = [
-            GenericValidator(),
             DataSchemaValidator(self._external_data_schemas)
         ]
 
@@ -476,11 +480,10 @@ class DocumentValidation(object):
             LOG.info(message)
 
         for validator in self._validators:
-            if validator.matches(document):
-                error_outputs = validator.validate(
-                    document, pre_validate=self._pre_validate)
-                if error_outputs:
-                    result['errors'].extend(error_outputs)
+            error_outputs = validator.validate(
+                document, pre_validate=self._pre_validate)
+            if error_outputs:
+                result['errors'].extend(error_outputs)
 
         if result['errors']:
             result.setdefault('status', 'failure')

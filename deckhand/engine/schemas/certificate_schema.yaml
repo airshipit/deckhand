@@ -19,47 +19,4 @@ metadata:
   schema: metadata/Control/v1
 data:
   $schema: http://json-schema.org/schema#
-  properties:
-    metadata:
-      type: object
-      properties:
-        layeringDefinition:
-          type: object
-          properties:
-            layer:
-              type: string
-            abstract:
-              type: boolean
-            parentSelector:
-              type: object
-            actions:
-              type: array
-              items:
-                type: object
-                properties:
-                  method:
-                    enum:
-                      - replace
-                      - delete
-                      - merge
-                  path:
-                    type: string
-                additionalProperties: false
-                required:
-                  - method
-                  - path
-          required:
-            - layer
-        storagePolicy:
-          type: string
-          enum:
-            - encrypted
-            - cleartext
-      required:
-        - layeringDefinition
-        - storagePolicy
-    data:
-      type: string
-required:
-  - metadata
-  - data
+  type: string

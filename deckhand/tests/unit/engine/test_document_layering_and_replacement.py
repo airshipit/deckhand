@@ -30,6 +30,7 @@ schema: deckhand/LayeringPolicy/v1
 metadata:
   schema: metadata/Control/v1
   name: layering-policy
+  storagePolicy: cleartext
 data:
   layerOrder:
     - global
@@ -39,6 +40,7 @@ schema: aic/Versions/v1
 metadata:
   schema: metadata/Document/v1
   name: a
+  storagePolicy: cleartext
   labels:
     selector: foo
   layeringDefinition:
@@ -52,6 +54,7 @@ schema: aic/Versions/v1
 metadata:
   schema: metadata/Document/v1
   name: a
+  storagePolicy: cleartext
   labels:
     selector: baz
   replacement: true
@@ -71,6 +74,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: c
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: False
     layer: global
@@ -124,6 +128,7 @@ schema: deckhand/LayeringPolicy/v1
 metadata:
   schema: metadata/Control/v1
   name: layering-policy
+  storagePolicy: cleartext
 data:
   layerOrder:
     - global
@@ -133,6 +138,7 @@ schema: aic/Versions/v1
 metadata:
   schema: metadata/Document/v1
   name: a
+  storagePolicy: cleartext
   labels:
     selector: foo
   layeringDefinition:
@@ -149,6 +155,7 @@ metadata:
   labels:
     selector: baz
   replacement: true
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: False
     layer: site
@@ -165,6 +172,7 @@ schema: aic/Versions/v1
 metadata:
   schema: metadata/Document/v1
   name: b
+  storagePolicy: cleartext
   labels:
     selector: qux
   layeringDefinition:
@@ -183,6 +191,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: c
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: False
     layer: global
@@ -265,6 +274,7 @@ schema: deckhand/LayeringPolicy/v1
 metadata:
   schema: metadata/Control/v1
   name: layering-policy
+  storagePolicy: cleartext
 data:
   layerOrder:
     - global
@@ -275,6 +285,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: nova-global
+  storagePolicy: cleartext
   labels:
     name: nova-global
     component: nova
@@ -291,6 +302,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: nova
+  storagePolicy: cleartext
   labels:
     name: nova-5ec
     component: nova
@@ -308,6 +320,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   replacement: true
+  storagePolicy: cleartext
   name: nova
   layeringDefinition:
     abstract: false

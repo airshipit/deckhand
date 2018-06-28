@@ -3,6 +3,7 @@ schema: armada/Manifest/v1
 metadata:
   schema: metadata/Document/v1
   name: cluster-bootstrap
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: false
     layer: site

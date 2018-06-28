@@ -35,6 +35,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: armada-chart-03
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: false
     layer: site
@@ -72,6 +73,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: armada-chart-02
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: false
     layer: site
@@ -109,6 +111,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: armada-chart-01
+  storagePolicy: cleartext
   labels:
     key1: value1
   layeringDefinition:

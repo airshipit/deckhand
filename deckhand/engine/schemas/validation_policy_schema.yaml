@@ -21,56 +21,19 @@ data:
   $schema: http://json-schema.org/schema#
   type: object
   properties:
-    metadata:
-      type: object
-      properties:
-        layeringDefinition:
-          type: object
-          properties:
-            layer:
-              type: string
-            abstract:
-              type: boolean
-            parentSelector:
-              type: object
-            actions:
-              type: array
-              items:
-                type: object
-                properties:
-                  method:
-                    enum:
-                      - replace
-                      - delete
-                      - merge
-                  path:
-                    type: string
-                additionalProperties: false
-                required:
-                  - method
-                  - path
-          required:
-            - layer
-      required:
-        - layeringDefinition
-    data:
-      properties:
-        validations:
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-                pattern: ^.*-(validation|verification)$
-              expiresAfter:
-                type: string
-            additionalProperties: false
-            required:
-              - name
-      required:
-        - validations
-      additionalProperties: false
+    validations:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            pattern: ^.*-(validation|verification)$
+          expiresAfter:
+            type: string
+        additionalProperties: false
+        required:
+          - name
   required:
-    - metadata
-    - data
+    - validations
+  additionalProperties: false

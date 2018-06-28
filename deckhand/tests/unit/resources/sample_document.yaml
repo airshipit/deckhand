@@ -4,6 +4,7 @@ schema: promenade/ResourceType/v1
 metadata:
   schema: metadata/Document/v1
   name: a-unique-config-name-12345
+  storagePolicy: cleartext
   labels:
     component: apiserver
     hostname: server0

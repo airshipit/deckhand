@@ -39,6 +39,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: doc-a
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -56,6 +57,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: doc-b
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -73,6 +75,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: doc-c
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -90,6 +93,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: doc-d
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -157,6 +161,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: doc-c
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -192,6 +197,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: doc-m
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -231,6 +237,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: doc-e
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site

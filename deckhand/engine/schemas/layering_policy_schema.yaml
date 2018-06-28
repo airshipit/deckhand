@@ -21,15 +21,10 @@ data:
   $schema: http://json-schema.org/schema#
   type: object
   properties:
-    data:
-      type: object
-      properties:
-        layerOrder:
-          type: array
-          items:
-            type: string
-      additionalProperties: false
-      required:
-        - layerOrder
+    layerOrder:
+      type: array
+      items:
+        type: string
+  additionalProperties: false
   required:
-    - data
+    - layerOrder
