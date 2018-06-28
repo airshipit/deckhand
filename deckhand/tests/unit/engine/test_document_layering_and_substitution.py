@@ -219,7 +219,7 @@ class TestDocumentLayeringWithSubstitution(
                     "path": "."
                 }
             }],
-            "_SITE_DATA_1_": {"data": "placeholder"},
+            "_SITE_DATA_1_": {"data": {}},
             "_SITE_ACTIONS_1_": {
                 "actions": [{"method": "merge", "path": "."}]},
             "_SITE_SUBSTITUTIONS_1_": [{
@@ -275,7 +275,7 @@ class TestDocumentLayeringWithSubstitution(
                     "path": "."
                 }
             }],
-            "_SITE_DATA_1_": {"data": "placeholder"},
+            "_SITE_DATA_1_": {"data": {}},
             "_SITE_ACTIONS_1_": {
                 "actions": [{"method": "merge", "path": "."}]},
             "_SITE_SUBSTITUTIONS_1_": [{
@@ -288,7 +288,7 @@ class TestDocumentLayeringWithSubstitution(
                     "path": "."
                 }
             }],
-            "_SITE_DATA_2_": {"data": "placeholder"},
+            "_SITE_DATA_2_": {"data": {}},
             "_SITE_ACTIONS_2_": {
                 "actions": [{"method": "merge", "path": "."}]},
             "_SITE_SUBSTITUTIONS_2_": [{
@@ -349,7 +349,7 @@ class TestDocumentLayeringWithSubstitution(
                     "path": "."
                 }
             }],
-            "_SITE_DATA_1_": {"data": "placeholder"},
+            "_SITE_DATA_1_": {"data": {}},
             "_SITE_ACTIONS_1_": {
                 "actions": [{"method": "merge", "path": "."}]},
             "_SITE_SUBSTITUTIONS_1_": [{
@@ -362,7 +362,7 @@ class TestDocumentLayeringWithSubstitution(
                     "path": "."
                 }
             }],
-            "_SITE_DATA_2_": {"data": "placeholder"},
+            "_SITE_DATA_2_": {"data": {}},
             "_SITE_ACTIONS_2_": {
                 "actions": [{"method": "merge", "path": "."}]},
             "_SITE_SUBSTITUTIONS_2_": [{
@@ -423,7 +423,7 @@ class TestDocumentLayeringWithSubstitution(
                     "path": "."
                 }
             }],
-            "_SITE_DATA_1_": {"data": "placeholder"},
+            "_SITE_DATA_1_": {"data": {}},
             "_SITE_ACTIONS_1_": {
                 "actions": [{"method": "merge", "path": "."}]},
             "_SITE_SUBSTITUTIONS_1_": [
@@ -448,7 +448,7 @@ class TestDocumentLayeringWithSubstitution(
                     }
                 }
             ],
-            "_SITE_DATA_2_": {"data": "placeholder"},
+            "_SITE_DATA_2_": {"data": {}},
             "_SITE_ACTIONS_2_": {
                 "actions": [{"method": "merge", "path": "."}]},
             "_SITE_SUBSTITUTIONS_2_": [
