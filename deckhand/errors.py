@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
-
 import falcon
 from oslo_log import log as logging
 import six
@@ -28,34 +26,6 @@ def get_version_from_request(req):
         if '.' in part and part.startswith('v'):
             return part
     return 'N/A'
-
-
-def _safe_yaml_dump(error_response):
-    """Cast every instance of ``DocumentDict`` into a dictionary for
-    compatibility with ``yaml.safe_dump``.
-
-    This should only be called for error formatting.
-    """
-    is_dict_sublcass = (
-        lambda v: type(v) is not dict and issubclass(v.__class__, dict)
-    )
-
-    def _to_dict(value, parent):
-        if isinstance(value, (list, tuple, set)):
-            for v in value:
-                _to_dict(v, value)
-        elif isinstance(value, collections.Mapping):
-            for v in value.values():
-                _to_dict(v, value)
-        else:
-            if isinstance(parent, (list, tuple, set)):
-                parent[parent.index(value)] = (
-                    dict(value) if is_dict_sublcass(value) else value)
-            elif isinstance(parent, dict):
-                for k, v in parent.items():
-                    parent[k] = dict(v) if is_dict_sublcass(v) else v
-    _to_dict(error_response, None)
-    return yaml.safe_dump(error_response)
 
 
 def format_error_resp(req,
@@ -131,8 +101,8 @@ def format_error_resp(req,
         'retry': True if status_code is falcon.HTTP_500 else False
     }
 
-    resp.body = _safe_yaml_dump(error_response)
     resp.status = status_code
+    resp.body = yaml.safe_dump(error_response)
 
 
 def default_exception_handler(ex, req, resp, params):

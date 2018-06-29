@@ -199,11 +199,11 @@ class DataSchemaValidator(GenericValidator):
         for data_schema in data_schemas:
             # Ensure that each `DataSchema` document has required properties
             # before they themselves can be used to validate other documents.
-            if 'name' not in data_schema.metadata:
+            if not data_schema.name:
                 continue
             if self._schema_re.match(data_schema.name) is None:
                 continue
-            if 'data' not in data_schema:
+            if not data_schema.data:
                 continue
             schema_prefix, schema_version = _get_schema_parts(
                 data_schema, 'metadata.name')

@@ -23,7 +23,6 @@ from deckhand.barbican.driver import BarbicanDriver
 from deckhand.common import document as document_wrapper
 from deckhand.common import utils
 from deckhand import errors
-from deckhand import types
 
 CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
@@ -68,11 +67,10 @@ class SecretsManager(object):
         if not isinstance(secret_doc, document_wrapper.DocumentDict):
             secret_doc = document_wrapper.DocumentDict(secret_doc)
 
-        if secret_doc.storage_policy == types.ENCRYPTED:
+        if secret_doc.is_encrypted:
             payload = cls.barbican_driver.create_secret(secret_doc)
         else:
             payload = secret_doc.data
-
         return payload
 
     @classmethod
