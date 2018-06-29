@@ -206,6 +206,8 @@ After, from the command line, execute:
         -v $CONF_DIR:/etc/deckhand \
         quay.io/attcomdev/deckhand:latest server
 
+.. _development-utilities:
+
 Development Utilities
 ---------------------
 
@@ -243,6 +245,9 @@ deployment, execute (respectively)::
   $ tox -e genpolicy
 
 .. _Bandit: https://github.com/openstack/bandit
+
+For additional commands, reference the ``tox.ini`` file for a list of all
+the jobs.
 
 Database Model Updates
 ----------------------

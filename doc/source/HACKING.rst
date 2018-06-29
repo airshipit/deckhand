@@ -13,7 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-=======
-Hacking
-=======
+.. _coding-guide:
+
+=====================
+Deckhand Coding Guide
+=====================
+
 .. include:: ../../HACKING.rst

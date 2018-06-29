@@ -1,0 +1,28 @@
+' PlantUML file to generate the architecture component diagram
+@startuml
+
+entity "HTTP"
+entity "SQL"
+entity "WSGI"
+
+frame "Deckhand" {
+  [Control] ..> [Engine]
+}
+
+frame "OpenStack Components" {
+  [Barbican] ..> [Secret Store Back-end]
+  [Keystone]
+}
+
+database "PostgreSQL" {
+  SQL - [deckhand_db]
+}
+
+HTTP - [uWSGI]
+[uWSGI] --> [Keystone Middleware]
+[Keystone Middleware] --> WSGI
+WSGI - [Control]
+[Engine] --> [SQL]
+[Control] --> [Barbican]
+
+@enduml

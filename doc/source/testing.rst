@@ -13,11 +13,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 
+.. _testing:
+
 =======
 Testing
 =======
 
-.. warning::
+.. note::
 
   Deckhand has only been tested against a Ubuntu 16.04 environment. The guide
   below assumes the user is using Ubuntu.
@@ -100,11 +102,11 @@ Overview
 Deckhand uses `gabbi <https://github.com/cdent/gabbi>`_ as its functional
 testing framework. Functional tests can be executed via::
 
-    $ tox -e functional
+    $ tox -e functional-dev
 
 You can also run a subset of tests via a regex::
 
-    $ tox -e functional -- gabbi.suitemaker.test_gabbi_document-crud-success-multi-bucket
+    $ tox -e functional-dev -- gabbi.suitemaker.test_gabbi_document-crud-success-multi-bucket
 
 The command executes ``tools/functional-tests.sh`` which:
 
@@ -142,7 +144,7 @@ testing. To test Deckhand against a containerized image, run, for example:
 ::
 
   export DECKHAND_IMAGE=quay.io/attcomdev/deckhand:latest
-  tox -e functional
+  tox -e functional-dev
 
 Which will result in the following script output:
 
