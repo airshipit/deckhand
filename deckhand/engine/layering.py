@@ -337,7 +337,7 @@ class DocumentLayering(object):
                     g.add_edge(document.meta, src.meta)
 
         try:
-            cycle = find_cycle(g)
+            cycle = find_cycle(g, orientation='reverse')
         except networkx.exception.NetworkXNoCycle:
             pass
         else:
