@@ -17,7 +17,6 @@ import yaml
 import falcon
 from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_serialization import jsonutils as json
 import six
 
 import deckhand.context
@@ -169,11 +168,6 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
                 continue
 
             resp_attr = getattr(resp, attr)
-
-            try:
-                resp_attr = json.loads(resp_attr)
-            except (TypeError, ValueError):
-                pass
 
             if isinstance(resp_attr, dict):
                 setattr(resp, attr, yaml.safe_dump(resp_attr))
