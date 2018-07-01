@@ -17,18 +17,26 @@ import copy
 import re
 import string
 
+from beaker.cache import CacheManager
+from beaker.util import parse_cache_config_options
 import jsonpath_ng
 from oslo_log import log as logging
 from oslo_utils import excutils
 import six
 
+from deckhand.conf import config
 from deckhand import errors
 
+CONF = config.CONF
 LOG = logging.getLogger(__name__)
 
 # Cache for JSON paths computed from path strings because jsonpath_ng
 # is computationally expensive.
-_PATH_CACHE = dict()
+_CACHE_OPTS = {
+    'cache.type': 'memory',
+    'expire': CONF.jsonpath.cache_timeout,
+}
+_CACHE = CacheManager(**parse_cache_config_options(_CACHE_OPTS))
 
 _ARRAY_RE = re.compile(r'.*\[\d+\].*')
 
@@ -54,17 +62,13 @@ def _normalize_jsonpath(jsonpath):
     return jsonpath
 
 
-def _jsonpath_parse_cache(jsonpath):
+@_CACHE.cache()
+def _jsonpath_parse(jsonpath):
     """Retrieve the parsed jsonpath path
 
     Utilizes a cache of parsed values to eliminate re-parsing
     """
-    if jsonpath not in _PATH_CACHE:
-        p = jsonpath_ng.parse(jsonpath)
-        _PATH_CACHE[jsonpath] = p
-    else:
-        p = _PATH_CACHE[jsonpath]
-    return p
+    return jsonpath_ng.parse(jsonpath)
 
 
 def jsonpath_parse(data, jsonpath, match_all=False):
@@ -96,7 +100,7 @@ def jsonpath_parse(data, jsonpath, match_all=False):
         # Do something with the extracted secret from the source document.
     """
     jsonpath = _normalize_jsonpath(jsonpath)
-    p = _jsonpath_parse_cache(jsonpath)
+    p = _jsonpath_parse(jsonpath)
 
     matches = p.find(data)
     if matches:
@@ -179,7 +183,7 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
                          'or "$"' % jsonpath)
 
     def _do_replace():
-        p = _jsonpath_parse_cache(jsonpath)
+        p = _jsonpath_parse(jsonpath)
         p_to_change = p.find(data)
 
         if p_to_change:
