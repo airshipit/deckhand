@@ -17,11 +17,11 @@
       jobs:
         - airship-deckhand-tox-py27-postgresql
         - airship-deckhand-tox-py35-postgresql
-        - airship-deckhand-ubuntu:
+        - airship-deckhand-functional-uwsgi-py35:
             voting: false
-        - airship-deckhand-functional-uwsgi-py35
         - airship-deckhand-functional-docker-py35
-        - airship-deckhand-integration-uwsgi-py35
+        - airship-deckhand-integration-uwsgi-py35:
+            voting: false
         - airship-deckhand-integration-docker-py35
         - airship-deckhand-docker-build-gate
     gate:
@@ -57,35 +57,6 @@
       - tools/gate/playbooks/install-postgresql.yaml
     vars:
       tox_envlist: py35-postgresql
-
-- job:
-    name: airship-deckhand-base
-    roles:
-      - zuul: openstack/openstack-helm-infra
-    vars:
-      zuul_osh_infra_relative_path: ../openstack-helm-infra/
-    timeout: 3600
-    pre-run:
-      - tools/gate/playbooks/osh-infra-upgrade-host.yaml
-      - tools/gate/playbooks/osh-infra-deploy-docker.yaml
-      - tools/gate/playbooks/osh-infra-build.yaml
-      - tools/gate/playbooks/osh-infra-deploy-k8s.yaml
-    run: tools/gate/playbooks/airship-deckhand-check.yaml
-    post-run: tools/gate/playbooks/osh-infra-collect-logs.yaml
-    required-projects:
-      - openstack/openstack-helm-infra
-
-- job:
-    name: airship-deckhand-ubuntu
-    parent: airship-deckhand-base
-    nodeset: openstack-helm-single-node
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^etc/.*$
-      - ^releasenotes/.*$
-      - ^setup.cfg$
-      - ^deckhand/tests/unit/.*$
 
 - job:
     name: airship-deckhand-functional-uwsgi-py35
