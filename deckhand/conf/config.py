@@ -21,9 +21,8 @@ CONF = cfg.CONF
 barbican_group = cfg.OptGroup(
     name='barbican',
     title='Barbican Options',
-    help="""
-Barbican options for allowing Deckhand to communicate with Barbican.
-""")
+    help="Barbican options for allowing Deckhand to communicate with "
+         "Barbican.")
 
 barbican_opts = [
     # TODO(fmontei): Drop these options and related group once Keystone
@@ -32,6 +31,19 @@ barbican_opts = [
         'api_endpoint',
         sample_default='http://barbican.example.org:9311/',
         help='URL override for the Barbican API endpoint.'),
+]
+
+
+jsonpath_group = cfg.OptGroup(
+    name='jsonpath',
+    title='JSONPath Options',
+    help="JSONPath options for allowing JSONPath logic to be configured.")
+
+
+jsonpath_opts = [
+    cfg.IntOpt('cache_timeout', default=3600,
+               help="How long JSONPath lookup results should remain cached "
+                    "in memory.")
 ]
 
 
@@ -48,6 +60,7 @@ default_opts = [
 def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
+    conf.register_opts(jsonpath_opts, group=jsonpath_group)
     conf.register_opts(default_opts)
     ks_loading.register_auth_conf_options(conf, group='keystone_authtoken')
     ks_loading.register_auth_conf_options(conf, group=barbican_group.name)
@@ -68,7 +81,8 @@ def list_opts():
             ks_loading.get_session_conf_options() +
             ks_loading.get_auth_common_conf_options() +
             ks_loading.get_auth_plugin_conf_options('v3password')
-        )
+        ),
+        jsonpath_group: jsonpath_opts
     }
     return opts
 
