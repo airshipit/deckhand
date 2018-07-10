@@ -103,6 +103,7 @@ class DocumentFactory(DeckhandFactory):
         "data": {},
         "metadata": {
             "labels": {"": ""},
+            "storagePolicy": "cleartext",
             "layeringDefinition": {
                 "abstract": False,
                 "layer": "layer"

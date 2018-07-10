@@ -1,0 +1,28 @@
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  name: metadata/Control/v1
+  schema: metadata/Control/v1
+data:
+  $schema: http://json-schema.org/schema#
+  type: object
+  properties:
+    schema:
+      anyOf:
+        - type: string
+          pattern: ^metadata/Document/v\d+$
+        - type: string
+          pattern: ^metadata/Control/v\d+$
+    name:
+      type: string
+    labels:
+      type: object
+      additionalProperties:
+        type: string
+  additionalProperties: true
+  required:
+    - schema
+    - name
+    # NOTE(felipemonteiro): layeringDefinition is not needed for any control
+    # documents as neither LayeringPolicy, ValidationPolicy or DataSchema
+    # documents are ever layered together.

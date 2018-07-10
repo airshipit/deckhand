@@ -38,6 +38,7 @@ schema: aic/Versions/v1
 metadata:
   name: with-anchor
   schema: metadata/Document/v1
+  storagePolicy: cleartext
   labels:
     selector: foo1
   layeringDefinition:

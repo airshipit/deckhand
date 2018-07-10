@@ -38,6 +38,8 @@ LOG = logging.getLogger(__name__)
 # relative to that base.
 BASE = None
 
+# TODO(felipemonteiro): Make most (all?) of these tables immutable.
+
 
 class DeckhandBase(models.ModelBase, models.TimestampMixin):
     """Base class for Deckhand Models."""

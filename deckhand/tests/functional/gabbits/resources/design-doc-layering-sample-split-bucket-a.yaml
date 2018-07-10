@@ -3,6 +3,7 @@ schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
   name: global-1234
+  storagePolicy: cleartext
   labels:
     key1: value1
   layeringDefinition:

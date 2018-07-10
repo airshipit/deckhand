@@ -12,6 +12,7 @@ schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
   name: global-1234
+  storagePolicy: cleartext
   labels:
     key1: value1
     key2: value2
@@ -27,6 +28,7 @@ schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
   name: site-1234
+  storagePolicy: cleartext
   layeringDefinition:
     layer: site
     parentSelector:

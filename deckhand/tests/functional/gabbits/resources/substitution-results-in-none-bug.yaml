@@ -22,6 +22,7 @@ schema: deckhand/Dest/v1
 metadata:
   name: dest
   schema: metadata/Document/v1
+  storagePolicy: cleartext
   layeringDefinition:
     layer: one
   substitutions:

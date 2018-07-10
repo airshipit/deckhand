@@ -59,3 +59,12 @@ ENCRYPTION_TYPES = (
     'cleartext',
     'encrypted',
 )
+
+
+METADATA_SCHEMA_TYPES = (
+    CONTROL,
+    DOCUMENT
+) = (
+    'metadata/Control',
+    'metadata/Document'
+)

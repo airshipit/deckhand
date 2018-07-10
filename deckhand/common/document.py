@@ -71,7 +71,7 @@ class DocumentDict(dict):
 
     @property
     def is_control(self):
-        return self.metadata.get('schema', '').startswith('deckhand/Control')
+        return self.metadata.get('schema', '').startswith('metadata/Control')
 
     @property
     def schema(self):

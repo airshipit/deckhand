@@ -66,8 +66,10 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
             self, mock_jsonschema):
         m_args = mock.Mock()
         mock_jsonschema.Draft4Validator(m_args).iter_errors.side_effect = [
-            # Return empty list of errors for base schema validator and pretend
-            # that 1 error is returned for next validator.
+            # Return empty list of errors for base schema and metadata
+            # validator and pretend that 1 error is returned for next
+            # validator.
+            [],
             [],
             [mock.Mock(path=[], schema_path=[], message='scary-secret-here')]
         ]

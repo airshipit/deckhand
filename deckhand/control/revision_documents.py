@@ -164,8 +164,8 @@ class RenderedDocumentsResource(api_base.BaseResource):
             rendered_documents = rendered_documents[:limit]
 
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(rendered_documents)
         self._post_validate(rendered_documents)
+        resp.body = self.view_builder.list(rendered_documents)
 
     def _retrieve_documents_for_rendering(self, revision_id, **filters):
         """Retrieve all necessary documents needed for rendering. If a layering

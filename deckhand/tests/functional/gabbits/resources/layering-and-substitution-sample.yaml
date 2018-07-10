@@ -3,6 +3,7 @@ schema: deckhand/Certificate/v1
 metadata:
   name: example-cert
   schema: metadata/Document/v1
+  storagePolicy: cleartext
   layeringDefinition:
     layer: site
   storagePolicy: cleartext
@@ -13,6 +14,7 @@ schema: deckhand/CertificateKey/v1
 metadata:
   name: example-key
   schema: metadata/Document/v1
+  storagePolicy: cleartext
   layeringDefinition:
     layer: site
   storagePolicy: cleartext
@@ -23,6 +25,7 @@ schema: deckhand/Passphrase/v1
 metadata:
   name: example-password
   schema: metadata/Document/v1
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: false
     layer: site
@@ -33,6 +36,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: armada-chartgroup-01
+  storagePolicy: cleartext
   labels:
     key1: value1
   layeringDefinition:
@@ -45,6 +49,7 @@ schema: armada/Chart/v1
 metadata:
   schema: metadata/Document/v1
   name: armada-chart-01
+  storagePolicy: cleartext
   layeringDefinition:
     layer: site
     parentSelector:

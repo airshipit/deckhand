@@ -43,6 +43,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: a
+        storagePolicy: cleartext
         labels:
           selector: foo
         layeringDefinition:
@@ -56,6 +57,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: a
+        storagePolicy: cleartext
         labels:
           selector: baz
         replacement: true
@@ -75,6 +77,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: c
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: False
           layer: global
@@ -140,6 +143,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: a
+        storagePolicy: cleartext
         labels:
           selector: foo
         layeringDefinition:
@@ -153,6 +157,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: a
+        storagePolicy: cleartext
         labels:
           selector: baz
         replacement: true
@@ -172,6 +177,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: b
+        storagePolicy: cleartext
         labels:
           selector: qux
         layeringDefinition:
@@ -190,6 +196,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: c
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: False
           layer: global

@@ -1,0 +1,121 @@
+---
+schema: deckhand/DataSchema/v1
+metadata:
+  name: metadata/Document/v1
+  schema: metadata/Control/v1
+data:
+  $schema: http://json-schema.org/schema#
+  definitions:
+    parent_selector_requires_actions:
+      dependencies:
+        # Requires that if parentSelector is provided, then actions is
+        # required and must contain at least 1 item.
+        parentSelector:
+          required:
+            - actions
+    actions_requires_parent_selector:
+      dependencies:
+        # Requires that if actions are provided, then so too must
+        # parentSelector.
+        actions:
+          required:
+            - parentSelector
+    substitution_dest:
+      type: object
+      properties:
+        path:
+          type: string
+        pattern:
+          type: string
+      additionalProperties: false
+      required:
+        - path
+  type: object
+  properties:
+    schema:
+      anyOf:
+        - type: string
+          pattern: ^metadata/Document/v\d+$
+        - type: string
+          pattern: ^metadata/Control/v\d+$
+    name:
+      type: string
+    labels:
+      type: object
+    replacement:
+      type: boolean
+    layeringDefinition:
+      type: object
+      properties:
+        layer:
+          type: string
+        abstract:
+          type: boolean
+        parentSelector:
+          type: object
+          minProperties: 1
+        actions:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              method:
+                enum:
+                  - replace
+                  - delete
+                  - merge
+              path:
+                type: string
+            additionalProperties: false
+            required:
+              - method
+              - path
+      additionalProperties: false
+      required:
+        - 'layer'
+      allOf:
+        - $ref: "#/definitions/parent_selector_requires_actions"
+        - $ref: "#/definitions/actions_requires_parent_selector"
+    substitutions:
+      type: array
+      items:
+        type: object
+        properties:
+          dest:
+            anyOf:
+              - $ref: "#/definitions/substitution_dest"
+              - type: array
+                minItems: 1
+                items:
+                  $ref: "#/definitions/substitution_dest"
+          src:
+            type: object
+            properties:
+              schema:
+                type: string
+                pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+$
+              name:
+                type: string
+              path:
+                type: string
+            additionalProperties: false
+            required:
+              - schema
+              - name
+              - path
+        additionalProperties: false
+        required:
+          - dest
+          - src
+    storagePolicy:
+      type: string
+      enum:
+        - encrypted
+        - cleartext
+  additionalProperties: false
+  required:
+    - schema
+    - name
+    - storagePolicy
+    - layeringDefinition

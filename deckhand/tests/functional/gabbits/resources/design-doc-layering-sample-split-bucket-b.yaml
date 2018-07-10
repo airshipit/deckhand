@@ -3,6 +3,7 @@ schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
   name: region-1234
+  storagePolicy: cleartext
   labels:
     key1: value1
   layeringDefinition:
@@ -21,6 +22,7 @@ schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
   name: site-with-merge-action
+  storagePolicy: cleartext
   labels:
     foo: bar
     baz: qux
@@ -38,6 +40,7 @@ schema: example/Kind/v1
 metadata:
   schema: metadata/Document/v1
   name: site-with-delete-action
+  storagePolicy: cleartext
   layeringDefinition:
     layer: site
     parentSelector:

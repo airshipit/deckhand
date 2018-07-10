@@ -46,6 +46,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: nova-global
+        storagePolicy: cleartext
         labels:
           name: nova-global
           component: nova
@@ -62,6 +63,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: nova
+        storagePolicy: cleartext
         labels:
           name: nova-5ec
           component: nova
@@ -80,6 +82,7 @@ tests:
         schema: metadata/Document/v1
         replacement: true
         name: nova
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site

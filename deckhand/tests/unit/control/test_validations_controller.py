@@ -678,6 +678,7 @@ class TestValidationsControllerPostValidate(BaseValidationsControllerTest):
             'error_section': {
                 'data': {'a': 'fail'},
                 'metadata': {'labels': {'global': 'global1'},
+                             'storagePolicy': 'cleartext',
                              'layeringDefinition': {'abstract': False,
                                                     'layer': 'global'},
                              'name': doc_to_test['metadata']['name'],

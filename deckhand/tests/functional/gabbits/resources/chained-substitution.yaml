@@ -11,6 +11,7 @@ schema: example/Source/v1
 metadata:
   schema: metadata/Document/v1
   name: source
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: false
     layer: one
@@ -20,6 +21,7 @@ schema: example/Middle/v1
 metadata:
   schema: metadata/Document/v1
   name: middle
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: false
     layer: one
@@ -36,6 +38,7 @@ schema: example/Dest/v1
 metadata:
   schema: metadata/Document/v1
   name: dest
+  storagePolicy: cleartext
   layeringDefinition:
     abstract: false
     layer: one

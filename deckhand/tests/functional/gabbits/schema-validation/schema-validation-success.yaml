@@ -73,6 +73,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: good
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -114,6 +115,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: bad
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -173,6 +175,7 @@ tests:
       metadata:
         schema: metadata/Document/v1
         name: bad
+        storagePolicy: cleartext
         layeringDefinition:
           abstract: false
           layer: site
@@ -191,6 +194,7 @@ tests:
       metadata:
         name: test-certificate
         schema: metadata/Document/v1
+        storagePolicy: cleartext
         layeringDefinition:
           layer: site
         storagePolicy: cleartext

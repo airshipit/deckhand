@@ -4,5 +4,8 @@ metadata:
   schema: metadata/Document/v1
   name: my-passphrase
   storagePolicy: cleartext
+  layeringDefinition:
+    abstract: false
+    layer: site
 data: not-a-real-password
 ...

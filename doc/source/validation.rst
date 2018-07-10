@@ -218,8 +218,40 @@ Base Schema
   This schema is used to sanity-check all documents that are passed to
   Deckhand. Failure to pass this schema results in a critical error.
 
+Metadata Schemas
+----------------
+
+Metadata schemas validate the ``metadata`` section of every document
+ingested by Deckhand.
+
+* ``Metadata Control`` schema.
+
+  JSON schema against which the metadata section of each ``metadata/Control``
+  document type is validated. Applies to all static documents meant to
+  configure Deckhand behavior, like LayeringPolicy, ValidationPolicy,
+  and DataSchema documents.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/metadata_control.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``metadata/Control`` metadata document sections.
+
+* ``Metadata Document`` schema.
+
+  JSON schema against which the metadata section of each ``metadata/Document``
+  document type is validated. Applies to all site definition documents or
+  "regular" documents that require rendering.
+
+  .. literalinclude:: ../../deckhand/engine/schemas/metadata_document.yaml
+    :language: yaml
+    :lines: 15-
+    :caption: Schema for ``metadata/Document`` metadata document sections.
+
 DataSchema Schemas
 ------------------
+
+DataSchema schemas validate the ``data`` section of every document ingested
+by Deckhand.
 
 All schemas below are ``DataSchema`` documents. They define additional
 properties not included in the base schema or override default properties in
@@ -282,19 +314,6 @@ corresponding to the created revision.
     :caption: Schema for ``Certificate`` documents.
 
   This schema is used to sanity-check all ``Certificate`` documents that are
-  passed to Deckhand.
-
-* ``DataSchema`` schema.
-
-  JSON schema against which all documents with ``deckhand/DataSchema/v1``
-  schema are validated.
-
-  .. literalinclude:: ../../deckhand/engine/schemas/dataschema_schema.yaml
-    :language: yaml
-    :lines: 15-
-    :caption: Schema for ``DataSchema`` documents.
-
-  This schema is used to sanity-check all ``DataSchema`` documents that are
   passed to Deckhand.
 
 * ``LayeringPolicy`` schema.

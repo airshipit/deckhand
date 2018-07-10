@@ -23,26 +23,39 @@ from deckhand import types
 class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
     """Negative testing suite for document validation."""
 
-    BASIC_PROPERTIES = (
+    # Control documents don't require layeringDefinition as none of them
+    # are rendered -- they are static documents. It is also not meaningful
+    # to encrypt control documents.
+    BASIC_CONTROL_PROPERTIES = (
         'metadata',
         'metadata.schema',
         'metadata.name',
-        'metadata.layeringDefinition',
-        'metadata.layeringDefinition.layer',
-        'schema'
+        'schema',
     )
 
-    CRITICAL_PROPERTIES = (
+    BASIC_DOCUMENT_PROPERTIES = BASIC_CONTROL_PROPERTIES + (
+        'metadata.layeringDefinition',
+        'metadata.layeringDefinition.layer',
+        'metadata.storagePolicy',
+    )
+
+    CRITICAL_CONTROL_PROPERTIES = (
         'schema',
         'metadata',
         'metadata.schema',
         'metadata.name',
+    )
+
+    CRITICAL_DOCUMENT_PROPERTIES = CRITICAL_CONTROL_PROPERTIES + (
+        'metadata.layeringDefinition',
+        'metadata.layeringDefinition.layer',
         'metadata.substitutions.0.dest',
         'metadata.substitutions.0.dest.path',
         'metadata.substitutions.0.src',
         'metadata.substitutions.0.src.schema',
         'metadata.substitutions.0.src.name',
-        'metadata.substitutions.0.src.path'
+        'metadata.substitutions.0.src.path',
+        'metadata.storagePolicy',
     )
 
     def _do_validations(self, document_validator, expected, expected_err):
@@ -68,11 +81,19 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
                          validations[-1]['errors'][-1]['message'])
 
     def _test_missing_required_sections(self, document, properties_to_remove):
+        if document['metadata']['schema'].startswith(types.CONTROL):
+            critial_properties = self.CRITICAL_CONTROL_PROPERTIES
+        elif document['metadata']['schema'].startswith(types.DOCUMENT):
+            critial_properties = self.CRITICAL_DOCUMENT_PROPERTIES
+        else:
+            self.fail('Document `metadata.schema` must start with '
+                      '"metadata/Document" or "metadata/Control".')
+
         for idx, property_to_remove in enumerate(properties_to_remove):
             missing_prop = property_to_remove.split('.')[-1]
             invalid_data = self._corrupt_data(document, property_to_remove)
 
-            exception_raised = property_to_remove in self.CRITICAL_PROPERTIES
+            exception_raised = property_to_remove in critial_properties
             expected_err_msg = "'%s' is a required property" % missing_prop
 
             payload = [invalid_data]
@@ -87,42 +108,36 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
 
     def test_certificate_authority_key_missing_required_sections(self):
         document = self._read_data('sample_certificate_authority_key')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_DOCUMENT_PROPERTIES) + (
             'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_certificate_authority_missing_required_sections(self):
         document = self._read_data('sample_certificate_authority')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_DOCUMENT_PROPERTIES) + (
             'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_certificate_key_missing_required_sections(self):
         document = self._read_data('sample_certificate_key')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_DOCUMENT_PROPERTIES) + (
             'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_certificate_missing_required_sections(self):
         document = self._read_data('sample_certificate')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_DOCUMENT_PROPERTIES) + (
             'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_data_schema_missing_required_sections(self):
-        properties_to_remove = (
-            'metadata',
-            'metadata.schema',
-            'metadata.name',
-            'schema',
-            'data.$schema'
-        )
         document = self._read_data('sample_data_schema')
+        properties_to_remove = tuple(self.BASIC_CONTROL_PROPERTIES)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_generic_document_missing_required_sections(self):
         document = self._read_data('sample_document')
-        properties_to_remove = self.CRITICAL_PROPERTIES
+        properties_to_remove = self.CRITICAL_DOCUMENT_PROPERTIES
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_generic_document_missing_multiple_required_sections(self):
@@ -152,6 +167,12 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
             error_re = r"%s is a required property" % missing_property
             self.assertRegex(str(e.error_list).replace("\'", ""), error_re)
 
+    def test_layering_policy_missing_required_sections(self):
+        properties_to_remove = tuple(self.BASIC_CONTROL_PROPERTIES) + (
+            'data.layerOrder',)
+        document = self._read_data('sample_layering_policy')
+        self._test_missing_required_sections(document, properties_to_remove)
+
     def test_document_invalid_layering_definition_action(self):
         document = self._read_data('sample_document')
         missing_data = self._corrupt_data(
@@ -166,38 +187,27 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
                               doc_validator.validate_all)
         self.assertRegex(str(e.error_list[0]).replace("\'", ""), error_re)
 
-    def test_layering_policy_missing_required_sections(self):
-        properties_to_remove = (
-            'metadata',
-            'metadata.schema',
-            'metadata.name',
-            'schema',
-            'data.layerOrder'
-        )
-        document = self._read_data('sample_layering_policy')
-        self._test_missing_required_sections(document, properties_to_remove)
-
     def test_passphrase_missing_required_sections(self):
         document = self._read_data('sample_passphrase')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_DOCUMENT_PROPERTIES) + (
             'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_privatekey_missing_required_sections(self):
         document = self._read_data('sample_private_key')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_DOCUMENT_PROPERTIES) + (
             'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_publickey_missing_required_sections(self):
         document = self._read_data('sample_public_key')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_DOCUMENT_PROPERTIES) + (
             'metadata.storagePolicy',)
         self._test_missing_required_sections(document, properties_to_remove)
 
     def test_validation_policy_missing_required_sections(self):
         document = self._read_data('sample_validation_policy')
-        properties_to_remove = tuple(self.BASIC_PROPERTIES) + (
+        properties_to_remove = tuple(self.BASIC_CONTROL_PROPERTIES) + (
             'data.validations', 'data.validations.0.name')
         self._test_missing_required_sections(document, properties_to_remove)
 

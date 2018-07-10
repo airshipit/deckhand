@@ -50,6 +50,7 @@ tests:
       metadata:
         name: example-chart-01
         schema: metadata/Document/v1
+        storagePolicy: cleartext
         layeringDefinition:
           layer: site
         substitutions:
