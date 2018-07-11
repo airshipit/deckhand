@@ -12,25 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- hosts: all
-  roles:
-    - build-images
-    - deploy-keystone-dependencies
-    - build-charts
-    - deploy-barbican
-    # NOTE: deploy-postgresql and deploy-deckhand must follow
-    # deploy-keystone-dependencies which restarts Docker, causing
-    # the first 2 containers that are deployed to fail.
-    - deploy-postgresql
-    - generate-test-config
-    - deploy-deckhand
-    - run-integration-tests
-  tags:
-    - build-images
-    - deploy-keystone-dependencies
-    - build-charts
-    - deploy-barbican
-    - deploy-postgresql
-    - generate-test-config
-    - deploy-deckhand
-    - run-integration-tests
+- name: Build Helm Charts
+  when: disable_keystone == false
+  shell: |
+    set -xe;
+    ./tools/gate/scripts/010-build-charts.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}"
