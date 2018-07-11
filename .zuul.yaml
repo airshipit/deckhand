@@ -19,17 +19,17 @@
         - airship-deckhand-tox-py35-postgresql
         - airship-deckhand-ubuntu:
             voting: false
-        - airship-deckhand-functional-docker-py35
         - airship-deckhand-functional-uwsgi-py35
+        - airship-deckhand-functional-docker-py35
         - airship-deckhand-integration-uwsgi-py35
+        - airship-deckhand-integration-docker-py35
         - airship-deckhand-docker-build-gate
     gate:
       jobs:
         - airship-deckhand-tox-py27-postgresql
         - airship-deckhand-tox-py35-postgresql
         - airship-deckhand-functional-docker-py35
-        - airship-deckhand-functional-uwsgi-py35
-        - airship-deckhand-integration-uwsgi-py35
+        - airship-deckhand-integration-docker-py35
         - airship-deckhand-docker-build-gate
     post:
       jobs:
@@ -154,6 +154,42 @@
       - ^releasenotes/.*$
       - ^setup.cfg$
       - ^deckhand/tests/unit/.*$
+    vars:
+      disable_keystone: true
+
+- job:
+    name: airship-deckhand-integration-docker-base
+    description: |
+      Base job for running airship-deckhand integration tests. Runs tests
+      against Docker image generated from source code.
+    timeout: 3600
+    roles:
+      - zuul: openstack/openstack-helm-infra
+    vars:
+      zuul_osh_relative_path: ../openstack-helm/
+      zuul_osh_infra_relative_path: ../openstack-helm-infra/
+    pre-run:
+      - tools/gate/playbooks/osh-infra-upgrade-host.yaml
+      - tools/gate/playbooks/osh-infra-deploy-docker.yaml
+    run: tools/gate/playbooks/run-integration-tests-docker.yaml
+    post-run: tools/gate/playbooks/osh-infra-collect-logs.yaml
+    required-projects:
+      - openstack/openstack-helm
+      - openstack/openstack-helm-infra
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^releasenotes/.*$
+
+- job:
+    name: airship-deckhand-integration-docker-py35
+    description: |
+      Run tox-based integration tests for the Airship Deckhand project under
+      cPython version 3.5.
+    parent: airship-deckhand-integration-docker-base
+    nodeset: openstack-helm-single-node
+    vars:
+      disable_keystone: false
 
 - job:
     name: airship-deckhand-docker-build-gate
@@ -199,7 +235,7 @@
 - job:
     name: airship-deckhand-doc-publish
     description: |
-      Publish documentation on airship-deckhand.readthedocs.io
+      Publish documentation on airship-deckhand.readthedocs.io.
     timeout: 300
     run: tools/gate/playbooks/rtd-build-trigger.yaml
     nodeset: airship-deckhand-single-node

@@ -12,4 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: build-airship-deckhand-image.yaml
+- hosts: all
+  roles:
+    - build-images
+    - deploy-keystone-dependencies
+    - deploy-barbican
+    # NOTE: deploy-postgresql and deploy-deckhand must follow
+    # deploy-keystone-dependencies which restarts Docker, causing
+    # the first 2 containers that are deployed to fail.
+    - deploy-postgresql
+    - generate-test-config
+    - deploy-deckhand
+    - run-integration-tests
+  tags:
+    - build-images
+    - deploy-keystone-dependencies
+    - deploy-barbican
+    - deploy-postgresql
+    - generate-test-config
+    - deploy-deckhand
+    - run-integration-tests
