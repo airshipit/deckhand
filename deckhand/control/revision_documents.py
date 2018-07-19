@@ -17,6 +17,7 @@ from oslo_log import log as logging
 from oslo_utils import excutils
 import six
 
+from deckhand.common import document as document_wrapper
 from deckhand.common import utils
 from deckhand.common import validation_message as vm
 from deckhand.control import base as api_base
@@ -110,10 +111,9 @@ class RenderedDocumentsResource(api_base.BaseResource):
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
 
-        documents = self._retrieve_documents_for_rendering(revision_id,
-                                                           **filters)
+        data = self._retrieve_documents_for_rendering(revision_id, **filters)
+        documents = document_wrapper.DocumentDict.from_list(data)
         encryption_sources = self._retrieve_encrypted_documents(documents)
-
         try:
             # NOTE(fmontei): `validate` is False because documents have already
             # been pre-validated during ingestion. Documents are post-validated

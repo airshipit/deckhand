@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import yaml
-
 import falcon
 from oslo_log import log as logging
+import yaml
 
 from deckhand import context
 

@@ -22,7 +22,7 @@ from oslo_log import log as logging
 from oslo_log import versionutils
 from oslo_utils import excutils
 
-from deckhand.common import document as document_wrapper
+from deckhand.common.document import DocumentDict as dd
 from deckhand.common import utils
 from deckhand.common.validation_message import ValidationMessage
 from deckhand.engine import document_validation
@@ -127,7 +127,7 @@ class DocumentLayering(object):
         substitution_source_map = {}
 
         for src in substitution_sources:
-            src_ref = document_wrapper.DocumentDict(src)
+            src_ref = dd(src)
             if src_ref.meta in self._documents_by_index:
                 src_ref = self._documents_by_index[src_ref.meta]
                 if src_ref.has_replacement:
@@ -432,8 +432,7 @@ class DocumentLayering(object):
             filter(lambda x: x.get('schema').startswith(
                    types.LAYERING_POLICY_SCHEMA), documents))
         if layering_policies:
-            self._layering_policy = document_wrapper.DocumentDict(
-                layering_policies[0])
+            self._layering_policy = dd(layering_policies[0])
             if len(layering_policies) > 1:
                 LOG.warning('More than one layering policy document was '
                             'passed in. Using the first one found: [%s] %s.',
@@ -448,7 +447,7 @@ class DocumentLayering(object):
             raise errors.LayeringPolicyNotFound()
 
         for document in documents:
-            document = document_wrapper.DocumentDict(document)
+            document = dd(document)
 
             self._documents_by_index.setdefault(document.meta, document)
 
@@ -542,6 +541,7 @@ class DocumentLayering(object):
         :raises MissingDocumentKey: If a layering action path isn't found
             in the child document.
         """
+
         method = action['method']
         if method not in self._SUPPORTED_METHODS:
             raise errors.UnsupportedActionMethod(

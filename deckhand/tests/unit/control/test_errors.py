@@ -116,7 +116,7 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
         resp = self.app.simulate_put(
             '/api/v1.0/buckets/test/documents',
             headers={'Content-Type': 'application/x-yaml'},
-            body='name: test')
+            body='foo: bar')
 
         expected = {
             'status': 'Failure',
@@ -132,8 +132,8 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                     {
                         'diagnostic': mock.ANY,
                         'documents': [{
-                            'layer': None,
-                            'name': None,
+                            'layer': '',
+                            'name': '',
                             'schema': ''
                         }],
                         'error': True,
@@ -146,8 +146,8 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                     {
                         'diagnostic': mock.ANY,
                         'documents': [{
-                            'layer': None,
-                            'name': None,
+                            'layer': '',
+                            'name': '',
                             'schema': ''
                         }],
                         'error': True,
@@ -211,8 +211,8 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                     {
                         'diagnostic': mock.ANY,
                         'documents': [{
-                            'layer': None,
-                            'name': None,
+                            'layer': '',
+                            'name': '',
                             'schema': invalid_document['schema']
                         }],
                         'error': True,

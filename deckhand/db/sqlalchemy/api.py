@@ -28,7 +28,6 @@ from oslo_serialization import jsonutils as json
 import sqlalchemy.orm as sa_orm
 from sqlalchemy import text
 
-from deckhand.common import document as document_wrapper
 from deckhand.common import utils
 from deckhand.db.sqlalchemy import models
 from deckhand import errors
@@ -92,6 +91,14 @@ def raw_query(query, **kwargs):
     return get_engine().execute(stmt)
 
 
+def _meta(document):
+    return (
+        document['schema'],
+        document['metadata'].get('layeringDefinition', {}).get('layer'),
+        document['metadata'].get('name')
+    )
+
+
 def require_unique_document_schema(schema=None):
     """Decorator to enforce only one singleton document exists in the system.
 
@@ -122,12 +129,12 @@ def require_unique_document_schema(schema=None):
             existing_documents = revision_documents_get(
                 schema=schema, deleted=False, include_history=False)
             existing_document_names = [
-                x.meta for x in existing_documents
+                _meta(x) for x in existing_documents
             ]
             conflicting_names = [
-                x.meta for x in documents
-                if x.meta not in existing_document_names and
-                x.schema.startswith(schema)
+                _meta(x) for x in documents
+                if _meta(x) not in existing_document_names and
+                x['schema'].startswith(schema)
             ]
             if existing_document_names and conflicting_names:
                 raise errors.SingletonDocumentConflict(
@@ -141,7 +148,6 @@ def require_unique_document_schema(schema=None):
     return decorator
 
 
-@document_wrapper.wrap_documents
 @require_unique_document_schema(types.LAYERING_POLICY_SCHEMA)
 def documents_create(bucket_name, documents, validations=None,
                      session=None):
@@ -172,8 +178,8 @@ def documents_create(bucket_name, documents, validations=None,
         d for d in revision_documents_get(bucket_name=bucket_name)
     ]
     documents_to_delete = [
-        h for h in document_history if h.meta not in [
-            d.meta for d in documents]
+        h for h in document_history if _meta(h) not in [
+            _meta(d) for d in documents]
     ]
 
     # Only create a revision if any docs have been created, changed or deleted.
@@ -187,18 +193,18 @@ def documents_create(bucket_name, documents, validations=None,
 
     if documents_to_delete:
         LOG.debug('Deleting documents: %s.',
-                  [d.meta for d in documents_to_delete])
+                  [_meta(d) for d in documents_to_delete])
         deleted_documents = []
 
         for d in documents_to_delete:
             doc = models.Document()
             with session.begin():
                 # Store bare minimum information about the document.
-                doc['schema'] = d.schema
-                doc['name'] = d.name
-                doc['layer'] = d.layer
+                doc['schema'] = d['schema']
+                doc['name'] = d['name']
+                doc['layer'] = d['layer']
                 doc['data'] = {}
-                doc['meta'] = d.metadata
+                doc['meta'] = d['metadata']
                 doc['data_hash'] = _make_hash({})
                 doc['metadata_hash'] = _make_hash({})
                 doc['bucket_id'] = bucket['id']
@@ -374,7 +380,7 @@ def document_get(session=None, raw_dict=False, revision_id=None, **filters):
     for doc in documents:
         d = doc.to_dict(raw_dict=raw_dict)
         if utils.deepfilter(d, **nested_filters):
-            return document_wrapper.DocumentDict(d)
+            return d
 
     filters.update(nested_filters)
     raise errors.DocumentNotFound(filters=filters)
@@ -426,7 +432,7 @@ def document_get_all(session=None, raw_dict=False, revision_id=None,
         if utils.deepfilter(d, **nested_filters):
             final_documents.append(d)
 
-    return document_wrapper.DocumentDict.from_dict(final_documents)
+    return final_documents
 
 
 ####################
@@ -592,7 +598,6 @@ def revision_delete_all():
         raw_query("DELETE FROM revisions;")
 
 
-@document_wrapper.wrap_documents
 def _exclude_deleted_documents(documents):
     """Excludes all documents that have been deleted including all documents
     earlier in the revision history with the same ``metadata.name`` and
@@ -602,12 +607,12 @@ def _exclude_deleted_documents(documents):
 
     for doc in sorted(documents, key=lambda x: x['created_at']):
         if doc['deleted'] is True:
-            previous_doc = documents_map.get(doc.meta)
+            previous_doc = documents_map.get(_meta(doc))
             if previous_doc:
                 if doc['deleted_at'] >= previous_doc['created_at']:
-                    documents_map[doc.meta] = None
+                    documents_map[_meta(doc)] = None
         else:
-            documents_map[doc.meta] = doc
+            documents_map[_meta(doc)] = doc
 
     return [d for d in documents_map.values() if d is not None]
 
@@ -694,7 +699,7 @@ def revision_documents_get(revision_id=None, include_history=True,
     filtered_documents = _filter_revision_documents(
         revision_documents, unique_only, **filters)
 
-    return document_wrapper.DocumentDict.from_dict(filtered_documents)
+    return filtered_documents
 
 
 # NOTE(fmontei): No need to include `@require_revision_exists` decorator as
@@ -1099,7 +1104,7 @@ def validation_get_all(revision_id, session=None):
     expected_validations = set()
     for vp in validation_policies:
         expected_validations = expected_validations.union(
-            list(v['name'] for v in vp.data.get('validations', [])))
+            list(v['name'] for v in vp['data'].get('validations', [])))
 
     missing_validations = expected_validations - actual_validations
     extra_validations = actual_validations - expected_validations
@@ -1138,7 +1143,7 @@ def _check_validation_entries_against_validation_policies(
     expected_validations = set()
     for vp in validation_policies:
         expected_validations |= set(
-            v['name'] for v in vp.data.get('validations', []))
+            v['name'] for v in vp['data'].get('validations', []))
 
     missing_validations = expected_validations - actual_validations
     extra_validations = actual_validations - expected_validations
@@ -1165,19 +1170,19 @@ def _check_validation_entries_against_validation_policies(
         for entry in result_map[extra_name]:
             original_status = entry['status']
             entry['status'] = 'ignored [%s]' % original_status
-
             entry.setdefault('errors', [])
+
+            msg_args = _meta(vp) + (
+                ', '.join(v['name'] for v in vp['data'].get(
+                    'validations', [])),
+            )
             for vp in validation_policies:
                 entry['errors'].append({
                     'message': (
                         'The result for this validation was externally '
                         'registered but has been ignored because it is not '
                         'found in the validations for ValidationPolicy '
-                        '[%s, %s] %s: %s.' % (
-                            vp.schema, vp.layer, vp.name,
-                            ', '.join(v['name'] for v in vp['data'].get(
-                                'validations', []))
-                        )
+                        '[%s, %s] %s: %s.' % msg_args
                     )
                 })
 

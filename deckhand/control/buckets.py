@@ -16,6 +16,7 @@ import falcon
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from deckhand.common import document as document_wrapper
 from deckhand.control import base as api_base
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
@@ -35,7 +36,8 @@ class BucketsResource(api_base.BaseResource):
 
     @policy.authorize('deckhand:create_cleartext_documents')
     def on_put(self, req, resp, bucket_name=None):
-        documents = self.from_yaml(req, expect_list=True, allow_empty=True)
+        data = self.from_yaml(req, expect_list=True, allow_empty=True)
+        documents = document_wrapper.DocumentDict.from_list(data)
 
         # NOTE: Must validate documents before doing policy enforcement,
         # because we expect certain formatting of the documents while doing

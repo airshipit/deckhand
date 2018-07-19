@@ -13,16 +13,12 @@
 # limitations under the License.
 
 import collections
-import functools
-import inspect
 import re
 
 from oslo_serialization import jsonutils as json
 from oslo_utils import uuidutils
 import six
-
-from deckhand.common import utils
-
+import yaml
 
 _URL_RE = re.compile(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|'
                      '(?:%[0-9a-fA-F][0-9a-fA-F]))+')
@@ -44,49 +40,17 @@ class DocumentDict(dict):
 
     """
 
-    def __init__(self, *args, **kwargs):
-        super(DocumentDict, self).__init__(*args, **kwargs)
-        self._replaced_by = None
-
-    @classmethod
-    def from_dict(self, documents):
-        """Convert a list of documents or single document into an instance of
-        this class.
-
-        :param documents: Documents to wrap in this class.
-        :type documents: list or dict
-        """
-        if isinstance(documents, collections.Iterable):
-            return [DocumentDict(d) for d in documents]
-        return DocumentDict(documents)
-
     @property
     def meta(self):
         return (self.schema, self.layer, self.name)
 
     @property
-    def is_abstract(self):
-        return utils.jsonpath_parse(
-            self, 'metadata.layeringDefinition.abstract') is True
-
-    @property
-    def is_control(self):
-        return self.metadata.get('schema', '').startswith('metadata/Control')
-
-    @property
-    def schema(self):
-        schema = self.get('schema')
-        return schema if schema is not None else ''
-
-    @property
     def metadata(self):
-        metadata = self.get('metadata')
-        return metadata if metadata is not None else {}
+        return self.get('metadata') or DocumentDict({})
 
     @property
     def data(self):
-        data = self.get('data')
-        return data if data is not None else {}
+        return self.get('data')
 
     @data.setter
     def data(self, value):
@@ -94,50 +58,69 @@ class DocumentDict(dict):
 
     @property
     def name(self):
-        return utils.jsonpath_parse(self, 'metadata.name')
+        return self.metadata.get('name') or ''
 
     @property
-    def layering_definition(self):
-        return utils.jsonpath_parse(self, 'metadata.layeringDefinition')
+    def schema(self):
+        return self.get('schema') or ''
 
     @property
     def layer(self):
-        return utils.jsonpath_parse(
-            self, 'metadata.layeringDefinition.layer')
+        return self.layering_definition.get('layer') or ''
+
+    @property
+    def is_abstract(self):
+        return self.layering_definition.get('abstract') is True
+
+    @property
+    def is_control(self):
+        return self.schema.startswith('deckhand/Control')
+
+    @property
+    def layering_definition(self):
+        metadata = self.metadata or {}
+        return metadata.get('layeringDefinition') or DocumentDict({})
+
+    @property
+    def layeringDefinition(self):
+        metadata = self.metadata or {}
+        return metadata.get('layeringDefinition') or DocumentDict({})
 
     @property
     def layer_order(self):
-        return utils.jsonpath_parse(self, 'data.layerOrder')
+        if not self.schema.startswith('deckhand/LayeringPolicy'):
+            raise TypeError(
+                'layer_order only exists for LayeringPolicy documents')
+        return self.data.get('layerOrder', [])
 
     @property
     def parent_selector(self):
-        return utils.jsonpath_parse(
-            self, 'metadata.layeringDefinition.parentSelector') or {}
+        return self.layering_definition.get(
+            'parentSelector') or DocumentDict({})
 
     @property
     def labels(self):
-        return utils.jsonpath_parse(self, 'metadata.labels') or {}
+        return self.metadata.get('labels') or DocumentDict({})
 
     @property
     def substitutions(self):
-        return utils.jsonpath_parse(self, 'metadata.substitutions') or []
+        return self.metadata.get('substitutions', [])
 
     @substitutions.setter
     def substitutions(self, value):
-        return utils.jsonpath_replace(self, value, '.metadata.substitutions')
+        self.metadata.substitutions = value
 
     @property
     def actions(self):
-        return utils.jsonpath_parse(
-            self, 'metadata.layeringDefinition.actions') or []
+        return self.layering_definition.get('actions', [])
 
     @property
     def storage_policy(self):
-        return utils.jsonpath_parse(self, 'metadata.storagePolicy') or ''
+        return self.metadata.get('storagePolicy') or ''
 
     @storage_policy.setter
     def storage_policy(self, value):
-        return utils.jsonpath_replace(self, value, '.metadata.storagePolicy')
+        self.metadata['storagePolicy'] = value
 
     @property
     def is_encrypted(self):
@@ -159,36 +142,42 @@ class DocumentDict(dict):
 
     @property
     def is_replacement(self):
-        return utils.jsonpath_parse(self, 'metadata.replacement') is True
+        return self.metadata.get('replacement') is True
 
     @property
     def has_replacement(self):
-        return isinstance(self._replaced_by, DocumentDict)
+        return isinstance(self.replaced_by, DocumentDict)
 
     @property
     def replaced_by(self):
-        return self._replaced_by
+        return getattr(self, '_replaced_by', None)
 
     @replaced_by.setter
     def replaced_by(self, other):
-        self._replaced_by = other
+        setattr(self, '_replaced_by', other)
 
     def __hash__(self):
         return hash(json.dumps(self, sort_keys=True))
 
+    @classmethod
+    def from_list(cls, documents):
+        """Convert an iterable of documents into instances of this class.
 
-def wrap_documents(f):
-    """Decorator to wrap dictionary-formatted documents in instances of
-    ``DocumentDict``.
-    """
-    @functools.wraps(f)
-    def wrapper(*args, **kwargs):
-        fargs = inspect.getargspec(f)
-        if 'documents' in fargs[0]:
-            pos = fargs[0].index('documents')
-            new_args = list(args)
-            if new_args[pos] and not isinstance(
-                    new_args[pos][0], DocumentDict):
-                new_args[pos] = DocumentDict.from_dict(args[pos])
-            return f(*tuple(new_args), **kwargs)
-    return wrapper
+        :param documents: Documents to wrap in this class.
+        :type documents: iterable
+        """
+        if not isinstance(documents, collections.Iterable):
+            documents = [documents]
+
+        return [DocumentDict(d) for d in documents]
+
+
+def document_dict_representer(dumper, data):
+    return dumper.represent_mapping('tag:yaml.org,2002:map', dict(data))
+
+
+yaml.add_representer(DocumentDict, document_dict_representer)
+# Required for py27 compatibility: yaml.safe_dump/safe_dump_all doesn't
+# work unless SafeRepresenter add_representer method is called.
+safe_representer = yaml.representer.SafeRepresenter
+safe_representer.add_representer(DocumentDict, document_dict_representer)

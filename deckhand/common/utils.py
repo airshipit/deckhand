@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import ast
-import copy
 import re
 import string
 
@@ -171,8 +170,6 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         # http://admin:super-duper-secret@svc-name:8080/v1
         doc['data'].update(replaced_data)
     """
-    data = copy.copy(data)
-    value = copy.copy(value)
 
     jsonpath = _normalize_jsonpath(jsonpath)
 
