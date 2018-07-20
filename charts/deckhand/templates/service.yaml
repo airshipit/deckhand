@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{- if .Values.manifests.service }}
+{{- if .Values.manifests.service_api }}
 {{- $envAll := . }}
 ---
 apiVersion: v1
@@ -23,21 +23,21 @@ metadata:
   name: {{ tuple "deckhand" "internal" . | include "helm-toolkit.endpoints.hostname_short_endpoint_lookup" }}
 spec:
   ports:
-    {{ if .Values.network.enable_node_port }}
+    {{ if .Values.network.api.node_port.enabled }}
     - name: http
-      nodePort: {{ .Values.network.node_port }}
-      port: {{ .Values.network.port }}
+      nodePort: {{ .Values.network.api.node_port }}
+      port: {{ .Values.network.api.port }}
       protocol: TCP
-      targetPort: {{ .Values.network.port }}
+      targetPort: {{ .Values.network.api.port }}
     {{ else }}
     - name: http
-      port: {{ .Values.network.port }}
+      port: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
       protocol: TCP
-      targetPort: {{ .Values.network.port }}
+      targetPort: {{ .Values.network.api.port }}
     {{ end }}
   selector:
 {{ tuple $envAll "deckhand" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 4 }}
-  {{ if .Values.network.enable_node_port }}
+  {{ if .Values.network.api.enable_node_port }}
   type: NodePort
   {{ end }}
 {{- end }}

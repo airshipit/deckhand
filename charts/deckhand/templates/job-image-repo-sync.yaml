@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */}}
 
-{{- if .Values.manifests.job_ks_endpoints }}
-{{- $ksServiceJob := dict "envAll" . "serviceName" "deckhand" "serviceTypes" ( tuple "deckhand" ) -}}
-{{ $ksServiceJob | include "helm-toolkit.manifests.job_ks_endpoints" }}
+{{- if and .Values.manifests.job_image_repo_sync .Values.images.local_registry.active }}
+{{- $imageRepoSyncJob := dict "envAll" . "serviceName" "deckhand" -}}
+{{ $imageRepoSyncJob | include "helm-toolkit.manifests.job_image_repo_sync" }}
 {{- end }}

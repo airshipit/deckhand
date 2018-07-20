@@ -1,3 +1,4 @@
+{{/*
 # Copyright 2017 The Openstack-Helm Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,54 +12,56 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
+{{- if .Values.manifests.configmap_etc }}
 {{- $envAll := . }}
 
 {{- if empty .Values.conf.deckhand.keystone_authtoken.auth_uri -}}
-{{- tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "auth_uri" | quote | trunc 0 -}}
+{{- tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "auth_uri" -}}
 {{- end -}}
 
 # FIXME fix for broken keystonemiddleware oslo config gen in newton - will remove in future
 {{- if empty .Values.conf.deckhand.keystone_authtoken.auth_url -}}
-{{- tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "auth_url" | quote | trunc 0 -}}
+{{- tuple "identity" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "auth_url" -}}
 {{- end -}}
 
 # Add endpoint URI lookup for Deckhand Postgresql DB Connection
 {{- if empty .Values.conf.deckhand.database.connection -}}
-{{- tuple "postgresql" "internal" "user" "postgresql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup" | set .Values.conf.deckhand.database "connection" | quote | trunc 0 -}}
+{{- tuple "postgresql" "internal" "user" "postgresql" . | include "helm-toolkit.endpoints.authenticated_endpoint_uri_lookup" | set .Values.conf.deckhand.database "connection" -}}
 {{- end -}}
 
 # Add endpoint URI lookup for memcached servers Connection
 {{- if empty .Values.conf.deckhand.keystone_authtoken.memcached_servers -}}
-{{- tuple "oslo_cache" "internal" "memcache" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "memcached_servers" | quote | trunc 0 -}}
+{{- tuple "oslo_cache" "internal" "memcache" . | include "helm-toolkit.endpoints.host_and_port_endpoint_uri_lookup" | set .Values.conf.deckhand.keystone_authtoken "memcached_servers" -}}
 {{- end -}}
 
 # Add endpoint URI lookup for barbican
 {{- if empty .Values.conf.deckhand.barbican.api_endpoint -}}
-{{- tuple "barbican" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.barbican "api_endpoint" | quote | trunc 0 -}}
+{{- tuple "key_manager" "internal" "api" . | include "helm-toolkit.endpoints.keystone_endpoint_uri_lookup" | set .Values.conf.deckhand.barbican "api_endpoint" -}}
 {{- end -}}
 
-{{- $userIdentity := .Values.endpoints.identity.auth.user -}}
+{{- $userIdentity := .Values.endpoints.identity.auth.deckhand -}}
 
 {{- if empty .Values.conf.deckhand.keystone_authtoken.project_name -}}
-{{- set .Values.conf.deckhand.keystone_authtoken "project_name" $userIdentity.project_name | quote | trunc 0 -}}
+{{- set .Values.conf.deckhand.keystone_authtoken "project_name" $userIdentity.project_name -}}
 {{- end -}}
 {{- if empty .Values.conf.deckhand.keystone_authtoken.project_domain_name -}}
-{{- set .Values.conf.deckhand.keystone_authtoken "project_domain_name" $userIdentity.project_domain_name | quote | trunc 0 -}}
+{{- set .Values.conf.deckhand.keystone_authtoken "project_domain_name" $userIdentity.project_domain_name -}}
 {{- end -}}
 {{- if empty .Values.conf.deckhand.keystone_authtoken.user_domain_name -}}
-{{- set .Values.conf.deckhand.keystone_authtoken "user_domain_name" $userIdentity.user_domain_name | quote | trunc 0 -}}
+{{- set .Values.conf.deckhand.keystone_authtoken "user_domain_name" $userIdentity.user_domain_name -}}
 {{- end -}}
 {{- if empty .Values.conf.deckhand.keystone_authtoken.username -}}
-{{- set .Values.conf.deckhand.keystone_authtoken "username" $userIdentity.username | quote | trunc 0 -}}
+{{- set .Values.conf.deckhand.keystone_authtoken "username" $userIdentity.username -}}
 {{- end -}}
 {{- if empty .Values.conf.deckhand.keystone_authtoken.password -}}
-{{- set .Values.conf.deckhand.keystone_authtoken "password" $userIdentity.password | quote | trunc 0 -}}
+{{- set .Values.conf.deckhand.keystone_authtoken "password" $userIdentity.password -}}
 {{- end -}}
 
 # Set a random string as secret key.
 {{- if empty .Values.conf.deckhand.keystone_authtoken.memcache_secret_key -}}
-{{- randAlphaNum 64 | set .Values.conf.deckhand.keystone_authtoken "memcache_secret_key" | quote | trunc 0 -}}
+{{- randAlphaNum 64 | set .Values.conf.deckhand.keystone_authtoken "memcache_secret_key" -}}
 {{- end -}}
 
 ---
@@ -75,3 +78,4 @@ data:
 {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | indent 4 }}
   policy.yaml: |+
 {{ toYaml .Values.conf.policy | indent 4 }}
+{{- end }}

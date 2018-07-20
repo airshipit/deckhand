@@ -1,3 +1,4 @@
+{{/*
 # Copyright 2017 The Openstack-Helm Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,14 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+*/}}
 
 {{- if .Values.manifests.deployment }}
 {{- $envAll := . }}
-{{- $dependencies := .Values.dependencies.deckhand }}
 {{- $mounts_deckhand := .Values.pod.mounts.deckhand.deckhand }}
 {{- $mounts_deckhand_init := .Values.pod.mounts.deckhand.init_container }}
 {{- $serviceAccountName := "deckhand" }}
-{{ tuple $envAll $dependencies $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
+{{ tuple $envAll "deckhand" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
 apiVersion: apps/v1beta1
 kind: Deployment
@@ -37,11 +38,11 @@ spec:
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       nodeSelector:
-        {{ .Values.labels.node_selector_key }}: {{ .Values.labels.node_selector_value }}
+        {{ .Values.labels.api.node_selector_key }}: {{ .Values.labels.api.node_selector_value }}
       terminationGracePeriodSeconds: {{ .Values.pod.lifecycle.termination_grace_period.deckhand.timeout | default "30" }}
       restartPolicy: Always
       initContainers:
-{{ tuple $envAll $dependencies $mounts_deckhand_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
+{{ tuple $envAll "deckhand" $mounts_deckhand_init | include "helm-toolkit.snippets.kubernetes_entrypoint_init_container" | indent 8 }}
       containers:
         - name: deckhand-api
           env:
