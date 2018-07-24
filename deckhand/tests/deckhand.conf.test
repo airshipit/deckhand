@@ -8,6 +8,7 @@ development_mode = false
 policy_file = policy.yaml
 
 [barbican]
+enable_cache = false
 
 [database]
 connection = ${AIRSHIP_DECKHAND_DATABASE_URL}
