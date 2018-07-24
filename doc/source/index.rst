@@ -20,7 +20,7 @@ Welcome to Deckhand's documentation!
 
 Deckhand is a document-based configuration storage service built with
 auditability and validation in mind. It serves as the back-end storage service
-for UCP.
+for Airship.
 
 Deckhand's primary responsibilities include validating and storing YAML
 documents that are layered together to produce finalized documents, containing
@@ -30,7 +30,7 @@ substituted into finalized or "rendered" documents.
 
 The service understands a variety of document formats, the combination of which
 describe the manner in which Deckhand renders finalized documents for
-consumption by other UCP services.
+consumption by other Airship services.
 
 User's Guide
 ============

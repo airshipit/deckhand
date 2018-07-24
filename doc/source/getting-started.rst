@@ -279,7 +279,7 @@ database using the pre-updated data model and following the following steps::
   Update the connection string to the deckhand db instance e.g.::
 
     [Database]
-    connection = postgresql+psycopg2://deckhand:password@postgresql.ucp.svc.cluster.local:5432/deckhand
+    connection = postgresql+psycopg2://deckhand:password@postgresql.airship.svc.cluster.local:5432/deckhand
 
   $ export DECKHAND_CONFIG_DIR=${DH_ROOT}/alembic_tmp
   $ alembic revision --autogenerate -m "The short description for this change"

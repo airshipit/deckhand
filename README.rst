@@ -99,7 +99,7 @@ with it, including:
 Further Reading
 ===============
 
-`Undercloud Platform (UCP) <https://github.com/att-comdev/ucp-integration>`_.
+`Airship <http://www.airshipit.org/>`_.
 
 .. |Doc Status| image:: https://readthedocs.org/projects/deckhand/badge/?version=latest
    :target: http://deckhand.readthedocs.io/
