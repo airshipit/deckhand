@@ -551,6 +551,13 @@ class DocumentLayering(object):
         overall_data = copy.deepcopy(overall_data)
         child_data = copy.deepcopy(child_data)
 
+        # If None is used, then consider it as a placeholder and coerce the
+        # data into a dictionary.
+        if overall_data is None:
+            overall_data = {}
+        if child_data is None:
+            child_data = {}
+
         action_path = action['path']
         if action_path.startswith('.data'):
             action_path = action_path[5:]
@@ -574,7 +581,7 @@ class DocumentLayering(object):
                 engine_utils.deep_delete(from_child, overall_data.data, None)
 
         elif method == self._MERGE_ACTION:
-            from_parent = utils.jsonpath_parse(overall_data.data, action_path)
+            from_overall = utils.jsonpath_parse(overall_data.data, action_path)
             from_child = utils.jsonpath_parse(child_data.data, action_path)
 
             if from_child is None:
@@ -587,13 +594,29 @@ class DocumentLayering(object):
                     parent_name=overall_data.name,
                     action=action)
 
-            if (isinstance(from_parent, dict) and
-                    isinstance(from_child, dict)):
-                engine_utils.deep_merge(from_parent, from_child)
+            # If both the child and parent data are dictionaries, then
+            # traditional merging is possible using JSON path resolution.
+            # Otherwise, JSON path resolution is not possible, so the only
+            # way to perform layering is to prioritize the child data over
+            # that of the parent. This applies when the child data is a
+            # non-dict, the parent data is a non-dict, or both.
+            if all(isinstance(x, dict) for x in (from_overall, from_child)):
+                engine_utils.deep_merge(from_overall, from_child)
+            else:
+                LOG.info('Child data is type: %s for [%s, %s] %s. Parent data '
+                         'is type: %s for [%s, %s] %s. Both must be '
+                         'dictionaries for regular JSON path merging to work. '
+                         'Because this is not the case, child data will be '
+                         'prioritized over parent data for "merge" action.',
+                         type(from_child), child_data.schema, child_data.layer,
+                         child_data.name, type(from_overall),
+                         overall_data.schema, overall_data.layer,
+                         overall_data.name)
+                from_overall = from_child
 
-            if from_parent is not None:
+            if from_overall is not None:
                 overall_data.data = utils.jsonpath_replace(
-                    overall_data.data, from_parent, action_path)
+                    overall_data.data, from_overall, action_path)
             else:
                 overall_data.data = utils.jsonpath_replace(
                     overall_data.data, from_child, action_path)

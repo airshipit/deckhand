@@ -610,6 +610,58 @@ class TestDocumentLayering2Layers(TestDocumentLayering):
             documents = doc_factory.gen_test(mapping, site_abstract=False)
             self._test_layering(documents, site_expected[idx])
 
+    def test_layering_with_primitives(self):
+        """Validates that layering works with non-dictionaries or "primitives"
+        for short, which include integers, strings, etc.
+        """
+        # Validate layering with strings.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": "global"},
+            "_SITE_DATA_1_": {"data": "site"},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        self._test_layering(documents, site_expected="site")
+
+        # Validate layering with integers.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": 2},
+            "_SITE_DATA_1_": {"data": 1},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        self._test_layering(documents, site_expected=1)
+
+        # Validate layering with mixed primitives.
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": False},
+            "_SITE_DATA_1_": {"data": 'a'},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        self._test_layering(documents, site_expected='a')
+
+    def test_layering_with_incompatible_types(self):
+        """Validates that layering works for incompatible types: that is,
+        merging a dictionary with a primitive is not possible. For this
+        case, the child data is simply selected over the parent data.
+        """
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"foo": "bar"}},
+            "_SITE_DATA_1_": {"data": "site"},
+            "_SITE_ACTIONS_1_": {
+                "actions": [{"method": "merge", "path": "."}]}
+        }
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test(mapping, site_abstract=False)
+        self._test_layering(documents, site_expected="site")
+
 
 class TestDocumentLayering2LayersAbstractConcrete(TestDocumentLayering):
     """The the 2-layer payload with site/global layers concrete.
