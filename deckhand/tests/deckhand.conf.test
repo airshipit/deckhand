@@ -12,6 +12,9 @@ policy_file = policy.yaml
 [database]
 connection = ${AIRSHIP_DECKHAND_DATABASE_URL}
 
+[engine]
+enable_cache = false
+
 [keystone_authtoken]
 # NOTE(fmontei): Values taken from clouds.yaml. Values only used for
 # integration testing.

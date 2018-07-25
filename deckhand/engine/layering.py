@@ -405,7 +405,7 @@ class DocumentLayering(object):
             contained in the destination document's data section to the
             actual unecrypted data. If encrypting data with Barbican, the
             reference will be a Barbican secret reference.
-        :type encryption_sources: List[dict]
+        :type encryption_sources: dict
 
         :raises LayeringPolicyNotFound: If no LayeringPolicy was found among
             list of ``documents``.
