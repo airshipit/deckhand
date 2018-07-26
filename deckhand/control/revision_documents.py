@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import concurrent.futures
+
 import falcon
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_utils import excutils
 import six
@@ -31,6 +34,7 @@ from deckhand import errors
 from deckhand import policy
 from deckhand import types
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -113,7 +117,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         data = self._retrieve_documents_for_rendering(revision_id, **filters)
         documents = document_wrapper.DocumentDict.from_list(data)
-        encryption_sources = self._retrieve_encrypted_documents(documents)
+        encryption_sources = self._resolve_encrypted_data(documents)
         try:
             # NOTE(fmontei): `validate` is False because documents have already
             # been pre-validated during ingestion. Documents are post-validated
@@ -194,23 +198,50 @@ class RenderedDocumentsResource(api_base.BaseResource):
 
         return documents
 
-    def _retrieve_encrypted_documents(self, documents):
+    def _resolve_encrypted_data(self, documents):
+        """Resolve unencrypted data from the secret storage backend.
+
+        Submits concurrent requests to the secret storage backend for all
+        secret references for which unecrypted data is required for future
+        substitutions during the rendering process.
+
+        :param documents: List of all documents for the current revision.
+        :type documents: List[dict]
+        :returns: Dictionary keyed with secret references, whose values are
+            the corresponding unencrypted data.
+        :rtype: dict
+
+        """
         encryption_sources = {}
-        for document in documents:
-            if document.is_encrypted and document.has_barbican_ref:
+        secret_ref = lambda x: x.data
+        is_encrypted = lambda x: x.is_encrypted and x.has_barbican_ref
+        encrypted_documents = (d for d in documents if is_encrypted(d))
+
+        with concurrent.futures.ThreadPoolExecutor(
+                max_workers=CONF.barbican.max_workers) as executor:
+            future_to_document = {
+                executor.submit(secrets_manager.SecretsManager.get,
+                                secret_ref=secret_ref(d),
+                                src_doc=d): d for d in encrypted_documents
+            }
+            for future in concurrent.futures.as_completed(future_to_document):
+                document = future_to_document[future]
                 try:
-                    unecrypted_data = secrets_manager.SecretsManager.get(
-                        secret_ref=document.data, src_doc=document)
-                except Exception as e:
-                    LOG.error(
-                        'An unknown exception occurred while trying to resolve'
-                        ' a secret reference for substitution source document '
-                        '[%s, %s] %s.', document.schema, document.layer,
-                        document.name)
-                    raise errors.UnknownSubstitutionError(
-                        src_schema=document.schema, src_layer=document.layer,
-                        src_name=document.name, details=str(e))
-                encryption_sources.setdefault(document.data, unecrypted_data)
+                    unecrypted_data = future.result()
+                except Exception as exc:
+                    msg = ('Failed to retrieve a required secret from the '
+                           'configured secret storage service. Document: [%s,'
+                           ' %s] %s. Secret ref: %s' % (
+                               document.schema,
+                               document.layer,
+                               document.name,
+                               secret_ref(document)))
+                    LOG.error(msg + '. Details: %s', exc)
+                    raise falcon.HTTPInternalServerError(description=msg)
+                else:
+                    encryption_sources.setdefault(secret_ref(document),
+                                                  unecrypted_data)
+
         return encryption_sources
 
     def _post_validate(self, rendered_documents):

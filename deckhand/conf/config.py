@@ -24,6 +24,7 @@ barbican_group = cfg.OptGroup(
     help="Barbican options for allowing Deckhand to communicate with "
          "Barbican.")
 
+
 barbican_opts = [
     # TODO(fmontei): Drop these options and related group once Keystone
     # endpoint lookup is used instead.
@@ -31,6 +32,10 @@ barbican_opts = [
         'api_endpoint',
         sample_default='http://barbican.example.org:9311/',
         help='URL override for the Barbican API endpoint.'),
+    cfg.IntOpt(
+        'max_workers', default=10,
+        help='Maximum number of threads used to call secret storage service '
+             'concurrently.')
 ]
 
 

@@ -167,7 +167,7 @@ class SecretsSubstitution(object):
             contained in the destination document's data section to the
             actual unecrypted data. If encrypting data with Barbican, the
             reference will be a Barbican secret reference.
-        :type encryption_sources: List[dict]
+        :type encryption_sources: dict
         """
 
         # This maps a 2-tuple of (schema, name) to a document from which the
