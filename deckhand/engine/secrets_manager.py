@@ -156,10 +156,9 @@ class SecretsSubstitution(object):
         substitution; documents need not be filtered prior to being passed to
         the constructor.
 
-        :param substitution_sources: (DEPRECATED) List of documents that are
-            potential sources for substitution. Or dict of documents keyed on
-            tuple of (schema, metadata.name). Should only include concrete
-            documents.
+        :param substitution_sources: List of documents that are potential
+            sources for substitution. Or dict of documents keyed on tuple of
+            (schema, metadata.name). Should only include concrete documents.
         :type substitution_sources: List[dict] or dict
         :param bool fail_on_missing_sub_src: Whether to fail on a missing
             substitution source. Default is True.

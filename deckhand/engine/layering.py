@@ -19,7 +19,6 @@ import networkx
 from networkx.algorithms.cycles import find_cycle
 from networkx.algorithms.dag import topological_sort
 from oslo_log import log as logging
-from oslo_log import versionutils
 from oslo_utils import excutils
 
 from deckhand.common.document import DocumentDict as dd
@@ -381,8 +380,11 @@ class DocumentLayering(object):
         if error_list:
             raise errors.InvalidDocumentFormat(error_list=error_list)
 
-    def __init__(self, documents, substitution_sources=None, validate=True,
-                 fail_on_missing_sub_src=True, encryption_sources=None):
+    def __init__(self,
+                 documents,
+                 validate=True,
+                 fail_on_missing_sub_src=True,
+                 encryption_sources=None):
         """Contructor for ``DocumentLayering``.
 
         :param layering_policy: The document with schema
@@ -391,9 +393,6 @@ class DocumentLayering(object):
             in accordance with the ``layerOrder`` defined by the
             LayeringPolicy document.
         :type documents: List[dict]
-        :param substitution_sources: List of documents that are potential
-            sources for substitution. Should only include concrete documents.
-        :type substitution_sources: List[dict]
         :param validate: Whether to pre-validate documents using built-in
             schema validation. Skips over externally registered ``DataSchema``
             documents to avoid false positives. Default is True.
@@ -422,9 +421,7 @@ class DocumentLayering(object):
         self._sorted_documents = {}
         self._documents_by_index = {}
 
-        substitution_sources = substitution_sources or []
-
-        # TODO(fmontei): Add a hook for post-validation too.
+        # TODO(felipemonteiro): Add a hook for post-validation too.
         if validate:
             self._pre_validate_documents(documents)
 
@@ -476,20 +473,11 @@ class DocumentLayering(object):
         self._layer_order = self._get_layering_order(self._layering_policy)
         self._calc_all_document_children()
 
-        if substitution_sources:
-            versionutils.report_deprecated_feature(
-                LOG,
-                "Usage of `substitution_sources` has been deprecated. All "
-                "concrete documents will be used by default."
-            )
-        else:
-            substitution_sources = [
+        substitution_sources = self._calc_replacements_and_substitutions(
+            [
                 d for d in self._documents_by_index.values()
                 if not d.is_abstract
-            ]
-
-        substitution_sources = self._calc_replacements_and_substitutions(
-            substitution_sources)
+            ])
 
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
             substitution_sources,
