@@ -91,6 +91,26 @@ class SecretsManager(object):
         LOG.debug('Successfully retrieved Barbican secret using reference.')
         return secret
 
+    @classmethod
+    def delete(cls, document):
+        """Delete a secret from Barbican.
+
+        :param dict document: Document with secret_ref in ``data`` section with
+            format: "https://{barbican_host}/v1/secrets/{secret_uuid}"
+        :returns: None
+
+        """
+        if not isinstance(document, document_wrapper.DocumentDict):
+            document = document_wrapper.DocumentDict(document)
+
+        secret_ref = document.data
+        if document.is_encrypted and document.has_barbican_ref:
+            LOG.debug('Deleting Barbican secret: %s.', secret_ref)
+            cls.barbican_driver.delete_secret(secret_ref=secret_ref)
+        else:
+            LOG.warning('%s is not a valid Barbican secret. Could not delete.',
+                        secret_ref)
+
 
 class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""

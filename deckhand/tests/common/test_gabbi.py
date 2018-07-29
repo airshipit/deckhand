@@ -21,6 +21,7 @@ import tempfile
 import yaml
 
 from gabbi import driver
+from gabbi.handlers import core
 from gabbi.handlers import jsonhandler
 
 TEST_DIR = None
@@ -105,5 +106,9 @@ def load_tests(loader, tests, pattern):
         # the same content-type, the one that is earliest in the list will be
         # used. Thus, we cannot specify multiple content handlers for handling
         # list/dictionary responses from the server using different handlers.
-        content_handlers=[MultidocJsonpaths],
+        content_handlers=[
+            core.StringResponseHandler,  # For parsing text/plain
+            jsonhandler.JSONHandler,     # For parsing application/json
+            MultidocJsonpaths            # For parsing application/x-yaml
+        ],
         verbose=True)

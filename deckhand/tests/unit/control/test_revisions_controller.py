@@ -12,10 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
+import mock
 import yaml
 
+from deckhand.engine import secrets_manager
 from deckhand import factories
+from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
+
+
+class TestRevisionsController(test_base.BaseControllerTest):
+
+    def test_delete_revisions_also_deletes_barbican_secrets(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:create_encrypted_documents': '@',
+                 'deckhand:delete_revisions': '@'}
+        self.policy.set_rules(rules)
+
+        resource_path = os.path.join(os.getcwd(), 'deckhand', 'tests', 'unit',
+                                     'resources', 'sample_passphrase.yaml')
+        with open(resource_path) as f:
+            encrypted_document = f.read()
+
+        fake_secret_ref = test_utils.rand_barbican_ref()
+        with mock.patch.object(secrets_manager, 'SecretsManager',
+                               autospec=True) as mock_secrets_mgr:
+            mock_secrets_mgr.create.return_value = fake_secret_ref
+
+            resp = self.app.simulate_put(
+                '/api/v1.0/buckets/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=encrypted_document)
+            self.assertEqual(200, resp.status_code)
+
+        with mock.patch.object(secrets_manager.SecretsManager,
+                               'barbican_driver', autospec=True) \
+                as m_barbican_driver:
+            resp = self.app.simulate_delete(
+                '/api/v1.0/revisions',
+                headers={'Content-Type': 'application/x-yaml'})
+
+            self.assertEqual(204, resp.status_code)
+            m_barbican_driver.delete_secret.assert_called_once_with(
+                fake_secret_ref)
 
 
 class TestRevisionsControllerNegativeRBAC(test_base.BaseControllerTest):

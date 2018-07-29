@@ -586,6 +586,7 @@ def revision_delete_all():
     :returns: None
     """
     engine = get_engine()
+
     if engine.name == 'postgresql':
         # NOTE(fmontei): While cascade should delete all data from all tables,
         # we also need to reset the index to 1 for each table.
@@ -658,7 +659,7 @@ def revision_documents_get(revision_id=None, include_history=True,
         ID is ``None``, then retrieve the latest revision, if one exists.
     :param include_history: Return all documents for revision history prior
         and up to current revision, if ``True``. Default is ``True``.
-    :param unique_only: Return only unique documents if ``True. Default is
+    :param unique_only: Return only unique documents if ``True``. Default is
         ``True``.
     :param session: Database session object.
     :param filters: Key-value pairs used for filtering out revision documents.

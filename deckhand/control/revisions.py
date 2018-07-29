@@ -21,6 +21,7 @@ from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import policy
 
@@ -74,7 +75,19 @@ class RevisionsResource(api_base.BaseResource):
         resp.status = falcon.HTTP_200
         resp.body = self.view_builder.list(revisions)
 
+    def _delete_all_barbican_secrets(self):
+        filters = {'metadata.storagePolicy': 'encrypted'}
+        # NOTE(felipemonteiro): Don't pass `unique_only` because we want
+        # all unique secret references (just the data section), not unique
+        # documents, which considers all attributes.
+        encrypted_documents = db_api.document_get_all(**filters)
+
+        for document in encrypted_documents:
+            secrets_manager.SecretsManager.delete(document)
+
     @policy.authorize('deckhand:delete_revisions')
     def on_delete(self, req, resp):
+        self._delete_all_barbican_secrets()
+
         db_api.revision_delete_all()
         resp.status = falcon.HTTP_204
