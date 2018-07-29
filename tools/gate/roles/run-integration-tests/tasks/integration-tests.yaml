@@ -15,10 +15,9 @@
 - name: Install pip3 and gabbi
   shell: |
     set -xe;
-    apt-get install -y python3-pip
-    pip3 install --upgrade pip
-    # Includes required requirements for testing.
-    pip3 install -r test-requirements.txt
+    apt-get install -y python-pip
+    pip install --upgrade pip
+    pip install -r test-requirements.txt
   args:
     chdir: "{{ zuul.project.src_dir }}"
   become: yes
@@ -39,8 +38,7 @@
     - name: Run Integration Tests
       shell: |
         set -ex;
-        py.test -svx "{{ airship_deckhand_path.stdout }}"/deckhand/tests/common/test_gabbi.py \
-          && echo "Done SUCCESS" || echo "Done FAILURE"
+        stestr --test-path deckhand/tests/common/ run --serial --slowest --force-subunit-trace --color
       args:
         chdir: "{{ zuul.project.src_dir }}"
       environment:

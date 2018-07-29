@@ -214,7 +214,7 @@ tests:
     status: 200
     data: <@resources/layering-and-substitution-sample.yaml
 
-  - name: verify_multiple_empty_top_layers
+  - name: verify_multiple_empty_interspersed_layers
     desc: Check for expected substitutions
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/rendered-documents
     query_parameters:
