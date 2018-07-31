@@ -24,6 +24,7 @@ import testtools
 
 from deckhand.conf import config  # noqa: Calls register_opts(CONF)
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand.engine import cache
 from deckhand.tests.unit import fixtures as dh_fixtures
 
 CONF = cfg.CONF
@@ -40,6 +41,11 @@ class DeckhandTestCase(testtools.TestCase):
             api_endpoint='http://127.0.0.1/key-manager', group='barbican'))
         self.useFixture(dh_fixtures.ConfPatcher(
             development_mode=True, group=None))
+
+    def tearDown(self):
+        # Clear the cache between tests.
+        cache.invalidate()
+        super(DeckhandTestCase, self).tearDown()
 
     def override_config(self, name, override, group=None):
         CONF.set_override(name, override, group)

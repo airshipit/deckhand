@@ -27,8 +27,8 @@ from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand import engine
 from deckhand.engine import document_validation
-from deckhand.engine import layering
 from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import policy
@@ -119,13 +119,10 @@ class RenderedDocumentsResource(api_base.BaseResource):
         documents = document_wrapper.DocumentDict.from_list(data)
         encryption_sources = self._resolve_encrypted_data(documents)
         try:
-            # NOTE(fmontei): `validate` is False because documents have already
-            # been pre-validated during ingestion. Documents are post-validated
-            # below, regardless.
-            document_layering = layering.DocumentLayering(
-                documents, encryption_sources=encryption_sources,
-                validate=False)
-            rendered_documents = document_layering.render()
+            rendered_documents = engine.render(
+                revision_id,
+                documents,
+                encryption_sources=encryption_sources)
         except (errors.BarbicanClientException,
                 errors.BarbicanServerException,
                 errors.InvalidDocumentLayer,

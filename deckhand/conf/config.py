@@ -39,6 +39,26 @@ barbican_opts = [
 ]
 
 
+engine_group = cfg.OptGroup(
+    name='engine',
+    title='Engine Options',
+    help="Engine options for allowing behavior specific to Deckhand's engine "
+         "to be configured.")
+
+
+engine_opts = [
+    # TODO(felipemonteiro): This is better off being removed because the same
+    # effect can be achieved through per-test gabbi fixtures that clean up
+    # the cache between tests.
+    cfg.BoolOpt('enable_cache', default=True,
+                help="Whether to enable the document rendering caching. Useful"
+                     " for testing to avoid cross-test caching conflicts."),
+    cfg.IntOpt('cache_timeout', default=3600,
+               help="How long (in seconds) document rendering results should "
+                    "remain cached in memory."),
+]
+
+
 jsonpath_group = cfg.OptGroup(
     name='jsonpath',
     title='JSONPath Options',
@@ -47,8 +67,8 @@ jsonpath_group = cfg.OptGroup(
 
 jsonpath_opts = [
     cfg.IntOpt('cache_timeout', default=3600,
-               help="How long JSONPath lookup results should remain cached "
-                    "in memory.")
+               help="How long (in seconds) JSONPath lookup results should "
+                    "remain cached in memory.")
 ]
 
 
@@ -65,6 +85,7 @@ default_opts = [
 def register_opts(conf):
     conf.register_group(barbican_group)
     conf.register_opts(barbican_opts, group=barbican_group)
+    conf.register_opts(engine_opts, group=engine_group)
     conf.register_opts(jsonpath_opts, group=jsonpath_group)
     conf.register_opts(default_opts)
     ks_loading.register_auth_conf_options(conf, group='keystone_authtoken')
