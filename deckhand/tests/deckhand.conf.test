@@ -16,7 +16,7 @@ connection = ${AIRSHIP_DECKHAND_DATABASE_URL}
 enable_cache = false
 
 [keystone_authtoken]
-# NOTE(fmontei): Values taken from clouds.yaml. Values only used for
+# NOTE(felipemonteiro): Values taken from clouds.yaml. Values only used for
 # integration testing.
 #
 # clouds.yaml (snippet):

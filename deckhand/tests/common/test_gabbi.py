@@ -102,10 +102,11 @@ def load_tests(loader, tests, pattern):
         loader,
         host='localhost',
         url=os.environ.get('DECKHAND_TEST_URL', '127.0.0.1:9000'),
-        # NOTE(fmontei): When there are multiple handlers listed that accept
-        # the same content-type, the one that is earliest in the list will be
-        # used. Thus, we cannot specify multiple content handlers for handling
-        # list/dictionary responses from the server using different handlers.
+        # NOTE(felipemonteiro): When there are multiple handlers listed that
+        # accept the same content-type, the one that is earliest in the list
+        # will be used. Thus, we cannot specify multiple content handlers for
+        # handling list/dictionary responses from the server using different
+        # handlers.
         content_handlers=[
             core.StringResponseHandler,  # For parsing text/plain
             jsonhandler.JSONHandler,     # For parsing application/json

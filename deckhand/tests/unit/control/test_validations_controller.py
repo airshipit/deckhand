@@ -84,9 +84,9 @@ class BaseValidationsControllerTest(test_base.BaseControllerTest):
         """Workaround for testing complex validation scenarios by forcibly
         passing in `pre_validate=False`.
         """
-        # TODO(fmontei): Remove this workaround by testing these more complex
-        # scenarios against the rendered-documents endpoint instead (which
-        # performs post-validation).
+        # TODO(felipemonteiro): Remove this workaround by testing these more
+        # complex scenarios against the rendered-documents endpoint instead
+        # (which performs post-validation).
         original_document_validation = document_validation.DocumentValidation
 
         def monkey_patch(*args, **kwargs):

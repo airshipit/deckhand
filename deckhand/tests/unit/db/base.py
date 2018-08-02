@@ -25,7 +25,7 @@ DOCUMENT_EXPECTED_FIELDS = BASE_EXPECTED_FIELDS + (
 REVISION_EXPECTED_FIELDS = ("id", "documents", "tags")
 
 
-# TODO(fmontei): Move this into a separate module called `fixtures`.
+# TODO(felipemonteiro): Move this into a separate module called `fixtures`.
 class DocumentFixture(object):
 
     @staticmethod

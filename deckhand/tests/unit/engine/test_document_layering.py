@@ -29,7 +29,7 @@ class TestDocumentLayering(test_base.DeckhandTestCase):
     def _test_layering(self, documents, site_expected=None,
                        region_expected=None, global_expected=None,
                        validate=False, strict=True, **kwargs):
-        # TODO(fmontei): Refactor all tests to work with strict=True.
+        # TODO(felipemonteiro): Refactor all tests to work with strict=True.
 
         # Test layering twice: once by passing in the documents in the normal
         # order and again with the documents in reverse order for good measure,

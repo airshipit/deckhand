@@ -28,7 +28,7 @@ metadata:
   storagePolicy: cleartext
 data: my-secret-password
 ---
-# NOTE(fmontei): The documents below are included in reverse order with
+# NOTE(felipemonteiro): The documents below are included in reverse order with
 # respect to their substitution dependency hierarchy in order to verify
 # that the dependency chain is correctly resolved in the code.
 schema: armada/Chart/v1
