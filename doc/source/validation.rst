@@ -247,7 +247,9 @@ ingested by Deckhand.
     :lines: 15-
     :caption: Schema for ``metadata/Document`` metadata document sections.
 
-DataSchema Schemas
+.. _validation-schemas:
+
+Validation Schemas
 ------------------
 
 DataSchema schemas validate the ``data`` section of every document ingested
