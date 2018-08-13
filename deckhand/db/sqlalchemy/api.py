@@ -704,7 +704,7 @@ def revision_documents_get(revision_id=None, include_history=True,
 
 
 # NOTE(fmontei): No need to include `@require_revision_exists` decorator as
-# the this function immediately calls `revision_documents_get` for both
+# this function immediately calls `revision_documents_get` for both
 # revision IDs, which has the decorator applied to it.
 def revision_diff(revision_id, comparison_revision_id):
     """Generate the diff between two revisions.
@@ -798,7 +798,7 @@ def revision_diff(revision_id, comparison_revision_id):
         return (sorted([(d['data_hash'], d['metadata_hash']) for d in b1]) ==
                 sorted([(d['data_hash'], d['metadata_hash']) for d in b2]))
 
-    # If the list of documents for each bucket is indentical, then the result
+    # If the list of documents for each bucket is identical, then the result
     # is "unmodified", else "modified".
     for bucket_name in shared_buckets:
         unmodified = _compare_buckets(buckets[bucket_name],
