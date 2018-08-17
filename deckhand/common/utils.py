@@ -20,7 +20,6 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 import jsonpath_ng
 from oslo_log import log as logging
-from oslo_utils import excutils
 import six
 
 from deckhand.conf import config
@@ -107,8 +106,8 @@ def jsonpath_parse(data, jsonpath, match_all=False):
         return result if match_all else result[0]
 
 
-def _populate_data_with_attributes(jsonpath, data):
-    # Populates ``data`` with any path specified in ``jsonpath``. For example,
+def _execute_data_expansion(jsonpath, data):
+    # Expand ``data`` with any path specified in ``jsonpath``. For example,
     # if jsonpath is ".foo[0].bar.baz" then for each subpath -- foo[0], bar,
     # and baz -- that key will be added to ``data`` if missing.
     d = data
@@ -179,41 +178,38 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         raise ValueError('The provided jsonpath %s does not begin with "." '
                          'or "$"' % jsonpath)
 
-    def _do_replace():
-        p = _jsonpath_parse(jsonpath)
-        p_to_change = p.find(data)
-
-        if p_to_change:
+    def _execute_replace(path, path_to_change):
+        if path_to_change:
             new_value = value
             if pattern:
-                to_replace = p_to_change[0].value
+                to_replace = path_to_change[0].value
                 # `new_value` represents the value to inject into `to_replace`
                 # that matches the `pattern`.
                 try:
+                    # A pattern requires us to look up the data located at
+                    # data[jsonpath] and then figure out what
+                    # re.match(data[jsonpath], pattern) is (in pseudocode).
+                    # Raise an exception in case the path isn't present in the
+                    # data and a pattern has been provided since it is
+                    # otherwise impossible to do the look-up.
                     new_value = re.sub(pattern, str(value), to_replace)
                 except TypeError as e:
-                    with excutils.save_and_reraise_exception():
-                        LOG.error('Failed to substitute the value %s into %s '
-                                  'using pattern %s. Details: %s', str(value),
-                                  to_replace, pattern, six.text_type(e))
-            return p.update(data, new_value)
+                    LOG.error('Failed to substitute the value %s into %s '
+                              'using pattern %s. Details: %s', str(value),
+                              to_replace, pattern, six.text_type(e))
+                    raise errors.MissingDocumentPattern(jsonpath=jsonpath,
+                                                        pattern=pattern)
 
-    result = _do_replace()
-    if result:
-        return result
+            return path.update(data, new_value)
 
-    # A pattern requires us to look up the data located at data[jsonpath]
-    # and then figure out what re.match(data[jsonpath], pattern) is (in
-    # pseudocode). But raise an exception in case the path isn't present in the
-    # data and a pattern has been provided since it is impossible to do the
-    # look-up.
-    if pattern:
-        raise errors.MissingDocumentPattern(path=jsonpath, pattern=pattern)
-
-    # However, Deckhand should be smart enough to create the nested keys in the
+    # Deckhand should be smart enough to create the nested keys in the
     # data if they don't exist and a pattern isn't required.
-    _populate_data_with_attributes(jsonpath, data)
-    return _do_replace()
+    path = _jsonpath_parse(jsonpath)
+    path_to_change = path.find(data)
+    if not path_to_change:
+        _execute_data_expansion(jsonpath, data)
+        path_to_change = path.find(data)
+    return _execute_replace(path, path_to_change)
 
 
 def multisort(data, sort_by=None, order_by=None):

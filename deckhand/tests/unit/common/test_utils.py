@@ -19,6 +19,7 @@ from testtools.matchers import Equals
 from testtools.matchers import MatchesAny
 
 from deckhand.common import utils
+from deckhand import errors
 from deckhand.tests.unit import base as test_base
 
 
@@ -47,6 +48,30 @@ class TestJSONPathReplace(test_base.DeckhandTestCase):
         expected = {'values': {'endpoints0': {'admin': 'foo'}}}
         result = utils.jsonpath_replace({}, 'foo', path)
         self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_pattern(self):
+        path = ".values.endpoints.admin"
+        body = {"values": {"endpoints": {"admin": "REGEX_FRESH"}}}
+        expected = {"values": {"endpoints": {"admin": "EAT_FRESH"}}}
+        result = utils.jsonpath_replace(body, "EAT", jsonpath=path,
+                                        pattern="REGEX")
+        self.assertEqual(expected, result)
+
+
+class TestJSONPathReplaceNegative(test_base.DeckhandTestCase):
+    """Validate JSONPath replace negative scenarios."""
+
+    def test_jsonpath_replace_without_expected_pattern_raises_exc(self):
+        empty_body = {}
+        error_re = (".*missing the pattern %s specified under .* at path %s.*")
+
+        self.assertRaisesRegex(errors.MissingDocumentPattern,
+                               error_re % ("way invalid", "\$.path"),
+                               utils.jsonpath_replace,
+                               empty_body,
+                               value="test",
+                               jsonpath=".path",
+                               pattern="way invalid")
 
 
 class TestJSONPathUtilsCaching(test_base.DeckhandTestCase):
