@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from threading import Thread
+
 import testtools
 
 from deckhand.engine import cache
@@ -55,3 +57,36 @@ class RenderedDocumentsCacheTest(test_base.DeckhandTestCase):
         # The cache won't be hit this time - expect AttributeError.
         with testtools.ExpectedException(AttributeError):
             cache.lookup_by_revision_id(1, None)
+
+    def test_lookup_by_revision_id_cache_multiple_threads(self):
+        """Validate that cache works across multiple threads: each thread
+        should use the same set of rendered documents.
+        """
+        document_factory = factories.DocumentFactory(1, [1])
+        documents1 = document_factory.gen_test({})
+        documents2 = document_factory.gen_test({})
+        # Sanity-check that the document sets differ.
+        self.assertNotEqual(documents1, documents2)
+
+        rendered_documents_by_thread = []
+
+        def threaded_function(documents):
+            # Validate that caching the ref returns expected payload.
+            rendered_documents = cache.lookup_by_revision_id(1, documents)
+            rendered_documents_by_thread.append(rendered_documents)
+            return rendered_documents
+
+        thread1 = Thread(target=threaded_function,
+                         kwargs={'documents': documents1})
+        thread2 = Thread(target=threaded_function,
+                         kwargs={'documents': documents2})
+        thread1.start()
+        thread2.start()
+        thread1.join()
+        thread2.join()
+
+        # Validate that 2nd thread uses 1st thread's document set which proves
+        # caching working across threads.
+        self.assertEqual(2, len(rendered_documents_by_thread))
+        self.assertEqual(rendered_documents_by_thread[0],
+                         rendered_documents_by_thread[1])
