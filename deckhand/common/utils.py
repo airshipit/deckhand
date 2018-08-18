@@ -87,6 +87,7 @@ def jsonpath_parse(data, jsonpath, match_all=False):
     :param data: The `data` section of a document.
     :param jsonpath: A multi-part key that references a nested path in
         ``data``.
+    :param match_all: Whether to return all matches or just the first one.
     :returns: Entry that corresponds to ``data[jsonpath]`` if present,
         else None.
 
@@ -107,7 +108,78 @@ def jsonpath_parse(data, jsonpath, match_all=False):
         return result if match_all else result[0]
 
 
-def _execute_data_expansion(jsonpath, data):
+def _execute_replace(data, value, jsonpath, pattern=None, recurse=None):
+    # These are O(1) reference copies to avoid accidentally modifying source
+    # data. We only want to update destination data.
+    data_copy = copy.copy(data)
+    value_copy = copy.copy(value)
+
+    path = _jsonpath_parse(jsonpath)
+    path_to_change = path.find(data_copy)
+    recurse = recurse or {}
+
+    def _try_replace_pattern(to_replace):
+        try:
+            # A pattern requires us to look up the data located at
+            # to_replace[jsonpath] and then figure out what
+            # re.match(to_replace[jsonpath], pattern) is (in pseudocode).
+            # Raise an exception in case the path isn't present in the
+            # to_replace and a pattern has been provided since it is
+            # otherwise impossible to do the look-up.
+            replacement = re.sub(pattern,
+                                 six.text_type(value_copy),
+                                 to_replace)
+        except TypeError as e:
+            LOG.error('Failed to substitute the value %s into %s '
+                      'using pattern %s. Details: %s',
+                      six.text_type(value_copy), to_replace, pattern,
+                      six.text_type(e))
+            raise errors.MissingDocumentPattern(jsonpath=jsonpath,
+                                                pattern=pattern)
+        return replacement
+
+    def _replace_pattern_recursively(curr_data, depth, max_depth=-1):
+        # If max_depth is -1 (meaning no depth), then recursion will be
+        # performed over all of ``curr_data`` as depth starts out at 0.
+        if depth == max_depth:
+            return
+
+        if isinstance(curr_data, dict):
+            for k, v in curr_data.items():
+                if isinstance(v, six.string_types) and pattern in v:
+                    replacement = _try_replace_pattern(v)
+                    curr_data[k] = replacement
+                else:
+                    _replace_pattern_recursively(v, depth + 1, max_depth)
+        elif isinstance(curr_data, list):
+            for idx, v in enumerate(curr_data):
+                if isinstance(v, six.string_types) and pattern in v:
+                    replacement = _try_replace_pattern(v)
+                    curr_data[idx] = replacement
+                else:
+                    _replace_pattern_recursively(v, depth + 1, max_depth)
+
+    to_replace = path_to_change[0].value
+    if pattern:
+        if recurse:
+            max_depth = recurse.get('depth', -1)
+            # Recursion is only possible for lists/dicts.
+            if isinstance(to_replace, (dict, list)):
+                _replace_pattern_recursively(to_replace, 0, max_depth)
+                return data_copy
+            else:
+                # Edge case to handle a path that leads to a string value
+                # (not a list or dict). Even though no recursion is
+                # technically possible, gracefully handle this by
+                # performing non-recursive pattern replacement on the str.
+                return path.update(data_copy, _try_replace_pattern(to_replace))
+        else:
+            return path.update(data_copy, _try_replace_pattern(to_replace))
+    else:
+        return path.update(data_copy, value_copy)
+
+
+def _execute_data_expansion(data, jsonpath):
     # Expand ``data`` with any path specified in ``jsonpath``. For example,
     # if jsonpath is ".foo[0].bar.baz" then for each subpath -- foo[0], bar,
     # and baz -- that key will be added to ``data`` if missing.
@@ -137,25 +209,13 @@ def _execute_data_expansion(jsonpath, data):
         d = d.get(path)
 
 
-def jsonpath_replace(data, value, jsonpath, pattern=None):
+def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None):
     """Update value in ``data`` at the path specified by ``jsonpath``.
-
     If the nested path corresponding to ``jsonpath`` isn't found in ``data``,
     the path is created as an empty ``{}`` for each sub-path along the
     ``jsonpath``.
 
-    :param data: The `data` section of a document.
-    :param value: The new value for ``data[jsonpath]``.
-    :param jsonpath: A multi-part key that references a nested path in
-        ``data``. Must begin with "." (without quotes).
-    :param pattern: A regular expression pattern.
-    :returns: Updated value at ``data[jsonpath]``.
-    :raises: MissingDocumentPattern if ``pattern`` is not None and
-        ``data[jsonpath]`` doesn't exist.
-    :raises ValueError: If ``jsonpath`` doesn't begin with "."
-
     Example::
-
         doc = {
             'data': {
                 'some_url': http://admin:INSERT_PASSWORD_HERE@svc-name:8080/v1
@@ -169,6 +229,24 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         # The returned URL will look like:
         # http://admin:super-duper-secret@svc-name:8080/v1
         doc['data'].update(replaced_data)
+
+    :param data: The ``data`` section of a document.
+    :param value: The new value for ``data[jsonpath]``.
+    :param jsonpath: A multi-part key that references a nested path in
+        ``data``. Must begin with "." or "$" (without quotes).
+    :param pattern: A regular expression pattern.
+    :param recurse: Dictionary containing a single key called "depth" which
+        specifies the recursion depth. If provided, indicates that recursive
+        pattern substitution should be performed, beginning at ``jsonpath``.
+        Best practice is to limit the scope of the recursion as much as
+        possible: e.g. avoid passing in "$" as the ``jsonpath``, but rather
+        a JSON path that lives closer to the nested strings in question.
+        Optimize performance by choosing an ideal ``depth`` value; -1 will
+        cause recursion depth to be infinite.
+    :returns: Updated value at ``data[jsonpath]``.
+    :raises: MissingDocumentPattern if ``pattern`` is not None and
+        ``data[jsonpath]`` doesn't exist.
+    :raises ValueError: If ``jsonpath`` doesn't begin with "."
     """
 
     # These are O(1) reference copies to avoid accidentally modifying source
@@ -177,45 +255,23 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
     value_copy = copy.copy(value)
 
     jsonpath = _normalize_jsonpath(jsonpath)
+    recurse = recurse or {}
 
     if not jsonpath == '$' and not jsonpath.startswith('$.'):
         LOG.error('The provided jsonpath %s does not begin with "." or "$"',
                   jsonpath)
+        # TODO(felipemonteiro): Use a custom internal exception for this.
         raise ValueError('The provided jsonpath %s does not begin with "." '
                          'or "$"' % jsonpath)
-
-    def _execute_replace(path, path_to_change):
-        if path_to_change:
-            new_value = value_copy
-            if pattern:
-                to_replace = path_to_change[0].value
-                # `new_value` represents the value to inject into `to_replace`
-                # that matches the `pattern`.
-                try:
-                    # A pattern requires us to look up the data located at
-                    # data[jsonpath] and then figure out what
-                    # re.match(data[jsonpath], pattern) is (in pseudocode).
-                    # Raise an exception in case the path isn't present in the
-                    # data and a pattern has been provided since it is
-                    # otherwise impossible to do the look-up.
-                    new_value = re.sub(pattern, str(value_copy), to_replace)
-                except TypeError as e:
-                    LOG.error('Failed to substitute the value %s into %s '
-                              'using pattern %s. Details: %s', str(value_copy),
-                              to_replace, pattern, six.text_type(e))
-                    raise errors.MissingDocumentPattern(jsonpath=jsonpath,
-                                                        pattern=pattern)
-
-            return path.update(data_copy, new_value)
 
     # Deckhand should be smart enough to create the nested keys in the
     # data if they don't exist and a pattern isn't required.
     path = _jsonpath_parse(jsonpath)
     path_to_change = path.find(data_copy)
     if not path_to_change:
-        _execute_data_expansion(jsonpath, data_copy)
-        path_to_change = path.find(data_copy)
-    return _execute_replace(path, path_to_change)
+        _execute_data_expansion(data_copy, jsonpath)
+    return _execute_replace(data_copy, value_copy, jsonpath, pattern=pattern,
+                            recurse=recurse)
 
 
 def multisort(data, sort_by=None, order_by=None):
