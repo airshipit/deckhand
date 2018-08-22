@@ -14,7 +14,7 @@
 
 import copy
 
-from deckhand.db.sqlalchemy import api as db_api
+from deckhand.engine.revision_diff import revision_diff
 from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
@@ -27,7 +27,7 @@ class TestRevisionDiffing(base.TestDbBase):
         # `comparison_revision_id` and `revision_id` args.
         revision_ids = [revision_id, comparison_revision_id]
         for rev_ids in (revision_ids, reversed(revision_ids)):
-            actual = db_api.revision_diff(*rev_ids)
+            actual = revision_diff(*rev_ids)
             self.assertEqual(expected, actual)
 
     def test_revision_diff_null(self):

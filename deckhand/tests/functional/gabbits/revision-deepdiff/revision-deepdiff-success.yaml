@@ -1,0 +1,287 @@
+# Tests deepdiff functionality
+#
+# 1. Purges existing data to ensure test isolation
+# 2. Verify deepdiff of modified data value
+#    - Create documents in bucket_a
+#    - Modify data value of doc-a document in bucket_a
+#    - Verify deepdiff of modified data value of doc-a
+# 3. Verify deepdiff when revision=0 comparision_revision=0
+# 4. Verify deepdiff when revision=0
+# 5. Verify deepdiff when comparision_revision=0
+# 6. Verify deepdiff of newly added document
+#    - Add new document doc-b in bucket_a
+#    - Verify deepdiff of newly added doc-b document
+# 7. Verify deepdiff of deleted document
+#    - Delete document doc-b in bucket_a
+#    - Verify deepdiff of deleted doc-b document
+# 8. Verify deepdiff of the same revisions
+# 9. Verify deepdiff of different revisions of same document
+# 10. Verify deepdiff of addition of new key in a document
+#      - Adding a new key in doc-a
+#      - Verify deepdiff of addition of a new key in doc-a
+# 11. Verify removal of a key in a document
+#     - Removing a key in doc-a
+#     - Verify removal of a key in doc-a
+# 12. Verify deepdiff when invalid revision id pass in input
+# 13. Verify deepdiff when input revision id is not found
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+  verbose: true
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: create_a
+    desc: Create documents in bucket_a
+    PUT: /api/v1.0/buckets/bucket_a/documents
+    status: 200
+    data: |-
+      ---
+      schema: deckhand/LayeringPolicy/v1
+      metadata:
+        schema: metadata/Control/v1
+        name: layering-policy
+      data:
+        layerOrder:
+          - site
+      ...
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-a
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 1
+      ...
+
+  - name: modify_data_value_doc-a
+    desc: Modify data value of doc-a document in bucket_a
+    PUT: /api/v1.0/buckets/bucket_a/documents
+    status: 200
+    data: |-
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-a
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 2
+      ...
+
+  - name: verify_doc-a_modified_value
+    desc: Verify deepdiff of modified data value of doc-a document
+    GET: /api/v1.0/revisions/1/deepdiff/2
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].'bucket_a': modified
+      $.[0].'bucket_a diff'.document_changed.count: 1
+      $.[0].'bucket_a diff'.document_changed.details:
+        ('example/Kind/v1', 'doc-a'):
+          data_changed:
+            values_changed:
+              root['value']:
+                old_value: 1
+                new_value: 2
+          metadata_changed: {}
+
+  - name: verify_both_rev_0
+    desc: Verify deepdiff when revision=0 comparision_revision=0
+    GET: /api/v1.0/revisions/0/deepdiff/0
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0]: {}
+
+  - name: verify_rev_0
+    desc: Verify deepdiff when revision=0
+    GET: /api/v1.0/revisions/0/deepdiff/2
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0]:
+        bucket_a: created
+
+  - name: verify_comp_rev_0
+    desc: Verify deepdiff when comparision_revision=0
+    GET: /api/v1.0/revisions/2/deepdiff/0
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0]:
+        bucket_a: created
+
+  - name: add_new_doc-b
+    desc: Add new document doc-b in bucket_a
+    PUT: /api/v1.0/buckets/bucket_a/documents
+    status: 200
+    data: |-
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-a
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 2
+      ...
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-b
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        foo: val1
+      ...
+
+  - name: verify_added_doc-b
+    desc: Verify deepdiff of newly added doc-b document
+    GET: /api/v1.0/revisions/2/deepdiff/3
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].'bucket_a': modified
+      $.[0].'bucket_a diff'.document_added.count: 1
+      $.[0].'bucket_a diff'.document_added.details[0]: ['example/Kind/v1', 'doc-b']
+
+  - name: delete_doc-b
+    desc: Delete document doc-b in bucket_a
+    PUT: /api/v1.0/buckets/bucket_a/documents
+    status: 200
+    data: |-
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-a
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 2
+      ...
+
+  - name: verify_deleted_doc-b
+    desc: Verify deepdiff of deleted doc-b document
+    GET: /api/v1.0/revisions/3/deepdiff/4
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].'bucket_a': modified
+      $.[0].'bucket_a diff'.document_deleted.count: 1
+      $.[0].'bucket_a diff'.document_deleted.details[0]: ['example/Kind/v1', 'doc-b']
+
+  - name: verify_revision_equality
+    desc: Verify deepdiff of the same revisions
+    GET: /api/v1.0/revisions/3/deepdiff/3
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].'bucket_a': unmodified
+
+  - name: verify_docs_equality
+    desc: Verify deepdiff of different revisions of same document
+    GET: /api/v1.0/revisions/2/deepdiff/4
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].'bucket_a': unmodified
+
+  - name: adding_new_key_in_doc-a
+    desc: Adding a new key in doc-a
+    PUT: /api/v1.0/buckets/bucket_a/documents
+    status: 200
+    data: |-
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-a
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 2
+        foo: 100
+      ...
+
+  - name: verify_doc-a_data_new_key
+    desc: Verify deepdiff of addition of a new key in doc-a
+    GET: /api/v1.0/revisions/4/deepdiff/5
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].'bucket_a': modified
+      $.[0].'bucket_a diff'.document_changed.count: 1
+      $.[0].'bucket_a diff'.document_changed.details:
+        ('example/Kind/v1', 'doc-a'):
+          data_changed:
+            dictionary_item_added: !!set {"root['foo']"}
+          metadata_changed: {}
+
+  - name: removing_key_in_doc-a
+    desc: Removing a key in doc-a
+    PUT: /api/v1.0/buckets/bucket_a/documents
+    status: 200
+    data: |-
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-a
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 2
+      ...
+
+  - name: verify_doc-a_data_remove_key
+    desc: Verify deepdiff of removal of a key in doc-a
+    GET: /api/v1.0/revisions/5/deepdiff/6
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0].'bucket_a': modified
+      $.[0].'bucket_a diff'.document_changed.count: 1
+      $.[0].'bucket_a diff'.document_changed.details:
+        ('example/Kind/v1', 'doc-a'):
+          data_changed:
+            dictionary_item_removed: !!set {"root['foo']"}
+          metadata_changed: {}
+
+  - name: verify_invalid_input
+    desc: Verify deepdiff when invalid revision id pass in input
+    GET: /api/v1.0/revisions/test/deepdiff/2
+    status: 400
+
+  - name: verify_revision_not_found
+    desc: Verify deepdiff when input revision id is not found
+    GET: /api/v1.0/revisions/1000/deepdiff/2
+    status: 404

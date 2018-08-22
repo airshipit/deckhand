@@ -18,6 +18,8 @@ import six
 
 from oslo_log import log as logging
 
+from deckhand.common import document as document_wrapper
+from deckhand.db.sqlalchemy import api
 from deckhand.tests import test_utils
 
 LOG = logging.getLogger(__name__)
@@ -371,3 +373,57 @@ class DocumentSecretFactory(DeckhandFactory):
         document_secret_template['metadata']['name'] = name
 
         return document_secret_template
+
+
+class RenderedDocumentFactory(DeckhandFactory):
+    """Class for auto-generating Rendered document for testing.
+    """
+    RENDERED_DOCUMENT_TEMPLATE = {
+        "data": {
+        },
+        "data_hash": "",
+        "metadata": {
+            "schema": "metadata/Document/v1",
+            "name": "",
+            "layeringDefinition": {
+                "abstract": False,
+                "layer": "site"
+            },
+            "storagePolicy": "",
+        },
+        "metadata_hash": "",
+        "name": "",
+        "schema": "deckhand/%s/v1",
+        "status": {
+            "bucket": "",
+            "revision": ""
+        }
+    }
+
+    def __init__(self, bucket, revision):
+        """Constructor for ``RenderedDocumentFactory``.
+        """
+        self.doc = []
+        self.bucket = bucket
+        self.revision = revision
+
+    def gen_test(self, schema, name, storagePolicy, data, doc_no=1):
+        """Generate Test Rendered Document.
+        """
+        for x in range(doc_no):
+            rendered_doc = copy.deepcopy(self.RENDERED_DOCUMENT_TEMPLATE)
+            rendered_doc['metadata']['storagePolicy'] = storagePolicy
+            rendered_doc['metadata']['name'] = name[x]
+            rendered_doc['name'] = name[x]
+            rendered_doc['schema'] = (
+                rendered_doc['schema'] % schema[x])
+            rendered_doc['status']['bucket'] = self.bucket
+            rendered_doc['status']['revision'] = self.revision
+            rendered_doc['data'] = copy.deepcopy(data[x])
+            rendered_doc['data_hash'] = api._make_hash(rendered_doc['data'])
+            rendered_doc['metadata_hash'] = api._make_hash(
+                rendered_doc['metadata'])
+
+            self.doc.append(rendered_doc)
+
+        return document_wrapper.DocumentDict.from_list(self.doc)

@@ -23,6 +23,7 @@ from deckhand.control import base
 from deckhand.control import buckets
 from deckhand.control import health
 from deckhand.control import middleware
+from deckhand.control import revision_deepdiffing
 from deckhand.control import revision_diffing
 from deckhand.control import revision_documents
 from deckhand.control import revision_tags
@@ -43,6 +44,8 @@ def configure_app(app, version=''):
         ('health', health.HealthResource()),
         ('revisions', revisions.RevisionsResource()),
         ('revisions/{revision_id}', revisions.RevisionsResource()),
+        ('revisions/{revision_id}/deepdiff/{comparison_revision_id}',
+            revision_deepdiffing.RevisionDeepDiffingResource()),
         ('revisions/{revision_id}/diff/{comparison_revision_id}',
             revision_diffing.RevisionDiffingResource()),
         ('revisions/{revision_id}/documents',

@@ -472,6 +472,18 @@ class BarbicanServerException(DeckhandException):
     code = 500
 
 
+class InvalidInputException(DeckhandException):
+    """An Invalid Input provided due to which unable to process request."""
+    msg_fmt = ('Failed to process request due to invalid input: %(input_var)s')
+    code = 400
+
+
+class DeepDiffException(DeckhandException):
+    """An Exception occurred while deep diffing"""
+    msg_fmt = 'An Exception occurred while deep diffing. Details: %(details)s'
+    code = 500
+
+
 class UnknownSubstitutionError(DeckhandException):
     """An unknown error occurred during substitution.
 

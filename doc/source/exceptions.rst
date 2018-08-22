@@ -34,6 +34,11 @@ Deckhand Exceptions
          :members:
          :show-inheritance:
          :undoc-members:
+  * - DeepDiffException
+    - .. autoexception:: deckhand.errors.DeepDiffException
+         :members:
+         :show-inheritance:
+         :undoc-members:
   * - DocumentNotFound
     - .. autoexception:: deckhand.errors.DocumentNotFound
          :members:
@@ -56,6 +61,11 @@ Deckhand Exceptions
          :undoc-members:
   * - IndeterminateDocumentParent
     - .. autoexception:: deckhand.errors.IndeterminateDocumentParent
+         :members:
+         :show-inheritance:
+         :undoc-members:
+  * - InvalidInputException
+    - .. autoexception:: deckhand.errors.InvalidInputException
          :members:
          :show-inheritance:
          :undoc-members:

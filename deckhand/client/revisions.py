@@ -56,6 +56,12 @@ class RevisionManager(base.Manager):
             revision_id, comparison_revision_id)
         return self._get(url)
 
+    def deepdiff(self, revision_id, comparison_revision_id):
+        """Get revision deepdiff between two revisions."""
+        url = '/revisions/%s/deepdiff/%s' % (
+            revision_id, comparison_revision_id)
+        return self._get(url)
+
     def rollback(self, revision_id):
         """Rollback to a previous revision, effectively creating a new one."""
         url = '/rollback/%s' % revision_id
