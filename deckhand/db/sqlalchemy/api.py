@@ -369,7 +369,7 @@ def document_get(session=None, raw_dict=False, revision_id=None, **filters):
         if any([x in f for x in ('.', 'schema')]):
             nested_filters.setdefault(f, filters.pop(f))
 
-    # Documents with the the same metadata.name and schema can exist across
+    # Documents with the same metadata.name and schema can exist across
     # different revisions, so it is necessary to order documents by creation
     # date, then return the first document that matches all desired filters.
     documents = session.query(models.Document)\

@@ -75,7 +75,7 @@ combination of:
 #. ``metadata.name``
 #. ``schema``
 
-Because collisions with respect to the the third parameter --
+Because collisions with respect to the third parameter --
 ``metadata.layeringDefinition.layer`` -- can only occur with
 :ref:`replacement`. But after document rendering, the replacement-parent
 documents are never returned.
