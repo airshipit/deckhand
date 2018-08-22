@@ -87,7 +87,7 @@ class RevisionsResource(api_base.BaseResource):
 
     @policy.authorize('deckhand:delete_revisions')
     def on_delete(self, req, resp):
-        self._delete_all_barbican_secrets()
-
-        db_api.revision_delete_all()
+        self._delete_all_barbican_secrets()  # Delete all Barbican secrets.
+        db_api.revision_delete_all()  # Delete all revisions.
+        common.invalidate_cache_data()  # Invalidate all cached data.
         resp.status = falcon.HTTP_204

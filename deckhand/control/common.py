@@ -16,6 +16,8 @@ import functools
 
 import falcon
 
+from deckhand.engine import cache as engine_cache
+
 
 class ViewBuilder(object):
     """Model API responses as dictionaries."""
@@ -119,3 +121,8 @@ def sanitize_params(allowed_params):
         return wrapper
 
     return decorator
+
+
+def invalidate_cache_data():
+    """Invalidate all data associated with document rendering."""
+    engine_cache.invalidate()
