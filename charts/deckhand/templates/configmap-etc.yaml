@@ -66,16 +66,13 @@
 
 ---
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
   name: deckhand-etc
+type: Opaque
 data:
-  deckhand.conf: |+
-{{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.deckhand | indent 4 }}
-  logging.conf: |+
-{{ include "helm-toolkit.utils.to_ini" .Values.conf.logging | indent 4 }}
-  deckhand-paste.ini: |+
-{{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | indent 4 }}
-  policy.yaml: |+
-{{ toYaml .Values.conf.policy | indent 4 }}
+  deckhand.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.deckhand | b46enc }}
+  logging.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.logging | b46enc }}
+  deckhand-paste.ini: {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | b46enc }}
+  policy.yaml: {{ toYaml .Values.conf.policy | b46enc }}
 {{- end }}

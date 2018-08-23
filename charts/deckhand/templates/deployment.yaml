@@ -102,8 +102,8 @@ spec:
         - name: etc-deckhand
           emptyDir: {}
         - name: deckhand-etc
-          configMap:
-            name: deckhand-etc
+          secret:
+            secretName: deckhand-etc
             defaultMode: 0444
 {{ if $mounts_deckhand.volumes }}{{ toYaml $mounts_deckhand.volumes | indent 8 }}{{ end }}
 {{- end }}
