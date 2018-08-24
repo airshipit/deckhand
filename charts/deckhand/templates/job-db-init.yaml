@@ -101,8 +101,8 @@ spec:
         - name: etc-deckhand
           emptyDir: {}
         - name: deckhand-etc
-          configMap:
-            name: deckhand-etc
+          secret:
+            secretName: deckhand-etc
             defaultMode: 0444
         - name: deckhand-bin
           configMap:
