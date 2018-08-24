@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from deckhand import errors
 from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
 
@@ -98,3 +99,33 @@ class TestRevisionRollback(base.TestDbBase):
                    key=lambda d: d['created_at']),
             ignore=['created_at', 'updated_at', 'revision_id',
                     'orig_revision_id', 'id'])
+
+    def test_rollback_to_revision_0_creates_blank_slate(self):
+        """Rolling back to revision 0 should create an empty revision."""
+        payload = base.DocumentFixture.get_minimal_multi_fixture(count=4)
+        bucket_name = test_utils.rand_name('bucket')
+        created_documents = self.create_documents(bucket_name, payload)
+        orig_revision_id = created_documents[0]['revision_id']
+
+        rollback_revision = self.rollback_revision(0)
+        rollback_documents = self.list_revision_documents(
+            rollback_revision['id'], include_history=False)
+        self.assertEqual(orig_revision_id + 1, rollback_revision['id'])
+        self.assertEmpty(rollback_documents)
+
+    def test_rollback_to_revision_0_with_empty_revision_history(self):
+        """Validate that rolling back to revision_id 0 should work with
+        an empty revision history (zero existing revisions in the DB).
+        """
+        rollback_revision = self.rollback_revision(0)
+        rollback_documents = self.list_revision_documents(
+            rollback_revision['id'], include_history=False)
+        self.assertEqual(1, rollback_revision['id'])
+        self.assertEmpty(rollback_documents)
+
+
+class TestRevisionRollbackNegative(base.TestDbBase):
+
+    def test_rollback_to_missing_revision_raises_exc(self):
+        # revision_id=1 doesn't exist yet since we start from an empty DB.
+        self.assertRaises(errors.RevisionNotFound, self.rollback_revision, 1)

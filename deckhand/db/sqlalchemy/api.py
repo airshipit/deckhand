@@ -510,20 +510,22 @@ def revision_get_latest(session=None):
 
     :param session: Database session object.
     :returns: Dictionary representation of latest revision.
-    :raises RevisionNotFound: if the latest revision was not found.
     """
     session = session or get_session()
 
     latest_revision = session.query(models.Revision)\
         .order_by(models.Revision.created_at.desc())\
         .first()
-    if not latest_revision:
-        raise errors.RevisionNotFound(revision_id='latest')
 
-    latest_revision = latest_revision.to_dict()
-
-    latest_revision['documents'] = _update_revision_history(
-        latest_revision['documents'])
+    if latest_revision:
+        latest_revision = latest_revision.to_dict()
+        latest_revision['documents'] = _update_revision_history(
+            latest_revision['documents'])
+    else:
+        # If the latest revision doesn't exist, assume an empty revision
+        # history and return a dummy revision instead for the purposes of
+        # revision rollback.
+        latest_revision = {'documents': [], 'id': 0}
 
     return latest_revision
 
@@ -976,7 +978,11 @@ def revision_rollback(revision_id, latest_revision, session=None):
         LOG.debug('The revision being rolled back to is the current revision.'
                   'Expect no meaningful changes.')
 
-    orig_revision = revision_get(revision_id, session=session)
+    if revision_id == 0:
+        # Placeholder revision as revision_id=0 doesn't exist.
+        orig_revision = {'documents': []}
+    else:
+        orig_revision = revision_get(revision_id, session=session)
 
     # A mechanism for determining whether a particular document has changed
     # between revisions. Keyed with the document_id, the value is True if
