@@ -131,6 +131,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
                 errors.IndeterminateDocumentParent,
                 errors.LayeringPolicyNotFound,
                 errors.MissingDocumentKey,
+                errors.MissingDocumentPattern,
                 errors.SubstitutionSourceDataNotFound,
                 errors.SubstitutionSourceNotFound,
                 errors.UnknownSubstitutionError,
