@@ -149,8 +149,7 @@ def require_unique_document_schema(schema=None):
 
 
 @require_unique_document_schema(types.LAYERING_POLICY_SCHEMA)
-def documents_create(bucket_name, documents, validations=None,
-                     session=None):
+def documents_create(bucket_name, documents, session=None):
     """Create a set of documents and associated bucket.
 
     If no changes are detected, a new revision will not be created. This
@@ -160,45 +159,43 @@ def documents_create(bucket_name, documents, validations=None,
     :param bucket_name: The name of the bucket with which to associate created
         documents.
     :param documents: List of documents to be created.
-    :param validation_policies: List of validation policies to be created.
     :param session: Database session object.
     :returns: List of created documents in dictionary format.
     :raises DocumentExists: If the document already exists in the DB for any
         bucket.
     """
     session = session or get_session()
-    documents_to_create = _documents_create(bucket_name, documents, session)
-
     resp = []
 
-    # The documents to be deleted are computed by comparing the documents for
-    # the previous revision (if it exists) that belong to `bucket_name` with
-    # `documents`: the difference between the former and the latter.
-    document_history = [
-        d for d in revision_documents_get(bucket_name=bucket_name)
-    ]
-    documents_to_delete = [
-        h for h in document_history if _meta(h) not in [
-            _meta(d) for d in documents]
-    ]
+    with session.begin():
+        documents_to_create = _documents_create(bucket_name, documents,
+                                                session=session)
 
-    # Only create a revision if any docs have been created, changed or deleted.
-    if any([documents_to_create, documents_to_delete]):
-        bucket = bucket_get_or_create(bucket_name)
-        revision = revision_create()
-        if validations:
-            for validation in validations:
-                validation_create(revision['id'], validation['name'],
-                                  validation)
+        # The documents to be deleted are computed by comparing the documents
+        # for the previous revision (if it exists) that belong to `bucket_name`
+        # with `documents`: the difference between the former and the latter.
+        document_history = [
+            d for d in revision_documents_get(bucket_name=bucket_name,
+                                              session=session)
+        ]
+        documents_to_delete = [
+            h for h in document_history if _meta(h) not in [
+                _meta(d) for d in documents]
+        ]
 
-    if documents_to_delete:
-        LOG.debug('Deleting documents: %s.',
-                  [_meta(d) for d in documents_to_delete])
-        deleted_documents = []
+        # Only create a revision if any docs have been created, changed or
+        # deleted.
+        if any([documents_to_create, documents_to_delete]):
+            revision = revision_create(session=session)
+            bucket = bucket_get_or_create(bucket_name, session=session)
 
-        for d in documents_to_delete:
-            doc = models.Document()
-            with session.begin():
+        if documents_to_delete:
+            LOG.debug('Deleting documents: %s.',
+                      [_meta(d) for d in documents_to_delete])
+            deleted_documents = []
+
+            for d in documents_to_delete:
+                doc = models.Document()
                 # Store bare minimum information about the document.
                 doc['schema'] = d['schema']
                 doc['name'] = d['name']
@@ -219,14 +216,16 @@ def documents_create(bucket_name, documents, validations=None,
                         name=doc['name'], bucket=bucket['name'])
                 doc.safe_delete(session=session)
                 deleted_documents.append(doc)
-            resp.append(doc.to_dict())
+                resp.append(doc.to_dict())
 
-    if documents_to_create:
-        LOG.debug(
-            'Creating documents: %s.', [(d['schema'], d['layer'], d['name'])
-                                        for d in documents_to_create])
-        for doc in documents_to_create:
-            with session.begin():
+        if documents_to_create:
+            LOG.debug(
+                'Creating documents: %s.', [
+                    (d['schema'], d['layer'], d['name'])
+                    for d in documents_to_create
+                ]
+            )
+            for doc in documents_to_create:
                 doc['bucket_id'] = bucket['id']
                 doc['revision_id'] = revision['id']
                 if not doc.get('orig_revision_id'):
@@ -239,7 +238,7 @@ def documents_create(bucket_name, documents, validations=None,
                         schema=doc['schema'], layer=doc['layer'],
                         name=doc['name'], bucket=bucket['name'])
 
-            resp.append(doc.to_dict())
+                resp.append(doc.to_dict())
     # NOTE(fmontei): The orig_revision_id is not copied into the
     # revision_id for each created document, because the revision_id here
     # should reference the just-created revision. In case the user needs
@@ -256,8 +255,7 @@ def _documents_create(bucket_name, documents, session=None):
 
     def _document_create(document):
         model = models.Document()
-        with session.begin():
-            model.update(document)
+        model.update(document)
         return model
 
     for document in documents:
@@ -457,9 +455,8 @@ def bucket_get_or_create(bucket_name, session=None):
             .one()
     except sa_orm.exc.NoResultFound:
         bucket = models.Bucket()
-        with session.begin():
-            bucket.update({'name': bucket_name})
-            bucket.save(session=session)
+        bucket.update({'name': bucket_name})
+        bucket.save(session=session)
 
     return bucket.to_dict()
 
@@ -476,8 +473,7 @@ def revision_create(session=None):
     session = session or get_session()
 
     revision = models.Revision()
-    with session.begin():
-        revision.save(session=session)
+    revision.save(session=session)
 
     return revision.to_dict()
 
