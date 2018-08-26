@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from deckhand.engine.render import render
+from deckhand.engine.render import *  # noqa
 
-__all__ = ('render',)
+__all__ = ('render',
+           'validate_render')

@@ -17,11 +17,11 @@ from oslo_log import log as logging
 import six
 
 from deckhand.common import utils
-from deckhand.common import validation_message as vm
 from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
+from deckhand import engine
 from deckhand.engine import document_validation
 from deckhand import errors
 from deckhand import policy
@@ -107,7 +107,18 @@ class RenderedDocumentsResource(api_base.BaseResource):
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
 
-        rendered_documents = common.get_rendered_docs(revision_id, **filters)
+        rendered_documents, cache_hit = common.get_rendered_docs(
+            revision_id, **filters)
+
+        # If the rendered documents result set is cached, then post-validation
+        # for that result set has already been performed successfully, so it
+        # can be safely skipped over as an optimization.
+        if not cache_hit:
+            data_schemas = db_api.revision_documents_get(
+                schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
+            validator = document_validation.DocumentValidation(
+                rendered_documents, data_schemas, pre_validate=False)
+            engine.validate_render(revision_id, rendered_documents, validator)
 
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all
@@ -130,50 +141,4 @@ class RenderedDocumentsResource(api_base.BaseResource):
             rendered_documents = rendered_documents[:limit]
 
         resp.status = falcon.HTTP_200
-        self._post_validate(rendered_documents)
         resp.body = self.view_builder.list(rendered_documents)
-
-    def _post_validate(self, rendered_documents):
-        # Perform schema validation post-rendering to ensure that rendering
-        # and substitution didn't break anything.
-        data_schemas = db_api.revision_documents_get(
-            schema=types.DATA_SCHEMA_SCHEMA, deleted=False)
-        doc_validator = document_validation.DocumentValidation(
-            rendered_documents, data_schemas, pre_validate=False)
-        try:
-            validations = doc_validator.validate_all()
-        except errors.InvalidDocumentFormat as e:
-            # Post-rendering validation errors likely indicate an internal
-            # rendering bug, so override the default code to 500.
-            e.code = 500
-            LOG.error('Failed to post-validate rendered documents.')
-            LOG.exception(e.format_message())
-            raise e
-        else:
-            error_list = []
-
-            for validation in validations:
-                if validation['status'] == 'failure':
-                    error_list.extend([
-                        vm.ValidationMessage(
-                            message=error['message'],
-                            name=vm.DOCUMENT_POST_RENDERING_FAILURE,
-                            doc_schema=error['schema'],
-                            doc_name=error['name'],
-                            doc_layer=error['layer'],
-                            diagnostic={
-                                k: v for k, v in error.items() if k in (
-                                    'schema_path',
-                                    'validation_schema',
-                                    'error_section'
-                                )
-                            }
-                        )
-                        for error in validation['errors']
-                    ])
-
-            if error_list:
-                raise errors.InvalidDocumentFormat(
-                    error_list=error_list,
-                    reason='Validation'
-                )

@@ -149,11 +149,10 @@ def get_rendered_docs(revision_id, **filters):
     documents = document_wrapper.DocumentDict.from_list(data)
     encryption_sources = _resolve_encrypted_data(documents)
     try:
-        rendered_documents = engine.render(
+        return engine.render(
             revision_id,
             documents,
             encryption_sources=encryption_sources)
-        return rendered_documents
     except (errors.BarbicanClientException,
             errors.BarbicanServerException,
             errors.InvalidDocumentLayer,
