@@ -71,8 +71,8 @@ metadata:
   name: deckhand-etc
 type: Opaque
 data:
-  deckhand.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.deckhand | b46enc }}
-  logging.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.logging | b46enc }}
-  deckhand-paste.ini: {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | b46enc }}
-  policy.yaml: {{ toYaml .Values.conf.policy | b46enc }}
+  deckhand.conf: {{ include "helm-toolkit.utils.to_oslo_conf" .Values.conf.deckhand | b64enc }}
+  logging.conf: {{ include "helm-toolkit.utils.to_ini" .Values.conf.logging | b64enc }}
+  deckhand-paste.ini: {{ include "helm-toolkit.utils.to_ini" .Values.conf.paste | b64enc }}
+  policy.yaml: {{ toYaml .Values.conf.policy | b64enc }}
 {{- end }}
