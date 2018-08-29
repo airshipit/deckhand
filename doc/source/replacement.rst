@@ -232,7 +232,7 @@ separate file and Pegleg can either reference *only* the parent document
 if log debugging needs to be enabled or *both* documents if log debugging
 needs to be disabled. This pattern allows data duplication to be lessened.
 
-.. _Pegleg: http://pegleg.readthedocs.io/en/latest/
+.. _Pegleg: https://airship-pegleg.readthedocs.io/en/latest/
 
 How It Works
 ------------
