@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import ast
+import copy
 import re
 import string
 
@@ -170,6 +171,11 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
         doc['data'].update(replaced_data)
     """
 
+    # These are O(1) reference copies to avoid accidentally modifying source
+    # data. We only want to update destination data.
+    data_copy = copy.copy(data)
+    value_copy = copy.copy(value)
+
     jsonpath = _normalize_jsonpath(jsonpath)
 
     if not jsonpath == '$' and not jsonpath.startswith('$.'):
@@ -180,7 +186,7 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
 
     def _execute_replace(path, path_to_change):
         if path_to_change:
-            new_value = value
+            new_value = value_copy
             if pattern:
                 to_replace = path_to_change[0].value
                 # `new_value` represents the value to inject into `to_replace`
@@ -192,23 +198,23 @@ def jsonpath_replace(data, value, jsonpath, pattern=None):
                     # Raise an exception in case the path isn't present in the
                     # data and a pattern has been provided since it is
                     # otherwise impossible to do the look-up.
-                    new_value = re.sub(pattern, str(value), to_replace)
+                    new_value = re.sub(pattern, str(value_copy), to_replace)
                 except TypeError as e:
                     LOG.error('Failed to substitute the value %s into %s '
-                              'using pattern %s. Details: %s', str(value),
+                              'using pattern %s. Details: %s', str(value_copy),
                               to_replace, pattern, six.text_type(e))
                     raise errors.MissingDocumentPattern(jsonpath=jsonpath,
                                                         pattern=pattern)
 
-            return path.update(data, new_value)
+            return path.update(data_copy, new_value)
 
     # Deckhand should be smart enough to create the nested keys in the
     # data if they don't exist and a pattern isn't required.
     path = _jsonpath_parse(jsonpath)
-    path_to_change = path.find(data)
+    path_to_change = path.find(data_copy)
     if not path_to_change:
-        _execute_data_expansion(jsonpath, data)
-        path_to_change = path.find(data)
+        _execute_data_expansion(jsonpath, data_copy)
+        path_to_change = path.find(data_copy)
     return _execute_replace(path, path_to_change)
 
 

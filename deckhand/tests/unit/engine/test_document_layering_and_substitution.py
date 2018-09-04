@@ -15,6 +15,7 @@
 import itertools
 
 import mock
+import yaml
 
 from deckhand import factories
 from deckhand.tests.unit.engine import test_document_layering
@@ -711,3 +712,253 @@ class TestDocumentLayeringWithSubstitution(
         global_expected = None
         self._test_layering(documents, site_expected,
                             global_expected=global_expected, strict=False)
+
+    def test_substitution_does_not_alter_source_document(self):
+        """Regression test to ensure that substitution source documents aren't
+        accidentally modified during a substitution into the destination
+        document.
+
+        :note: This data below is quite long because it's supposed to be
+               mirror production-level data, which is where the issue was
+               caught.
+
+        """
+
+        documents = """
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - site
+---
+data: {}
+id: 91
+metadata:
+  layeringDefinition: {abstract: false, layer: global}
+  name: ucp-rabbitmq
+  replacement: false
+  schema: metadata/Document/v1
+  storagePolicy: cleartext
+  substitutions:
+  - dest: {path: .source}
+    src:
+      name: software-versions
+      path: .charts.ucp.rabbitmq
+      schema: pegleg/SoftwareVersions/v1
+  - dest: {path: .values.images.tags}
+    src:
+      name: software-versions
+      path: .images.ucp.rabbitmq
+      schema: pegleg/SoftwareVersions/v1
+  - dest: {path: .values.endpoints.oslo_messaging}
+    src:
+      name: ucp_endpoints
+      path: .ucp.oslo_messaging
+      schema: pegleg/EndpointCatalogue/v1
+  - dest: {path: .values.endpoints.oslo_messaging.auth.user}
+    src:
+      name: ucp_service_accounts
+      path: .ucp.oslo_messaging.admin
+      schema: pegleg/AccountCatalogue/v1
+  - dest: {path: .values.endpoints.oslo_messaging.auth.erlang_cookie}
+    src:
+      name: ucp_rabbitmq_erlang_cookie
+      path: .
+      schema: deckhand/Passphrase/v1
+  - dest: {path: .values.endpoints.oslo_messaging.auth.user.password}
+    src:
+      name: ucp_oslo_messaging_password
+      path: .
+      schema: deckhand/Passphrase/v1
+schema: armada/Chart/v1
+status: {bucket: design, revision: 1}
+---
+schema: pegleg/SoftwareVersions/v1
+metadata:
+  schema: metadata/Document/v1
+  name: software-versions
+  labels:
+    name: software-versions
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+data:
+  charts:
+    ucp:
+      rabbitmq:
+        type: git
+        location: https://git.openstack.org/openstack/openstack-helm
+        subpath: rabbitmq
+        reference: f902cd14fac7de4c4c9f7d019191268a6b4e9601
+  images:
+    ucp:
+      rabbitmq:
+        rabbitmq: docker.io/rabbitmq:3.7
+        dep_check: quay.io/stackanetes/kubernetes-entrypoint:v0.3.1
+---
+schema: pegleg/EndpointCatalogue/v1
+metadata:
+  schema: metadata/Document/v1
+  name: ucp_endpoints
+  layeringDefinition:
+    abstract: false
+    layer: site
+  storagePolicy: cleartext
+data:
+  ucp:
+    oslo_messaging:
+      namespace: null
+      hosts:
+        default: rabbitmq
+      host_fqdn_override:
+        default: null
+      path: /openstack
+      scheme: rabbit
+      port:
+        amqp:
+          default: 5672
+---
+schema: pegleg/AccountCatalogue/v1
+metadata:
+  schema: metadata/Document/v1
+  name: ucp_service_accounts
+  layeringDefinition:
+    abstract: false
+    layer: site
+  storagePolicy: cleartext
+data:
+  ucp:
+    oslo_messaging:
+      admin:
+        username: rabbitmq
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  schema: metadata/Document/v1
+  name: ucp_rabbitmq_erlang_cookie
+  layeringDefinition:
+    abstract: false
+    layer: site
+  storagePolicy: cleartext
+data: 111df8c05b0f041d4764
+---
+schema: deckhand/Passphrase/v1
+metadata:
+  schema: metadata/Document/v1
+  name: ucp_oslo_messaging_password
+  layeringDefinition:
+    abstract: false
+    layer: site
+  storagePolicy: cleartext
+data: password15
+"""
+
+        global_expected = [
+            {
+                'charts': {
+                    'ucp': {
+                        'rabbitmq': {
+                            'subpath': 'rabbitmq',
+                            'type': 'git',
+                            'location': ('https://git.openstack.org/openstack/'
+                                         'openstack-helm'),
+                            'reference': (
+                                'f902cd14fac7de4c4c9f7d019191268a6b4e9601')
+                        }
+                    }
+                },
+                'images': {
+                    'ucp': {
+                        'rabbitmq': {
+                            'rabbitmq': 'docker.io/rabbitmq:3.7',
+                            'dep_check': (
+                                'quay.io/stackanetes/kubernetes-entrypoint:'
+                                'v0.3.1')
+                        }
+                    }
+                }
+            },
+            {
+                'source': {
+                    'subpath': 'rabbitmq',
+                    'type': 'git',
+                    'location': (
+                        'https://git.openstack.org/openstack/openstack-helm'),
+                    'reference': 'f902cd14fac7de4c4c9f7d019191268a6b4e9601'
+                },
+                'values': {
+                    'images': {
+                        'tags': {
+                            'rabbitmq': 'docker.io/rabbitmq:3.7',
+                            'dep_check': (
+                                'quay.io/stackanetes/kubernetes-entrypoint:'
+                                'v0.3.1')
+                        }
+                    },
+                    'endpoints': {
+                        'oslo_messaging': {
+                            'namespace': None,
+                            'scheme': 'rabbit',
+                            'port': {'amqp': {'default': 5672}},
+                            'hosts': {'default': 'rabbitmq'},
+                            'path': '/openstack',
+                            'auth': {
+                                'user': {
+                                    'username': 'rabbitmq',
+                                    'password': 'password15'
+                                },
+                                'erlang_cookie': '111df8c05b0f041d4764'
+                            },
+                            'host_fqdn_override': {'default': None}
+                        }
+                    }
+                }
+            }
+        ]
+        site_expected = [
+            {
+                'ucp': {
+                    'oslo_messaging': {
+                        'admin': {'username': 'rabbitmq'}
+                    }
+                }
+            },
+            '111df8c05b0f041d4764',
+            {
+                'ucp': {
+                    # If a copy of the source document isn't made, then these
+                    # values below may be incorrectly modified. The data
+                    # should be unmodified:
+                    #
+                    # oslo_messaging:
+                    #   namespace: null
+                    #   hosts:
+                    #     default: rabbitmq
+                    #   host_fqdn_override:
+                    #     default: null
+                    #   path: /openstack
+                    #   scheme: rabbit
+                    #   port:
+                    #     amqp:
+                    #       default: 5672
+                    'oslo_messaging': {
+                        'namespace': None,
+                        'hosts': {'default': 'rabbitmq'},
+                        'host_fqdn_override': {'default': None},
+                        'path': '/openstack',
+                        'scheme': 'rabbit',
+                        'port': {'amqp': {'default': 5672}},
+                    }
+                }
+            },
+            'password15'
+        ]
+
+        docs = list(yaml.safe_load_all(documents))
+        self._test_layering(docs, site_expected=site_expected,
+                            global_expected=global_expected)
