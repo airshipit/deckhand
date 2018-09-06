@@ -20,6 +20,7 @@ from oslo_serialization import base64
 from oslo_utils import excutils
 import six
 
+from deckhand.barbican import cache
 from deckhand.barbican import client_wrapper
 from deckhand import errors
 from deckhand import types
@@ -145,8 +146,7 @@ class BarbicanDriver(object):
         LOG.info('Storing encrypted document data in Barbican.')
 
         try:
-            secret = self.barbicanclient.call("secrets.create", **kwargs)
-            secret_ref = secret.store()
+            secret_ref = cache.lookup_by_payload(self.barbicanclient, **kwargs)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError) as e:
             LOG.exception(str(e))
@@ -180,7 +180,7 @@ class BarbicanDriver(object):
     def get_secret(self, secret_ref, src_doc):
         """Get a secret."""
         try:
-            secret = self.barbicanclient.call("secrets.get", secret_ref)
+            secret = cache.lookup_by_ref(self.barbicanclient, secret_ref)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError) as e:
             LOG.exception(str(e))
@@ -204,6 +204,9 @@ class BarbicanDriver(object):
     def delete_secret(self, secret_ref):
         """Delete a secret."""
         try:
+            # NOTE(felipemonteiro): No cache invalidation is performed here
+            # as the only API that invokes this method is DELETE /revisions
+            # which also invalidates the entire Barbican cache.
             return self.barbicanclient.call("secrets.delete", secret_ref)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPServerError) as e:

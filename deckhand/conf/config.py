@@ -26,8 +26,8 @@ barbican_group = cfg.OptGroup(
 
 
 barbican_opts = [
-    # TODO(fmontei): Drop these options and related group once Keystone
-    # endpoint lookup is used instead.
+    # TODO(felipemonteiro): Drop this option once Keystone endpoint lookup is
+    # implemented.
     cfg.StrOpt(
         'api_endpoint',
         sample_default='http://barbican.example.org:9311/',
@@ -35,7 +35,17 @@ barbican_opts = [
     cfg.IntOpt(
         'max_workers', default=10,
         help='Maximum number of threads used to call secret storage service '
-             'concurrently.')
+             'concurrently.'),
+    # TODO(felipemonteiro): This is better off being removed because the same
+    # effect can be achieved through per-test gabbi fixtures that clean up
+    # the cache between tests.
+    cfg.BoolOpt('enable_cache', default=True,
+                help="Whether to enable Barbican secret caching. Useful "
+                     "for testing to avoid cross-test caching conflicts."),
+    cfg.StrOpt(
+        'cache_timeout', default=3600,
+        help="How long (in seconds) Barbican secret reference/payload lookup "
+             "results should remain cached in memory.")
 ]
 
 

@@ -16,6 +16,7 @@ import functools
 
 import falcon
 
+from deckhand.barbican import cache as barbican_cache
 from deckhand.engine import cache as engine_cache
 
 
@@ -125,4 +126,5 @@ def sanitize_params(allowed_params):
 
 def invalidate_cache_data():
     """Invalidate all data associated with document rendering."""
+    barbican_cache.invalidate()
     engine_cache.invalidate()
