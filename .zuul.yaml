@@ -13,6 +13,8 @@
 - project:
     templates:
       - docs-on-readthedocs
+    vars:
+      rtd_webhook_id: '38572'
     check:
       jobs:
         - airship-deckhand-tox-py27-postgresql
@@ -33,7 +35,6 @@
         - airship-deckhand-docker-build-gate
     post:
       jobs:
-        - airship-deckhand-doc-publish
         - airship-deckhand-docker-publish
 
 - nodeset:
@@ -202,42 +203,6 @@
           commit: true
         static:
           - latest
-
-- job:
-    name: airship-deckhand-doc-publish
-    description: |
-      Publish documentation on airship-deckhand.readthedocs.io.
-    timeout: 300
-    run: tools/gate/playbooks/rtd-build-trigger.yaml
-    nodeset: airship-deckhand-single-node
-    secrets:
-      - deckhand_rtd_credential
-
-- secret:
-    name: deckhand_rtd_credential
-    data:
-      token: !encrypted/pkcs1-oaep
-        - ptw5Bg0LRV1LYhiv1Cqxphq3UZGYqNI7GVeTJBy5NiidvMRMk/Fvd1lDRevp52scwSHNy
-          1jDUR+XolBaiHgySQbaDneuFr0oFyU72VZLBg53xe7U5aQfPzAdDx6teIly1hWpPmTNal
-          SEQGtF05Nv6PniM4IS9VPHsaRJjiP14t8CpUAwIO/YZWWmSzZo2qeMAGXOXUwGmiR23R8
-          rmlLUXxyMm1v+B/CszfIfSloy3kqB/PuUmoPTC/UdZMVWYv4vJT6SErsc24m0fixXJVwd
-          3ysJv1fOisZYpJaY68a1CghuSza2OZngZNQ5iro1DW5mKcpuEhBbF2tJzuUnvjT635FZZ
-          TuaKFfinmxYa5sMg7fxwfzdJEkMslQKbthJe5nNouBazKEppanIytld+6xSbJw/B1OvJt
-          6vjF8vb42PQSnzLwQXBQmryE6QM22ky2C3ublhuA/Bd/oJHiA7m2r+svTzBMTXfV8pLtj
-          rEjofiAZ0BlieNy/2m0c/KnIuv9rxVYxWdFSR36NJ0EcpKGnvdcnXbi4ko+QcEuDuAnUi
-          eCrX0VDoz4F7WlBUPbc4lujD364AGnoxwsGOinjLExsM0oWiDYG0E5SNXrOVzht9a90qV
-          8UT24WwKzSiwCBOcWzD0zY0ifxvmb3oQKIjZQiSh8kPXHv9ljP3oW9NVWltwzo=
-      id: !encrypted/pkcs1-oaep
-        - OpmuFRUcuoFd7C8soC4ExkJq1K6uo9FQFc5Nw3TBqR70iCYZQs+r4+TyV8/L1L6sddKBl
-          NlV9wQg7RzSZgEzYvzNr3xTyKjxJYdiCbB6YpK/Du7aW5wvOrxhjP6m2+PdbpsGPNkYio
-          YvFgiZuRqt0qQwUp46MJo11rf09ReboDbpDUUdon6E53mbc0V6VUmW9t02zWGuPqmnpS1
-          3NPtCNgZi3Ie6/9AYlSsxpQHWUqcTo2K0XSHHan4MKAVewveATwsEYg2Rs07ud4qeVpsS
-          /YVoWAf4cnn1eDJeUzUAlQGBILbKspOXM9jqg95xm57Plh0cYPeQ/fEhB4tYeaHL+g3Nx
-          0wfmeE7+LsCLIC2Wg+p90WWnh0jV7kwNfAy3j5cDukbDIdptHm+b+yzCc5phwY5io4KFY
-          POmdd3Si2V99d/wc3oXnqCmal8XmLruKd8Qq100ErJhPJQ0VeO9TM9MxenKAavMjYnX2m
-          ioXsLnq6c3bhVxDg3gOmqWrPtPe3VkHnN3hptYr79QKGg65VNCasrc6Y88IGH/nOQSKaB
-          KaJ9sAH4+80U7nvaK6KDOb+8Kvl4qavSSNwtQaSyeYdkviibTuO40Qpg4PO3KHqYq1VEb
-          SMfJSw4+n+aTdU/o4nQlmivTuN9D5MQY/7Bklw/Dro1R1nw0AjugBz0ZEmMFoQ=
 
 - secret:
     name: airship_deckhand_quay_creds
