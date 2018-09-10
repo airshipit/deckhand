@@ -9,7 +9,8 @@ managed through version control and automatically validated. Deckhand provides
 users with a variety of different document types that describe complex
 configurations using the features listed below.
 
-Find more documentation for Deckhand on `Read the Docs <https://deckhand.readthedocs.io/>`_.
+Find more documentation for Deckhand on
+`Read the Docs <https://airship-deckhand.readthedocs.io/>`_.
 
 Core Responsibilities
 =====================
@@ -33,7 +34,7 @@ Getting Started
 ===============
 
 For more detailed installation and setup information, please refer to the
-`Getting Started <http://deckhand.readthedocs.io/en/latest/getting-started.html>`_
+`Getting Started <https://airship-deckhand.readthedocs.io/en/latest/getting-started.html>`_
 guide.
 
 Testing
@@ -89,17 +90,17 @@ Deckhand has the following integration points:
 Though, being a low-level service, has many other UCP services that integrate
 with it, including:
 
-  * `Drydock <https://github.com/att-comdev/drydock>`_ is orchestrated by
+  * `Drydock <https://github.com/openstack/airship-drydock>`_ is orchestrated by
     Shipyard to perform bare metal node provisioning.
-  * `Promenade <https://github.com/att-comdev/promenade>`_ is indirectly
+  * `Promenade <https://github.com/openstack/airship-promenade>`_ is indirectly
     orchestrated by Shipyard to configure and join Kubernetes nodes.
-  * `Armada <https://github.com/att-comdev/armada>`_ is orchestrated by
+  * `Armada <https://github.com/openstack/airship-armada>`_ is orchestrated by
     Shipyard to deploy and test Kubernetes workloads.
 
 Further Reading
 ===============
 
-`Airship <http://www.airshipit.org/>`_.
+`Airship <https://www.airshipit.org/>`_.
 
-.. |Doc Status| image:: https://readthedocs.org/projects/deckhand/badge/?version=latest
-   :target: http://deckhand.readthedocs.io/
+.. |Doc Status| image:: https://readthedocs.org/projects/airship-deckhand/badge/?version=latest
+   :target: https://airship-deckhand.readthedocs.io/
