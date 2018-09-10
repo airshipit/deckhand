@@ -60,7 +60,7 @@ def upgrade():
     #
     # IMPORTANT Note:
     # It is irregular for migrations to conditionally apply changes.
-    # Migraitons are generally straightforward applicaiton of changes -- e.g.
+    # Migraitons are generally straightforward application of changes -- e.g.
     # crate tables, drop columns, etc...
     # Do not model future migrations after this migration, which is specially
     # crafted to coerce non-Alembic manageed databases into an Alembic-managed
