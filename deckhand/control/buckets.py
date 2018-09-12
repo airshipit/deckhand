@@ -62,7 +62,11 @@ class BucketsResource(api_base.BaseResource):
         documents = self._encrypt_secret_documents(documents)
 
         created_documents = self._create_revision_documents(
-            bucket_name, documents, validations)
+            bucket_name, documents)
+
+        if created_documents:
+            revision_id = created_documents[0]['revision_id']
+            self._create_revision_validations(revision_id, validations)
 
         resp.body = self.view_builder.list(created_documents)
         resp.status = falcon.HTTP_200
@@ -75,14 +79,17 @@ class BucketsResource(api_base.BaseResource):
                 document['data'] = secret_ref
         return documents
 
-    def _create_revision_documents(self, bucket_name, documents,
-                                   validations):
+    def _create_revision_documents(self, bucket_name, documents):
         try:
-            created_documents = db_api.documents_create(
-                bucket_name, documents, validations=validations)
+            created_documents = db_api.documents_create(bucket_name, documents)
         except (deckhand_errors.DuplicateDocumentExists,
                 deckhand_errors.SingletonDocumentConflict) as e:
             with excutils.save_and_reraise_exception():
                 LOG.exception(e.format_message())
 
         return created_documents
+
+    def _create_revision_validations(self, revision_id, validations):
+        for validation in validations:
+            db_api.validation_create(revision_id, validation['name'],
+                                     validation)

@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import mock
+import testtools
+
+from deckhand.db.sqlalchemy import api as db_api
+from deckhand import errors
 from deckhand import factories
 from deckhand.tests import test_utils
 from deckhand.tests.unit.db import base
@@ -299,3 +304,34 @@ class TestDocuments(base.TestDbBase):
             sorted(orig_documents, key=lambda d: d['created_at']),
             sorted(duplicate_documents, key=lambda d: d['created_at']),
             ignore=['created_at', 'updated_at', 'revision_id', 'id'])
+
+    def test_document_creation_failure_rolls_back_in_flight_revision(self):
+        """Regression test that an exception that occurs between creation of
+        a revision and creation of all bucket documents results in the
+        in-flight database objects getting rolled back.
+        """
+        bucket_name = test_utils.rand_name('bucket')
+        payload = base.DocumentFixture.get_minimal_fixture()
+
+        original_revision_create = db_api.revision_create
+
+        # Mock the revision_create function so we can assert whether it was
+        # called, but still call the real function.
+        with mock.patch.object(
+                db_api, 'revision_create', autospec=True,
+                side_effect=original_revision_create) as m_revision_create:
+            # Raise any exception on a function call following the creation of
+            # a revision. The transaction will not complete so the result will
+            # not be committed to the database.
+            with mock.patch.object(db_api, 'bucket_get_or_create',
+                                   autospec=True,
+                                   side_effect=errors.DuplicateDocumentExists):
+                with testtools.ExpectedException(
+                        errors.DuplicateDocumentExists):
+                    self.create_documents(bucket_name, [payload])
+
+        # Validate that the actual revision_create call was indeed invoked.
+        self.assertTrue(m_revision_create.called)
+        # Finally validate that the revision doesn't exist.
+        with testtools.ExpectedException(errors.RevisionNotFound):
+            self.show_revision(1)
