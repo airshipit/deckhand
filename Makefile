@@ -71,6 +71,14 @@ endif
 clean:
 	rm -rf build
 	helm delete helm-template ||:
+	rm -rf doc/build
+
+.PHONY: docs
+docs: clean build_docs
+
+.PHONY: build_docs
+build_docs:
+	tox -e docs
 
 .PHONY: pep8
 pep8:
