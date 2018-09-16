@@ -106,8 +106,9 @@ class RealPolicyFixture(fixtures.Fixture):
         """Validate that the expected and actual policies are equivalent.
         Otherwise an ``AssertionError`` is raised.
         """
-        if not (set(self.expected_policy_actions) ==
-                set(self.actual_policy_actions)):
+        expected_policies = set(self.expected_policy_actions)
+        actual_policies = set(self.actual_policy_actions)
+        if expected_policies != actual_policies:
             error_msg = (
                 'The expected policy actions passed to '
                 '`self.policy.set_rules` do not match the policy actions '
@@ -115,8 +116,8 @@ class RealPolicyFixture(fixtures.Fixture):
                 'policies %s should be equal to set of actual policies: %s. '
                 'There is either a bug with the test or with policy '
                 'enforcement in the controller.' % (
-                    self.expected_policy_actions,
-                    self.actual_policy_actions)
+                    expected_policies,
+                    actual_policies)
             )
             raise AssertionError(error_msg)
 
