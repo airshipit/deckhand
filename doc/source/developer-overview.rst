@@ -69,14 +69,14 @@ engine
 The ``engine`` module is the interface responsible for all
 :ref:`rendering`. Rendering consists of applying a series of algorithms to the
 documents, including: topological sorting, :ref:`layering`,
-:ref:`substitution`, and :ref:`replacement`.
+:ref:`substitution`, and :ref:`replacement`. This module also realizes
+revision-diffing and revision-deepdiffing functionality.
 
 db
 --
 
 The ``db`` module is responsible for implementing the database tables needed
-to store all Airship documents. The module also realizes version control and
-:ref:`revision-diffing` functionality.
+to store all Airship documents. This module also realizes version control.
 
 client
 ------

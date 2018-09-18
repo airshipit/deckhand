@@ -282,6 +282,96 @@ Diffing revision zero with itself, ``GET /api/v1.0/revisions/0/diff/0``:
   ---
   {}
 
+GET ``/revisions/{{revision_id}}/deepdiff/{{comparison_revision_id}}``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This is an advanced version of ``diff`` api. It provides deepdiff between
+two revisions of modified buckets.
+
+The response will contain ``modified``, ``added``, ``deleted``
+documents deepdiff details. Modified documents diff will consist of data
+and metadata change details. In case the document storagePolicy is encrypted,
+deepdiff will hide data and will return only ``{'encrypted': True}``.
+
+Examples
+""""""""
+
+A response for a typical case, ``GET /api/v1.0/revisions/3/deepdiff/4``
+
+.. code-block:: yaml
+
+  ---
+  bucket_a: created
+  bucket_b: deleted
+  bucket_c: modified
+  bucket_c diff:
+    document_changed:
+      count: 1
+      details:
+        ('example/Kind/v1', 'doc-b'):
+          data_changed:
+            values_changed:
+              root['foo']: {new_value: 3, old_value: 2}
+          metadata_changed: {}
+
+Document added deepdiff response, ``GET /api/v1.0/revisions/4/deepdiff/5``
+
+.. code-block:: yaml
+
+  ---
+  bucket_a: created
+  bucket_c: modified
+  bucket_c diff:
+    document_added:
+      count: 1
+      details:
+      - [example/Kind/v1, doc-c]
+
+Document deleted deepdiff response, ``GET /api/v1.0/revisions/5/deepdiff/6``
+
+.. code-block:: yaml
+
+  ---
+  bucket_a: created
+  bucket_c: modified
+  bucket_c diff:
+    document_deleted:
+      count: 1
+      details:
+      - [example/Kind/v1, doc-c]
+
+A response for deepdiffing against an empty revision, ``GET /api/v1.0/revisions/0/deepdiff/2``:
+
+.. code-block:: yaml
+
+  ---
+  bucket_a: created
+  bucket_b: created
+
+A response for deepdiffing a revision against itself, ``GET /api/v1.0/revisions/6/deepdiff/6``:
+
+.. code-block:: yaml
+
+  ---
+  bucket_a: unmodified
+  bucket_c: unmodified
+  bucket_d: unmodified
+
+DeepDiffing two revisions that contain the same documents, ``GET /api/v1.0/revisions/1/deepdiff/2``:
+
+.. code-block:: yaml
+
+  ---
+  bucket_a: unmodified
+  bucket_b: unmodified
+
+DeepDiffing revision zero with itself, ``GET /api/v1.0/revisions/0/deepdiff/0``:
+
+.. code-block:: yaml
+
+  ---
+  {}
+
 POST ``/revisions/{{revision_id}}/validations/{{name}}``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

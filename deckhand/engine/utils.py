@@ -14,6 +14,8 @@
 
 import collections
 
+from deckhand.common import utils
+
 
 def deep_merge(dct, merge_dct):
     """Recursive dict merge. Inspired by :meth:``dict.update()``, instead of
@@ -94,3 +96,59 @@ def deep_scrub(value, parent):
     elif isinstance(value, dict):
         for v in value.values():
             deep_scrub(v, value)
+
+
+def exclude_deleted_documents(documents):
+    """Excludes all documents that have been deleted including all documents
+    earlier in the revision history with the same ``metadata.name`` and
+    ``schema`` from ``documents``.
+    """
+    documents_map = {}  # (document.meta) => should be included?
+
+    for doc in sorted(documents, key=lambda x: x['created_at']):
+        if doc['deleted'] is True:
+            previous_doc = documents_map.get(meta(doc))
+            if previous_doc:
+                if doc['deleted_at'] >= previous_doc['created_at']:
+                    documents_map[meta(doc)] = None
+        else:
+            documents_map[meta(doc)] = doc
+    return [d for d in documents_map.values() if d is not None]
+
+
+def filter_revision_documents(documents, unique_only, **filters):
+    """Return the list of documents that match filters.
+
+    :param documents: List of documents to apply ``filters`` to.
+    :param unique_only: Return only unique documents if ``True``.
+    :param filters: Dictionary attributes (including nested) used to filter
+        out revision documents.
+    :returns: List of documents that match specified filters.
+    """
+    filtered_documents = {}
+    unique_filters = ('schema', 'name', 'layer')
+    exclude_deleted = filters.pop('deleted', None) is False
+
+    if exclude_deleted:
+        documents = exclude_deleted_documents(documents)
+
+    for document in documents:
+        if utils.deepfilter(document, **filters):
+            # Filter out redundant documents from previous revisions, i.e.
+            # documents schema and metadata.name are repeated.
+            if unique_only:
+                unique_key = tuple(
+                    [document[filter] for filter in unique_filters])
+            else:
+                unique_key = document['id']
+            if unique_key not in filtered_documents:
+                filtered_documents[unique_key] = document
+    return list(filtered_documents.values())
+
+
+def meta(document):
+    return (
+        document['schema'],
+        document['metadata'].get('layeringDefinition', {}).get('layer'),
+        document['metadata'].get('name')
+    )

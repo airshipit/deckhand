@@ -12,29 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import concurrent.futures
-
 import falcon
-from oslo_config import cfg
 from oslo_log import log as logging
-from oslo_utils import excutils
 import six
 
-from deckhand.common import document as document_wrapper
 from deckhand.common import utils
 from deckhand.common import validation_message as vm
 from deckhand.control import base as api_base
 from deckhand.control import common
 from deckhand.control.views import document as document_view
 from deckhand.db.sqlalchemy import api as db_api
-from deckhand import engine
 from deckhand.engine import document_validation
-from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import policy
 from deckhand import types
 
-CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -115,35 +107,7 @@ class RenderedDocumentsResource(api_base.BaseResource):
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
 
-        data = self._retrieve_documents_for_rendering(revision_id, **filters)
-        documents = document_wrapper.DocumentDict.from_list(data)
-        encryption_sources = self._resolve_encrypted_data(documents)
-        try:
-            rendered_documents = engine.render(
-                revision_id,
-                documents,
-                encryption_sources=encryption_sources)
-        except (errors.BarbicanClientException,
-                errors.BarbicanServerException,
-                errors.InvalidDocumentLayer,
-                errors.InvalidDocumentParent,
-                errors.InvalidDocumentReplacement,
-                errors.IndeterminateDocumentParent,
-                errors.LayeringPolicyNotFound,
-                errors.MissingDocumentKey,
-                errors.MissingDocumentPattern,
-                errors.SubstitutionSourceDataNotFound,
-                errors.SubstitutionSourceNotFound,
-                errors.UnknownSubstitutionError,
-                errors.UnsupportedActionMethod) as e:
-            with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
-        except errors.EncryptionSourceNotFound as e:
-            # This branch should be unreachable, but if an encryption source
-            # wasn't found, then this indicates the controller fed bad data
-            # to the engine, in which case this is a 500.
-            e.code = 500
-            raise e
+        rendered_documents = common.get_rendered_docs(revision_id, **filters)
 
         # Filters to be applied post-rendering, because many documents are
         # involved in rendering. User filters can only be applied once all
@@ -168,79 +132,6 @@ class RenderedDocumentsResource(api_base.BaseResource):
         resp.status = falcon.HTTP_200
         self._post_validate(rendered_documents)
         resp.body = self.view_builder.list(rendered_documents)
-
-    def _retrieve_documents_for_rendering(self, revision_id, **filters):
-        """Retrieve all necessary documents needed for rendering. If a layering
-        policy isn't found in the current revision, retrieve it in a subsequent
-        call and add it to the list of documents.
-        """
-        try:
-            documents = db_api.revision_documents_get(revision_id, **filters)
-        except errors.RevisionNotFound as e:
-            LOG.exception(six.text_type(e))
-            raise falcon.HTTPNotFound(description=e.format_message())
-
-        if not any([d['schema'].startswith(types.LAYERING_POLICY_SCHEMA)
-                    for d in documents]):
-            try:
-                layering_policy_filters = {
-                    'deleted': False,
-                    'schema': types.LAYERING_POLICY_SCHEMA
-                }
-                layering_policy = db_api.document_get(
-                    **layering_policy_filters)
-            except errors.DocumentNotFound as e:
-                LOG.exception(e.format_message())
-            else:
-                documents.append(layering_policy)
-
-        return documents
-
-    def _resolve_encrypted_data(self, documents):
-        """Resolve unencrypted data from the secret storage backend.
-
-        Submits concurrent requests to the secret storage backend for all
-        secret references for which unecrypted data is required for future
-        substitutions during the rendering process.
-
-        :param documents: List of all documents for the current revision.
-        :type documents: List[dict]
-        :returns: Dictionary keyed with secret references, whose values are
-            the corresponding unencrypted data.
-        :rtype: dict
-
-        """
-        encryption_sources = {}
-        secret_ref = lambda x: x.data
-        is_encrypted = lambda x: x.is_encrypted and x.has_barbican_ref
-        encrypted_documents = (d for d in documents if is_encrypted(d))
-
-        with concurrent.futures.ThreadPoolExecutor(
-                max_workers=CONF.barbican.max_workers) as executor:
-            future_to_document = {
-                executor.submit(secrets_manager.SecretsManager.get,
-                                secret_ref=secret_ref(d),
-                                src_doc=d): d for d in encrypted_documents
-            }
-            for future in concurrent.futures.as_completed(future_to_document):
-                document = future_to_document[future]
-                try:
-                    unecrypted_data = future.result()
-                except Exception as exc:
-                    msg = ('Failed to retrieve a required secret from the '
-                           'configured secret storage service. Document: [%s,'
-                           ' %s] %s. Secret ref: %s' % (
-                               document.schema,
-                               document.layer,
-                               document.name,
-                               secret_ref(document)))
-                    LOG.error(msg + '. Details: %s', exc)
-                    raise falcon.HTTPInternalServerError(description=msg)
-                else:
-                    encryption_sources.setdefault(secret_ref(document),
-                                                  unecrypted_data)
-
-        return encryption_sources
 
     def _post_validate(self, rendered_documents):
         # Perform schema validation post-rendering to ensure that rendering

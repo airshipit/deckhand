@@ -50,6 +50,17 @@ database.""",
             }
         ]),
     policy.DocumentedRuleDefault(
+        base.POLICY_ROOT % 'show_revision_deepdiff',
+        base.RULE_ADMIN_API,
+        "Show revision deep diff between two revisions.",
+        [
+            {
+                'method': 'GET',
+                'path': ('/api/v1.0/revisions/{revision_id}/deepdiff/'
+                         '{comparison_revision_id}')
+            }
+        ]),
+    policy.DocumentedRuleDefault(
         base.POLICY_ROOT % 'show_revision_diff',
         base.RULE_ADMIN_API,
         "Show revision diff between two revisions.",

@@ -65,6 +65,10 @@
 # DELETE  /api/v1.0/revisions
 #"deckhand:delete_revisions": "rule:admin_api"
 
+# Show revision deepdiff between two revisions.
+# GET  /api/v1.0/revisions/{revision_id}/deepdiff/{comparison_revision_id}
+#"deckhand:show_revision_deepdiff": "rule:admin_api"
+
 # Show revision diff between two revisions.
 # GET  /api/v1.0/revisions/{revision_id}/diff/{comparison_revision_id}
 #"deckhand:show_revision_diff": "rule:admin_api"

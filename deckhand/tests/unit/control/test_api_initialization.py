@@ -21,6 +21,7 @@ from deckhand.common import utils
 from deckhand.control import api
 from deckhand.control import buckets
 from deckhand.control import health
+from deckhand.control import revision_deepdiffing
 from deckhand.control import revision_diffing
 from deckhand.control import revision_documents
 from deckhand.control import revision_tags
@@ -36,9 +37,10 @@ class TestApi(test_base.DeckhandTestCase):
     def setUp(self):
         super(TestApi, self).setUp()
         # Mock the API resources.
-        for resource in (buckets, health, revision_diffing, revision_documents,
-                         revision_tags, revisions, rollback, validations,
-                         versions):
+        for resource in (
+            buckets, health, revision_deepdiffing, revision_diffing,
+                revision_documents, revision_tags, revisions, rollback,
+                validations, versions):
             class_names = self._get_module_class_names(resource)
             for class_name in class_names:
                 resource_obj = self.patchobject(
@@ -83,6 +85,9 @@ class TestApi(test_base.DeckhandTestCase):
             mock.call('/api/v1.0/revisions', self.revisions_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}',
                       self.revisions_resource()),
+            mock.call('/api/v1.0/revisions/{revision_id}/deepdiff/'
+                      '{comparison_revision_id}',
+                      self.revision_deep_diffing_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/diff/'
                       '{comparison_revision_id}',
                       self.revision_diffing_resource()),

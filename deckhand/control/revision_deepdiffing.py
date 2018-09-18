@@ -1,4 +1,4 @@
-# Copyright 2017 AT&T Intellectual Property.  All other rights reserved.
+# Copyright 2018 AT&T Intellectual Property.  All other rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,10 +24,10 @@ from deckhand import policy
 LOG = logging.getLogger(__name__)
 
 
-class RevisionDiffingResource(api_base.BaseResource):
-    """API resource for realizing revision diffing."""
+class RevisionDeepDiffingResource(api_base.BaseResource):
+    """API resource for realizing revision deepdiffing."""
 
-    @policy.authorize('deckhand:show_revision_diff')
+    @policy.authorize('deckhand:show_revision_deepdiff')
     def on_get(self, req, resp, revision_id, comparison_revision_id):
         try:
             revision_id = int(revision_id)
@@ -41,7 +41,7 @@ class RevisionDiffingResource(api_base.BaseResource):
 
         try:
             resp_body = revision_diff(
-                revision_id, comparison_revision_id)
+                revision_id, comparison_revision_id, deepdiff=True)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
                 LOG.exception(e.format_message())

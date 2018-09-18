@@ -245,6 +245,7 @@ conf:
     deckhand:show_revision: rule:admin_api
     deckhand:list_revisions: rule:admin_api
     deckhand:delete_revisions: rule:admin_api
+    deckhand:show_revision_deepdiff: rule:admin_api
     deckhand:show_revision_diff: rule:admin_api
     deckhand:create_tag: rule:admin_api
     deckhand:show_tag: rule:admin_api

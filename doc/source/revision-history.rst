@@ -48,6 +48,15 @@ one of those two documents has been modified, the bucket itself is tagged
 as ``modified``. For more information about revision diffing, please reference
 the :ref:`api-ref`.
 
+Revision DeepDiffing
+--------------------
+
+Revision DeepDiffing is an extended version of existing revision diff api.
+When any bucket state gets changed to ``modified``, It shows deep difference
+between revisions. DeepDiffing resultset will consist of ``document_added``,
+``document_deleted`` and ``document_changed`` count and details.
+For more information about revision deepdiffing, please reference the :ref:`api-ref`.
+
 Revision Rollback
 -----------------
 
