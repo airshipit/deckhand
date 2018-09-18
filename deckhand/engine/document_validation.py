@@ -360,6 +360,31 @@ class DataSchemaValidator(GenericValidator):
                         schema, document, error, root_path)
 
 
+class DuplicateDocumentValidator(BaseValidator):
+    """Validator used for guarding against duplicate documents."""
+
+    def __init__(self):
+        super(DuplicateDocumentValidator, self).__init__()
+        self._document_history = set()
+        self._diagnostic = ('Ensure that each raw document has a unique '
+                            'combination of (name, schema, '
+                            'metadata.layeringDefinition.layer).')
+
+    def validate(self, document, **kwargs):
+        """Validates that duplicate document doesn't exist."""
+        if document.meta in self._document_history:
+            validation_message = vm.ValidationMessage(
+                message="Duplicate document exists",
+                doc_schema=document.schema,
+                doc_name=document.name,
+                doc_layer=document.layer,
+                diagnostic=self._diagnostic)
+            return [validation_message.format_message()]
+        else:
+            self._document_history.add(document.meta)
+        return []
+
+
 class DocumentValidation(object):
 
     def __init__(self, documents, existing_data_schemas=None,
@@ -425,11 +450,15 @@ class DocumentValidation(object):
 
             self._documents.append(document)
 
-        self._validators = [
-            DataSchemaValidator(self._external_data_schemas)
-        ]
-
         self._pre_validate = pre_validate
+
+        self._validators = [
+            DataSchemaValidator(self._external_data_schemas),
+        ]
+        if self._pre_validate:
+            # Only perform this additional validation "offline". The controller
+            # need not call this as the db module will handle this validation.
+            self._validators.append(DuplicateDocumentValidator())
 
     def _get_supported_schema_list(self):
         schema_list = []
