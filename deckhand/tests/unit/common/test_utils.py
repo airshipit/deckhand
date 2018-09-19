@@ -57,6 +57,135 @@ class TestJSONPathReplace(test_base.DeckhandTestCase):
                                         pattern="REGEX")
         self.assertEqual(expected, result)
 
+    def test_jsonpath_replace_with_pattern_and_array_index(self):
+        path = ".values.endpoints.admin[1]"
+        body = {"values": {"endpoints": {"admin": [None, "REGEX_FRESH"]}}}
+        expected = {"values": {"endpoints": {"admin": [None, "EAT_FRESH"]}}}
+        result = utils.jsonpath_replace(body, "EAT", jsonpath=path,
+                                        pattern="REGEX")
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_pattern_recursive_dict(self):
+        path = ".values"
+        body = {"values": {"re1": "REGEX_ONE", "re2": "REGEX_TWO"}}
+        expected = {"values": {"re1": "YES_ONE", "re2": "YES_TWO"}}
+        result = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_pattern_recursive_list(self):
+        path = ".values"
+
+        # String entries inside list.
+        body = {"values": ["REGEX_ONE", "REGEX_TWO"]}
+        expected = {"values": ["YES_ONE", "YES_TWO"]}
+        result = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+        # Dictionary entries inside list.
+        body = {"values": [{"re1": "REGEX_ONE", "re2": "REGEX_TWO"}]}
+        expected = {"values": [{"re1": "YES_ONE", "re2": "YES_TWO"}]}
+        result = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_pattern_recursive_str(self):
+        """Edge case to validate that passing in a path that leads to a string
+        value itself (not a list or dict) still results in pattern replacement
+        gracefully passing, even though no recursion is technically possible.
+        """
+        path = ".values.endpoints.admin"
+        body = {"values": {"endpoints": {"admin": "REGEX_FRESH"}}}
+        expected = {"values": {"endpoints": {"admin": "EAT_FRESH"}}}
+        result = utils.jsonpath_replace(body, "EAT", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_pattern_recursive_dict_nested(self):
+        path = ".values"
+        body = {"values": {"re1": "REGEX_ONE", "nested": {"re2": "REGEX_TWO"}}}
+        expected = {"values": {"re1": "YES_ONE", "nested": {"re2": "YES_TWO"}}}
+        result = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_pattern_recursive_list_nested(self):
+        path = ".values"
+
+        # String entry inside nested list.
+        body = {"values": [{"re1": "REGEX_ONE", "nested": ["REGEX_TWO"]}]}
+        expected = {"values": [{"re1": "YES_ONE", "nested": ["YES_TWO"]}]}
+        result = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+        # Dictionary entry inside nested list.
+        body = {"values": [{"nested": [{"re2": "REGEX_TWO"}]}]}
+        expected = {"values": [{"nested": [{"re2": "YES_TWO"}]}]}
+        result = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_pattern_recursive_root_path(self):
+        """Validate that recursion happens even from root path."""
+        path = "$"
+        body = {"values": {"re1": "REGEX_ONE", "nested": {"re2": "REGEX_TWO"}}}
+        expected = {"values": {"re1": "YES_ONE", "nested": {"re2": "YES_TWO"}}}
+        result = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                        pattern="REGEX", recurse={'depth': -1})
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_different_patterns_recursive(self):
+        """Edge case to validate that different regexes that live recursively
+        under the same parent path are handled gracefully. Note that
+        non-matching regexes are obviously skipped over.
+        """
+        path = ".values"
+
+        # Only the first string's pattern will be replaced since it'll match
+        # REGEX. The second one won't as its pattern is XEGER.
+        body = {"values": [{"re1": "REGEX_ONE", "nested": ["XEGER_TWO"]}]}
+        expected = {"values": [{"re1": "YES_ONE", "nested": ["XEGER_TWO"]}]}
+        result1 = utils.jsonpath_replace(body, "YES", jsonpath=path,
+                                         pattern="REGEX",
+                                         recurse={'depth': -1})
+        self.assertEqual(expected, result1)
+
+        # Now replace the second one by passing in pattern="XEGER".
+        expected = {"values": [{"re1": "YES_ONE", "nested": ["NO_TWO"]}]}
+        result2 = utils.jsonpath_replace(result1, "NO", jsonpath=path,
+                                         pattern="XEGER",
+                                         recurse={'depth': -1})
+        self.assertEqual(expected, result2)
+
+    def test_jsonpath_replace_with_recursion_depth_specified(self):
+        # Only the first string's pattern will be replaced since it'll
+        # only recurse 1 level.
+        body = {"re1": "REGEX_ONE", "values": {"re2": "REGEX_TWO"}}
+        expected = {"re1": "YES_ONE", "values": {"re2": "REGEX_TWO"}}
+        result = utils.jsonpath_replace(body, "YES", jsonpath="$",
+                                        pattern="REGEX",
+                                        recurse={'depth': 1})
+        self.assertEqual(expected, result)
+
+        # Depth of 2 should cover both.
+        body = {"re1": "REGEX_ONE", "values": {"re2": "REGEX_TWO"}}
+        expected = {"re1": "YES_ONE", "values": {"re2": "YES_TWO"}}
+        result = utils.jsonpath_replace(body, "YES", jsonpath="$",
+                                        pattern="REGEX",
+                                        recurse={'depth': 2})
+        self.assertEqual(expected, result)
+
+        # Depth of 3 is required as the list around "REGEX_TWO" results in
+        # another layer of recursion.
+        body = {"re1": "REGEX_ONE", "values": {"re2": ["REGEX_TWO"]}}
+        expected = {"re1": "YES_ONE", "values": {"re2": ["YES_TWO"]}}
+        result = utils.jsonpath_replace(body, "YES", jsonpath="$",
+                                        pattern="REGEX",
+                                        recurse={'depth': 3})
+        self.assertEqual(expected, result)
+
 
 class TestJSONPathReplaceNegative(test_base.DeckhandTestCase):
     """Validate JSONPath replace negative scenarios."""

@@ -258,12 +258,61 @@ document) will be:
   metadata:
     name: example-chart-01
     schema: metadata/Document/v1
+    [...]
+  data:
+    chart:
+      details:
+        data: here
+      values:
+        # Notice string replacement occurs at exact location specified by
+        # ``dest.pattern``.
+        some_url: http://admin:my-secret-password@service-name:8080/v1
+
+Recursive Replacement of Patterns
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Patterns may also be replaced recursively. This can be achieved by using
+specifying a ``pattern`` value and ``recurse`` as ``True`` (it otherwise
+defaults to ``False``). Best practice is to limit the scope of the recursion
+as much as possible: e.g. avoid passing in "$" as the ``jsonpath``, but rather
+a JSON path that lives closer to the nested strings in question.
+
+.. note::
+
+  Recursive selection of patterns will only consider matching patterns.
+  Non-matching patterns will be ignored. Thus, even if recursion can "pass
+  over" non-matching patterns, they will be silently ignored.
+
+.. code-block:: yaml
+
+  ---
+  # Source document.
+  schema: deckhand/Passphrase/v1
+  metadata:
+    name: example-password
+    schema: metadata/Document/v1
+    layeringDefinition:
+      layer: site
+    storagePolicy: cleartext
+  data: my-secret-password
+  ---
+  # Destination document.
+  schema: armada/Chart/v1
+  metadata:
+    name: example-chart-01
+    schema: metadata/Document/v1
     layeringDefinition:
       layer: region
     substitutions:
       - dest:
-          path: .chart.values.some_url
+          # Note that the path encapsulates all 3 entries that require pattern
+          # replacement.
+          path: .chart.values
           pattern: INSERT_[A-Z]+_HERE
+          recurse:
+            # Note that specifying the depth is mandatory. -1 means that all
+            # layers are recursed through.
+            depth: -1
         src:
           schema: deckhand/Passphrase/v1
           name: example-password
@@ -273,9 +322,38 @@ document) will be:
       details:
         data: here
       values:
+        # Notice string replacement occurs for all paths recursively captured
+        # by dest.path, since all their patterns match dest.pattern.
+        admin_url: http://admin:INSERT_PASSWORD_HERE@service-name:35357/v1
+        internal_url: http://internal:INSERT_PASSWORD_HERE@service-name:5000/v1
+        public_url: http://public:INSERT_PASSWORD_HERE@service-name:5000/v1
+
+After document rendering, the output for ``example-chart-01`` (the destination
+document) will be:
+
+.. code-block:: yaml
+
+  ---
+  schema: armada/Chart/v1
+  metadata:
+    name: example-chart-01
+    schema: metadata/Document/v1
+    [...]
+  data:
+    chart:
+      details:
+        data: here
+      values:
         # Notice how the data from the source document is injected into the
         # exact location specified by ``dest.pattern``.
-        some_url: http://admin:my-secret-password@service-name:8080/v1
+        admin_url: http://admin:my-secret-password@service-name:35357/v1
+        internal_url: http://internal:my-secret-passwor@service-name:5000/v1
+        public_url: http://public:my-secret-passwor@service-name:5000/v1
+
+Note that the recursion depth must be specified. -1 effectively ignores the
+depth. Any other positive integer will specify how many levels deep to recurse
+in order to optimize recursive pattern replacement. Take care to specify the
+required recursion depth or else too-deep patterns won't be replaced.
 
 Substitution of Encrypted Data
 ------------------------------

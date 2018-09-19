@@ -27,6 +27,17 @@ data:
           type: string
         pattern:
           type: string
+        recurse:
+          type: object
+          properties:
+            depth:
+              type: integer
+              minimum: -1
+              # -1 indicates that the recursion depth is infinite. Refinements
+              # to this value should be specified by the caller.
+              default: -1
+          required:
+            - depth
       additionalProperties: false
       required:
         - path

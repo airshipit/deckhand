@@ -320,6 +320,7 @@ class SecretsSubstitution(object):
                 for each_dest_path in dest_array:
                     dest_path = each_dest_path['path']
                     dest_pattern = each_dest_path.get('pattern', None)
+                    dest_recurse = each_dest_path.get('recurse', {})
 
                     LOG.debug('Substituting from schema=%s layer=%s name=%s '
                               'src_path=%s into dest_path=%s, dest_pattern=%s',
@@ -329,8 +330,8 @@ class SecretsSubstitution(object):
                     try:
                         exc_message = ''
                         substituted_data = utils.jsonpath_replace(
-                            document['data'], src_secret,
-                            dest_path, dest_pattern)
+                            document['data'], src_secret, dest_path,
+                            pattern=dest_pattern, recurse=dest_recurse)
                         if (isinstance(document['data'], dict) and
                                 isinstance(substituted_data, dict)):
                             document['data'].update(substituted_data)
