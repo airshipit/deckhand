@@ -14,16 +14,15 @@
 
 DOCKER_REGISTRY ?= quay.io
 IMAGE_NAME      ?= deckhand
-IMAGE_PREFIX    ?= attcomdev
+IMAGE_PREFIX    ?= airshipit
 IMAGE_TAG       ?= latest
 HELM            ?= helm
 PROXY           ?= http://proxy.foo.com:8000
 NO_PROXY        ?= localhost,127.0.0.1,.svc.cluster.local
 USE_PROXY       ?= false
 PUSH_IMAGE      ?= false
-LABEL           ?= commit-id
-
-IMAGE := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
+COMMIT          ?= commit-id
+IMAGE           := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
 
 # Build Deckhand Docker image for this project
 .PHONY: images
@@ -53,7 +52,11 @@ tests:
 .PHONY: build_deckhand
 build_deckhand:
 ifeq ($(USE_PROXY), true)
-	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile \
+	docker build --network host -t $(IMAGE) \
+		--label "org.opencontainers.image.revision=$(COMMIT)" \
+		--label "org.opencontainers.image.created=$(shell date --rfc-3339=seconds --utc)" \
+		--label "org.opencontainers.image.title=$(IMAGE_NAME)" \
+		-f images/deckhand/Dockerfile \
 		--build-arg http_proxy=$(PROXY) \
 		--build-arg https_proxy=$(PROXY) \
 		--build-arg HTTP_PROXY=$(PROXY) \
@@ -61,7 +64,11 @@ ifeq ($(USE_PROXY), true)
 		--build-arg no_proxy=$(NO_PROXY) \
 		--build-arg NO_PROXY=$(NO_PROXY) .
 else
-	docker build --network host -t $(IMAGE) --label $(LABEL) -f images/deckhand/Dockerfile .
+	docker build --network host -t $(IMAGE) \
+		--label "org.opencontainers.image.revision=$(COMMIT)" \
+		--label "org.opencontainers.image.created=$(shell date --rfc-3339=seconds --utc)" \
+		--label "org.opencontainers.image.title=$(IMAGE_NAME)" \
+		-f images/deckhand/Dockerfile .
 endif
 ifeq ($(PUSH_IMAGE), true)
 	docker push $(IMAGE)
