@@ -271,11 +271,11 @@ document) will be:
 Recursive Replacement of Patterns
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Patterns may also be replaced recursively. This can be achieved by using
-specifying a ``pattern`` value and ``recurse`` as ``True`` (it otherwise
-defaults to ``False``). Best practice is to limit the scope of the recursion
-as much as possible: e.g. avoid passing in "$" as the ``jsonpath``, but rather
-a JSON path that lives closer to the nested strings in question.
+Patterns may also be replaced recursively. This can be achieved by specifying
+a ``pattern`` value and ``recurse`` as ``True`` (it otherwise defaults to
+``False``). Best practice is to limit the scope of the recursion as much as
+possible: e.g. avoid passing in "$" as the ``jsonpath``, but rather a JSON path
+that lives closer to the nested strings in question.
 
 .. note::
 

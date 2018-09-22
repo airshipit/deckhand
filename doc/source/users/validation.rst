@@ -210,7 +210,7 @@ Base Schema
 
   Base JSON schema against which all Deckhand documents are validated.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/base_schema.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/base_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Base schema that applies to all documents.
@@ -231,7 +231,7 @@ ingested by Deckhand.
   configure Deckhand behavior, like LayeringPolicy, ValidationPolicy,
   and DataSchema documents.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/metadata_control.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/metadata_control.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``metadata/Control`` metadata document sections.
@@ -242,7 +242,7 @@ ingested by Deckhand.
   document type is validated. Applies to all site definition documents or
   "regular" documents that require rendering.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/metadata_document.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/metadata_document.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``metadata/Document`` metadata document sections.
@@ -270,7 +270,7 @@ corresponding to the created revision.
   ``deckhand/CertificateAuthorityKey/v1`` schema are validated.
 
   .. literalinclude::
-    ../../deckhand/engine/schemas/certificate_authority_key_schema.yaml
+    ../../../deckhand/engine/schemas/certificate_authority_key_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``CertificateAuthorityKey`` documents.
@@ -284,7 +284,7 @@ corresponding to the created revision.
   ``deckhand/CertificateAuthority/v1`` schema are validated.
 
   .. literalinclude::
-    ../../deckhand/engine/schemas/certificate_authority_schema.yaml
+    ../../../deckhand/engine/schemas/certificate_authority_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``CertificateAuthority`` documents.
@@ -297,7 +297,7 @@ corresponding to the created revision.
   JSON schema against which all documents with ``deckhand/CertificateKey/v1``
   schema are validated.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/certificate_key_schema.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/certificate_key_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``CertificateKey`` documents.
@@ -310,7 +310,7 @@ corresponding to the created revision.
   JSON schema against which all documents with ``deckhand/Certificate/v1``
   schema are validated.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/certificate_schema.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/certificate_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``Certificate`` documents.
@@ -323,7 +323,7 @@ corresponding to the created revision.
   JSON schema against which all documents with ``deckhand/LayeringPolicy/v1``
   schema are validated.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/layering_policy_schema.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/layering_policy_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``LayeringPolicy`` documents.
@@ -336,7 +336,7 @@ corresponding to the created revision.
   JSON schema against which all documents with ``deckhand/PrivateKey/v1``
   schema are validated.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/passphrase_schema.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/passphrase_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``PrivateKey`` documents.
@@ -349,7 +349,7 @@ corresponding to the created revision.
   JSON schema against which all documents with ``deckhand/PublicKey/v1``
   schema are validated.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/public_key_schema.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/public_key_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``PublicKey`` documents.
@@ -362,7 +362,7 @@ corresponding to the created revision.
   JSON schema against which all documents with ``deckhand/Passphrase/v1``
   schema are validated.
 
-  .. literalinclude:: ../../deckhand/engine/schemas/private_key_schema.yaml
+  .. literalinclude:: ../../../deckhand/engine/schemas/private_key_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``Passphrase`` documents.
@@ -376,7 +376,7 @@ corresponding to the created revision.
   schema are validated.
 
   .. literalinclude::
-    ../../deckhand/engine/schemas/validation_policy_schema.yaml
+    ../../../deckhand/engine/schemas/validation_policy_schema.yaml
     :language: yaml
     :lines: 15-
     :caption: Schema for ``ValidationPolicy`` documents.

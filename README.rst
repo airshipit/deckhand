@@ -4,13 +4,18 @@ Deckhand
 
 |Doc Status|
 
-Deckhand is a storage service for YAML-based configuration documents, which are
-managed through version control and automatically validated. Deckhand provides
-users with a variety of different document types that describe complex
-configurations using the features listed below.
+Deckhand provides document revision management, storage and mutation
+functionality upon which the rest of the `Airship`_ components rely for
+orchestration of infrastructure provisioning. Deckhand understands declarative
+YAML documents that define, end-to-end, the configuration of sites: from the
+hardware -- encompassing network topology and hardware and host profile
+information -- up to the software level that comprises the overcloud.
 
-Find more documentation for Deckhand on
-`Read the Docs <https://airship-deckhand.readthedocs.io/>`_.
+* Free software: Apache license
+* Documentation: https://airship-deckhand.readthedocs.io/en/latest/
+* Source: https://git.openstack.org/cgit/openstack/airship-deckhand
+* Bugs: https://storyboard.openstack.org/#!/project/1004
+* Release notes: https://airship-deckhand.readthedocs.io/en/latest/releasenotes/index.html
 
 Core Responsibilities
 =====================
@@ -36,40 +41,6 @@ Getting Started
 For more detailed installation and setup information, please refer to the
 `Getting Started <https://airship-deckhand.readthedocs.io/en/latest/getting-started.html>`_
 guide.
-
-Testing
--------
-
-Automated Testing
-^^^^^^^^^^^^^^^^^
-
-To run unit tests using sqlite, execute:
-
-::
-
-    $ tox -epy27
-    $ tox -epy35
-
-against a py27- or py35-backed environment, respectively. To run individual
-unit tests, run:
-
-::
-
-    $ tox -e py27 -- deckhand.tests.unit.db.test_revisions
-
-for example.
-
-To run functional tests:
-
-::
-
-    $ tox -e functional
-
-You can also run a subset of tests via a regex:
-
-::
-
-    $ tox -e functional -- gabbi.suitemaker.test_gabbi_document-crud-success-multi-bucket
 
 Integration Points
 ==================
@@ -100,7 +71,9 @@ with it, including:
 Further Reading
 ===============
 
-`Airship <https://www.airshipit.org/>`_.
+`Airship`_.
+
+.. _Airship: https://www.airshipit.org
 
 .. |Doc Status| image:: https://readthedocs.io/projects/airship-deckhand/badge/?version=latest
    :target: https://airship-deckhand.readthedocs.io/
