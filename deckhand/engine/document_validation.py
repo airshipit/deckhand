@@ -103,7 +103,8 @@ class GenericValidator(BaseValidator):
     _diagnostic = (
         'Ensure that each document has a metadata, schema and data section. '
         'Each document must pass the schema defined under: '
-        'http://deckhand.readthedocs.io/en/latest/validation.html#base-schema')
+        'https://airship-deckhand.readthedocs.io/en/latest/'
+        'validation.html#base-schema')
 
     def __init__(self):
         super(GenericValidator, self).__init__()

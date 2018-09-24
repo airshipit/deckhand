@@ -1,7 +1,7 @@
-# Test success path for sample UCP documents
+# Test success path for sample Airship documents
 #
 #  1. Purges existing data to ensure test isolation
-#  2. Creates sample UCP documents and schemas
+#  2. Creates sample Airship documents and schemas
 #  3. Checks that the documents pass schema validation
 
 defaults:

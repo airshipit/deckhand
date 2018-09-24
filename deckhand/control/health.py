@@ -20,7 +20,7 @@ from deckhand.control.base import BaseResource
 class HealthResource(BaseResource):
     """Basic health check for Deckhand
 
-    A resource that allows other UCP components to access and validate
+    A resource that allows other Airship components to access and validate
     Deckhand's health status. The response must be returned within 30 seconds
     for Deckhand to be deemed "healthy".
     Unauthenticated GET.

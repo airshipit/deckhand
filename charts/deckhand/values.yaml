@@ -27,10 +27,10 @@ labels:
 
 images:
   tags:
-    deckhand: quay.io/attcomdev/deckhand:latest
+    deckhand: quay.io/airshipit/deckhand:latest
     dep_check: "quay.io/stackanetes/kubernetes-entrypoint:v0.3.1"
     db_init: docker.io/postgres:9.5
-    db_sync: quay.io/attcomdev/deckhand:latest
+    db_sync: quay.io/airshipit/deckhand:latest
     image_repo_sync: docker.io/docker:17.07.0
     ks_endpoints: docker.io/openstackhelm/heat:newton
     ks_service: docker.io/openstackhelm/heat:newton

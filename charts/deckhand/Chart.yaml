@@ -18,10 +18,10 @@ name: deckhand
 version: 0.1.0
 keywords:
 - deckhand
-home: https://github.com/att-comdev/deckhand
+home: https://github.com/openstack/airship-deckhand
 sources:
-- https://github.com/att-comdev/aic-helm
+- https://github.com/openstack/airship-deckhand/tree/master/charts/deckhand
 - https://git.openstack.org/cgit/openstack/openstack-helm
 maintainers:
-- name: att-comdev
+- name: airship
 engine: gotpl

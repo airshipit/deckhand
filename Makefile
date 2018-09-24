@@ -14,7 +14,7 @@
 
 DOCKER_REGISTRY ?= quay.io
 IMAGE_NAME      ?= deckhand
-IMAGE_PREFIX    ?= attcomdev
+IMAGE_PREFIX    ?= airshipit
 IMAGE_TAG       ?= latest
 HELM            ?= helm
 PROXY           ?= http://proxy.foo.com:8000
