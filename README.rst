@@ -87,7 +87,7 @@ Deckhand has the following integration points:
 
     Currently, other database back-ends are not supported.
 
-Though, being a low-level service, has many other UCP services that integrate
+Though, being a low-level service, has many other Airship services that integrate
 with it, including:
 
   * `Drydock <https://github.com/openstack/airship-drydock>`_ is orchestrated by
@@ -102,5 +102,5 @@ Further Reading
 
 `Airship <https://www.airshipit.org/>`_.
 
-.. |Doc Status| image:: https://readthedocs.org/projects/airship-deckhand/badge/?version=latest
+.. |Doc Status| image:: https://readthedocs.io/projects/airship-deckhand/badge/?version=latest
    :target: https://airship-deckhand.readthedocs.io/

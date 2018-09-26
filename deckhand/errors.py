@@ -139,7 +139,8 @@ def default_exception_handler(ex, req, resp, params):
 
 def default_exception_serializer(req, resp, exception):
     """Serializes instances of :class:`falcon.HTTPError` into YAML format and
-    formats the error body so it adheres to the UCP error formatting standard.
+    formats the error body so it adheres to the Airship error formatting
+    standard.
     """
     format_error_resp(
         req,

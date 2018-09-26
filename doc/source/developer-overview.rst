@@ -38,7 +38,7 @@ components.
 
 Deckhand uses Barbican to securely storage sensitive document data.
 
-`Pegleg <http://airship-pegleg.readthedocs.io/en/latest/>`_ in effect provides
+`Pegleg <https://airship-pegleg.readthedocs.io/>`_ in effect provides
 Deckhand with a CLI, which facilitates communication with Deckhand.
 
 .. image:: images/architecture-pegleg.png
@@ -54,7 +54,7 @@ The ``control`` module is simply the RESTful API. It is based on the
 `Falcon Framework <https://falconframework.org/>`_ and utilizes
 `oslo.policy <https://docs.openstack.org/oslo.policy/latest/>`_
 for RBAC enforcement of the API endpoints. The normal deployment of Deckhand
-uses `uWSGI <http://uwsgi-docs.readthedocs.io/en/latest/>`_ and PasteDeploy
+uses `uWSGI <http://uwsgi-docs.readthedocs.io/>`_ and PasteDeploy
 to build a pipeline that includes Keystone Middleware for authentication
 and role decoration of the request.
 
@@ -96,7 +96,7 @@ the Docker image and the Helm chart. The code is published via the
 Docker image artifact.
 
 Deckhand strives to conform to the
-`Airship coding conventions <http://airshipit.readthedocs.io/en/latest/conventions.html>`_.
+`Airship coding conventions <https://airshipit.readthedocs.io/en/latest/conventions.html>`_.
 
 Python
 ------
@@ -135,7 +135,7 @@ Testing
 All Deckhand tests are nested under ``/deckhand/tests``.
 
 Deckhand comes equipped with a number of
-`tox <https://tox.readthedocs.io/en/latest/>`_ targets for running unit and
+`tox <https://tox.readthedocs.io/>`_ targets for running unit and
 functional tests. See :ref:`development-utilities` for a list of commands.
 
 See :ref:`testing` for more information on testing guidelines.
