@@ -2,7 +2,7 @@
 Deckhand
 ========
 
-|Doc Status|
+|Docker Repository on Quay| |Doc Status|
 
 Deckhand is a storage service for YAML-based configuration documents, which are
 managed through version control and automatically validated. Deckhand provides
@@ -102,5 +102,7 @@ Further Reading
 
 `Airship <https://www.airshipit.org/>`_.
 
-.. |Doc Status| image:: https://readthedocs.io/projects/airship-deckhand/badge/?version=latest
+.. |Docker Repository on Quay| image:: https://quay.io/repository/airshipit/deckhand/status
+   :target: https://quay.io/repository/airshipit/deckhand
+.. |Doc Status| image:: https://readthedocs.org/projects/airship-deckhand/badge/?version=latest
    :target: https://airship-deckhand.readthedocs.io/
