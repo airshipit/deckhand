@@ -17,17 +17,17 @@
 Overview
 ========
 
-Deckhand is a storage service for YAML-based configuration documents. Deckhand
-stores the documents using version control: Each time a collection of documents
-is passed to Deckhand, a new revision is created. Thus, documents have a
-revision history, allowing complex configurations to be incrementally modified
-and validated. For example, if the first revision of documents fail validation,
-deployers can make modifications to the documents and submit them to Deckhand
-again, until the documents pass validation and are ready to be rendered into
-their finalized state.
+Deckhand provides document revision management, storage and mutation
+functionality upon which the rest of the `Airship`_ components rely for
+orchestration of infrastructure provisioning. Deckhand understands declarative
+YAML documents that define, end-to-end, the configuration of sites: from the
+hardware -- encompassing network topology and hardware and host profile
+information -- up to the software level that comprises the overcloud.
+
+.. _Airship: https://www.airshipit.org
 
 Core Responsibilities
-=====================
+---------------------
 
 * *revision history* - improves auditability and enables services to provide
   functional validation of a well-defined collection of documents that are

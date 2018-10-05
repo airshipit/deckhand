@@ -51,4 +51,4 @@ Deckhand with the version of this documentation.
 
 The sample configuration can also be viewed in `file form <_static/deckhand.policy.yaml.sample>`_.
 
-.. literalinclude:: _static/deckhand.policy.yaml.sample
+.. literalinclude:: ../_static/deckhand.policy.yaml.sample

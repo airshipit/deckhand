@@ -28,9 +28,17 @@ site configuration data, including sensitive data. Secrets can be stored using
 specialized secret storage management services like Barbican and later
 substituted into finalized or "rendered" documents.
 
-The service understands a variety of document formats, the combination of which
+The service understands a variety of document types, the combination of which
 describe the manner in which Deckhand renders finalized documents for
 consumption by other Airship services.
+
+Overview
+========
+
+.. toctree::
+   :maxdepth: 2
+
+   overview
 
 User's Guide
 ============
@@ -38,20 +46,7 @@ User's Guide
 .. toctree::
    :maxdepth: 2
 
-   getting-started
-   overview
-   revision-history
-   documents
-   document-types
-   encryption
-   validation
-   rendering
-   substitution
-   layering
-   replacement
-   api_ref
-   api_client
-   exceptions
+   users/index
 
 Developer's Guide
 =================
@@ -59,11 +54,15 @@ Developer's Guide
 .. toctree::
    :maxdepth: 2
 
-   HACKING
-   REVIEWING
-   developer-overview
-   policy-enforcement
-   testing
+   developers/index
+
+Operator's Guide
+================
+
+.. toctree::
+   :maxdepth: 2
+
+   operators/index
 
 Release Notes
 =============
@@ -71,7 +70,7 @@ Release Notes
 .. toctree::
    :maxdepth: 1
 
-   releasenotes/index.rst
+   releasenotes/index
 
 Glossary
 ========
