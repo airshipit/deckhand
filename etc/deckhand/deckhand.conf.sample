@@ -125,7 +125,6 @@
 
 
 [barbican]
-#
 # Barbican options for allowing Deckhand to communicate with Barbican.
 
 #
@@ -134,6 +133,18 @@
 
 # URL override for the Barbican API endpoint. (string value)
 #api_endpoint = http://barbican.example.org:9311/
+
+# Maximum number of threads used to call secret storage service concurrently.
+# (integer value)
+#max_workers = 10
+
+# Whether to enable Barbican secret caching. Useful for testing to avoid cross-
+# test caching conflicts. (boolean value)
+#enable_cache = true
+
+# How long (in seconds) Barbican secret reference/payload lookup results should
+# remain cached in memory. (string value)
+#cache_timeout = 3600
 
 # PEM encoded Certificate Authority to use when verifying HTTPs connections.
 # (string value)
@@ -378,6 +389,18 @@
 # running on a port. Expects a "port:path" list of strings. Used by
 # DisableByFilesPortsHealthcheck plugin. (list value)
 #disable_by_file_paths =
+
+
+[jsonpath]
+# JSONPath options for allowing JSONPath logic to be configured.
+
+#
+# From deckhand.conf
+#
+
+# How long (in seconds) JSONPath lookup results should remain cached in memory.
+# (integer value)
+#cache_timeout = 3600
 
 
 [keystone_authtoken]
