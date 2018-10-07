@@ -547,8 +547,13 @@ class DocumentLayering(object):
             child_data = {}
 
         action_path = action['path']
+
         if action_path.startswith('.data'):
             action_path = action_path[5:]
+        elif action_path.startswith('$.data'):
+            action_path = action_path[6:]
+        if not (action_path.startswith('.') or action_path.startswith('$.')):
+            action_path = '.' + action_path
 
         if method == self._DELETE_ACTION:
             if action_path == '.':
