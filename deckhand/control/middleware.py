@@ -163,6 +163,11 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
         if resp.status != '204 No Content':
             resp.set_header('Content-Type', 'application/x-yaml')
 
+        kwargs = {
+            "explicit_start": True,
+            "explicit_end": True
+        }
+
         for attr in ('body', 'data'):
             if not hasattr(resp, attr):
                 continue
@@ -170,6 +175,6 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
             resp_attr = getattr(resp, attr)
 
             if isinstance(resp_attr, dict):
-                setattr(resp, attr, yaml.safe_dump(resp_attr))
+                setattr(resp, attr, yaml.safe_dump(resp_attr, **kwargs))
             elif isinstance(resp_attr, (list, tuple)):
-                setattr(resp, attr, yaml.safe_dump_all(resp_attr))
+                setattr(resp, attr, yaml.safe_dump_all(resp_attr, **kwargs))
