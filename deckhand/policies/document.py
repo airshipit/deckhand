@@ -84,7 +84,7 @@ Only enforced after ``list_cleartext_documents`` passes.
 
 Conditionally enforced for the endpoints below if any of the documents in the
 request body have a ``metadata.storagePolicy`` of "encrypted". If policy
-enforcement fails, encrypted documents are exluded from the response.""",
+enforcement fails, encrypted documents are excluded from the response.""",
         [
             {
                 'method': 'GET',

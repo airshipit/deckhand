@@ -88,6 +88,9 @@ Supported query string parameters:
   descending order.
 * ``limit`` - int, optional - Controls number of documents returned by this
    endpoint.
+* ``cleartext-secrets`` - boolean, optional - Determines if data and substitutions
+   paths should be redacted (sha256) if a user has access to encrypted files.
+   Default is to redact the values.
 
 GET ``/revisions/{revision_id}/rendered-documents``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

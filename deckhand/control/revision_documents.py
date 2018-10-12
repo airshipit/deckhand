@@ -39,7 +39,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
     @common.sanitize_params([
         'schema', 'metadata.name', 'metadata.layeringDefinition.abstract',
         'metadata.layeringDefinition.layer', 'metadata.label',
-        'status.bucket', 'order', 'sort', 'limit'])
+        'status.bucket', 'order', 'sort', 'limit', 'cleartext-secrets'])
     def on_get(self, req, resp, sanitized_params, revision_id):
         """Returns all documents for a `revision_id`.
 
@@ -54,6 +54,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
         order_by = sanitized_params.pop('order', None)
         sort_by = sanitized_params.pop('sort', None)
         limit = sanitized_params.pop('limit', None)
+        cleartext_secrets = sanitized_params.pop('cleartext-secrets', None)
 
         filters = sanitized_params.copy()
         filters['metadata.storagePolicy'] = ['cleartext']
@@ -67,6 +68,9 @@ class RevisionDocumentsResource(api_base.BaseResource):
         except errors.RevisionNotFound as e:
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
+
+        if cleartext_secrets not in [True, 'true', 'True']:
+            documents = utils.redact_documents(documents)
 
         # Sorts by creation date by default.
         documents = utils.multisort(documents, sort_by, order_by)

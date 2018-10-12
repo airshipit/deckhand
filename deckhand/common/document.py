@@ -15,6 +15,7 @@
 import collections
 import re
 
+import hashlib
 from oslo_serialization import jsonutils as json
 from oslo_utils import uuidutils
 import six
@@ -170,6 +171,11 @@ class DocumentDict(dict):
             documents = [documents]
 
         return [DocumentDict(d) for d in documents]
+
+    @classmethod
+    def redact(cls, input):
+        return hashlib.sha256(json.dumps(input)
+                              .encode('utf-8')).hexdigest()
 
 
 def document_dict_representer(dumper, data):

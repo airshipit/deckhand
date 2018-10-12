@@ -156,7 +156,7 @@ class RealPolicyFixture(fixtures.Fixture):
         def enforce_policy_and_remember_actual_rules(
                 action, *a, **k):
             self.actual_policy_actions.append(action)
-            _do_enforce_rbac(action, *a, **k)
+            return _do_enforce_rbac(action, *a, **k)
 
         mock_do_enforce_rbac = mock.patch.object(
             deckhand.policy, '_do_enforce_rbac', autospec=True).start()
