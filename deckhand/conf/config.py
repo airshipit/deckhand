@@ -112,6 +112,7 @@ def list_opts():
             ks_loading.get_auth_plugin_conf_options('password') +
             ks_loading.get_auth_plugin_conf_options('v3password')
         ),
+        engine_group: engine_opts,
         barbican_group: (
             barbican_opts +
             ks_loading.get_session_conf_options() +
