@@ -292,5 +292,5 @@ def _format_diff_result(dr):
 def _rendered_doc(revision_id):
     """Provides rendered document by given revision id."""
     filters = {'deleted': False}
-    rendered_documents = common.get_rendered_docs(revision_id, **filters)
+    rendered_documents, _ = common.get_rendered_docs(revision_id, **filters)
     return rendered_documents

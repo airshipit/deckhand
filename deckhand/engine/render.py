@@ -12,9 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from deckhand.engine import cache
+from oslo_log import log as logging
 
-__all__ = ('render',)
+from deckhand.common import validation_message as vm
+from deckhand.engine import cache
+from deckhand import errors
+
+LOG = logging.getLogger(__name__)
+
+__all__ = ('render',
+           'validate_render')
 
 
 def render(revision_id, documents, encryption_sources=None):
@@ -43,3 +50,63 @@ def render(revision_id, documents, encryption_sources=None):
         documents,
         encryption_sources=encryption_sources,
         validate=False)
+
+
+def validate_render(revision_id, rendered_documents, validator):
+    """Validate rendered documents using ``validator``.
+
+    :param revision_id: Key used for caching rendered documents by.
+    :type revision_id: int
+    :param documents: List of rendered documents corresponding to
+        ``revision_id``.
+    :type documents: List[dict]
+    :param validator: Validation object used for validating
+        ``rendered_documents``.
+    :type validator: deckhand.engine.document_validation.DocumentValidation
+    :raises: InvalidDocumentFormat if validation fails.
+
+    """
+
+    # Perform schema validation post-rendering to ensure that rendering
+    # and substitution didn't break anything.
+    try:
+        validations = validator.validate_all()
+    except errors.InvalidDocumentFormat as e:
+        # Invalidate cache entry so that future lookups also fail.
+        cache.invalidate_one(revision_id)
+        # Post-rendering validation errors likely indicate an internal
+        # rendering bug, so override the default code to 500.
+        e.code = 500
+        LOG.error('Failed to post-validate rendered documents.')
+        LOG.exception(e.format_message())
+        raise e
+
+    error_list = []
+
+    for validation in validations:
+        if validation['status'] == 'failure':
+            error_list.extend([
+                vm.ValidationMessage(
+                    message=error['message'],
+                    name=vm.DOCUMENT_POST_RENDERING_FAILURE,
+                    doc_schema=error['schema'],
+                    doc_name=error['name'],
+                    doc_layer=error['layer'],
+                    diagnostic={
+                        k: v for k, v in error.items() if k in (
+                            'schema_path',
+                            'validation_schema',
+                            'error_section'
+                        )
+                    }
+                )
+                for error in validation['errors']
+            ])
+
+    if error_list:
+        # Invalidate cache entry so that future lookups also fail.
+        cache.invalidate_one(revision_id)
+        raise errors.InvalidDocumentFormat(
+            error_list=error_list,
+            reason='Validation',
+        )
