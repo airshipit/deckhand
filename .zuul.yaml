@@ -36,6 +36,7 @@
         - airship-deckhand-docker-build-gate
     post:
       jobs:
+        - airship-deckhand-docker-tag
         - airship-deckhand-docker-publish
 
 - nodeset:
@@ -169,7 +170,7 @@
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: airship-deckhand-single-node
-    irrelevant-files:
+    irrelevant-files: &non-code-files-template
       - ^.*\.rst$
       - ^doc/.*$
       - ^charts/.*$
@@ -184,18 +185,16 @@
 
 - job:
     name: airship-deckhand-docker-publish
+    description: |
+      Runs on every merge, unless files in a dictionary below are changed.
+      Builds and publishes container images on quay.io with a set of tags
+      listed in vars section. Waits in Zuul queue for a node (VM) assignment.
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: airship-deckhand-single-node
     secrets:
       - airship_deckhand_quay_creds
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^charts/.*$
-      - ^etc/.*$
-      - ^releasenotes/.*$
-      - ^setup.cfg$
+    irrelevant-files: *non-code-files-template
     vars:
       publish: true
       tags:
@@ -204,6 +203,23 @@
           commit: true
         static:
           - latest
+- job:
+    name: airship-deckhand-docker-tag
+    description: |
+      Runs on every merge when files in a dictionalry below are changed, and
+      adds git commit id tag onto the container image published on quay.io,
+      which has `latest` tag set. Does not wait in queue for a node (VM)
+      assignment, runs almost immediately.
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-tag.yaml
+    nodeset:
+      nodes: []
+    secrets:
+      - airship_deckhand_quay_creds
+# file pattern here must be exactly the same as in
+# airship-deckhand-docker-publish job above,
+# job will be executed on merge only when any of this files get changed
+    files: *non-code-files-template
 
 - secret:
     name: airship_deckhand_quay_creds
@@ -230,3 +246,15 @@
           Lfpty/EyKOJJpOXoBiJlsGHFLi/8gdMAAtMDf72yrQH6KxdNxdRGs5oALkUQ1IcuLbXng
           ySP8WG+DBiwjt4IAtwd/sF+jyVBzDaywxdbS6RJycI+lRThvibQ5UFpr349yOhUdETB6p
           yzFswIVmx1tHM7NhD80zwdSEj4EjG0AL3GXuwfLHGbr5WIeCaVEuCMW+XUwQpw=
+      # Token is valid for 10 years, expires on 10/10/2028
+      token: !encrypted/pkcs1-oaep
+        - Can0JzCSPRnujg8fZBtSXvLuGVRNaaoVkvCm8EKlqohnUmaryU7ColJxWYjPBxEEePxhB
+          mzkM5pD9o8PVkkUj5wxxUXlFDO73AMiwStmh2r/p+sd7bkgw5a2jzhYpBmVtn/qmEemsm
+          iIxQi0kz81qrU0H6w3r58lgskIIbD4yOYgu4DeoWmBU+yZ1V1E5RoumVQBdxB1fyenaKG
+          zR4Y6ebek31+VAlqSN0HUIYMgbc6Mt7ErEn2wjj9MxNvvP52pWDyxr5U2kKpOYdJpZt9h
+          EZgM2cF2zfuG+4KnpdONap54uVRnRcJCf6poI/l4UVYO5Z+EvlF3Xawp3jiPCMCGGy3dd
+          lEeEkvNzJppwAj5bEWT1NoFi7PigkK91znppVHu17jBEKkcl2S6LK87RTjfqnBsAmE30d
+          ibxqS7pCoSCGuUCP4XrW8QfI70Ml4Gb636bZUqZFi1WxzhfNKSO8LBPHekVQnwrmhhv2Z
+          CN9JZdtqR49JpHajubfYrtWxPHuiwnTwgsnpkpM0+5Z1nss/nQhW70uCBXvJkYUtenV87
+          c4Exr6ncOjgtqtjheW16hAGLtm2o36ZvBoLD7yqwYAjwb0bfuzDrw8oWa2yAgOcWnHPO6
+          w0lNv46YTHiJK9hezHqI0hgn5wifVI8avRZmHwaArVvX4LUXD2N/Tk7mxi7r2U=
