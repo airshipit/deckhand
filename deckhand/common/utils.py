@@ -385,9 +385,21 @@ def deepfilter(dct, **filters):
 
 
 def redact_document(document):
+    """Redact ``data`` and ``substitutions`` sections for ``document``.
+
+    :param dict document: Document whose data to redact.
+    :returns: Document with redacted data.
+    :rtype: dict
+    """
     d = _to_document(document)
     if d.is_encrypted:
         document['data'] = document_dict.redact(d.data)
+        # FIXME(felipemonteiro): This block should be out-dented by 4 spaces
+        # because cleartext documents that substitute from encrypted documents
+        # should be subject to this redaction as well. However, doing this
+        # will result in substitution failures; the solution is to add a
+        # helper to :class:`deckhand.common.DocumentDict` that checks whether
+        # its metadata.substitutions is redacted - if so, skips substitution.
         if d.substitutions:
             subs = d.substitutions
             for s in subs:

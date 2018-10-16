@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import hashlib
 import jsonpath_ng
 import mock
 
+from oslo_serialization import jsonutils as json
 from testtools.matchers import Equals
 from testtools.matchers import MatchesAny
 
 from deckhand.common import utils
 from deckhand import errors
+from deckhand import factories
 from deckhand.tests.unit import base as test_base
 
 
@@ -241,3 +244,46 @@ class TestJSONPathUtilsCaching(test_base.DeckhandTestCase):
         # in case CI jobs clash.)
         self.assertThat(
             self.jsonpath_call_count, MatchesAny(Equals(0), Equals(1)))
+
+
+class TestRedactDocuments(test_base.DeckhandTestCase):
+    """Validate Redact function works"""
+
+    def test_redact_rendered_document(self):
+
+        self.factory = factories.DocumentSecretFactory()
+        mapping = {
+            "_GLOBAL_DATA_1_": {"data": {"a": {"x": 1, "y": 2}}},
+            "_GLOBAL_SUBSTITUTIONS_1_": [{
+                "dest": {
+                    "path": ".c"
+                },
+                "src": {
+                    "schema": "deckhand/Certificate/v1",
+                    "name": "global-cert",
+                    "path": "."
+                }
+            }]
+        }
+        data = mapping['_GLOBAL_DATA_1_']['data']
+        doc_factory = factories.DocumentFactory(1, [1])
+        document = doc_factory.gen_test(
+            mapping, global_abstract=False)[-1]
+        document['metadata']['storagePolicy'] = 'encrypted'
+
+        with mock.patch.object(hashlib, 'sha256', autospec=True,
+                               return_value=mock.sentinel.redacted)\
+                as mock_sha256:
+            redacted = mock.MagicMock()
+            mock_sha256.return_value = redacted
+            redacted.hexdigest.return_value = json.dumps(data)
+            mock.sentinel.redacted = redacted.hexdigest.return_value
+            redacted_doc = utils.redact_document(document)
+
+        self.assertEqual(mock.sentinel.redacted, redacted_doc['data'])
+        self.assertEqual(mock.sentinel.redacted,
+                         redacted_doc['metadata']['substitutions'][0]
+                         ['src']['path'])
+        self.assertEqual(mock.sentinel.redacted,
+                         redacted_doc['metadata']['substitutions'][0]
+                         ['dest']['path'])

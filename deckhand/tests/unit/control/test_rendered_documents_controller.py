@@ -20,6 +20,7 @@ from deckhand.control import revision_documents
 from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import factories
+from deckhand.tests import test_utils
 from deckhand.tests.unit.control import base as test_base
 from deckhand import types
 
@@ -194,6 +195,100 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
         self.assertEqual(2, len(second_revision_ids))
         self.assertEqual([2, 2], first_revision_ids)
         self.assertEqual([4, 4], second_revision_ids)
+
+
+class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
+
+    def _test_list_rendered_documents(self, cleartext_secrets):
+        rules = {
+            'deckhand:list_cleartext_documents': '@',
+            'deckhand:list_encrypted_documents': '@',
+            'deckhand:create_cleartext_documents': '@',
+            'deckhand:create_encrypted_documents': '@'}
+
+        self.policy.set_rules(rules)
+
+        doc_factory = factories.DocumentFactory(1, [1])
+
+        layering_policy = doc_factory.gen_test({})[0]
+        layering_policy['data']['layerOrder'] = ['global', 'site']
+        certificate_data = 'sample-certificate'
+        certificate_ref = ('http://127.0.0.1/key-manager/v1/secrets/%s'
+                           % test_utils.rand_uuid_hex())
+
+        doc1 = {
+            'data': certificate_data,
+            'schema': 'deckhand/Certificate/v1', 'name': 'example-cert',
+            'layer': 'site',
+            'metadata': {
+                'schema': 'metadata/Document/v1',
+                'name': 'example-cert',
+                'layeringDefinition': {
+                    'abstract': False,
+                    'layer': 'site'}, 'storagePolicy': 'encrypted',
+                'replacement': False}}
+
+        doc2 = {'data': {}, 'schema': 'example/Kind/v1',
+                'name': 'deckhand-global', 'layer': 'global',
+                'metadata': {
+                    'labels': {'global': 'global1'},
+                    'storagePolicy': 'cleartext',
+                    'layeringDefinition': {'abstract': False,
+                                           'layer': 'global'},
+                    'name': 'deckhand-global',
+                    'schema': 'metadata/Document/v1', 'substitutions': [
+                        {'dest': {'path': '.'},
+                         'src': {'schema': 'deckhand/Certificate/v1',
+                                 'name': 'example-cert', 'path': '.'}}],
+                    'replacement': False}}
+
+        payload = [layering_policy, doc1, doc2]
+
+        # Create both documents and mock out SecretsManager.create to return
+        # a fake Barbican ref.
+        with mock.patch.object(  # noqa
+                secrets_manager.SecretsManager, 'create',
+                return_value=certificate_ref):
+            resp = self.app.simulate_put(
+                '/api/v1.0/buckets/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        # Retrieve rendered documents and simulate a Barbican lookup by
+        # causing the actual certificate data to be returned.
+        with mock.patch.object(secrets_manager.SecretsManager, 'get',  # noqa
+                               return_value=certificate_data):
+            resp = self.app.simulate_get(
+                '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+                headers={'Content-Type': 'application/x-yaml'},
+                params={
+                    'metadata.name': ['example-cert', 'deckhand-global'],
+                    'cleartext-secrets': str(cleartext_secrets)
+                },
+                params_csv=False)
+
+        self.assertEqual(200, resp.status_code)
+        rendered_documents = list(yaml.safe_load_all(resp.text))
+        self.assertEqual(2, len(rendered_documents))
+
+        if cleartext_secrets is True:
+            # Expect the cleartext data to be returned.
+            self.assertTrue(all(map(lambda x: x['data'] == certificate_data,
+                                rendered_documents)))
+        else:
+            # Expected redacted data for both documents to be returned -
+            # because the destination document should receive redacted data.
+            self.assertTrue(all(map(lambda x: x['data'] != certificate_data,
+                                rendered_documents)))
+
+    def test_list_rendered_documents_cleartext_secrets_true(self):
+        self._test_list_rendered_documents(cleartext_secrets=True)
+
+    def test_list_rendered_documents_cleartext_secrets_false(self):
+        self._test_list_rendered_documents(cleartext_secrets=False)
 
 
 class TestRenderedDocumentsControllerNegative(

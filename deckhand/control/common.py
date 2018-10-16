@@ -23,6 +23,7 @@ import six
 
 from deckhand.barbican import cache as barbican_cache
 from deckhand.common import document as document_wrapper
+from deckhand.common import utils
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import engine
 from deckhand.engine import cache as engine_cache
@@ -130,7 +131,9 @@ def sanitize_params(allowed_params):
                         else:
                             sanitized_params[key] = param_val
 
-            func_args = func_args + (sanitized_params,)
+            req.params.clear()
+            req.params.update(sanitized_params)
+
             return func(self, req, *func_args, **func_kwargs)
 
         return wrapper
@@ -144,10 +147,13 @@ def invalidate_cache_data():
     engine_cache.invalidate()
 
 
-def get_rendered_docs(revision_id, **filters):
+def get_rendered_docs(revision_id, cleartext_secrets=False, **filters):
     data = _retrieve_documents_for_rendering(revision_id, **filters)
     documents = document_wrapper.DocumentDict.from_list(data)
     encryption_sources = _resolve_encrypted_data(documents)
+
+    if not cleartext_secrets:
+        documents = utils.redact_documents(documents)
     try:
         return engine.render(
             revision_id,

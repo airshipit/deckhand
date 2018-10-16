@@ -40,7 +40,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
         'schema', 'metadata.name', 'metadata.layeringDefinition.abstract',
         'metadata.layeringDefinition.layer', 'metadata.label',
         'status.bucket', 'order', 'sort', 'limit', 'cleartext-secrets'])
-    def on_get(self, req, resp, sanitized_params, revision_id):
+    def on_get(self, req, resp, revision_id):
         """Returns all documents for a `revision_id`.
 
         Returns a multi-document YAML response containing all the documents
@@ -51,12 +51,13 @@ class RevisionDocumentsResource(api_base.BaseResource):
         include_encrypted = policy.conditional_authorize(
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
 
-        order_by = sanitized_params.pop('order', None)
-        sort_by = sanitized_params.pop('sort', None)
-        limit = sanitized_params.pop('limit', None)
-        cleartext_secrets = sanitized_params.pop('cleartext-secrets', None)
+        order_by = req.params.pop('order', None)
+        sort_by = req.params.pop('sort', None)
+        limit = req.params.pop('limit', None)
+        cleartext_secrets = req.get_param_as_bool('cleartext-secrets')
+        req.params.pop('cleartext-secrets', None)
 
-        filters = sanitized_params.copy()
+        filters = req.params.copy()
         filters['metadata.storagePolicy'] = ['cleartext']
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
@@ -69,7 +70,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
             LOG.exception(six.text_type(e))
             raise falcon.HTTPNotFound(description=e.format_message())
 
-        if cleartext_secrets not in [True, 'true', 'True']:
+        if not cleartext_secrets:
             documents = utils.redact_documents(documents)
 
         # Sorts by creation date by default.
@@ -100,8 +101,9 @@ class RenderedDocumentsResource(api_base.BaseResource):
     @policy.authorize('deckhand:list_cleartext_documents')
     @common.sanitize_params([
         'schema', 'metadata.name', 'metadata.layeringDefinition.layer',
-        'metadata.label', 'status.bucket', 'order', 'sort', 'limit'])
-    def on_get(self, req, resp, sanitized_params, revision_id):
+        'metadata.label', 'status.bucket', 'order', 'sort', 'limit',
+        'cleartext-secrets'])
+    def on_get(self, req, resp, revision_id):
         include_encrypted = policy.conditional_authorize(
             'deckhand:list_encrypted_documents', req.context, do_raise=False)
         filters = {
@@ -111,8 +113,10 @@ class RenderedDocumentsResource(api_base.BaseResource):
         if include_encrypted:
             filters['metadata.storagePolicy'].append('encrypted')
 
+        cleartext_secrets = req.get_param_as_bool('cleartext-secrets')
+        req.params.pop('cleartext-secrets', None)
         rendered_documents, cache_hit = common.get_rendered_docs(
-            revision_id, **filters)
+            revision_id, cleartext_secrets, **filters)
 
         # If the rendered documents result set is cached, then post-validation
         # for that result set has already been performed successfully, so it
@@ -128,10 +132,10 @@ class RenderedDocumentsResource(api_base.BaseResource):
         # involved in rendering. User filters can only be applied once all
         # documents have been rendered. Note that `layering` module only
         # returns concrete documents, so no filtering for that is needed here.
-        order_by = sanitized_params.pop('order', None)
-        sort_by = sanitized_params.pop('sort', None)
-        limit = sanitized_params.pop('limit', None)
-        user_filters = sanitized_params.copy()
+        order_by = req.params.pop('order', None)
+        sort_by = req.params.pop('sort', None)
+        limit = req.params.pop('limit', None)
+        user_filters = req.params.copy()
 
         rendered_documents = [
             d for d in rendered_documents if utils.deepfilter(

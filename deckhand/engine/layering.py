@@ -708,7 +708,7 @@ class DocumentLayering(object):
             # Otherwise, retrieve the encrypted data for the document if its
             # data has been encrypted so that future references use the actual
             # secret payload, rather than the Barbican secret reference.
-            elif doc.is_encrypted:
+            elif doc.is_encrypted and doc.has_barbican_ref:
                 encrypted_data = self.secrets_substitution\
                     .get_unencrypted_data(doc.data, doc, doc)
                 if not doc.is_abstract:
