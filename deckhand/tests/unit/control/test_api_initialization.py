@@ -99,8 +99,6 @@ class TestApi(test_base.DeckhandTestCase):
                       self.revision_tags_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/tags/{tag}',
                       self.revision_tags_resource()),
-            mock.call('/api/v1.0/rollback/{revision_id}',
-                      self.rollback_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/validations',
                       self.validations_resource()),
             mock.call('/api/v1.0/revisions/{revision_id}/validations/'
@@ -109,6 +107,8 @@ class TestApi(test_base.DeckhandTestCase):
             mock.call('/api/v1.0/revisions/{revision_id}/validations/'
                       '{validation_name}/entries/{entry_id}',
                       self.validations_resource()),
+            mock.call('/api/v1.0/rollback/{revision_id:int(min=0)}',
+                      self.rollback_resource()),
             mock.call('/versions', self.versions_resource())
         ], any_order=True)
 

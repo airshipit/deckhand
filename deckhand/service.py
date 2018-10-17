@@ -64,7 +64,8 @@ def configure_app(app, version=''):
         ('revisions/{revision_id}/validations/{validation_name}'
          '/entries/{entry_id}',
             validations.ValidationsResource()),
-        ('rollback/{revision_id}', rollback.RollbackResource())
+        # min=0 is used as revision rollback supports 0.
+        ('rollback/{revision_id:int(min=0)}', rollback.RollbackResource())
     ]
 
     for path, res in v1_0_routes:

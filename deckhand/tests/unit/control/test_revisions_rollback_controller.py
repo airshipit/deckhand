@@ -21,6 +21,37 @@ from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
 
 
+class TestRevisionsRollbackController(test_base.BaseControllerTest):
+    """Test basic scenarios for the ``RollbackResource`` controller."""
+
+    def test_rollback_to_revision_0(self):
+        rules = {'deckhand:create_cleartext_documents': '@',
+                 'deckhand:list_revisions': '@'}
+        self.policy.set_rules(rules)
+
+        # Create revision 1.
+        documents_factory = factories.DocumentFactory(1, [1])
+        payload = documents_factory.gen_test({})
+        resp = self.app.simulate_put(
+            '/api/v1.0/buckets/mop/documents',
+            headers={'Content-Type': 'application/x-yaml'},
+            body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+
+        # Rollback to revision 0 (thereby creating revision 1 in effect).
+        resp = self.app.simulate_post(
+            '/api/v1.0/rollback/%s' % 0,
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(201, resp.status_code)
+
+        # Validate that 2 revisions now exist.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions',
+            headers={'Content-Type': 'application/x-yaml'})
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual(2, yaml.safe_load(resp.text)['count'])
+
+
 class TestRevisionsRollbackControllerNegativeRBAC(
         test_base.BaseControllerTest):
     """Test suite for validating negative RBAC scenarios for revisions rollback

@@ -47,7 +47,7 @@ class RollbackResource(api_base.BaseResource):
         try:
             rollback_revision = db_api.revision_rollback(
                 revision_id, latest_revision)
-        except errors.InvalidRollback as e:
+        except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
                 LOG.exception(e.format_message())
 
