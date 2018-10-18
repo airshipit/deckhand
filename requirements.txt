@@ -2,49 +2,47 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-# Hacking already pins down pep8, pyflakes and flake8
-hacking>=1.1.0 # Apache-2.0
+hacking==1.1.0
 
-alembic>=0.9.6 # MIT
-falcon>=1.4.1 # Apache-2.0
-pbr!=2.1.0,>=4.0.3 # Apache-2.0
-PasteDeploy>=1.5.2 # MIT
-Paste # MIT
-Routes>=2.4.1 # MIT
-keystoneauth1>=3.6.1 # Apache-2.0
-networkx==2.1
-
-six>=1.11.0 # MIT
-stevedore>=1.28.0 # Apache-2.0
-python-keystoneclient>=3.16.0 # Apache-2.0
-python-memcached==1.59
-keystonemiddleware>=5.1.0 # Apache-2.0
-psycopg2==2.7.4
-uwsgi==2.0.17
+alembic==1.0.1
+beaker==1.9.1
+cryptography==2.3.1
+deepdiff==3.3.0
+falcon==1.2.0
 jsonpath-ng==1.4.3
 jsonschema==2.6.0
-beaker==1.9.1
-cryptography>=2.1 # BSD/Apache-2.0
-deepdiff==3.3.0
-
-oslo.cache>=1.30.1 # Apache-2.0
-oslo.concurrency>=3.27.0 # Apache-2.0
-oslo.config!=4.3.0,!=4.4.0  # Apache-2.0
-oslo.context>=2.20.0 # Apache-2.0
+keystoneauth1==3.4.0
+keystonemiddleware==4.17.0
+networkx==2.1
+oslo.cache==1.31.0
+oslo.concurrency==3.28.1
+oslo.config==6.6.1
+oslo.context>=2.21.0
 oslo.messaging==8.1.2
-oslo.db>=4.38.0 # Apache-2.0
-oslo.i18n!=3.15.2,>=3.20.0 # Apache-2.0
-oslo.log>=3.38.1 # Apache-2.0
-oslo.middleware>=3.35.0 # Apache-2.0
-oslo.policy>=1.35.0 # Apache-2.0
-oslo.serialization!=2.19.1,>=2.25.0 # Apache-2.0
-oslo.utils>=3.36.2 # Apache-2.0
+oslo.db==4.41.1
+oslo.log==3.40.1
+oslo.middleware==3.36.0
+oslo.policy==1.40.0
+oslo.serialization==2.28.1
+oslo.utils==3.37.1
+pbr==5.0.0
+PasteDeploy==1.5.2
+Paste==2.0.3
+psycopg2==2.7.4
 
 # TODO(alanmeadows)
 # this must match the container service
 # likely this should be imported from a
 # container sidecar long-term
-python-barbicanclient>=4.6.0  # Apache-2.0
+python-barbicanclient==4.7.0
+python-keystoneclient==3.17.0
+python-memcached==1.59
 
+requests==2.19.1
+Routes==2.4.1
+six==1.11.0
+stevedore==1.29.0
+urllib3==1.23
+uwsgi==2.0.17
 # To support profiling in non-prod
 Werkzeug==0.14.1

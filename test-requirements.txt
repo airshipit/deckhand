@@ -2,18 +2,15 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-# Hacking already pins down pep8, pyflakes and flake8
-hacking>=1.1.0 # Apache-2.0
-
-coverage!=4.4,>=4.5.1 # Apache-2.0
-fixtures>=3.0.0 # Apache-2.0/BSD
-python-subunit>=1.3.0 # Apache-2.0/BSD
-oslotest>=3.4.2 # Apache-2.0
-os-testr>=1.0.0 # Apache-2.0
-testrepository>=0.0.20 # Apache-2.0/BSD
-testtools>=2.3.0 # MIT
-bandit>=1.4.0 # Apache-2.0
+coverage==4.5.1
+fixtures==3.0.0
+python-subunit==1.3.0
+os-testr==1.0.0
+testrepository==0.0.20
+testtools==2.3.0
+bandit==1.5.1
 # NOTE(felipemonteiro): Pin here because later versions require that
-# content-type be present in empty responses, which is apparently a bug.
+# content-type be present in empty responses.
 gabbi==1.35.1
-pifpaf>=0.10.0 # Apache-2.0
+pifpaf==2.1.2
+oslotest==3.7.0
