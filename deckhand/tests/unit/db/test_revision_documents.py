@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisionDocumentsFiltering(base.TestDbBase):
+class TestRevisionDocumentsFiltering(base.DeckhandWithDBTestCase):
 
     def test_document_filtering_by_bucket_name(self):
         document = base.DocumentFixture.get_minimal_fixture()

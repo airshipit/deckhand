@@ -14,10 +14,10 @@
 
 from deckhand import errors
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisions(base.TestDbBase):
+class TestRevisions(base.DeckhandWithDBTestCase):
 
     def test_list(self):
         documents = [base.DocumentFixture.get_minimal_fixture()

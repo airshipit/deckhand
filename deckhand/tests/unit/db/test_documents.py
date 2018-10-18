@@ -19,10 +19,10 @@ from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 from deckhand import factories
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestDocuments(base.TestDbBase):
+class TestDocuments(base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(TestDocuments, self).setUp()

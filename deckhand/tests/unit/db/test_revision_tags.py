@@ -15,10 +15,10 @@
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisionTags(base.TestDbBase):
+class TestRevisionTags(base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(TestRevisionTags, self).setUp()

@@ -16,10 +16,10 @@ import copy
 
 from deckhand.engine.revision_diff import revision_diff
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisionDiffing(base.TestDbBase):
+class TestRevisionDiffing(base.DeckhandWithDBTestCase):
 
     def _verify_buckets_status(self, revision_id, comparison_revision_id,
                                expected):
@@ -307,3 +307,30 @@ class TestRevisionDiffing(base.TestDbBase):
         self._verify_buckets_status(
             revision_id_1, revision_id_4,
             {bucket_name: 'unmodified', alt_bucket_name_2: 'created'})
+
+    def test_revision_diff_delete_then_rollback(self):
+        """Validate that rolling back a revision works with bucket diff."""
+        payload = base.DocumentFixture.get_minimal_fixture()
+        bucket_name = test_utils.rand_name('bucket')
+        created_documents = self.create_documents(bucket_name, payload)
+        revision_id = created_documents[0]['revision_id']
+
+        # Delete all previously created documents.
+        deleted_documents = self.create_documents(bucket_name, [])
+        comparison_revision_id = deleted_documents[0]['revision_id']
+
+        # Validate that the empty bucket is deleted.
+        self._verify_buckets_status(
+            revision_id, comparison_revision_id, {bucket_name: 'deleted'})
+
+        # Rollback to first non-empty revision.
+        rollback_revision_id = self.rollback_revision(revision_id)['id']
+        # Validate that diffing rolled-back revision against 1 is unmodified.
+        self._verify_buckets_status(
+            revision_id, rollback_revision_id, {bucket_name: 'unmodified'})
+
+        # Validate that diffing rolled-back revision against 2 is created
+        # (because the rolled-back revision is newer than revision 2).
+        self._verify_buckets_status(
+            comparison_revision_id, rollback_revision_id,
+            {bucket_name: 'created'})
