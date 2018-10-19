@@ -24,6 +24,7 @@ from oslo_utils import excutils
 from deckhand.common.document import DocumentDict as dd
 from deckhand.common import utils
 from deckhand.common.validation_message import ValidationMessage
+from deckhand.engine import _replacement as replacement
 from deckhand.engine import document_validation
 from deckhand.engine import secrets_manager
 from deckhand.engine import utils as engine_utils
@@ -59,64 +60,18 @@ class DocumentLayering(object):
     def _calc_replacements_and_substitutions(
             self, substitution_sources):
 
-        def _check_document_with_replacement_field_has_parent(
-                parent_meta, parent, document):
-            if not parent_meta or not parent:
-                error_message = (
-                    'Document replacement requires that the document with '
-                    '`replacement: true` have a parent.')
-                raise errors.InvalidDocumentReplacement(
-                    schema=document.schema, name=document.name,
-                    layer=document.layer, reason=error_message)
-
-        def _check_replacement_and_parent_same_schema_and_name(
-                parent, document):
-            # This checks that a document can only be a replacement for
-            # another document with the same `metadata.name` and `schema`.
-            if not (document.schema == parent.schema and
-                    document.name == parent.name):
-                error_message = (
-                    'Document replacement requires that both documents '
-                    'have the same `schema` and `metadata.name`.')
-                raise errors.InvalidDocumentReplacement(
-                    schema=document.schema, name=document.name,
-                    layer=document.layer, reason=error_message)
-
-        def _check_non_replacement_and_parent_different_schema_and_name(
-                parent, document):
-            if (parent and document.schema == parent.schema and
-                    document.name == parent.name):
-                error_message = (
-                    'Non-replacement documents cannot have the same `schema` '
-                    'and `metadata.name` as their parent. Either add '
-                    '`replacement: true` to the document or give the document '
-                    'a different name.')
-                raise errors.InvalidDocumentReplacement(
-                    schema=document.schema, name=document.name,
-                    layer=document.layer, reason=error_message)
-
-        def _check_replacement_not_itself_replaced_by_another(src_ref):
-            # If the document has a replacement, use the replacement as the
-            # substitution source instead.
-            if src_ref.is_replacement:
-                error_message = ('A replacement document cannot itself'
-                                 ' be replaced by another document.')
-                raise errors.InvalidDocumentReplacement(
-                    schema=src_ref.schema, name=src_ref.name,
-                    layer=src_ref.layer, reason=error_message)
-
         for document in self._documents_by_index.values():
             parent_meta = self._parents.get(document.meta)
             parent = self._documents_by_index.get(parent_meta)
 
             if document.is_replacement:
-                _check_document_with_replacement_field_has_parent(
+                replacement.check_document_with_replacement_field_has_parent(
                     parent_meta, parent, document)
-                _check_replacement_and_parent_same_schema_and_name(
+                replacement.check_replacement_and_parent_same_schema_and_name(
                     parent, document)
                 parent.replaced_by = document
             else:
-                _check_non_replacement_and_parent_different_schema_and_name(
+                replacement.check_child_and_parent_different_metadata_name(
                     parent, document)
 
         # Since a substitution source only provides the document's
@@ -130,7 +85,7 @@ class DocumentLayering(object):
             if src_ref.meta in self._documents_by_index:
                 src_ref = self._documents_by_index[src_ref.meta]
                 if src_ref.has_replacement:
-                    _check_replacement_not_itself_replaced_by_another(src_ref)
+                    replacement.check_only_one_level_of_replacement(src_ref)
                     src_ref = src_ref.replaced_by
             substitution_source_map[(src_ref.schema, src_ref.name)] = src_ref
 
