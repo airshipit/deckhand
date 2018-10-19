@@ -98,6 +98,41 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
                       str(validations[0]['errors'][-1]))
         self.assertNotIn('scary-secret.', str(validations[0]['errors'][-1]))
 
+    def test_validation_document_duplication(self):
+        """Validate that duplicate document fails when duplicate passed in."""
+        test_document = self._read_data('sample_document')
+
+        # Should only fail when pre_validate is True as the `db` module already
+        # handles this on behalf of the controller.
+        validations = document_validation.DocumentValidation(
+            [test_document] * 2,  # Provide 2 of the same document.
+            pre_validate=True).validate_all()
+
+        expected_error = {
+            'diagnostic': mock.ANY,
+            'documents': [{
+                'layer': test_document['metadata']['layeringDefinition'][
+                    'layer'],
+                'name': test_document['metadata']['name'],
+                'schema': test_document['schema']
+            }],
+            'error': True,
+            'kind': 'ValidationMessage',
+            'level': 'Error',
+            'message': 'Duplicate document exists',
+            'name': 'Deckhand validation error'
+        }
+
+        self.assertEqual(1, len(validations[1]['errors']))
+        self.assertEqual(expected_error,
+                         validations[1]['errors'][0])
+
+        # With pre_validate=False the validation should skip.
+        validations = document_validation.DocumentValidation(
+            [test_document] * 2,  # Provide 2 of the same document.
+            pre_validate=False).validate_all()
+        self.assertEmpty(validations[1]['errors'])
+
     def test_validation_failure_sanitizes_message_secrets(self):
         data_schema_factory = factories.DataSchemaFactory()
         metadata_name = 'example/Doc/v1'
