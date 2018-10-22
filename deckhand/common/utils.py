@@ -23,6 +23,7 @@ import jsonpath_ng
 from oslo_log import log as logging
 import six
 
+from deckhand.common.document import DocumentDict as document_dict
 from deckhand.conf import config
 from deckhand import errors
 
@@ -381,3 +382,27 @@ def deepfilter(dct, **filters):
                         return False
 
     return True
+
+
+def redact_document(document):
+    d = _to_document(document)
+    if d.is_encrypted:
+        document['data'] = document_dict.redact(d.data)
+        if d.substitutions:
+            subs = d.substitutions
+            for s in subs:
+                s['src']['path'] = document_dict.redact(s['src']['path'])
+                s['dest']['path'] = document_dict.redact(s['dest']['path'])
+            document['metadata']['substitutions'] = subs
+    return document
+
+
+def redact_documents(documents):
+    return [redact_document(d) for d in documents]
+
+
+def _to_document(document):
+    clazz = document_dict
+    if not isinstance(document, clazz):
+        document = clazz(document)
+    return document

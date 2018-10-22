@@ -46,7 +46,7 @@
 # documents in the
 # request body have a ``metadata.storagePolicy`` of "encrypted". If
 # policy
-# enforcement fails, encrypted documents are exluded from the
+# enforcement fails, encrypted documents are excluded from the
 # response.
 # GET  api/v1.0/revisions/{revision_id}/documents
 # GET  api/v1.0/revisions/{revision_id}/rendered-documents

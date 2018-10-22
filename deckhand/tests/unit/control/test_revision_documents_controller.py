@@ -16,6 +16,7 @@ import yaml
 
 import mock
 
+from deckhand.common.document import DocumentDict as document_dict
 from deckhand.engine import secrets_manager
 from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
@@ -101,6 +102,93 @@ data:
 
         self.assertEqual(2, len(retrieved_documents))
         self.assertEqual(expected_data_section, retrieved_documents[0]['data'])
+
+    def _setup_payload(self):
+        data = '12345'
+        sub_src = '.source1'
+        sub_dest = '.destination2'
+        secrets_factory = factories.DocumentSecretFactory()
+        payload = [secrets_factory.gen_test('Certificate', 'encrypted')]
+        payload[0]['data'] = data
+        sub1 = {'src': {'schema': 'pegleg/SoftwareVersions/v1', 'name': 'sub1',
+                'path': sub_src}, 'dest': {'path': '.destination1'}}
+        sub2 = {'src': {'schema': 'pegleg/SoftwareVersions/v1', 'name': 'sub2',
+                'path': '.source2'}, 'dest': {'path': sub_dest}}
+        payload[0]['metadata']['substitutions'] = [sub1, sub2]
+        return payload, data, sub_src, sub_dest
+
+    def test_list_encrypted_revision_documents_redacted(self):
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@',
+                 'deckhand:create_encrypted_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a document for a bucket.
+        payload, data, sub_src, sub_dest = self._setup_payload()
+
+        with mock.patch.object(secrets_manager, 'SecretsManager',
+                               autospec=True) as mock_secrets_mgr:
+            mock_secrets_mgr.create.return_value = payload[0]['data']
+            resp = self.app.simulate_put(
+                '/api/v1.0/buckets/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        # Verify that the created document was redacted.
+        redacted_data = document_dict.redact(data)
+        redacted_sub_src = document_dict.redact(sub_src)
+        redacted_sub_dest = document_dict.redact(sub_dest)
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/documents' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'},
+            query_string='cleartext-secrets=false')
+
+        self.assertEqual(200, resp.status_code)
+        self.assertNotEqual(list(yaml.safe_load_all(resp.text)), [])
+        response_yaml = list(yaml.safe_load_all(resp.text))
+        self.assertEqual(redacted_data, response_yaml[0]['data'])
+        subs = response_yaml[0]['metadata']['substitutions']
+        self.assertEqual(redacted_sub_src, subs[0]['src']['path'])
+        self.assertEqual(redacted_sub_dest, subs[1]['dest']['path'])
+
+    def test_list_encrypted_revision_documents_cleartext_secrets(self):
+        rules = {'deckhand:list_cleartext_documents': '@',
+                 'deckhand:list_encrypted_documents': '@',
+                 'deckhand:create_cleartext_documents': '@',
+                 'deckhand:create_encrypted_documents': '@'}
+        self.policy.set_rules(rules)
+
+        # Create a document for a bucket.
+        payload, data, sub_src, sub_dest = self._setup_payload()
+
+        with mock.patch.object(secrets_manager, 'SecretsManager',
+                               autospec=True) as mock_secrets_mgr:
+            mock_secrets_mgr.create.return_value = payload[0]['data']
+            resp = self.app.simulate_put(
+                '/api/v1.0/buckets/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        # Verify that the created document was not redacted.
+        resp = self.app.simulate_get(
+            '/api/v1.0/revisions/%s/documents' % revision_id,
+            headers={'Content-Type': 'application/x-yaml'},
+            query_string='cleartext-secrets=true')
+
+        self.assertEqual(200, resp.status_code)
+        self.assertNotEqual(list(yaml.safe_load_all(resp.text)), [])
+        response_yaml = list(yaml.safe_load_all(resp.text))
+        self.assertEqual(data, response_yaml[0]['data'])
+        subs = response_yaml[0]['metadata']['substitutions']
+        self.assertEqual(sub_src, subs[0]['src']['path'])
+        self.assertEqual(sub_dest, subs[1]['dest']['path'])
 
 
 class TestRevisionDocumentsControllerNegativeRBAC(
