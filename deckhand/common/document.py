@@ -75,7 +75,7 @@ class DocumentDict(dict):
 
     @property
     def is_control(self):
-        return self.schema.startswith('deckhand/Control')
+        return self.metadata.get('schema', '').startswith('metadata/Control')
 
     @property
     def layering_definition(self):

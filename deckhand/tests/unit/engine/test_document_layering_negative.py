@@ -221,31 +221,19 @@ class TestDocumentLayeringNegative(
         self.assertRaises(
             errors.InvalidDocumentParent, self._test_layering, documents)
 
-    def test_layering_invalid_layer_order_raises_exc(self):
-        """Validate that an invalid layerOrder (which means that the document
+    def test_layering_empty_layer_order_raises_exc(self):
+        """Validate that an empty layerOrder (which means that the document
         layer won't be found in the layerOrder) raises an exception.
         """
         doc_factory = factories.DocumentFactory(1, [1])
-        lp_template, document = doc_factory.gen_test({
-            "_GLOBAL_SUBSTITUTIONS_1_": [{
-                "dest": {
-                    "path": ".c"
-                },
-                "src": {
-                    "schema": "deckhand/Certificate/v1",
-                    "name": "global-cert",
-                    "path": "."
-                }
+        layering_policy, document = doc_factory.gen_test(
+            {}, global_abstract=False)
 
-            }],
-        }, global_abstract=False)
-
-        layering_policy = copy.deepcopy(lp_template)
-        del layering_policy['data']['layerOrder']
+        layering_policy['data']['layerOrder'] = []
         error_re = "layer \'global\' .* was not found in layerOrder.*"
         self.assertRaisesRegexp(
             errors.InvalidDocumentLayer, error_re, self._test_layering,
-            [layering_policy, document], validate=True)
+            [layering_policy, document])
 
 
 class TestDocumentLayeringValidationNegative(
