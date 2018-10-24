@@ -111,8 +111,13 @@ correct schemas.
 
 .. _JSON schema: http://json-schema.org
 
+.. _layering-policy:
+
 LayeringPolicy
 ^^^^^^^^^^^^^^
+
+This document defines the strict order in which documents are layered together
+from their component parts.
 
 Only one ``LayeringPolicy`` document can exist within the system at any time.
 It is an error to attempt to insert a new ``LayeringPolicy`` document if it has
@@ -127,8 +132,8 @@ it is treated as an update to the existing document.
   the new ``LayeringPolicy``.
 
 This document defines the strict order in which documents are merged together
-from their component parts. It should result in a validation error if a
-document refers to a layer not specified in the ``LayeringPolicy``.
+from their component parts. An error is raised if a document refers to a layer
+not specified in the ``LayeringPolicy``.
 
 Below is an example of a ``LayeringPolicy`` document:
 
