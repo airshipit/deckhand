@@ -174,7 +174,9 @@ Substitute the connection information into the config file in
 
 Finally, run Deckhand::
 
-    $ chmod +x entrypoint.sh
+    # Perform DB migrations
+    $ ./entrypoint.sh alembic upgrade head
+    # Instantiate the Deckhand server
     $ ./entrypoint.sh server
 
 To kill the ephemeral DB afterward::
