@@ -21,7 +21,9 @@ PROXY           ?= http://proxy.foo.com:8000
 NO_PROXY        ?= localhost,127.0.0.1,.svc.cluster.local
 USE_PROXY       ?= false
 PUSH_IMAGE      ?= false
-COMMIT          ?= commit-id
+# use this variable for image labels added in internal build process
+LABEL           ?= com.internal
+COMMIT          ?= $(shell git rev-parse HEAD)
 IMAGE           := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
 
 # Build Deckhand Docker image for this project
@@ -52,7 +54,7 @@ tests:
 .PHONY: build_deckhand
 build_deckhand:
 ifeq ($(USE_PROXY), true)
-	docker build --network host -t $(IMAGE) \
+	docker build --network host -t $(IMAGE) --label $(LABEL) \
 		--label "org.opencontainers.image.revision=$(COMMIT)" \
 		--label "org.opencontainers.image.created=$(shell date --rfc-3339=seconds --utc)" \
 		--label "org.opencontainers.image.title=$(IMAGE_NAME)" \
@@ -64,7 +66,7 @@ ifeq ($(USE_PROXY), true)
 		--build-arg no_proxy=$(NO_PROXY) \
 		--build-arg NO_PROXY=$(NO_PROXY) .
 else
-	docker build --network host -t $(IMAGE) \
+	docker build --network host -t $(IMAGE) --label $(LABEL) \
 		--label "org.opencontainers.image.revision=$(COMMIT)" \
 		--label "org.opencontainers.image.created=$(shell date --rfc-3339=seconds --utc)" \
 		--label "org.opencontainers.image.title=$(IMAGE_NAME)" \
