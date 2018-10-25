@@ -24,7 +24,8 @@ __all__ = ('render',
            'validate_render')
 
 
-def render(revision_id, documents, encryption_sources=None):
+def render(revision_id, documents, encryption_sources=None,
+           cleartext_secrets=False):
     """Render revision documents for ``revision_id`` using raw ``documents``.
 
     :param revision_id: Key used for caching rendered documents by.
@@ -37,6 +38,8 @@ def render(revision_id, documents, encryption_sources=None):
         actual unecrypted data. If encrypting data with Barbican, the
         reference will be a Barbican secret reference.
     :type encryption_sources: dict
+    :param cleartext_secrets: Whether to show unencrypted data as cleartext.
+    :type cleartext_secrets: bool
     :returns: Rendered documents for ``revision_id``.
     :rtype: List[dict]
 
@@ -49,7 +52,8 @@ def render(revision_id, documents, encryption_sources=None):
         revision_id,
         documents,
         encryption_sources=encryption_sources,
-        validate=False)
+        validate=False,
+        cleartext_secrets=cleartext_secrets)
 
 
 def validate_render(revision_id, rendered_documents, validator):

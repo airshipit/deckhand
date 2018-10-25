@@ -176,7 +176,8 @@ class TestSecretsSubstitution(test_base.TestDbBase):
         self.secrets_factory = factories.DocumentSecretFactory()
 
     def _test_doc_substitution(self, document_mapping, substitution_sources,
-                               expected_data, encryption_sources=None):
+                               expected_data, encryption_sources=None,
+                               cleartext_secrets=True):
         payload = self.document_factory.gen_test(document_mapping,
                                                  global_abstract=False)
         bucket_name = test_utils.rand_name('bucket')
@@ -188,7 +189,8 @@ class TestSecretsSubstitution(test_base.TestDbBase):
 
         secret_substitution = secrets_manager.SecretsSubstitution(
             encryption_sources=encryption_sources,
-            substitution_sources=substitution_sources)
+            substitution_sources=substitution_sources,
+            cleartext_secrets=cleartext_secrets)
         substituted_docs = list(secret_substitution.substitute_all(documents))
         self.assertIn(expected_document, substituted_docs)
 

@@ -173,9 +173,8 @@ class DocumentDict(dict):
         return [DocumentDict(d) for d in documents]
 
     @classmethod
-    def redact(cls, input):
-        return hashlib.sha256(json.dumps(input)
-                              .encode('utf-8')).hexdigest()
+    def redact(cls, field):
+        return hashlib.sha256(json.dumps(field).encode('utf-8')).hexdigest()
 
 
 def document_dict_representer(dumper, data):

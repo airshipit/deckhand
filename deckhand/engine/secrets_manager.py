@@ -20,7 +20,7 @@ from oslo_log import log as logging
 import six
 
 from deckhand.barbican.driver import BarbicanDriver
-from deckhand.common import document as document_wrapper
+from deckhand.common.document import DocumentDict as dd
 from deckhand.common import utils
 from deckhand import errors
 
@@ -38,7 +38,7 @@ class SecretsManager(object):
 
     @staticmethod
     def requires_encryption(document):
-        clazz = document_wrapper.DocumentDict
+        clazz = dd
         if not isinstance(document, clazz):
             document = clazz(document)
         return document.is_encrypted
@@ -64,8 +64,8 @@ class SecretsManager(object):
         # TODO(fmontei): Look into POSTing Deckhand metadata into Barbican's
         # Secrets Metadata API to make it easier to track stale secrets from
         # prior revisions that need to be deleted.
-        if not isinstance(secret_doc, document_wrapper.DocumentDict):
-            secret_doc = document_wrapper.DocumentDict(secret_doc)
+        if not isinstance(secret_doc, dd):
+            secret_doc = dd(secret_doc)
 
         if secret_doc.is_encrypted:
             payload = cls.barbican_driver.create_secret(secret_doc)
@@ -100,8 +100,8 @@ class SecretsManager(object):
         :returns: None
 
         """
-        if not isinstance(document, document_wrapper.DocumentDict):
-            document = document_wrapper.DocumentDict(document)
+        if not isinstance(document, dd):
+            document = dd(document)
 
         secret_ref = document.data
         if document.is_encrypted and document.has_barbican_ref:
@@ -116,7 +116,7 @@ class SecretsSubstitution(object):
     """Class for document substitution logic for YAML files."""
 
     __slots__ = ('_fail_on_missing_sub_src', '_substitution_sources',
-                 '_encryption_sources')
+                 '_encryption_sources', '_cleartext_secrets')
 
     _insecure_reg_exps = (
         re.compile(r'^.* is not of type .+$'),
@@ -169,7 +169,9 @@ class SecretsSubstitution(object):
         return self._encryption_sources[secret_ref]
 
     def __init__(self, substitution_sources=None,
-                 fail_on_missing_sub_src=True, encryption_sources=None):
+                 fail_on_missing_sub_src=True,
+                 encryption_sources=None,
+                 cleartext_secrets=False):
         """SecretSubstitution constructor.
 
         This class will automatically detect documents that require
@@ -187,6 +189,9 @@ class SecretsSubstitution(object):
             actual unecrypted data. If encrypting data with Barbican, the
             reference will be a Barbican secret reference.
         :type encryption_sources: dict
+        :param cleartext_secrets: Whether to show unencrypted data as
+            cleartext.
+        :type cleartext_secrets: bool
         """
 
         # This maps a 2-tuple of (schema, name) to a document from which the
@@ -196,14 +201,15 @@ class SecretsSubstitution(object):
         self._substitution_sources = {}
         self._encryption_sources = encryption_sources or {}
         self._fail_on_missing_sub_src = fail_on_missing_sub_src
+        self._cleartext_secrets = cleartext_secrets
 
         if isinstance(substitution_sources, dict):
             self._substitution_sources = substitution_sources
         else:
             self._substitution_sources = dict()
             for document in substitution_sources:
-                if not isinstance(document, document_wrapper.DocumentDict):
-                    document = document_wrapper.DocumentDict(document)
+                if not isinstance(document, dd):
+                    document = dd(document)
                 if document.schema and document.name:
                     self._substitution_sources.setdefault(
                         (document.schema, document.name), document)
@@ -235,6 +241,43 @@ class SecretsSubstitution(object):
                             src_doc.name, dest_doc.schema, dest_doc.layer,
                             dest_doc.name)
 
+    def _substitute_one(self, document, src_doc, src_secret, dest_path,
+                        dest_pattern, dest_recurse=None):
+        dest_recurse = dest_recurse or {}
+        exc_message = ''
+        try:
+            substituted_data = utils.jsonpath_replace(
+                document['data'], src_secret, dest_path,
+                pattern=dest_pattern, recurse=dest_recurse)
+            if (isinstance(document['data'], dict) and
+                    isinstance(substituted_data, dict)):
+                document['data'].update(substituted_data)
+            elif substituted_data:
+                document['data'] = substituted_data
+            else:
+                exc_message = (
+                    'Failed to create JSON path "%s" in the '
+                    'destination document [%s, %s] %s. '
+                    'No data was substituted.' % (
+                        dest_path, document.schema,
+                        document.layer, document.name))
+        except Exception as e:
+            LOG.error('Unexpected exception occurred '
+                      'while attempting '
+                      'substitution using '
+                      'source document [%s, %s] %s '
+                      'referenced in [%s, %s] %s. Details: %s',
+                      src_doc.schema, src_doc.name, src_doc.layer,
+                      document.schema, document.layer,
+                      document.name,
+                      six.text_type(e))
+            exc_message = six.text_type(e)
+        finally:
+            if exc_message:
+                self._handle_unknown_substitution_exc(
+                    exc_message, src_doc, document)
+        return document
+
     def substitute_all(self, documents):
         """Substitute all documents that have a `metadata.substitutions` field.
 
@@ -259,8 +302,8 @@ class SecretsSubstitution(object):
             documents = [documents]
 
         for document in documents:
-            if not isinstance(document, document_wrapper.DocumentDict):
-                document = document_wrapper.DocumentDict(document)
+            if not isinstance(document, dd):
+                document = dd(document)
             # If the document has substitutions include it.
             if document.substitutions:
                 documents_to_substitute.append(document)
@@ -322,43 +365,26 @@ class SecretsSubstitution(object):
                     dest_pattern = each_dest_path.get('pattern', None)
                     dest_recurse = each_dest_path.get('recurse', {})
 
+                    # If the source document is encrypted and cleartext_secrets
+                    # is False, then redact the substitution metadata in the
+                    # destination document to prevent reverse-engineering of
+                    # where the sensitive data came from.
+                    if src_doc.is_encrypted and not self._cleartext_secrets:
+                        sub['src']['path'] = dd.redact(src_path)
+                        sub['dest']['path'] = dd.redact(dest_path)
+
                     LOG.debug('Substituting from schema=%s layer=%s name=%s '
                               'src_path=%s into dest_path=%s, dest_pattern=%s',
                               src_schema, src_doc.layer, src_name, src_path,
                               dest_path, dest_pattern)
 
-                    try:
-                        exc_message = ''
-                        substituted_data = utils.jsonpath_replace(
-                            document['data'], src_secret, dest_path,
-                            pattern=dest_pattern, recurse=dest_recurse)
-                        if (isinstance(document['data'], dict) and
-                                isinstance(substituted_data, dict)):
-                            document['data'].update(substituted_data)
-                        elif substituted_data:
-                            document['data'] = substituted_data
-                        else:
-                            exc_message = (
-                                'Failed to create JSON path "%s" in the '
-                                'destination document [%s, %s] %s. '
-                                'No data was substituted.' % (
-                                    dest_path, document.schema,
-                                    document.layer, document.name))
-                    except Exception as e:
-                        LOG.error('Unexpected exception occurred '
-                                  'while attempting '
-                                  'substitution using '
-                                  'source document [%s, %s] %s '
-                                  'referenced in [%s, %s] %s. Details: %s',
-                                  src_schema, src_name, src_doc.layer,
-                                  document.schema, document.layer,
-                                  document.name,
-                                  six.text_type(e))
-                        exc_message = six.text_type(e)
-                    finally:
-                        if exc_message:
-                            self._handle_unknown_substitution_exc(
-                                exc_message, src_doc, document)
+                    document = self._substitute_one(
+                        document,
+                        src_doc=src_doc,
+                        src_secret=src_secret,
+                        dest_path=dest_path,
+                        dest_pattern=dest_pattern,
+                        dest_recurse=dest_recurse)
 
         yield document
 

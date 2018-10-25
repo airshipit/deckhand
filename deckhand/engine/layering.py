@@ -384,7 +384,8 @@ class DocumentLayering(object):
                  documents,
                  validate=True,
                  fail_on_missing_sub_src=True,
-                 encryption_sources=None):
+                 encryption_sources=None,
+                 cleartext_secrets=False):
         """Contructor for ``DocumentLayering``.
 
         :param layering_policy: The document with schema
@@ -405,6 +406,9 @@ class DocumentLayering(object):
             actual unecrypted data. If encrypting data with Barbican, the
             reference will be a Barbican secret reference.
         :type encryption_sources: dict
+        :param cleartext_secrets: Whether to show unencrypted data as
+            cleartext.
+        :type cleartext_secrets: bool
 
         :raises LayeringPolicyNotFound: If no LayeringPolicy was found among
             list of ``documents``.
@@ -482,7 +486,8 @@ class DocumentLayering(object):
         self.secrets_substitution = secrets_manager.SecretsSubstitution(
             substitution_sources,
             encryption_sources=encryption_sources,
-            fail_on_missing_sub_src=fail_on_missing_sub_src)
+            fail_on_missing_sub_src=fail_on_missing_sub_src,
+            cleartext_secrets=cleartext_secrets)
 
         self._sorted_documents = self._topologically_sort_documents(
             substitution_sources)
