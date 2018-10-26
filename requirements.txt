@@ -5,44 +5,44 @@
 hacking==1.1.0
 
 alembic==1.0.1
-beaker==1.9.1
+beaker==1.10.0
 cryptography==2.3.1
 deepdiff==3.3.0
 falcon==1.4.1
 jsonpath-ng==1.4.3
 jsonschema==2.6.0
-keystoneauth1==3.4.0
-keystonemiddleware==4.17.0
-networkx==2.1
-oslo.cache==1.31.0
+keystoneauth1==3.11.1
+keystonemiddleware==5.3.0
+networkx==2.2
+oslo.cache==1.31.1
 oslo.concurrency==3.28.1
-oslo.config==6.6.1
+oslo.config==6.6.2
 oslo.context>=2.21.0
-oslo.messaging==8.1.2
+oslo.messaging==9.1.1
 oslo.db==4.41.1
 oslo.log==3.40.1
 oslo.middleware==3.36.0
-oslo.policy==1.40.0
+oslo.policy==1.40.1
 oslo.serialization==2.28.1
 oslo.utils==3.37.1
-pbr==5.0.0
+pbr==5.1.0
 PasteDeploy==1.5.2
-Paste==2.0.3
-psycopg2==2.7.4
+Paste==3.0.1
+psycopg2==2.7.5
 
 # TODO(alanmeadows)
 # this must match the container service
 # likely this should be imported from a
 # container sidecar long-term
 python-barbicanclient==4.7.0
-python-keystoneclient==3.17.0
+python-keystoneclient==3.18.0
 python-memcached==1.59
 
-requests==2.19.1
+requests==2.20.0
 Routes==2.4.1
 six==1.11.0
-stevedore==1.29.0
-urllib3==1.23
-uwsgi==2.0.17
+stevedore==1.30.0
+urllib3==1.24
+uwsgi==2.0.17.1
 # To support profiling in non-prod
 Werkzeug==0.14.1
