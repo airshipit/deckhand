@@ -6,3 +6,7 @@ sphinx_rtd_theme
 reno>=2.5.0 # Apache-2.0
 plantuml
 
+# NOTE(felipemonteiro): Required by RTD to make oslo.policy and
+# oslo.config sample generation work.
+oslo.config!=4.3.0,!=4.4.0,>=5.2.0 # Apache-2.0
+oslo.policy>=1.33.1 # Apache-2.0
