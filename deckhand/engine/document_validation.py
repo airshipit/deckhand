@@ -138,7 +138,7 @@ class GenericValidator(BaseValidator):
         return errors
 
     def validate(self, document, **kwargs):
-        """Validate ``document``against basic schema validation.
+        """Validate ``document`` against basic schema validation.
 
         Sanity-checks each document for mandatory keys like "metadata" and
         "schema".

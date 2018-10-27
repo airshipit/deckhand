@@ -14,8 +14,19 @@
    License for the specific language governing permissions and limitations
    under the License.
 
-Developer's Guide
-=================
+Contributor's Guide
+===================
+
+Contributor Overview
+--------------------
+
+.. toctree::
+   :maxdepth: 2
+
+   developer-overview
+
+Contribution Guidelines
+-----------------------
 
 .. toctree::
    :maxdepth: 2
@@ -23,8 +34,17 @@ Developer's Guide
    HACKING
    REVIEWING
    developer-overview
+
+Other Resources
+---------------
+
+.. toctree::
+   :maxdepth: 3
+
    policy-enforcement
    testing
+
+   Module Reference <api/modules>
 
 Indices and tables
 ------------------

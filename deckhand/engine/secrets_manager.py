@@ -372,8 +372,10 @@ class SecretsSubstitution(object):
         :param data: Dictionary of just-rendered document data that belongs
             to the document uniquely identified by ``meta``.
         :type data: dict
-        :returns None
+        :returns: None
+
         """
+
         schema, layer, name = meta
 
         if (schema, name) not in self._substitution_sources:

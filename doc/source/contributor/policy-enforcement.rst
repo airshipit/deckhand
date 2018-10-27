@@ -39,8 +39,8 @@ exception if the policy action is not registered under ``deckhand.policies``
 means that attempting to enforce anything not found in ``deckhand.policies``
 will error out with a 'Policy not registered' message.
 
-.. automodule:: deckhand.policy
-   :members:
+See `Deckhand's policy module <../contributor/api/deckhand.policy.html>`_ for
+more details.
 
 Sample Policy File
 ==================
