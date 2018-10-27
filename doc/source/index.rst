@@ -48,14 +48,6 @@ User's Guide
 
    users/index
 
-Developer's Guide
-=================
-
-.. toctree::
-   :maxdepth: 2
-
-   developers/index
-
 Operator's Guide
 ================
 
@@ -63,6 +55,14 @@ Operator's Guide
    :maxdepth: 2
 
    operators/index
+
+Contrbitutor's Guide
+====================
+
+.. toctree::
+   :maxdepth: 2
+
+   contributor/index
 
 Release Notes
 =============

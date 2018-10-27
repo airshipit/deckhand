@@ -39,6 +39,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
+    'sphinxcontrib.apidoc',
     'oslo_policy.sphinxpolicygen',
     # NOTE(fmontei): This is here so that readthedocs can publish releasenotes
     # as well as documentation on the same domain and to do that we use a
@@ -46,6 +47,17 @@ extensions = [
     # also required for the build.
     'reno.sphinxext'
 ]
+
+# sphinxcontrib.apidoc options
+apidoc_module_dir = '../../deckhand'
+apidoc_output_dir = 'contributor/api'
+apidoc_excluded_paths = [
+    'tests/*',
+    'tests',
+    # Avoid directly instantiating the DH service on import.
+    'cmd.py',
+]
+apidoc_separate_modules = True
 
 # oslo_policy.sphinxpolicygen options
 policy_generator_config_file = '../../etc/deckhand/policy-generator.conf'

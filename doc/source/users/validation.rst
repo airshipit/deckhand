@@ -189,13 +189,6 @@ For post-rendering validation, 2 types of behavior are possible:
 #. Failure to validate post-rendered documents results in a 500 Internal Server
    Error getting raised.
 
-Validation Module
------------------
-
-.. autoclass:: deckhand.engine.document_validation.DocumentValidation
-   :members:
-   :private-members:
-
 .. _schemas:
 
 Validation Schemas

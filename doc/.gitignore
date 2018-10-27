@@ -1,0 +1,8 @@
+# Sphinx documentation
+api/*
+build/*
+source/_static/*
+source/contributor/api/*
+
+# Files created by releasenotes build
+releasenotes/build

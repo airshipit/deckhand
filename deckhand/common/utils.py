@@ -212,11 +212,13 @@ def _execute_data_expansion(data, jsonpath):
 
 def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None):
     """Update value in ``data`` at the path specified by ``jsonpath``.
+
     If the nested path corresponding to ``jsonpath`` isn't found in ``data``,
     the path is created as an empty ``{}`` for each sub-path along the
     ``jsonpath``.
 
     Example::
+
         doc = {
             'data': {
                 'some_url': http://admin:INSERT_PASSWORD_HERE@svc-name:8080/v1
@@ -248,6 +250,7 @@ def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None):
     :raises: MissingDocumentPattern if ``pattern`` is not None and
         ``data[jsonpath]`` doesn't exist.
     :raises ValueError: If ``jsonpath`` doesn't begin with "."
+
     """
 
     # These are O(1) reference copies to avoid accidentally modifying source

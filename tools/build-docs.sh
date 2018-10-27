@@ -11,6 +11,6 @@ python -m plantuml doc/source/diagrams/*.uml
 mv doc/source/diagrams/*.png doc/source/images
 
 # Generate documentation.
-rm -rf doc/build
-rm -rf releasenotes/build
+rm -rf doc/build doc/source/contributor/api/ releasenotes/build
+sphinx-apidoc -o doc/api deckhand
 sphinx-build -W -b html doc/source doc/build/html
