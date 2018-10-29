@@ -51,6 +51,33 @@ However, Deckhand will attempt to use Barbican's `other`_ secret types where
 possible. For example, Deckhand will use "public" for document types with kind
 ``PublicKey``.
 
+.. _data-redaction:
+
+Data Redaction
+==============
+
+Deckhand supports redacting sensitive document data, including:
+
+* ``data`` section:
+
+  * to avoid exposing the Barbican secret reference, in the case of the
+    "GET documents" endpoint
+  * to avoid exposing actual secret payloads, in the case of the
+    "GET rendered-documents" endpoint
+
+* ``substitutions[n].src|dest`` sections:
+
+  * to avoid reverse-engineering where sensitive data is substituted from or
+    into (in case the sensitive data is derived via :ref:`substitution`)
+
+.. note::
+
+  Document sections related to :ref:`layering` do not require redaction because
+  secret documents are :ref:`control-documents`, which cannot be layered
+  together.
+
+See the :ref:`api-ref` for more information on how to redact sensitive data.
+
 .. _Barbican: https://docs.openstack.org/barbican/latest/api/
 .. _restriction: https://docs.openstack.org/barbican/latest/api/reference/secrets.html#get-v1-secrets
 .. _any: https://github.com/openstack/barbican/blob/7991f8b4850d76d97c3482428638f788f5798a56/barbican/plugin/interface/secret_store.py#L272
