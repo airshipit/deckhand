@@ -8,11 +8,8 @@ data:
   type: object
   properties:
     schema:
-      anyOf:
-        - type: string
-          pattern: ^metadata/Document/v\d+$
-        - type: string
-          pattern: ^metadata/Control/v\d+$
+      type: string
+      pattern: ^metadata/Control/v\d+$
     name:
       type: string
     labels:

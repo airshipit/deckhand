@@ -192,7 +192,7 @@ class GenericValidator(BaseValidator):
 class DataSchemaValidator(GenericValidator):
     """Validator for validating ``DataSchema`` documents."""
 
-    __slots__ = ('_default_schema_map', '_external_data_schemas')
+    __slots__ = ('_default_schema_map', '_current_data_schemas')
 
     def _build_schema_map(self, data_schemas):
         schema_map = copy.deepcopy(self._default_schema_map)
@@ -218,7 +218,7 @@ class DataSchemaValidator(GenericValidator):
         global _DEFAULT_SCHEMAS
 
         self._default_schema_map = _DEFAULT_SCHEMAS
-        self._external_data_schemas = [d.data for d in data_schemas]
+        self._current_data_schemas = [d.data for d in data_schemas]
         self._schema_map = self._build_schema_map(data_schemas)
 
     def _generate_validation_error_output(self, schema, document, error,
@@ -424,9 +424,9 @@ class DocumentValidation(object):
         """
 
         self._documents = []
-        self._external_data_schemas = [document_wrapper.DocumentDict(d)
-                                       for d in existing_data_schemas or []]
-        data_schema_map = {d.meta: d for d in self._external_data_schemas}
+        self._current_data_schemas = [document_wrapper.DocumentDict(d)
+                                      for d in existing_data_schemas or []]
+        data_schema_map = {d.meta: d for d in self._current_data_schemas}
 
         raw_properties = ('data', 'metadata', 'schema')
 
@@ -441,11 +441,11 @@ class DocumentValidation(object):
 
             document = document_wrapper.DocumentDict(raw_document)
             if document.schema.startswith(types.DATA_SCHEMA_SCHEMA):
-                self._external_data_schemas.append(document)
+                self._current_data_schemas.append(document)
                 # If a newer version of the same DataSchema was passed in,
                 # only use the new one and discard the old one.
                 if document.meta in data_schema_map:
-                    self._external_data_schemas.remove(
+                    self._current_data_schemas.remove(
                         data_schema_map.pop(document.meta))
 
             self._documents.append(document)
@@ -453,7 +453,7 @@ class DocumentValidation(object):
         self._pre_validate = pre_validate
 
         self._validators = [
-            DataSchemaValidator(self._external_data_schemas),
+            DataSchemaValidator(self._current_data_schemas),
         ]
         if self._pre_validate:
             # Only perform this additional validation "offline". The controller
