@@ -185,14 +185,14 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
             headers={'Content-Type': 'application/x-yaml'},
             body=payload)
 
-        with mock.patch('deckhand.control.revision_documents.db_api'
-                        '.revision_documents_get', autospec=True) \
-                as mock_get_rev_documents:
+        with mock.patch('deckhand.control.revision_documents.common'
+                        '.get_rendered_docs', autospec=True) \
+                as mock_get_rendered_docs:
             invalid_document = document_wrapper.DocumentDict(
                 yaml.safe_load(payload))
             invalid_document.pop('metadata')
+            mock_get_rendered_docs.return_value = ([invalid_document], False)
 
-            mock_get_rev_documents.return_value = [invalid_document]
             resp = self.app.simulate_get(
                 '/api/v1.0/revisions/1/rendered-documents',
                 headers={'Content-Type': 'application/x-yaml'})

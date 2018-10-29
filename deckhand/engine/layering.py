@@ -60,6 +60,10 @@ class DocumentLayering(object):
     def _calc_replacements_and_substitutions(
             self, substitution_sources):
 
+        # Used to track document names and schemas for documents that are not
+        # replacement documents
+        non_replacement_documents = set()
+
         for document in self._documents_by_index.values():
             parent_meta = self._parents.get(document.meta)
             parent = self._documents_by_index.get(parent_meta)
@@ -71,8 +75,13 @@ class DocumentLayering(object):
                     parent, document)
                 parent.replaced_by = document
             else:
+                # Handles case where parent and child have replacement: false
+                # as in this case both documents should not be replacement
+                # documents, requiring them to have different schema/name pair.
                 replacement.check_child_and_parent_different_metadata_name(
                     parent, document)
+                replacement.check_replacement_is_false_uniqueness(
+                    document, non_replacement_documents)
 
         # Since a substitution source only provides the document's
         # `metadata.name` and `schema`, their tuple acts as the dictionary key.
