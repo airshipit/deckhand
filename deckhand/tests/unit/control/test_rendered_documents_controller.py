@@ -16,6 +16,7 @@ import yaml
 
 import mock
 
+from deckhand.common.document import DocumentDict as dd
 from deckhand.control import revision_documents
 from deckhand.engine import secrets_manager
 from deckhand import errors
@@ -200,6 +201,10 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
 class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
 
     def _test_list_rendered_documents(self, cleartext_secrets):
+        """Validates that destination document that substitutes from an
+        encrypted document is appropriately redacted when ``cleartext_secrets``
+        is True.
+        """
         rules = {
             'deckhand:list_cleartext_documents': '@',
             'deckhand:list_encrypted_documents': '@',
@@ -215,6 +220,7 @@ class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
         certificate_data = 'sample-certificate'
         certificate_ref = ('http://127.0.0.1/key-manager/v1/secrets/%s'
                            % test_utils.rand_uuid_hex())
+        redacted_data = dd.redact(certificate_ref)
 
         doc1 = {
             'data': certificate_data,
@@ -228,6 +234,11 @@ class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
                     'layer': 'site'}, 'storagePolicy': 'encrypted',
                 'replacement': False}}
 
+        original_substitutions = [
+            {'dest': {'path': '.'},
+             'src': {'schema': 'deckhand/Certificate/v1',
+                     'name': 'example-cert', 'path': '.'}}
+        ]
         doc2 = {'data': {}, 'schema': 'example/Kind/v1',
                 'name': 'deckhand-global', 'layer': 'global',
                 'metadata': {
@@ -236,10 +247,8 @@ class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
                     'layeringDefinition': {'abstract': False,
                                            'layer': 'global'},
                     'name': 'deckhand-global',
-                    'schema': 'metadata/Document/v1', 'substitutions': [
-                        {'dest': {'path': '.'},
-                         'src': {'schema': 'deckhand/Certificate/v1',
-                                 'name': 'example-cert', 'path': '.'}}],
+                    'schema': 'metadata/Document/v1',
+                    'substitutions': original_substitutions,
                     'replacement': False}}
 
         payload = [layering_policy, doc1, doc2]
@@ -279,10 +288,15 @@ class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
             self.assertTrue(all(map(lambda x: x['data'] == certificate_data,
                                 rendered_documents)))
         else:
-            # Expected redacted data for both documents to be returned -
+            # Expect redacted data for both documents to be returned -
             # because the destination document should receive redacted data.
-            self.assertTrue(all(map(lambda x: x['data'] != certificate_data,
+            self.assertTrue(all(map(lambda x: x['data'] == redacted_data,
                                 rendered_documents)))
+            destination_doc = next(iter(filter(
+                lambda x: x['metadata']['name'] == 'deckhand-global',
+                rendered_documents)))
+            substitutions = destination_doc['metadata']['substitutions']
+            self.assertNotEqual(original_substitutions, substitutions)
 
     def test_list_rendered_documents_cleartext_secrets_true(self):
         self._test_list_rendered_documents(cleartext_secrets=True)

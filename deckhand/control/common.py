@@ -148,6 +148,18 @@ def invalidate_cache_data():
 
 
 def get_rendered_docs(revision_id, cleartext_secrets=False, **filters):
+    """Helper for retrieving rendered documents for ``revision_id``.
+
+    Retrieves raw documents from DB, renders them, and returns rendered result
+    set.
+
+    :param int revision_id: Revision ID whose documents to render.
+    :param bool cleartext_secrets: Whether to show unencrypted data as
+        cleartext.
+    :param filters: Filters used for retrieving raw documents from DB.
+    :returns: List of rendered documents.
+    :rtype: list[dict]
+    """
     data = _retrieve_documents_for_rendering(revision_id, **filters)
     documents = document_wrapper.DocumentDict.from_list(data)
     encryption_sources = _resolve_encrypted_data(documents)
@@ -158,7 +170,8 @@ def get_rendered_docs(revision_id, cleartext_secrets=False, **filters):
         return engine.render(
             revision_id,
             documents,
-            encryption_sources=encryption_sources)
+            encryption_sources=encryption_sources,
+            cleartext_secrets=cleartext_secrets)
     except (errors.BarbicanClientException,
             errors.BarbicanServerException,
             errors.InvalidDocumentLayer,

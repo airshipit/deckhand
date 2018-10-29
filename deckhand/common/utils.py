@@ -396,23 +396,23 @@ def redact_document(document):
     """
     d = _to_document(document)
     if d.is_encrypted:
-        document['data'] = document_dict.redact(d.data)
-        # FIXME(felipemonteiro): This block should be out-dented by 4 spaces
-        # because cleartext documents that substitute from encrypted documents
-        # should be subject to this redaction as well. However, doing this
-        # will result in substitution failures; the solution is to add a
-        # helper to :class:`deckhand.common.DocumentDict` that checks whether
-        # its metadata.substitutions is redacted - if so, skips substitution.
-        if d.substitutions:
-            subs = d.substitutions
-            for s in subs:
-                s['src']['path'] = document_dict.redact(s['src']['path'])
-                s['dest']['path'] = document_dict.redact(s['dest']['path'])
-            document['metadata']['substitutions'] = subs
-    return document
+        d.data = document_dict.redact(d.data)
+        for s in d.substitutions:
+            s['src']['path'] = document_dict.redact(s['src']['path'])
+            s['dest']['path'] = document_dict.redact(s['dest']['path'])
+    return d
 
 
 def redact_documents(documents):
+    """Redact sensitive data for each document in ``documents``.
+
+    Sensitive data includes ``data``, ``substitutions[n].src.path``, and
+    ``substitutions[n].dest.path`` fields.
+
+    :param list[dict] documents: List of documents whose data to redact.
+    :returns: Documents with redacted sensitive data.
+    :rtype: list[dict]
+    """
     return [redact_document(d) for d in documents]
 
 
