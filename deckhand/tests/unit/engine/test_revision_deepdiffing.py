@@ -16,10 +16,10 @@ import copy
 
 from deckhand.engine import revision_diff
 from deckhand import factories
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisionDeepDiffing(base.TestDbBase):
+class TestRevisionDeepDiffing(base.DeckhandWithDBTestCase):
 
     def _test_data(self):
         return {

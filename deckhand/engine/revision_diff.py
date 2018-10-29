@@ -102,8 +102,8 @@ def revision_diff(revision_id, comparison_revision_id, deepdiff=False):
         bucket_a: created
     """
     if deepdiff:
-        docs = (_rendered_doc(revision_id) if revision_id != 0 else [])
-        comparison_docs = (_rendered_doc(comparison_revision_id)
+        docs = (_render_documents(revision_id) if revision_id != 0 else [])
+        comparison_docs = (_render_documents(comparison_revision_id)
                            if comparison_revision_id != 0 else [])
     else:
         # Retrieve document history for each revision. Since `revision_id` of 0
@@ -143,7 +143,7 @@ def revision_diff(revision_id, comparison_revision_id, deepdiff=False):
     shared_buckets = set(buckets.keys()).intersection(
         comparison_buckets.keys())
     # `unshared_buckets` references buckets not shared by both `revision_id`
-    # and `comparison_revision_id` -- i.e. their non-intersection.
+    # and `comparison_revision_id` -- i.e. their union.
     unshared_buckets = set(buckets.keys()).union(
         comparison_buckets.keys()) - shared_buckets
 
@@ -163,9 +163,8 @@ def revision_diff(revision_id, comparison_revision_id, deepdiff=False):
             result[bucket_name] = 'unmodified'
         else:
             result[bucket_name] = 'modified'
-            # If deepdiff enabled
+            # If deepdiff is enabled, find out diff between buckets
             if deepdiff:
-                # find out diff between buckets
                 bucket_diff = _diff_buckets(buckets[bucket_name],
                                             comparison_buckets[bucket_name])
                 result[bucket_name + ' diff'] = bucket_diff
@@ -289,7 +288,7 @@ def _format_diff_result(dr):
     return dr
 
 
-def _rendered_doc(revision_id):
+def _render_documents(revision_id):
     """Provides rendered document by given revision id."""
     filters = {'deleted': False}
     rendered_documents, _ = common.get_rendered_docs(revision_id, **filters)

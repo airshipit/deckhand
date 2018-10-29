@@ -14,10 +14,10 @@
 
 from deckhand.control.views import document
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestDocumentViews(base.TestDbBase):
+class TestDocumentViews(base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(TestDocumentViews, self).setUp()

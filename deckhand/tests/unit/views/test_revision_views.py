@@ -14,10 +14,10 @@
 
 from deckhand.control.views import revision
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisionViews(base.TestDbBase):
+class TestRevisionViews(base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(TestRevisionViews, self).setUp()

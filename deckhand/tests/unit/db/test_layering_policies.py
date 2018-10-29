@@ -15,10 +15,10 @@
 from deckhand import errors
 from deckhand import factories
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class LayeringPoliciesBaseTest(base.TestDbBase):
+class LayeringPoliciesBaseTest(base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(LayeringPoliciesBaseTest, self).setUp()

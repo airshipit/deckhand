@@ -14,10 +14,10 @@
 
 from deckhand import errors
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisionRollback(base.TestDbBase):
+class TestRevisionRollback(base.DeckhandWithDBTestCase):
 
     def test_create_update_rollback(self):
         # Revision 1: Create 4 documents.
@@ -124,7 +124,7 @@ class TestRevisionRollback(base.TestDbBase):
         self.assertEmpty(rollback_documents)
 
 
-class TestRevisionRollbackNegative(base.TestDbBase):
+class TestRevisionRollbackNegative(base.DeckhandWithDBTestCase):
 
     def test_rollback_to_missing_revision_raises_exc(self):
         # revision_id=1 doesn't exist yet since we start from an empty DB.

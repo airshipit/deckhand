@@ -14,10 +14,10 @@
 
 from deckhand import errors
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestDocumentsNegative(base.TestDbBase):
+class TestDocumentsNegative(base.DeckhandWithDBTestCase):
 
     def test_get_documents_by_revision_id_and_wrong_filters(self):
         payload = base.DocumentFixture.get_minimal_fixture()

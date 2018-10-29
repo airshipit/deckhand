@@ -27,10 +27,10 @@ from deckhand.engine import secrets_manager
 from deckhand import errors
 from deckhand import factories
 from deckhand.tests import test_utils
-from deckhand.tests.unit.db import base as test_base
+from deckhand.tests.unit import base as test_base
 
 
-class TestSecretsManager(test_base.TestDbBase):
+class TestSecretsManager(test_base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(TestSecretsManager, self).setUp()
@@ -168,7 +168,7 @@ class TestSecretsManager(test_base.TestDbBase):
         self.assertEqual(payload, retrieved_payload)
 
 
-class TestSecretsSubstitution(test_base.TestDbBase):
+class TestSecretsSubstitution(test_base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(TestSecretsSubstitution, self).setUp()
@@ -876,7 +876,7 @@ data:
         self.assertEqual(expected, substituted_docs[0])
 
 
-class TestSecretsSubstitutionNegative(test_base.TestDbBase):
+class TestSecretsSubstitutionNegative(test_base.DeckhandWithDBTestCase):
 
     def setUp(self):
         super(TestSecretsSubstitutionNegative, self).setUp()

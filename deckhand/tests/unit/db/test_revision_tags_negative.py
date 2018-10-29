@@ -14,10 +14,10 @@
 
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import errors
-from deckhand.tests.unit.db import base
+from deckhand.tests.unit import base
 
 
-class TestRevisionTagsNegative(base.TestDbBase):
+class TestRevisionTagsNegative(base.DeckhandWithDBTestCase):
 
     def test_create_tag_revision_not_found(self):
         self.assertRaises(
