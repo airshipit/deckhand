@@ -12,11 +12,88 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import itertools
 import os
 import yaml
 
 from deckhand.tests.unit.engine import test_document_layering
+
+REPLACEMENT_3_TIER_SAMPLE = list(yaml.safe_load_all(inspect.cleandoc(
+    """
+    ---
+    schema: deckhand/LayeringPolicy/v1
+    metadata:
+      schema: metadata/Control/v1
+      name: layering-policy
+      storagePolicy: cleartext
+    data:
+      layerOrder:
+        - global
+        - region
+        - site
+    ---
+    schema: armada/Chart/v1
+    metadata:
+      schema: metadata/Document/v1
+      name: nova-global
+      storagePolicy: cleartext
+      labels:
+        name: nova-global
+        component: nova
+      layeringDefinition:
+        abstract: false
+        layer: global
+    data:
+      values:
+        pod:
+          replicas:
+            server: 16
+    ---
+    schema: armada/Chart/v1
+    metadata:
+      schema: metadata/Document/v1
+      name: nova
+      storagePolicy: cleartext
+      labels:
+        name: nova-5ec
+        component: nova
+      layeringDefinition:
+        abstract: false
+        layer: region
+        parentSelector:
+          name: nova-global
+        actions:
+          - method: merge
+            path: .
+    data: {}
+    ---
+    schema: armada/Chart/v1
+    metadata:
+      schema: metadata/Document/v1
+      replacement: true
+      storagePolicy: cleartext
+      name: nova
+      layeringDefinition:
+        abstract: false
+        layer: site
+        parentSelector:
+          name: nova-5ec
+        actions:
+          - method: merge
+            path: .
+    data:
+      values:
+        pod:
+          replicas:
+            api_metadata: 16
+            placement: 2
+            osapi: 16
+            conductor: 16
+            consoleauth: 2
+            scheduler: 2
+            novncproxy: 2
+    """)))
 
 
 class TestDocumentLayeringWithReplacement(
@@ -266,82 +343,8 @@ data:
 
         * Global document called nova-global
         * Region document called nova (layers with nova-global)
-        * Site document (replaces nova)
+        * Site document (replaces region document)
         """
-        self.documents = list(yaml.safe_load_all("""
----
-schema: deckhand/LayeringPolicy/v1
-metadata:
-  schema: metadata/Control/v1
-  name: layering-policy
-  storagePolicy: cleartext
-data:
-  layerOrder:
-    - global
-    - region
-    - site
----
-schema: armada/Chart/v1
-metadata:
-  schema: metadata/Document/v1
-  name: nova-global
-  storagePolicy: cleartext
-  labels:
-    name: nova-global
-    component: nova
-  layeringDefinition:
-    abstract: false
-    layer: global
-data:
-  values:
-    pod:
-      replicas:
-        server: 16
----
-schema: armada/Chart/v1
-metadata:
-  schema: metadata/Document/v1
-  name: nova
-  storagePolicy: cleartext
-  labels:
-    name: nova-5ec
-    component: nova
-  layeringDefinition:
-    abstract: false
-    layer: region
-    parentSelector:
-      name: nova-global
-    actions:
-      - method: merge
-        path: .
-data: {}
----
-schema: armada/Chart/v1
-metadata:
-  schema: metadata/Document/v1
-  replacement: true
-  storagePolicy: cleartext
-  name: nova
-  layeringDefinition:
-    abstract: false
-    layer: site
-    parentSelector:
-      name: nova-5ec
-    actions:
-      - method: merge
-        path: .
-data:
-  values:
-    pod:
-      replicas:
-        api_metadata: 16
-        placement: 2
-        osapi: 16
-        conductor: 16
-        consoleauth: 2
-        scheduler: 2
-        novncproxy: 2
-"""))
 
         site_expected = [
             {
@@ -372,7 +375,56 @@ data:
                 }
             }
         ]
-        self._test_layering(self.documents,
+        self._test_layering(REPLACEMENT_3_TIER_SAMPLE,
                             site_expected=site_expected,
                             region_expected=None,
                             global_expected=global_expected)
+
+    def test_multi_layer_replacement_with_intermediate_replacement(self):
+        """Validate the following scenario:
+
+        * Global document called nova-replace
+        * Region document called nova-replace (layers with nova-replace and
+          replaces it)
+        * Site document (layers with region document)
+        """
+
+        replacement_sample = list(REPLACEMENT_3_TIER_SAMPLE)
+        replacement_sample[1]['metadata']['name'] = 'nova-replace'
+        replacement_sample[2]['metadata']['name'] = 'nova-replace'
+        replacement_sample[2]['metadata']['replacement'] = True
+        replacement_sample[3]['metadata']['replacement'] = False
+
+        site_expected = [
+            {
+                "values": {
+                    "pod": {
+                        "replicas": {
+                            "api_metadata": 16,
+                            "placement": 2,
+                            "osapi": 16,
+                            "conductor": 16,
+                            "consoleauth": 2,
+                            "scheduler": 2,
+                            "novncproxy": 2,
+                            "server": 16
+                        }
+                    }
+                }
+            }
+        ]
+        region_expected = [
+            {
+                "values": {
+                    "pod": {
+                        "replicas": {
+                            "server": 16
+                        }
+                    }
+                }
+            }
+        ]
+        self._test_layering(replacement_sample,
+                            site_expected=site_expected,
+                            region_expected=region_expected,
+                            global_expected=None)

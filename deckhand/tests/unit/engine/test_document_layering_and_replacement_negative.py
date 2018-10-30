@@ -24,6 +24,10 @@ class TestDocumentLayeringReplacementNegative(
         """Validate that attempting to replace a child with its parent when
         they don't have the same ``metadata.name`` and ``schema`` results in
         exception.
+
+        global
+          |
+        site (replacement: true, incompatible with parent)
         """
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({})
@@ -52,6 +56,10 @@ class TestDocumentLayeringReplacementNegative(
         """Validate that a non-replacement document (i.e. regular document
         without `replacement: true`) cannot have the same schema/name as
         another document.
+
+        global (replacement: false)
+          |
+        site (replacement: false)
         """
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({})
@@ -68,6 +76,10 @@ class TestDocumentLayeringReplacementNegative(
     def test_replacement_without_parent_raises_exc(self):
         """Validate that attempting to do replacement without a parent document
         raises an exception.
+
+        None
+          |
+        site (replacement: true)
         """
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({})
@@ -80,9 +92,35 @@ class TestDocumentLayeringReplacementNegative(
         self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
                                 self._test_layering, documents)
 
+    def test_replacement_with_parent_replace_true_raises_exc(self):
+        """Validate that a parent document with replacement: true necessarily
+        fails if it itself doesn't have a parent.
+
+        None
+          |
+        global (replacement: true)
+          |
+        site
+        """
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test({})
+
+        documents[1]['metadata']['replacement'] = True
+
+        error_re = (r'Document replacement requires that the document with '
+                    '`replacement: true` have a parent.')
+        self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
+                                self._test_layering, documents)
+
     def test_replacement_that_is_replaced_raises_exc(self):
-        """Validate that attempting replace a replacement document raises an
+        """Validate that attempting to replace a replacement document raises an
         exception.
+
+        global
+          |
+        region (replacement: true)
+          |
+        site (replacement: true)
         """
         doc_factory = factories.DocumentFactory(3, [1, 1, 1])
         documents = doc_factory.gen_test({}, region_abstract=False,
@@ -97,5 +135,27 @@ class TestDocumentLayeringReplacementNegative(
 
         error_re = (r'A replacement document cannot itself be replaced by '
                     'another document.')
+        self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
+                                self._test_layering, documents)
+
+    def test_replacement_true_with_parent_replacement_true_raises_exc(self):
+        """Validate that when documents have the same `metadata.name` and
+        `metadata.schema` existing in different layers without any of them
+        having `replacement = true` raises an exception
+        """
+        doc_factory = factories.DocumentFactory(2, [1, 1])
+        documents = doc_factory.gen_test({})
+
+        for document in documents[1:]:
+            document['metadata']['name'] = 'foo'
+            document['schema'] = 'example/Kind/v1'
+            document['metadata']['replacement'] = False
+            if 'parentSelector' in document['metadata']['layeringDefinition']:
+                document['metadata']['layeringDefinition'].pop(
+                    'parentSelector')
+
+        error_re = (r'Documents with the same name and schema existing in '
+                    'different layers without any of them having '
+                    '`replacement = true` cannot exist.*')
         self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
                                 self._test_layering, documents)

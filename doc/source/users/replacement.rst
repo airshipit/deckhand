@@ -80,6 +80,24 @@ The following result in validation errors:
 * A replacement document cannot itself be replaced. That is, only one level
   of replacement is allowed.
 
+Here are the following possible scenarios regarding child and parent
+replacement values:
+
++-------------------------------------------------------------+
+| Child | Parent | Status                                     |
++=============================================================+
+| True  | True   | Throws InvalidDocumentReplacement exception|
++-------------------------------------------------------------+
+| False | True   | Throws InvalidDocumentReplacement exception|
++-------------------------------------------------------------+
+| True  | False  | Valid scenario                             |
++-------------------------------------------------------------+
+| False | False  | Throws InvalidDocumentReplacement exception|
++-------------------------------------------------------------+
+
+Examples
+--------
+
 Note that each key in the examples below is *mandatory* and that the
 ``parentSelector`` labels should be able to select the parent to be replaced.
 

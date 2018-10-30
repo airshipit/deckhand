@@ -75,8 +75,50 @@ def check_only_one_level_of_replacement(src_ref):
     # If the document has a replacement, use the replacement as the
     # substitution source instead.
     if src_ref.is_replacement:
-        error_message = ('A replacement document cannot itself'
-                         ' be replaced by another document.')
+        error_message = ('A replacement document cannot itself be replaced by '
+                         'another document.')
         raise errors.InvalidDocumentReplacement(
             schema=src_ref.schema, name=src_ref.name,
             layer=src_ref.layer, reason=error_message)
+
+
+def check_replacement_is_false_uniqueness(
+        document, non_replacement_documents):
+    """Validate uniqueness of ``replacement: false`` for each document
+    identifier.
+
+    This check essentially validates that each raw document (which is uniquely
+    defined by (name, schema, layer)) maps to a unique rendered document
+    (which is uniquely defined by (name, schema)). This can be done by ensuring
+    that each (name, schema) pair only has one occurrence of
+    ``replacement: false``.
+
+    Normally, a ``replacement: true`` document nukes the ``replacement: false``
+    parent. But when > 1 ``replacement: false`` documents with same (name,
+    schema) exist, the raw document unique constraint predominates over the
+    rendered document unique constraint, resulting in a breakdown in the
+    rendering process, as confusion occurs over which document to reference
+    for substitution data and the like.
+
+    :param document: current document in the collection that is being processed
+    :param non_replacement_documents: a set containing tuples of the names and
+        schemas of all the non-replacement documents
+    """
+    if not document.is_control:
+        document_identifier = (
+            document['metadata']['name'],
+            document['metadata']['schema']
+        )
+        if document_identifier in non_replacement_documents:
+            error_message = (
+                'Documents with the same name and schema existing in '
+                'different layers without any of them having '
+                '`replacement = true` cannot exist as Deckhand will '
+                'arbitrarily select any of them for processing and none are '
+                'distinguishable from one another because none are a '
+                'parent or child or a replacement document.')
+            raise errors.InvalidDocumentReplacement(
+                schema=document.schema, name=document.name,
+                layer=document.layer, reason=error_message)
+        else:
+            non_replacement_documents.add(document_identifier)
