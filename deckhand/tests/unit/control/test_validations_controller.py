@@ -348,7 +348,7 @@ class TestValidationsController(BaseValidationsControllerTest):
                                        VALIDATION_FAILURE_RESULT)
         self.assertEqual(201, resp.status_code)
         expected_error = ('The requested validation entry 5 was not found for '
-                          'validation name %s and revision ID %d.' % (
+                          'validation name %s and revision ID %d' % (
                               validation_name, revision_id))
 
         resp = self.app.simulate_get(

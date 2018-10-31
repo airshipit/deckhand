@@ -107,16 +107,14 @@ def check_replacement_is_false_uniqueness(
     if not document.is_control:
         document_identifier = (
             document['metadata']['name'],
-            document['metadata']['schema']
+            document['schema']
         )
         if document_identifier in non_replacement_documents:
             error_message = (
-                'Documents with the same name and schema existing in '
-                'different layers without any of them having '
-                '`replacement = true` cannot exist as Deckhand will '
-                'arbitrarily select any of them for processing and none are '
-                'distinguishable from one another because none are a '
-                'parent or child or a replacement document.')
+                'More than one document with the same name and schema was '
+                'found, but none has `replacement: true`. Ensure that only 2 '
+                'documents exist for each replacement and that one has '
+                '`replacement: true` and the other `replacement: false`.')
             raise errors.InvalidDocumentReplacement(
                 schema=document.schema, name=document.name,
                 layer=document.layer, reason=error_message)

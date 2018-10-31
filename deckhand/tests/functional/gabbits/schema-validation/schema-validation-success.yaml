@@ -161,7 +161,7 @@ tests:
       $.[0].details.messageList[0].level: Error
       $.[0].details.messageList[0].name: D002
       $.[0].kind: Status
-      $.[0].message: The provided documents failed schema validation.
+      $.[0].message: The provided documents failed schema validation
       $.[0].reason: Validation
       $.[0].status: Failure
 

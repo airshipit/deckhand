@@ -139,9 +139,9 @@ class TestDocumentLayeringReplacementNegative(
                                 self._test_layering, documents)
 
     def test_replacement_true_with_parent_replacement_true_raises_exc(self):
-        """Validate that when documents have the same `metadata.name` and
-        `metadata.schema` existing in different layers without any of them
-        having `replacement = true` raises an exception
+        """Validate that when documents have the same ``metadata.name`` and
+        ``schema`` existing in different layers without any of them
+        having ``replacement = true`` raises an exception
         """
         doc_factory = factories.DocumentFactory(2, [1, 1])
         documents = doc_factory.gen_test({})
@@ -154,8 +154,8 @@ class TestDocumentLayeringReplacementNegative(
                 document['metadata']['layeringDefinition'].pop(
                     'parentSelector')
 
-        error_re = (r'Documents with the same name and schema existing in '
-                    'different layers without any of them having '
-                    '`replacement = true` cannot exist.*')
+        error_re = (
+            r'More than one document with the same name and schema was found, '
+            'but none has `replacement: true`.*')
         self.assertRaisesRegexp(errors.InvalidDocumentReplacement, error_re,
                                 self._test_layering, documents)

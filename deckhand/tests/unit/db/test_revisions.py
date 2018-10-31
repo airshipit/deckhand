@@ -126,7 +126,7 @@ class TestRevisions(base.DeckhandWithDBTestCase):
 
         # Validate that all revisions were deleted.
         for revision_id in all_revision_ids:
-            error_re = (r'^The requested revision=%s was not found.$'
+            error_re = (r'^The requested revision=%s was not found$'
                         % revision_id)
             self.assertRaisesRegex(errors.RevisionNotFound, error_re,
                                    self.show_revision, revision_id)
@@ -135,7 +135,7 @@ class TestRevisions(base.DeckhandWithDBTestCase):
         for doc in created_documents:
             filters = {'id': doc['id']}
             error_re = (r'^The requested document using filters: %s was not '
-                        'found.$' % filters)
+                        'found$' % filters)
             self.assertRaisesRegex(errors.DocumentNotFound, error_re,
                                    self.show_document, **filters)
 

@@ -158,7 +158,7 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                     }
                 ]
             },
-            'message': 'The provided documents failed schema validation.',
+            'message': 'The provided documents failed schema validation',
             'metadata': {}
         }
         body = yaml.safe_load(resp.text)
@@ -224,7 +224,7 @@ class TestValidationMessageFormatting(test_base.BaseControllerTest):
                     }
                 ]
             },
-            'message': 'The provided documents failed schema validation.',
+            'message': 'The provided documents failed schema validation',
             'metadata': {}
         }
         body = yaml.safe_load(resp.text)

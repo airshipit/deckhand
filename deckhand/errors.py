@@ -160,7 +160,7 @@ class DeckhandException(Exception):
     a 'msg_fmt' property. That msg_fmt will get printf'd
     with the keyword arguments provided to the constructor.
     """
-    msg_fmt = "An unknown exception occurred."
+    msg_fmt = "An unknown exception occurred"
 
     def __init__(self, message=None, code=500, **kwargs):
         kwargs.setdefault('code', code)
@@ -195,7 +195,7 @@ class InvalidDocumentFormat(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("The provided documents failed schema validation.")
+    msg_fmt = ("The provided documents failed schema validation")
     code = 400
 
 
@@ -210,7 +210,7 @@ class InvalidDocumentLayer(DeckhandException):
     msg_fmt = ("Invalid layer '%(document_layer)s' for document "
                "[%(document_schema)s] %(document_name)s was not found in "
                "layerOrder: %(layer_order)s for provided LayeringPolicy: "
-               "%(layering_policy_name)s.")
+               "%(layering_policy_name)s")
     code = 400
 
 
@@ -234,7 +234,7 @@ class IndeterminateDocumentParent(DeckhandException):
     **Troubleshoot:**
     """
     msg_fmt = ("Too many parent documents found for document [%(schema)s, "
-               "%(layer)s] %(name)s. Found: %(found)s. Expected: 1.")
+               "%(layer)s] %(name)s. Found: %(found)s. Expected: 1")
     code = 400
 
 
@@ -246,7 +246,7 @@ class SubstitutionDependencyCycle(DeckhandException):
     * Check that there is no two-way substitution dependency between documents.
     """
     msg_fmt = ('Cannot determine substitution order as a dependency '
-               'cycle exists for the following documents: %(cycle)s.')
+               'cycle exists for the following documents: %(cycle)s')
     code = 400
 
 
@@ -266,8 +266,7 @@ class MissingDocumentKey(DeckhandException):
     msg_fmt = ("Missing action path in %(action)s needed for layering from "
                "either the data section of the parent [%(parent_schema)s, "
                "%(parent_layer)s] %(parent_name)s or child [%(child_schema)s, "
-               "%(child_layer)s] %(child_name)s "
-               "document.")
+               "%(child_layer)s] %(child_name)s document")
     code = 400
 
 
@@ -283,7 +282,7 @@ class MissingDocumentPattern(DeckhandException):
     msg_fmt = ("The destination document's `data` section is missing the "
                "pattern %(pattern)s specified under "
                "`substitutions.dest.pattern` at path %(jsonpath)s, specified "
-               "under `substitutions.dest.path`.")
+               "under `substitutions.dest.path`")
     code = 400
 
 
@@ -308,7 +307,7 @@ class UnsupportedActionMethod(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("Method in %(actions)s is invalid for document %(document)s.")
+    msg_fmt = ("Method in %(actions)s is invalid for document %(document)s")
     code = 400
 
 
@@ -318,7 +317,7 @@ class RevisionTagBadFormat(DeckhandException):
     **Troubleshoot:**
     """
     msg_fmt = ("The requested tag data %(data)s must either be null or "
-               "dictionary.")
+               "dictionary")
     code = 400
 
 
@@ -338,7 +337,7 @@ class SubstitutionSourceDataNotFound(DeckhandException):
         "%(src_path)s in source document [%(src_schema)s, %(src_layer)s] "
         "%(src_name)s which is referenced by destination document "
         "[%(dest_schema)s, %(dest_layer)s] %(dest_name)s under its "
-        "`metadata.substitutions`.")
+        "`metadata.substitutions`")
     code = 400
 
 
@@ -352,7 +351,7 @@ class EncryptionSourceNotFound(DeckhandException):
     msg_fmt = (
         "Required encryption source reference could not be resolved into a "
         "secret because it was not found among encryption sources. Ref: "
-        "%(secret_ref)s. Referenced by: [%(schema)s, %(layer)s] %(name)s.")
+        "%(secret_ref)s. Referenced by: [%(schema)s, %(layer)s] %(name)s")
     code = 400  # Indicates bad data was passed in, causing a lookup to fail.
 
 
@@ -362,7 +361,7 @@ class DocumentNotFound(DeckhandException):
     **Troubleshoot:**
     """
     msg_fmt = ("The requested document using filters: %(filters)s was not "
-               "found.")
+               "found")
     code = 404
 
 
@@ -371,7 +370,7 @@ class RevisionNotFound(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = "The requested revision=%(revision_id)s was not found."
+    msg_fmt = "The requested revision=%(revision_id)s was not found"
     code = 404
 
 
@@ -381,7 +380,7 @@ class RevisionTagNotFound(DeckhandException):
     **Troubleshoot:**
     """
     msg_fmt = ("The requested tag '%(tag)s' for revision %(revision)s was "
-               "not found.")
+               "not found")
     code = 404
 
 
@@ -392,7 +391,7 @@ class ValidationNotFound(DeckhandException):
     """
     msg_fmt = ("The requested validation entry %(entry_id)s was not found "
                "for validation name %(validation_name)s and revision ID "
-               "%(revision_id)s.")
+               "%(revision_id)s")
     code = 404
 
 
@@ -403,7 +402,7 @@ class DuplicateDocumentExists(DeckhandException):
     **Troubleshoot:**
     """
     msg_fmt = ("Document [%(schema)s, %(layer)s] %(name)s already exists in "
-               "bucket: %(bucket)s.")
+               "bucket: %(bucket)s")
     code = 409
 
 
@@ -416,7 +415,7 @@ class SingletonDocumentConflict(DeckhandException):
     msg_fmt = ("A singleton document [%(schema)s, %(layer)s] %(name)s already "
                "exists in the system. The new document(s) %(conflict)s cannot "
                "be created. To create a document with a new name, delete the "
-               "current one first.")
+               "current one first")
     code = 409
 
 
@@ -425,7 +424,7 @@ class LayeringPolicyNotFound(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = ("Required LayeringPolicy was not found for layering.")
+    msg_fmt = ("Required LayeringPolicy was not found for layering")
     code = 409
 
 
@@ -440,7 +439,7 @@ class SubstitutionSourceNotFound(DeckhandException):
     msg_fmt = (
         "Required substitution source document [%(src_schema)s] %(src_name)s "
         "was not found, yet is referenced by [%(document_schema)s] "
-        "%(document_name)s.")
+        "%(document_name)s")
     code = 409
 
 
@@ -449,7 +448,7 @@ class PolicyNotAuthorized(DeckhandException):
 
     **Troubleshoot:**
     """
-    msg_fmt = "Policy doesn't allow %(action)s to be performed."
+    msg_fmt = "Policy doesn't allow %(action)s to be performed"
     code = 403
 
 
