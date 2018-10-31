@@ -1,0 +1,99 @@
+# Test success path for revision diff with rollback to null revision.
+#
+#  1. Purges existing data to ensure test isolation
+#  2. Creates an initial document bucket
+#  3. Rollback to null (i.e revision 0)
+#  4. Verify diff between null (revision 0) and rollback revision to null
+#  5. Verify diff between rollback revision to null and null (revision 0)
+#  6. Create another document after rollback
+#  7. Verify diff between rollback revision and present revision
+#  8. Verify diff between present revision and rollback revision
+
+defaults:
+  request_headers:
+    content-type: application/x-yaml
+  response_headers:
+    content-type: application/x-yaml
+  verbose: true
+
+tests:
+  - name: purge
+    desc: Begin testing from known state.
+    DELETE: /api/v1.0/revisions
+    status: 204
+    response_headers: null
+
+  - name: create_a
+    desc: Create documents in bucket a
+    PUT: /api/v1.0/buckets/bucket_a/documents
+    status: 200
+    data: |-
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-a
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 1
+      ...
+
+  - name: rollback_to_null
+    desc: Rollback to revision 0
+    POST: /api/v1.0/rollback/0
+    status: 201
+
+  - name: verify_null_with_rollback_to_null
+    desc: Validates response for null diff rollback to null revision
+    GET: /api/v1.0/revisions/0/diff/$HISTORY['rollback_to_null'].$RESPONSE['$.[0].id']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0]: {}
+
+  - name: verify_rollback_to_null_with_null
+    desc: Validates response for rollback to null revision with null revision
+    GET: /api/v1.0/revisions/$HISTORY['rollback_to_null'].$RESPONSE['$.[0].id']/diff/0
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0]: {}
+
+  - name: create_b
+    desc: Create documents in bucket b
+    PUT: /api/v1.0/buckets/bucket_b/documents
+    status: 200
+    data: |-
+      ---
+      schema: example/Kind/v1
+      metadata:
+        schema: metadata/Document/v1
+        name: doc-b
+        storagePolicy: cleartext
+        layeringDefinition:
+          abstract: false
+          layer: site
+      data:
+        value: 2
+      ...
+
+  - name: verify_rollback_with_present
+    desc: Validates response for diff with rollack to null and create bucket b
+    GET: /api/v1.0/revisions/$HISTORY['rollback_to_null'].$RESPONSE['$.[0].id']/diff/$HISTORY['create_b'].$RESPONSE['$.[0].status.revision']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0]:
+        bucket_b: created
+
+  - name: verify_present_with_rollback
+    desc: Validates response for diff with rollack to null and create bucket b
+    GET: /api/v1.0/revisions/$HISTORY['create_b'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['rollback_to_null'].$RESPONSE['$.[0].id']
+    status: 200
+    response_multidoc_jsonpaths:
+      $.`len`: 1
+      $.[0]:
+        bucket_b: created

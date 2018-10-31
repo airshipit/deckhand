@@ -188,28 +188,11 @@ def documents_create(bucket_name, documents, session=None):
             deleted_documents = []
 
             for d in documents_to_delete:
-                doc = models.Document()
-                # Store bare minimum information about the document.
-                doc['schema'] = d['schema']
-                doc['name'] = d['name']
-                doc['layer'] = d['layer']
-                doc['data'] = {}
-                doc['meta'] = d['metadata']
-                doc['data_hash'] = _make_hash({})
-                doc['metadata_hash'] = _make_hash({})
-                doc['bucket_id'] = bucket['id']
-                doc['revision_id'] = revision['id']
+                doc = document_delete(d, revision['id'], bucket,
+                                      session=session)
 
-                # Save and mark the document as `deleted` in the database.
-                try:
-                    doc.save(session=session)
-                except db_exception.DBDuplicateEntry:
-                    raise errors.DuplicateDocumentExists(
-                        schema=doc['schema'], layer=doc['layer'],
-                        name=doc['name'], bucket=bucket['name'])
-                doc.safe_delete(session=session)
                 deleted_documents.append(doc)
-                resp.append(doc.to_dict())
+                resp.append(doc)
 
         if documents_to_create:
             LOG.debug(
@@ -238,6 +221,81 @@ def documents_create(bucket_name, documents, session=None):
     # the original revision_id, that is returned as well.
 
     return resp
+
+
+def document_delete(document, revision_id, bucket, session=None):
+    """Delete a document
+
+    Creates a new document with the bare minimum information about the document
+    that is to be deleted, and then sets the appropriate deleted fields
+
+    :param document: document object/dict to be deleted
+    :param revision_id: id of the revision where the document is to be deleted
+    :param bucket: bucket object/dict where the document will be deleted from
+    :param session: Database session object.
+    :return: dict representation of deleted document
+    """
+    session = session or get_session()
+
+    doc = models.Document()
+    # Store bare minimum information about the document.
+    doc['schema'] = document['schema']
+    doc['name'] = document['name']
+    doc['layer'] = document['layer']
+    doc['data'] = {}
+    doc['meta'] = document['metadata']
+    doc['data_hash'] = _make_hash({})
+    doc['metadata_hash'] = _make_hash({})
+    doc['bucket_id'] = bucket['id']
+    doc['revision_id'] = revision_id
+
+    # Save and mark the document as `deleted` in the database.
+    try:
+        doc.save(session=session)
+    except db_exception.DBDuplicateEntry:
+        raise errors.DuplicateDocumentExists(
+            schema=doc['schema'], layer=doc['layer'],
+            name=doc['name'], bucket=bucket['name'])
+    doc.safe_delete(session=session)
+
+    return doc.to_dict()
+
+
+def documents_delete_from_buckets_list(bucket_names, session=None):
+    """Delete all documents in the provided list of buckets
+
+    :param bucket_names: list of bucket names for which the associated
+        buckets and their documents need to be deleted.
+    :param session: Database session object.
+    :returns: A new model.Revisions object after all the documents have been
+        deleted.
+    """
+    session = session or get_session()
+
+    with session.begin():
+        # Create a new revision
+        revision = models.Revision()
+        revision.save(session=session)
+
+        for bucket_name in bucket_names:
+
+            documents_to_delete = [
+                d for d in revision_documents_get(bucket_name=bucket_name,
+                                                  session=session)
+                if "deleted" not in d or not d['deleted']
+            ]
+
+            bucket = bucket_get_or_create(bucket_name, session=session)
+
+            if documents_to_delete:
+                LOG.debug('Deleting documents: %s.',
+                          [eng_utils.meta(d) for d in documents_to_delete])
+
+                for document in documents_to_delete:
+                    document_delete(document, revision['id'], bucket,
+                                    session=session)
+
+    return revision
 
 
 def _documents_create(bucket_name, documents, session=None):
@@ -455,6 +513,24 @@ def bucket_get_or_create(bucket_name, session=None):
 
 
 ####################
+
+def bucket_get_all(session=None, **filters):
+    """Return list of all buckets.
+
+    :param session: Database session object.
+    :returns: List of dictionary representations of retrieved buckets.
+    """
+    session = session or get_session()
+
+    buckets = session.query(models.Bucket)\
+        .all()
+    result = []
+    for bucket in buckets:
+        revision_dict = bucket.to_dict()
+        if utils.deepfilter(revision_dict, **filters):
+            result.append(bucket)
+
+    return result
 
 
 def revision_create(session=None):
@@ -777,30 +853,61 @@ def revision_rollback(revision_id, latest_revision, session=None):
     :returns: The newly created revision.
     """
     session = session or get_session()
+    latest_revision_docs = revision_documents_get(latest_revision['id'],
+                                                  session=session)
     latest_revision_hashes = [
-        (d['data_hash'], d['metadata_hash'])
-        for d in latest_revision['documents']]
+        (d['data_hash'], d['metadata_hash']) for d in latest_revision_docs
+    ]
 
     if latest_revision['id'] == revision_id:
         LOG.debug('The revision being rolled back to is the current revision.'
                   'Expect no meaningful changes.')
 
     if revision_id == 0:
-        # Placeholder revision as revision_id=0 doesn't exist.
-        orig_revision = {'documents': []}
+        # Delete all existing documents in all buckets
+        all_buckets = bucket_get_all(deleted=False)
+        bucket_names = [str(b['name']) for b in all_buckets]
+        revision = documents_delete_from_buckets_list(bucket_names,
+                                                      session=session)
+
+        return revision.to_dict()
     else:
-        orig_revision = revision_get(revision_id, session=session)
+        # Sorting the documents so the documents in the new revision are in
+        # the same order as the previous revision to support stable testing
+        orig_revision_docs = sorted(revision_documents_get(revision_id,
+                                                           session=session),
+                                    key=lambda d: d['id'])
 
     # A mechanism for determining whether a particular document has changed
     # between revisions. Keyed with the document_id, the value is True if
     # it has changed, else False.
     doc_diff = {}
-    for orig_doc in orig_revision['documents']:
+    # List of unique buckets that exist in this revision
+    unique_buckets = []
+    for orig_doc in orig_revision_docs:
         if ((orig_doc['data_hash'], orig_doc['metadata_hash'])
                 not in latest_revision_hashes):
             doc_diff[orig_doc['id']] = True
         else:
             doc_diff[orig_doc['id']] = False
+        if orig_doc['bucket_id'] not in unique_buckets:
+            unique_buckets.append(orig_doc['bucket_id'])
+
+    # We need to find which buckets did not exist at this revision
+    buckets_to_delete = []
+    all_buckets = bucket_get_all(deleted=False)
+    for bucket in all_buckets:
+        if bucket['id'] not in unique_buckets:
+            buckets_to_delete.append(str(bucket['name']))
+
+    # Create the new revision,
+    if len(buckets_to_delete) > 0:
+        new_revision = documents_delete_from_buckets_list(buckets_to_delete,
+                                                          session=session)
+    else:
+        new_revision = models.Revision()
+        with session.begin():
+            new_revision.save(session=session)
 
     # No changes have been made between the target revision to rollback to
     # and the latest revision.
@@ -809,13 +916,8 @@ def revision_rollback(revision_id, latest_revision, session=None):
                   'as that of the current revision. Expect no meaningful '
                   'changes.')
 
-    # Create the new revision,
-    new_revision = models.Revision()
-    with session.begin():
-        new_revision.save(session=session)
-
     # Create the documents for the revision.
-    for orig_document in orig_revision['documents']:
+    for orig_document in orig_revision_docs:
         orig_document['revision_id'] = new_revision['id']
         orig_document['meta'] = orig_document.pop('metadata')
 
@@ -831,7 +933,7 @@ def revision_rollback(revision_id, latest_revision, session=None):
         if doc_diff[orig_document['id']]:
             new_document['orig_revision_id'] = new_revision['id']
         else:
-            new_document['orig_revision_id'] = orig_revision['id']
+            new_document['orig_revision_id'] = revision_id
 
         with session.begin():
             new_document.save(session=session)

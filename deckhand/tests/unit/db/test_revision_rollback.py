@@ -109,7 +109,7 @@ class TestRevisionRollback(base.DeckhandWithDBTestCase):
 
         rollback_revision = self.rollback_revision(0)
         rollback_documents = self.list_revision_documents(
-            rollback_revision['id'], include_history=False)
+            rollback_revision['id'], include_history=False, deleted=False)
         self.assertEqual(orig_revision_id + 1, rollback_revision['id'])
         self.assertEmpty(rollback_documents)
 
@@ -122,6 +122,87 @@ class TestRevisionRollback(base.DeckhandWithDBTestCase):
             rollback_revision['id'], include_history=False)
         self.assertEqual(1, rollback_revision['id'])
         self.assertEmpty(rollback_documents)
+
+    def test_rollback_to_revision_n_removes_buckets(self):
+        """Rolling back to revision 1 should create a revision without the
+        buckets in between.
+        """
+        payload_a = base.DocumentFixture.get_minimal_multi_fixture(count=2)
+        bucket_name_a = test_utils.rand_name('bucket')
+        created_documents_a = self.create_documents(bucket_name_a, payload_a)
+
+        payload_b = base.DocumentFixture.get_minimal_multi_fixture(count=3)
+        bucket_name_b = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name_b, payload_b)
+
+        payload_c = base.DocumentFixture.get_minimal_multi_fixture(count=3)
+        bucket_name_c = test_utils.rand_name('bucket')
+        created_documents_c = self.create_documents(bucket_name_c, payload_c)
+        orig_revision_id_c = created_documents_c[0]['revision_id']
+
+        rollback_revision = self.rollback_revision(1)
+        rollback_documents = self.list_revision_documents(
+            rollback_revision['id'], include_history=False, deleted=False)
+        self.assertEqual(orig_revision_id_c + 1, rollback_revision['id'])
+        sorted_roll = sorted(rollback_documents, key=lambda k: k['id'])
+        sorted_a = sorted(created_documents_a, key=lambda k: k['id'])
+        self.assertEqual(len(created_documents_a), len(rollback_documents))
+        ignored_fields = ['created_at',
+                          'updated_at',
+                          'orig_revision_id',
+                          'revision_id',
+                          'id']
+        self.assertDictItemsAlmostEqual(sorted_a, sorted_roll, ignored_fields)
+
+    def test_rollback_with_deleting_buckets(self):
+        """Even if deleting entire buckets before a rollback, rolling back to
+        a revision should have all the same documents
+        """
+        # Revision 1: create bucket a
+        payload_a = base.DocumentFixture.get_minimal_multi_fixture(count=2)
+        bucket_name_a = test_utils.rand_name('bucket')
+        self.create_documents(bucket_name_a, payload_a)
+
+        # Revision 2: create bucket b
+        payload_b = base.DocumentFixture.get_minimal_multi_fixture(count=3)
+        bucket_name_b = test_utils.rand_name('bucket')
+        created_documents_b = self.create_documents(bucket_name_b, payload_b)
+        orig_revision_id_b = created_documents_b[0]['revision_id']
+        revision_2_docs = self.list_revision_documents(orig_revision_id_b)
+
+        # Revision 3: explicitly delete bucket b
+        self.create_documents(bucket_name_b, [])
+
+        # Revision 4: rollback to 2, bucket a and b should exist
+        rollback_revision = self.rollback_revision(orig_revision_id_b)
+        rollback_docs = self.list_revision_documents(
+            rollback_revision['id'], include_history=False, deleted=False)
+
+        self.assertEqual(4, rollback_revision['id'])
+        self.assertEqual(len(revision_2_docs), len(rollback_docs))
+        sorted_roll = sorted(rollback_docs, key=lambda k: k['id'])
+        sorted_b = sorted(revision_2_docs, key=lambda k: k['id'])
+        ignored_fields = ['created_at',
+                          'updated_at',
+                          'orig_revision_id',
+                          'revision_id',
+                          'id']
+        self.assertDictItemsAlmostEqual(sorted_b, sorted_roll, ignored_fields)
+
+        # Revision 5: rollback to 0, should delete everything
+        self.rollback_revision(0)
+
+        # Revision 6: rollback to 2, bucket a and b should exist
+        rollback_revision = self.rollback_revision(orig_revision_id_b)
+        rollback_docs = self.list_revision_documents(
+            rollback_revision['id'], include_history=False, deleted=False)
+        revision_2_docs = self.list_revision_documents(orig_revision_id_b)
+
+        self.assertEqual(6, rollback_revision['id'])
+        self.assertEqual(len(revision_2_docs), len(rollback_docs))
+        sorted_roll = sorted(rollback_docs, key=lambda k: k['id'])
+        sorted_b = sorted(revision_2_docs, key=lambda k: k['id'])
+        self.assertDictItemsAlmostEqual(sorted_b, sorted_roll, ignored_fields)
 
 
 class TestRevisionRollbackNegative(base.DeckhandWithDBTestCase):
