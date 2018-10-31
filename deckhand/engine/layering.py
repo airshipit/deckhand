@@ -329,17 +329,18 @@ class DocumentLayering(object):
         error_list = []
         for result in results:
             for e in result['errors']:
-                LOG.error('Document [%s, %s] %s failed with pre-validation '
-                          'error: %s.', e['schema'], e['layer'], e['name'],
-                          e['message'])
-                error_list.append(
-                    ValidationMessage(
-                        message=e['message'],
-                        doc_schema=e['schema'],
-                        doc_name=e['name'],
-                        doc_layer=e['layer']
-                    )
-                )
+                for d in e['documents']:
+                    LOG.error('Document [%s, %s] %s failed with '
+                              'pre-validation error: "%s". Diagnostic: "%s".',
+                              d['schema'], d['layer'], d['name'],
+                              e['message'], e['diagnostic'])
+
+                    error_list.append(
+                        ValidationMessage(
+                            message=e['message'],
+                            doc_schema=d['schema'],
+                            doc_name=d['name'],
+                            doc_layer=d['layer']))
 
         if error_list:
             raise errors.InvalidDocumentFormat(error_list=error_list)
