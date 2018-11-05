@@ -22,6 +22,7 @@ Operator's Guide
 
    api_ref
    api_client
+   configuration
    exceptions
 
 Indices and tables

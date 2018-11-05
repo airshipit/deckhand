@@ -40,6 +40,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinxcontrib.apidoc',
+    'oslo_config.sphinxconfiggen',
     'oslo_policy.sphinxpolicygen',
     # NOTE(fmontei): This is here so that readthedocs can publish releasenotes
     # as well as documentation on the same domain and to do that we use a
@@ -58,6 +59,10 @@ apidoc_excluded_paths = [
     'cmd.py',
 ]
 apidoc_separate_modules = True
+
+# oslo_config.sphinxconfiggen options
+config_generator_config_file = '../../etc/deckhand/config-generator.conf'
+sample_config_basename = '_static/deckhand'
 
 # oslo_policy.sphinxpolicygen options
 policy_generator_config_file = '../../etc/deckhand/policy-generator.conf'
