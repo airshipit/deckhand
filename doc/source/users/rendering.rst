@@ -32,16 +32,40 @@ The following algorithms are involved during the rendering process:
 Substitution provides an "open" data sharing model in which any source
 document can be used to substitute data into any destination document.
 
+Use Cases
+^^^^^^^^^
+
+* Sharing of data between specific documents no matter their ``schema``.
+* Data sharing using pattern matching.
+* Fine-grained sharing of specific sections of data.
+
 :ref:`layering`
 ---------------
 
 Layering provides a "restricted" data inheritance model intended to help
 reduce duplication in configuration.
 
+Use Cases
+^^^^^^^^^
+
+* Sharing of data between documents with the same ``schema``.
+* Deep merging of objects and lists.
+* Layer order with multiple layers, resulting in a larger hierarchy of
+  documents.
+* Source document for data sharing can be identified via labels, allowing for
+  different documents to be used as the source for sharing, depending on
+  :ref:`parent-selection`.
+
 :ref:`replacement`
 ------------------
 
 Replacement builds on top of layering to provide yet another mechanism
 for reducing data duplication.
+
+Use Cases
+^^^^^^^^^
+
+* Same as layering, but with a need to replace higher-layer documents with
+  lower-layer documents for specific site deployments.
 
 .. _Barbican: https://docs.openstack.org/barbican/latest/api/
