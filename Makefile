@@ -22,7 +22,7 @@ NO_PROXY        ?= localhost,127.0.0.1,.svc.cluster.local
 USE_PROXY       ?= false
 PUSH_IMAGE      ?= false
 # use this variable for image labels added in internal build process
-LABEL           ?= com.internal
+LABEL           ?= org.airshipit.build=community
 COMMIT          ?= $(shell git rev-parse HEAD)
 IMAGE           := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
 
