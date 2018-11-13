@@ -1,7 +1,7 @@
 # Tests success path for document replacement.
 #
 # 1. Purges existing data to ensure test isolation
-# 2. Adds initial documents with one site that that replaces its parent
+# 2. Adds initial documents with one site that replaces its parent
 # 3. Verify that replacement of a substitution source works
 # 4. Adds initial documents with one replacement site and one non-replacement
 #    site document.
