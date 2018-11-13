@@ -16,6 +16,15 @@
 # Script to setup helm-toolkit and helm dep up the deckhand chart
 #
 HELM=$1
+HTK_REPO=${HTK_REPO:-"https://github.com/openstack/openstack-helm-infra"}
+HTK_PATH=${HTK_PATH:-""}
+HTK_STABLE_COMMIT=${HTK_COMMIT:-"2fce7e821201a5f578331370703e164d5a932fcc"}
+BUILD_DIR=${BUILD_DIR:-$(mktemp -d)}
+
+if [[ ! -z $(echo $http_proxy) ]]
+then
+  export no_proxy=$no_proxy,127.0.0.1
+fi
 
 set -x
 
@@ -23,7 +32,7 @@ function helm_serve {
   if [[ -d "$HOME/.helm" ]]; then
      echo ".helm directory found"
   else
-     ${HELM} init --client-only
+     ${HELM} init --client-only --skip-refresh
   fi
   if [[ -z $(curl -s 127.0.0.1:8879 | grep 'Helm Repository') ]]; then
      ${HELM} serve & > /dev/null
@@ -42,11 +51,19 @@ function helm_serve {
   ${HELM} repo add local http://localhost:8879/charts
 }
 
-mkdir -p build
-cd build
-git clone --depth 1 https://git.openstack.org/openstack/openstack-helm-infra.git || true
-cd openstack-helm-infra
-git pull
+mkdir -p "$BUILD_DIR"
+pushd "$BUILD_DIR"
+git clone $HTK_REPO || true
+pushd openstack-helm-infra/$HTK_PATH
+git reset --hard "${HTK_STABLE_COMMIT}"
+
 helm_serve
+# OSH Makefile is bugged, so ensure helm is in the path
+if [[ ${HELM} != "helm" ]]
+then
+  export PATH=${PATH}:$(dirname ${HELM})
+fi
+
 make helm-toolkit
-${HELM} dep up ../../charts/deckhand
+popd && popd
+${HELM} dep up charts/deckhand
