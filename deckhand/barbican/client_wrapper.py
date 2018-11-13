@@ -46,7 +46,7 @@ class BarbicanClientWrapper(object):
             return self._cached_client
 
         # TODO(fmontei): Deckhand's configuration file needs to be populated
-        # with correct Keysone authentication values as well as the Barbican
+        # with correct Keystone authentication values as well as the Barbican
         # endpoint URL automatically.
         barbican_url = CONF.barbican.api_endpoint
 
