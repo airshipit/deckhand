@@ -39,8 +39,8 @@
         - airship-deckhand-docker-build-gate
     post:
       jobs:
-        - airship-deckhand-docker-tag
         - airship-deckhand-docker-publish
+        - airship-deckhand-docker-tag
 
 - nodeset:
     name: airship-deckhand-single-node
