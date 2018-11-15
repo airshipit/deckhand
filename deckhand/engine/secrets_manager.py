@@ -357,10 +357,12 @@ class SecretsSubstitution(object):
 
                 if not isinstance(sub['dest'], list):
                     dest_array = [sub['dest']]
+                    dest_is_list = False
                 else:
                     dest_array = sub['dest']
+                    dest_is_list = True
 
-                for each_dest_path in dest_array:
+                for i, each_dest_path in enumerate(dest_array):
                     dest_path = each_dest_path['path']
                     dest_pattern = each_dest_path.get('pattern', None)
                     dest_recurse = each_dest_path.get('recurse', {})
@@ -371,7 +373,10 @@ class SecretsSubstitution(object):
                     # where the sensitive data came from.
                     if src_doc.is_encrypted and not self._cleartext_secrets:
                         sub['src']['path'] = dd.redact(src_path)
-                        sub['dest']['path'] = dd.redact(dest_path)
+                        if dest_is_list:
+                            sub['dest'][i]['path'] = dd.redact(dest_path)
+                        else:
+                            sub['dest']['path'] = dd.redact(dest_path)
 
                     LOG.debug('Substituting from schema=%s layer=%s name=%s '
                               'src_path=%s into dest_path=%s, dest_pattern=%s',
