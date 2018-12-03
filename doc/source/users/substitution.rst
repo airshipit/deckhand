@@ -208,7 +208,9 @@ the hood. The ``dest.pattern`` has the following constraints:
 * The ``dest.pattern`` must be resolvable in the value of ``dest.path``.
 
 If the above constraints are met, then more precise substitution via a pattern
-can be carried out.
+can be carried out. If ``dest.path`` is a string or multiline string then all
+occurrences of ``dest.pattern`` found in ``dest.path`` will be replaced. To handle
+a more complex ``dest.path`` read `Recursive Replacement of Patterns`_.
 
 Example
 ^^^^^^^
@@ -226,6 +228,16 @@ Example
     storagePolicy: cleartext
   data: my-secret-password
   ---
+  # Another source document.
+  schema: deckhand/Passphrase/v1
+  metadata:
+    name: another-password
+    schema: metadata/Document/v1
+    layeringDefinition:
+      layer: site
+    storagePolicy: cleartext
+  data: another-secret-password
+  ---
   # Destination document.
   schema: armada/Chart/v1
   metadata:
@@ -241,12 +253,22 @@ Example
           schema: deckhand/Passphrase/v1
           name: example-password
           path: .
+      - dest:
+          path: .chart.values.script
+          pattern: INSERT_ANOTHER_PASSWORD
+        src:
+          schema: deckhand/Passphrase/v1
+          name: another-password
+          path: .
   data:
     chart:
       details:
         data: here
       values:
         some_url: http://admin:INSERT_PASSWORD_HERE@service-name:8080/v1
+        script: |
+         some_function("INSERT_ANOTHER_PASSWORD")
+         another_function("INSERT_ANOTHER_PASSWORD")
 
 After document rendering, the output for ``example-chart-01`` (the destination
 document) will be:
@@ -267,6 +289,9 @@ document) will be:
         # Notice string replacement occurs at exact location specified by
         # ``dest.pattern``.
         some_url: http://admin:my-secret-password@service-name:8080/v1
+        script: |
+         some_function("another-secret-password")
+         another_function("another-secret-password")
 
 Recursive Replacement of Patterns
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
