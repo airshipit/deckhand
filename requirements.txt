@@ -38,7 +38,6 @@ python-barbicanclient==4.7.0
 python-keystoneclient==3.18.0
 python-memcached==1.59
 
-requests==2.20.0
 Routes==2.4.1
 six==1.11.0
 stevedore==1.30.0
