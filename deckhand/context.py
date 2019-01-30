@@ -25,15 +25,23 @@ class RequestContext(context.RequestContext):
     accesses the system, as well as additional request information.
     """
 
-    def __init__(self, project=None, **kwargs):
+    def __init__(self,
+                 project=None,
+                 context_marker='-',
+                 end_user='-',
+                 **kwargs):
         if project:
             kwargs['tenant'] = project
         self.project = project
+        self.context_marker = context_marker
+        self.end_user = end_user
         super(RequestContext, self).__init__(**kwargs)
 
     def to_dict(self):
         out_dict = super(RequestContext, self).to_dict()
         out_dict['roles'] = self.roles
+        out_dict['context_marker'] = self.context_marker
+        out_dict['end_user'] = self.end_user
 
         if out_dict.get('tenant'):
             out_dict['project'] = out_dict['tenant']

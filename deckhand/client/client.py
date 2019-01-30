@@ -194,11 +194,11 @@ class Client(object):
         :param str username: Username
         """
 
+        self.logger = logger or logging.getLogger(__name__)
+
         self.project_id = project_id
         self.project_name = project_name
         self.user_id = user_id
-
-        self.logger = logger or logging.getLogger(__name__)
 
         self.buckets = buckets.BucketManager(self)
         self.revisions = revisions.RevisionManager(self)

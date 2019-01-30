@@ -272,6 +272,7 @@ conf:
       use_stderr: true
       use_syslog: true
       profiler: false
+      logging_context_format_string: '%(asctime)s,%(msecs)03d %(levelname)-8s req_id=%(request_id)s ctx=%(context_marker)s end_user=%(end_user)s user=%(user_name)s %(name)s:%(filename)s:%(lineno)3d:%(funcName)s %(message)s'
     database:
       connection:
     keystone_authtoken:

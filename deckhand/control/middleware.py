@@ -59,6 +59,9 @@ class ContextMiddleware(object):
                 raise falcon.HTTPUnauthorized()
         else:
             req.context = deckhand.context.RequestContext.from_environ(req.env)
+        # set transaction correlation fields in context
+        req.context.end_user = req.headers.get('X-END-USER')
+        req.context.context_marker = req.headers.get('X-CONTEXT-MARKER')
 
 
 class HookableMiddlewareMixin(object):
@@ -178,3 +181,52 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
                 setattr(resp, attr, yaml.safe_dump(resp_attr, **kwargs))
             elif isinstance(resp_attr, (list, tuple)):
                 setattr(resp, attr, yaml.safe_dump_all(resp_attr, **kwargs))
+
+
+class LoggingMiddleware(object):
+    def process_resource(self, req, resp, resource, params):
+        # don't log health checks
+        if not req.url.endswith('/health'):
+            LOG.info(
+                "Request: %s %s %s",
+                req.method,
+                req.uri,
+                req.query_string)
+
+    def process_response(self, req, resp, resource, req_succeeded):
+        ctx = req.context
+        # only log health check responses if the check failed
+        if req.url.endswith('/health'):
+            resp_code = self._get_resp_code(resp)
+            if not resp_code == 204:
+                LOG.error(
+                    'Health check has failed with response status %s',
+                    resp.status)
+        else:
+            context_marker = getattr(ctx, 'context_marker', None)
+            request_id = getattr(ctx, 'request_id', None)
+            user = getattr(ctx, 'user', None)
+            end_user = getattr(ctx, 'end_user', None)
+            if context_marker is not None:
+                resp.append_header('X-Context-Marker', context_marker)
+            if request_id is not None:
+                resp.append_header('X-Deckhand-Req', request_id)
+            if end_user is not None:
+                resp.append_header('X-End-User', end_user)
+            if user is not None:
+                resp.append_header('X-User-Name', user)
+            LOG.info(
+                "Response: %s %s %s",
+                req.method,
+                req.uri,
+                resp.status)
+
+    def _get_resp_code(self, resp):
+        # Falcon response object doesn't have a raw status code.
+        # Splits by the first space
+        try:
+            return int(resp.status.split(" ", 1)[0])
+        except ValueError:
+            # if for some reason this Falcon response doesn't have a valid
+            # status, return a high value sentinel
+            return 9999

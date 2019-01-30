@@ -85,7 +85,8 @@ def deckhand_app_factory(global_config, **local_config):
     # method for `YAMLTranslator` should execute after that of any other
     # middleware to convert the response to YAML format.
     middleware_list = [middleware.YAMLTranslator(),
-                       middleware.ContextMiddleware()]
+                       middleware.ContextMiddleware(),
+                       middleware.LoggingMiddleware()]
 
     app = falcon.API(request_type=base.DeckhandRequest,
                      middleware=middleware_list)
