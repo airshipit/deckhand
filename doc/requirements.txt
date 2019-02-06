@@ -6,6 +6,7 @@ sphinx_rtd_theme
 reno>=2.5.0 # Apache-2.0
 plantuml
 sphinxcontrib-apidoc>=0.2.0  # BSD
+sphinxcontrib-plantuml
 
 # NOTE(felipemonteiro): Required by RTD to make oslo.policy and
 # oslo.config sample generation work.

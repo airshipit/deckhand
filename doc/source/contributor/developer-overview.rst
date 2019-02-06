@@ -26,7 +26,7 @@ Airship components.
 Architecture
 ============
 
-.. image:: ../images/architecture.png
+.. uml:: ../diagrams/architecture.uml
    :alt: High level architecture of Deckhand
 
 From a high-level perspective, Deckhand consists of a RESTful API, a document
@@ -41,7 +41,7 @@ Deckhand uses Barbican to securely storage sensitive document data.
 `Pegleg <https://airship-pegleg.readthedocs.io/>`_ in effect provides
 Deckhand with a CLI, which facilitates communication with Deckhand.
 
-.. image:: ../images/architecture-pegleg.png
+.. uml:: ../diagrams/architecture-pegleg.uml
    :alt: High level architecture of Deckhand + Pegleg
 
 Components

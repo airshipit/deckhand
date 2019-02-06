@@ -94,6 +94,8 @@ clean:
 	rm -rf build
 	helm delete helm-template ||:
 	rm -rf doc/build
+	# Don't remove .placeholder from doc/source/_static/
+	rm -rf doc/api doc/source/_static/* doc/source/contributor/api
 
 .PHONY: docs
 docs: clean build_docs

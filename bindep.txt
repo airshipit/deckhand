@@ -1,0 +1,6 @@
+# This file contains runtime (non-python) dependencies
+# More info at: https://docs.openstack.org/infra/bindep/readme.html
+
+# PlantUML is used for documentation builds, graphviz is it's soft  dependancy
+plantuml
+graphviz

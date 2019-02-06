@@ -40,6 +40,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
     'sphinxcontrib.apidoc',
+    'sphinxcontrib.plantuml',
     'oslo_config.sphinxconfiggen',
     'oslo_policy.sphinxpolicygen',
     # NOTE(fmontei): This is here so that readthedocs can publish releasenotes
