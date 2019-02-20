@@ -64,6 +64,14 @@ spec:
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
           ports:
             - containerPort: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /api/v1.0/health
+              port: {{ tuple "deckhand" "internal" "api" . | include "helm-toolkit.endpoints.endpoint_port_lookup" }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 10
           readinessProbe:
             httpGet:
               scheme: HTTP
