@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-BUILD_DIR       := $(shell mkdir -p build && mktemp -d -p build)
-DOCKER_REGISTRY ?= quay.io
-IMAGE_NAME      ?= deckhand
-IMAGE_PREFIX    ?= airshipit
-IMAGE_TAG       ?= latest
-HELM            := $(shell realpath $(BUILD_DIR))/helm
-PROXY           ?= http://proxy.foo.com:8000
-NO_PROXY        ?= localhost,127.0.0.1,.svc.cluster.local
-USE_PROXY       ?= false
-PUSH_IMAGE      ?= false
+BUILD_DIR          := $(shell mkdir -p build && mktemp -d -p build)
+DOCKER_REGISTRY    ?= quay.io
+IMAGE_NAME         ?= deckhand
+IMAGE_PREFIX       ?= airshipit
+IMAGE_TAG          ?= latest
+DISTRO_BASE_IMAGE  ?=
+HELM               := $(shell realpath $(BUILD_DIR))/helm
+PROXY              ?= http://proxy.foo.com:8000
+NO_PROXY           ?= localhost,127.0.0.1,.svc.cluster.local
+USE_PROXY          ?= false
+PUSH_IMAGE         ?= false
 # use this variable for image labels added in internal build process
-LABEL           ?= org.airshipit.build=community
-COMMIT          ?= $(shell git rev-parse HEAD)
-IMAGE           := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}
+LABEL              ?= org.airshipit.build=community
+DISTRO             ?= ubuntu_xenial
+COMMIT             ?= $(shell git rev-parse HEAD)
+IMAGE              := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}-${DISTRO}
 
 export
 
@@ -63,6 +65,8 @@ dry-run: clean
 tests:
 	tox
 
+_BASE_IMAGE_ARG := $(if $(DISTRO_BASE_IMAGE),--build-arg FROM="${DISTRO_BASE_IMAGE}" ,)
+
 # Make targets intended for use by the primary targets above.
 .PHONY: build_deckhand
 build_deckhand:
@@ -71,7 +75,8 @@ ifeq ($(USE_PROXY), true)
 		--label "org.opencontainers.image.revision=$(COMMIT)" \
 		--label "org.opencontainers.image.created=$(shell date --rfc-3339=seconds --utc)" \
 		--label "org.opencontainers.image.title=$(IMAGE_NAME)" \
-		-f images/deckhand/Dockerfile \
+		$(_BASE_IMAGE_ARG) \
+		-f images/deckhand/Dockerfile.$(DISTRO) \
 		--build-arg http_proxy=$(PROXY) \
 		--build-arg https_proxy=$(PROXY) \
 		--build-arg HTTP_PROXY=$(PROXY) \
@@ -83,7 +88,8 @@ else
 		--label "org.opencontainers.image.revision=$(COMMIT)" \
 		--label "org.opencontainers.image.created=$(shell date --rfc-3339=seconds --utc)" \
 		--label "org.opencontainers.image.title=$(IMAGE_NAME)" \
-		-f images/deckhand/Dockerfile .
+		$(_BASE_IMAGE_ARG) \
+		-f images/deckhand/Dockerfile.$(DISTRO) .
 endif
 ifeq ($(PUSH_IMAGE), true)
 	docker push $(IMAGE)

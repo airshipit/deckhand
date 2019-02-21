@@ -16,6 +16,7 @@
 - hosts: localhost
   vars:
     latest_tag: latest
+    distro: "{{ distro | default ('') }}"
     org: airshipit
     image: deckhand
     new_tag: "{{ zuul.newrev | default('') }}"
@@ -27,9 +28,9 @@
         var: zuul
 
     - block:
-        - name: Get id of the container image currently tagged as latest
+        - name: Get id of the distro specific container image currently tagged as latest
           uri:
-            url: "{{ quay_repo_api_url }}/{{ org }}/{{ image }}/tag/?specificTag={{ latest_tag }}&limit=1"
+            url: "{{ quay_repo_api_url }}/{{ org }}/{{ image }}/tag/?specificTag={{ latest_tag }}-{{ distro }}&limit=1"
             return_content: yes
           register: response_1
         - name: Debug response

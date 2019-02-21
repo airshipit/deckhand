@@ -19,6 +19,8 @@
         - debug:
             var: publish
         - debug:
+            var: distro
+        - debug:
             var: tags
         - debug:
             var: zuul
@@ -59,6 +61,7 @@
             target: images
             params:
               IMAGE_TAG: "{{ item }}"
+              DISTRO: "{{ distro }}"
           with_items: "{{ image_tags.stdout_lines }}"
 
         - shell: "docker images"
@@ -85,6 +88,7 @@
               IMAGE_TAG: "{{ item }}"
               COMMIT: "{{ zuul.newrev | default('') }}"
               PUSH_IMAGE: "true"
+              DISTRO: "{{ distro }}"
           with_items: "{{ image_tags.stdout_lines }}"
 
         - shell: "docker images"

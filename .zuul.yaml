@@ -26,27 +26,35 @@
         - deckhand-tox-py35-postgresql
         - deckhand-functional-uwsgi-py35:
             voting: false
-        - deckhand-functional-docker-py35
+        - deckhand-functional-docker-py35-ubuntu
+        - deckhand-functional-docker-py35-opensuse
         - deckhand-integration-uwsgi-py35:
             voting: false
-        - deckhand-integration-docker-py35:
+        - deckhand-integration-docker-py35-ubuntu:
+            voting: false
+        - deckhand-integration-docker-py35-opensuse:
             voting: false
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
-        - deckhand-docker-build-gate
+        - deckhand-docker-build-gate-ubuntu
+        - deckhand-docker-build-gate-opensuse
         - deckhand-airskiff-deployment
     gate:
       jobs:
         - deckhand-tox-py27-postgresql
         - deckhand-tox-py35-postgresql
-        - deckhand-functional-docker-py35
+        - deckhand-functional-docker-py35-ubuntu
+        - deckhand-functional-docker-py35-opensuse
         - deckhand-chart-build-gate
-        - deckhand-docker-build-gate
+        - deckhand-docker-build-gate-ubuntu
+        - deckhand-docker-build-gate-opensuse
     post:
       jobs:
-        - deckhand-docker-publish
-        - deckhand-docker-tag
         - deckhand-upload-git-mirror
+        - deckhand-docker-publish-ubuntu
+        - deckhand-docker-publish-opensuse
+        - deckhand-docker-tag-ubuntu
+        - deckhand-docker-tag-opensuse
 
 - nodeset:
     name: deckhand-single-node
@@ -104,15 +112,37 @@
       - openstack/openstack-helm-infra
 
 - job:
-    name: deckhand-functional-docker-py35
+    name: deckhand-functional-docker-py35-ubuntu
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.5. Uses tox with the ``functional-py35`` environment.
+      Ubuntu (default) image is built and used.
     parent: deckhand-functional-docker-base
     nodeset: deckhand-single-node
     vars:
       tox_envlist: functional
       disable_keystone: true
+      distro: ubuntu_xenial
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
+      - ^deckhand/tests/unit/.*$
+
+- job:
+    name: deckhand-functional-docker-py35-opensuse
+    description: |
+      Run tox-based functional tests for the Airship Deckhand project under
+      cPython version 3.5. Uses tox with the ``functional-py35`` environment.
+      Opensuse image is built and used.
+    parent: deckhand-functional-docker-base
+    nodeset: deckhand-single-node
+    vars:
+      tox_envlist: functional
+      disable_keystone: true
+      distro: opensuse_15
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*$
@@ -184,14 +214,15 @@
       - ^releasenotes/.*$
 
 - job:
-    name: deckhand-integration-docker-py35
+    name: deckhand-integration-docker-py35-ubuntu
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.5.
+      cPython version 3.5. Builds ubuntu (default) deckhand image.
     parent: deckhand-integration-docker-base
     nodeset: openstack-helm-single-node
     vars:
       disable_keystone: false
+      distro: ubuntu_xenial
 
 - job:
     name: deckhand-airskiff-deployment
@@ -219,7 +250,18 @@
       - ^releasenotes/.*$
 
 - job:
-    name: deckhand-docker-build-gate
+    name: deckhand-integration-docker-py35-opensuse
+    description: |
+      Run tox-based integration tests for the Airship Deckhand project under
+      cPython version 3.5. Builds opensuse deckhand image.
+    parent: deckhand-integration-docker-base
+    nodeset: openstack-helm-single-node
+    vars:
+      disable_keystone: false
+      distro: opensuse_15
+
+- job:
+    name: deckhand-docker-build-gate-ubuntu
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: deckhand-single-node
@@ -232,15 +274,29 @@
       - ^setup.cfg$
     vars:
       publish: false
+      distro: ubuntu_xenial
       tags:
         dynamic:
           patch_set: true
 
 - job:
-    name: deckhand-docker-publish
+    name: deckhand-docker-build-gate-opensuse
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-build.yaml
+    nodeset: deckhand-single-node
+    irrelevant-files: *non-code-files-template
+    vars:
+      publish: false
+      distro: opensuse_15
+      tags:
+        dynamic:
+          patch_set: true
+
+- job:
+    name: deckhand-docker-publish-ubuntu
     description: |
       Runs on every merge, unless files in a dictionary below are changed.
-      Builds and publishes container images on quay.io with a set of tags
+      Builds and publishes container ubuntu images on quay.io with a set of tags
       listed in vars section. Waits in Zuul queue for a node (VM) assignment.
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
@@ -250,17 +306,41 @@
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
+      distro: ubuntu_xenial
       tags:
         dynamic:
           branch: true
           commit: true
         static:
           - latest
+
 - job:
-    name: deckhand-docker-tag
+    name: deckhand-docker-publish-opensuse
+    description: |
+      Runs on every merge, unless files in a dictionary below are changed.
+      Builds and publishes container opensuse images on quay.io with a set of tags
+      listed in vars section. Waits in Zuul queue for a node (VM) assignment.
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-build.yaml
+    nodeset: deckhand-single-node
+    secrets:
+      - deckhand_quay_creds
+    irrelevant-files: *non-code-files-template
+    vars:
+      publish: true
+      distro: opensuse_15
+      tags:
+        dynamic:
+          branch: true
+          commit: true
+        static:
+          - latest
+
+- job:
+    name: deckhand-docker-tag-ubuntu
     description: |
       Runs on every merge when files in a dictionalry below are changed, and
-      adds git commit id tag onto the container image published on quay.io,
+      adds git commit id tag onto the ubuntu container image published on quay.io,
       which has `latest` tag set. Does not wait in queue for a node (VM)
       assignment, runs almost immediately.
     timeout: 1800
@@ -269,6 +349,24 @@
       nodes: []
     secrets:
       - deckhand_quay_creds
+    vars:
+      distro: ubuntu_xenial
+
+- job:
+    name: deckhand-docker-tag-opensuse
+    description: |
+      Runs on every merge when files in a dictionalry below are changed, and
+      adds git commit id tag onto the opensuse container image published on quay.io,
+      which has `latest` tag set. Does not wait in queue for a node (VM)
+      assignment, runs almost immediately.
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-tag.yaml
+    nodeset:
+      nodes: []
+    secrets:
+      - deckhand_quay_creds
+    vars:
+      distro: opensuse_15
 # file pattern here must be exactly the same as in
 # deckhand-docker-publish job above,
 # job will be executed on merge only when any of this files get changed

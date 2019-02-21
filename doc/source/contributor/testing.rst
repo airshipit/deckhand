@@ -143,7 +143,7 @@ testing. To test Deckhand against a containerized image, run, for example:
 
 ::
 
-  export DECKHAND_IMAGE=quay.io/airshipit/deckhand:latest
+  export DECKHAND_IMAGE=quay.io/airshipit/deckhand:latest-ubuntu_xenial
   tox -e functional-dev
 
 Which will result in the following script output:
@@ -152,7 +152,7 @@ Which will result in the following script output:
 
   Running Deckhand via Docker
   + sleep 5
-  + sudo docker run --rm --net=host -p 9000:9000 -v /opt/stack/deckhand/tmp.oBJ6XScFgC:/etc/deckhand quay.io/airshipit/deckhand:latest
+  + sudo docker run --rm --net=host -p 9000:9000 -v /opt/stack/deckhand/tmp.oBJ6XScFgC:/etc/deckhand quay.io/airshipit/deckhand:latest-ubuntu_xenial
 
 .. warning::
 

@@ -16,3 +16,5 @@ proxy:
   http: null
   https: null
   noproxy: null
+
+distro: ubuntu_xenial

@@ -24,6 +24,7 @@ Operator's Guide
    api_client
    configuration
    exceptions
+   multi-distro-support
 
 Indices and tables
 ------------------

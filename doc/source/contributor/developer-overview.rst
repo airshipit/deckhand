@@ -110,9 +110,9 @@ See :ref:`coding-guide` for more information on contribution guidelines.
 Docker
 ------
 
-The Deckhand Dockerfile is located in ``/images/deckhand`` along with any
-artifacts built specifically to enable the container image. Make targets are
-used for generating and testing the artifacts.
+The distribution specific Deckhand Dockerfile.{DISTRO} is located in ``/images/deckhand``
+along with any artifacts built specifically to enable the container image. Make
+targets are used for generating and testing the artifacts.
 
 * ``make images`` - Build the Deckhand Docker image.
 
