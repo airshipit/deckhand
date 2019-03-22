@@ -17,7 +17,7 @@
   shell: |-
     set -ex;
     echo "Using noauth-paste.ini to disable Keystone authentication."
-    cp etc/deckhand/noauth-paste.ini "{{ deckhand_conf_dir }}"/noauth-paste.ini
+    cp etc/deckhand/noauth-paste.ini "{{ deckhand_conf_dir | default('') }}"/noauth-paste.ini
   args:
     chdir: "{{ airship_deckhand_path.stdout }}"
 
@@ -25,6 +25,6 @@
   when: disable_keystone == false
   shell: |-
     set -ex;
-    cp etc/deckhand/deckhand-paste.ini "{{ deckhand_conf_dir }}"/deckhand-paste.ini
+    cp etc/deckhand/deckhand-paste.ini "{{ deckhand_conf_dir | default('') }}"/deckhand-paste.ini
   args:
     chdir: "{{ airship_deckhand_path.stdout }}"

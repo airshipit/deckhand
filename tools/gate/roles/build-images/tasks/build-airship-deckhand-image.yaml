@@ -27,7 +27,7 @@
       shell: cd "{{ work_dir }}"; pwd
       register: airship_deckhand_path
       vars:
-        work_dir: "{{ zuul.project.src_dir }}/{{ zuul_airship_deckhand_relative_path | default('') }}"
+        work_dir: "{{ zuul.project.src_dir | default('') }}/{{ zuul_airship_deckhand_relative_path | default('') }}"
 
     - name: Build Airship-Deckhand Image
       when: proxy.http is undefined or (proxy.http | trim == "")

@@ -18,7 +18,7 @@
     latest_tag: latest
     org: airshipit
     image: deckhand
-    new_tag: "{{ zuul.newrev }}"
+    new_tag: "{{ zuul.newrev | default('') }}"
     token: "{{ airship_deckhand_quay_creds.token }}"
     quay_repo_api_url: "https://quay.io/api/v1/repository"
   tasks:

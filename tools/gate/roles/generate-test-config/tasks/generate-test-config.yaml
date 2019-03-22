@@ -20,20 +20,20 @@
 
 - name: Store deckhand_conf_dir in variable
   set_fact:
-    deckhand_conf_dir: "{{ _deckhand_conf_dir.path }}"
+    deckhand_conf_dir: "{{ _deckhand_conf_dir.path | default('') }}"
   environment:
     # Used by Deckhand's initialization script to search for config files.
-    AIRSHIP_DECKHAND_CONFIG_DIR: "{{ deckhand_conf_dir }}"
+    AIRSHIP_DECKHAND_CONFIG_DIR: "{{ deckhand_conf_dir | default('') }}"
 
 - name: Generate test deckhand.conf file when disable_keystone is true
   when: disable_keystone == true
   shell: |-
     set -ex;
 
-    chmod 777 -R "{{ deckhand_conf_dir }}"
-    conf_file="{{ deckhand_conf_dir }}"/deckhand.conf
+    chmod 777 -R "{{ deckhand_conf_dir  | default('')}}"
+    conf_file="{{ deckhand_conf_dir | default('') }}"/deckhand.conf
 
-    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir }}"/logging.conf
+    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir | default('') }}"/logging.conf
     envsubst '$AIRSHIP_DECKHAND_DATABASE_URL' < deckhand/tests/deckhand.conf.test > $conf_file
 
     echo "Toggling development_mode on to disable Keystone authentication."
@@ -42,8 +42,8 @@
     echo $conf_file 1>&2
     cat $conf_file 1>&2
 
-    echo "{{ deckhand_conf_dir }}"/logging.conf 1>&2
-    cat "{{ deckhand_conf_dir }}"/logging.conf 1>&2
+    echo "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
+    cat "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
   args:
     chdir: "{{ airship_deckhand_path.stdout }}"
   environment:
@@ -55,17 +55,17 @@
   shell: |-
     set -ex;
 
-    chmod 777 -R "{{ deckhand_conf_dir }}"
-    conf_file="{{ deckhand_conf_dir }}"/deckhand.conf
+    chmod 777 -R "{{ deckhand_conf_dir | default('') }}"
+    conf_file="{{ deckhand_conf_dir | default('') }}"/deckhand.conf
 
-    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir }}"/logging.conf
+    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir | default('') }}"/logging.conf
     envsubst '$AIRSHIP_DECKHAND_DATABASE_URL $TEST_BARBICAN_URL' < deckhand/tests/deckhand.conf.test > $conf_file
 
     echo $conf_file 1>&2
     cat $conf_file 1>&2
 
-    echo "{{ deckhand_conf_dir }}"/logging.conf 1>&2
-    cat "{{ deckhand_conf_dir }}"/logging.conf 1>&2
+    echo "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
+    cat "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
   args:
     chdir: "{{ airship_deckhand_path.stdout }}"
   environment:
