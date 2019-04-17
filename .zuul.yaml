@@ -29,6 +29,8 @@
         - airship-deckhand-integration-uwsgi-py35:
             voting: false
         - airship-deckhand-integration-docker-py35
+        - airship-deckhand-chart-build-gate
+        - airship-deckhand-chart-build-latest-htk
         - airship-deckhand-docker-build-gate
     gate:
       jobs:
@@ -36,6 +38,7 @@
         - airship-deckhand-tox-py35-postgresql
         - airship-deckhand-functional-docker-py35
         - airship-deckhand-integration-docker-py35
+        - airship-deckhand-chart-build-gate
         - airship-deckhand-docker-build-gate
     post:
       jobs:
@@ -133,6 +136,25 @@
       - ^deckhand/tests/unit/.*$
     vars:
       disable_keystone: true
+
+- job:
+    name: airship-deckhand-chart-build-gate
+    description: |
+      Build charts using pinned Helm toolkit.
+    timeout: 900
+    run: tools/gate/playbooks/build-charts.yaml
+    nodeset: airship-deckhand-single-node
+
+- job:
+    name: airship-deckhand-chart-build-latest-htk
+    description: |
+      Build charts using latest Helm toolkit.
+    voting: false
+    timeout: 900
+    run: tools/gate/playbooks/build-charts.yaml
+    nodeset: airship-deckhand-single-node
+    vars:
+      HTK_COMMIT: master
 
 - job:
     name: airship-deckhand-integration-docker-base
