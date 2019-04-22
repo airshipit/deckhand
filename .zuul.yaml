@@ -21,38 +21,38 @@
       rtd_webhook_id: '38572'
     check:
       jobs:
-        - airship-deckhand-tox-py27-postgresql
-        - airship-deckhand-tox-py35-postgresql
-        - airship-deckhand-functional-uwsgi-py35:
+        - deckhand-tox-py27-postgresql
+        - deckhand-tox-py35-postgresql
+        - deckhand-functional-uwsgi-py35:
             voting: false
-        - airship-deckhand-functional-docker-py35
-        - airship-deckhand-integration-uwsgi-py35:
+        - deckhand-functional-docker-py35
+        - deckhand-integration-uwsgi-py35:
             voting: false
-        - airship-deckhand-integration-docker-py35
-        - airship-deckhand-chart-build-gate
-        - airship-deckhand-chart-build-latest-htk
-        - airship-deckhand-docker-build-gate
+        - deckhand-integration-docker-py35
+        - deckhand-chart-build-gate
+        - deckhand-chart-build-latest-htk
+        - deckhand-docker-build-gate
     gate:
       jobs:
-        - airship-deckhand-tox-py27-postgresql
-        - airship-deckhand-tox-py35-postgresql
-        - airship-deckhand-functional-docker-py35
-        - airship-deckhand-integration-docker-py35
-        - airship-deckhand-chart-build-gate
-        - airship-deckhand-docker-build-gate
+        - deckhand-tox-py27-postgresql
+        - deckhand-tox-py35-postgresql
+        - deckhand-functional-docker-py35
+        - deckhand-integration-docker-py35
+        - deckhand-chart-build-gate
+        - deckhand-docker-build-gate
     post:
       jobs:
-        - airship-deckhand-docker-publish
-        - airship-deckhand-docker-tag
+        - deckhand-docker-publish
+        - deckhand-docker-tag
 
 - nodeset:
-    name: airship-deckhand-single-node
+    name: deckhand-single-node
     nodes:
       - name: primary
         label: ubuntu-xenial
 
 - job:
-    name: airship-deckhand-tox-py27-postgresql
+    name: deckhand-tox-py27-postgresql
     parent: openstack-tox-py27
     pre-run:
       - tools/gate/playbooks/install-postgresql.yaml
@@ -60,7 +60,7 @@
       tox_envlist: py27-postgresql
 
 - job:
-    name: airship-deckhand-tox-py35-postgresql
+    name: deckhand-tox-py35-postgresql
     parent: openstack-tox-py35
     pre-run:
       - tools/gate/playbooks/install-postgresql.yaml
@@ -68,13 +68,13 @@
       tox_envlist: py35-postgresql
 
 - job:
-    name: airship-deckhand-functional-uwsgi-py35
+    name: deckhand-functional-uwsgi-py35
     description: |
       Run tox-based functional tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
       for ephemeral PostgreSQL DB, under cPython version 3.5.
     run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
-    nodeset: airship-deckhand-single-node
+    nodeset: deckhand-single-node
     vars:
       tox_envlist: functional-dev
     irrelevant-files:
@@ -86,9 +86,9 @@
       - ^deckhand/tests/unit/.*$
 
 - job:
-    name: airship-deckhand-functional-docker-base
+    name: deckhand-functional-docker-base
     description: |
-      Base job for running airship-deckhand functional tests. Runs tests
+      Base job for running deckhand functional tests. Runs tests
       against Docker image generated from source code.
     roles:
       - zuul: openstack/openstack-helm-infra
@@ -101,12 +101,12 @@
       - openstack/openstack-helm-infra
 
 - job:
-    name: airship-deckhand-functional-docker-py35
+    name: deckhand-functional-docker-py35
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.5. Uses tox with the ``functional-py35`` environment.
-    parent: airship-deckhand-functional-docker-base
-    nodeset: airship-deckhand-single-node
+    parent: deckhand-functional-docker-base
+    nodeset: deckhand-single-node
     vars:
       tox_envlist: functional
       disable_keystone: true
@@ -119,14 +119,14 @@
       - ^deckhand/tests/unit/.*$
 
 - job:
-    name: airship-deckhand-integration-uwsgi-py35
+    name: deckhand-integration-uwsgi-py35
     description: |
       Run tox-based integration tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
       for ephemeral PostgreSQL DB, under cPython version 3.5.
     timeout: 3600
     run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
-    nodeset: airship-deckhand-single-node
+    nodeset: deckhand-single-node
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*$
@@ -138,35 +138,35 @@
       disable_keystone: true
 
 - job:
-    name: airship-deckhand-chart-build-gate
+    name: deckhand-chart-build-gate
     description: |
       Build charts using pinned Helm toolkit.
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
-    nodeset: airship-deckhand-single-node
+    nodeset: deckhand-single-node
 
 - job:
-    name: airship-deckhand-chart-build-latest-htk
+    name: deckhand-chart-build-latest-htk
     description: |
       Build charts using latest Helm toolkit.
     voting: false
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
-    nodeset: airship-deckhand-single-node
+    nodeset: deckhand-single-node
     vars:
       HTK_COMMIT: master
 
 - job:
-    name: airship-deckhand-integration-docker-base
+    name: deckhand-integration-docker-base
     description: |
-      Base job for running airship-deckhand integration tests. Runs tests
+      Base job for running deckhand integration tests. Runs tests
       against Docker image generated from source code.
     timeout: 3600
     roles:
       - zuul: openstack/openstack-helm-infra
     vars:
-      zuul_osh_relative_path: ../openstack-helm/
-      zuul_osh_infra_relative_path: ../openstack-helm-infra/
+      zuul_osh_relative_path: ../../openstack/openstack-helm/
+      zuul_osh_infra_relative_path: ../../openstack/openstack-helm-infra/
     pre-run:
       - tools/gate/playbooks/osh-infra-upgrade-host.yaml
       - tools/gate/playbooks/osh-infra-deploy-docker.yaml
@@ -181,20 +181,20 @@
       - ^releasenotes/.*$
 
 - job:
-    name: airship-deckhand-integration-docker-py35
+    name: deckhand-integration-docker-py35
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
       cPython version 3.5.
-    parent: airship-deckhand-integration-docker-base
+    parent: deckhand-integration-docker-base
     nodeset: openstack-helm-single-node
     vars:
       disable_keystone: false
 
 - job:
-    name: airship-deckhand-docker-build-gate
+    name: deckhand-docker-build-gate
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: airship-deckhand-single-node
+    nodeset: deckhand-single-node
     irrelevant-files: &non-code-files-template
       - ^.*\.rst$
       - ^doc/.*$
@@ -209,16 +209,16 @@
           patch_set: true
 
 - job:
-    name: airship-deckhand-docker-publish
+    name: deckhand-docker-publish
     description: |
       Runs on every merge, unless files in a dictionary below are changed.
       Builds and publishes container images on quay.io with a set of tags
       listed in vars section. Waits in Zuul queue for a node (VM) assignment.
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: airship-deckhand-single-node
+    nodeset: deckhand-single-node
     secrets:
-      - airship_deckhand_quay_creds
+      - deckhand_quay_creds
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
@@ -229,7 +229,7 @@
         static:
           - latest
 - job:
-    name: airship-deckhand-docker-tag
+    name: deckhand-docker-tag
     description: |
       Runs on every merge when files in a dictionalry below are changed, and
       adds git commit id tag onto the container image published on quay.io,
@@ -240,14 +240,14 @@
     nodeset:
       nodes: []
     secrets:
-      - airship_deckhand_quay_creds
+      - deckhand_quay_creds
 # file pattern here must be exactly the same as in
-# airship-deckhand-docker-publish job above,
+# deckhand-docker-publish job above,
 # job will be executed on merge only when any of this files get changed
     files: *non-code-files-template
 
 - secret:
-    name: airship_deckhand_quay_creds
+    name: deckhand_quay_creds
     data:
       username: !encrypted/pkcs1-oaep
         - eC+ZaBS1TN37yuvL2WoGkJQ8OFBSLiXxV0wAkH+2l9wLNjmT3QxwnjXTNSw883zEkE9C/
