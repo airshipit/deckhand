@@ -46,29 +46,31 @@ function deploy_osh_keystone_barbican {
         git clone https://git.openstack.org/openstack/openstack-helm.git ../openstack-helm
     fi
 
-    cd ${OSH_INFRA_PATH}
-    # NOTE(fmontei): setup-host already sets up required host dependencies.
-    make dev-deploy setup-host
-    make dev-deploy k8s
+    cd ${OSH_PATH}
+    # Deploy required packages
+    ./tools/deployment/common/install-packages.sh
+    # Deploy Kubernetes
+    sudo modprobe br_netfilter
+    ./tools/deployment/common/deploy-k8s.sh
 
     cd ${CURRENT_DIR}
     sudo -H -E pip install -r test-requirements.txt
 
     cd ${OSH_PATH}
-    # Setup clients on the host and assemble the charts¶
-    ./tools/deployment/developer/common/020-setup-client.sh
+    # Setup clients on the host and assemble the charts
+    ./tools/deployment/common/setup-client.sh
     # Deploy the ingress controller
-    ./tools/deployment/developer/common/030-ingress.sh
+    ./tools/deployment/component/common/ingress.sh
     # Deploy NFS Provisioner
-    ./tools/deployment/developer/nfs/040-nfs-provisioner.sh
+    ./tools/deployment/component/nfs-provisioner/nfs-provisioner.sh
     # Deploy MariaDB
-    ./tools/deployment/developer/nfs/050-mariadb.sh
+    ./tools/deployment/component/common/mariadb.sh
     # Deploy RabbitMQ
-    ./tools/deployment/developer/nfs/060-rabbitmq.sh
+    ./tools/deployment/component/common/rabbitmq.sh
     # Deploy Memcached
-    ./tools/deployment/developer/nfs/070-memcached.sh
+    ./tools/deployment/component/common/memcached.sh
     # Deploy Keystone
-    ./tools/deployment/developer/nfs/080-keystone.sh
+    ./tools/deployment/component/keystone/keystone.sh
 
     deploy_barbican
 }
