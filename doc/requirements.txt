@@ -17,8 +17,10 @@ oslo.policy>=1.33.1 # Apache-2.0
 beaker==1.10.0
 falcon==1.4.1
 jsonpath-ng==1.4.3
+jsonschema==2.6.0
 keystoneauth1==3.11.1
 networkx==2.2
+Paste==3.0.1
 python-barbicanclient==4.7.0
 oslo.db==4.41.1
 oslo.log==3.40.1
