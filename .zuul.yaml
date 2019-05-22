@@ -28,7 +28,8 @@
         - deckhand-functional-docker-py35
         - deckhand-integration-uwsgi-py35:
             voting: false
-        - deckhand-integration-docker-py35
+        - deckhand-integration-docker-py35:
+            voting: false
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate
@@ -38,7 +39,6 @@
         - deckhand-tox-py27-postgresql
         - deckhand-tox-py35-postgresql
         - deckhand-functional-docker-py35
-        - deckhand-integration-docker-py35
         - deckhand-chart-build-gate
         - deckhand-docker-build-gate
     post:
