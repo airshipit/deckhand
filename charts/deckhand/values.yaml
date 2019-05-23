@@ -354,6 +354,12 @@ pod:
     termination_grace_period:
       deckhand:
         timeout: 30
+  affinity:
+    anti:
+      type:
+        default: preferredDuringSchedulingIgnoredDuringExecution
+      topologyKey:
+        default: kubernetes.io/hostname
   replicas:
     deckhand: 1
   resources:
