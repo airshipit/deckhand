@@ -52,7 +52,7 @@
     name: deckhand-single-node
     nodes:
       - name: primary
-        label: ubuntu-xenial
+        label: ubuntu-bionic
 
 - job:
     name: deckhand-tox-py27-postgresql
