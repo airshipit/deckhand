@@ -302,7 +302,7 @@
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: deckhand-single-node
     secrets:
-      - deckhand_quay_creds
+      - airship_deckhand_quay_creds
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
@@ -324,7 +324,7 @@
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: deckhand-single-node
     secrets:
-      - deckhand_quay_creds
+      - airship_deckhand_quay_creds
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
@@ -348,7 +348,7 @@
     nodeset:
       nodes: []
     secrets:
-      - deckhand_quay_creds
+      - airship_deckhand_quay_creds
     vars:
       distro: ubuntu_xenial
 
@@ -364,7 +364,7 @@
     nodeset:
       nodes: []
     secrets:
-      - deckhand_quay_creds
+      - airship_deckhand_quay_creds
     vars:
       distro: opensuse_15
 # file pattern here must be exactly the same as in
@@ -373,7 +373,7 @@
     files: *non-code-files-template
 
 - secret:
-    name: deckhand_quay_creds
+    name: airship_deckhand_quay_creds
     data:
       username: !encrypted/pkcs1-oaep
         - eC+ZaBS1TN37yuvL2WoGkJQ8OFBSLiXxV0wAkH+2l9wLNjmT3QxwnjXTNSw883zEkE9C/
