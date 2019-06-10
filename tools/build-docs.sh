@@ -7,5 +7,5 @@ set -ex
 
 # Generate documentation.
 rm -rf doc/build doc/source/contributor/api/ releasenotes/build
-sphinx-apidoc -o doc/api deckhand
-sphinx-build -W -b html doc/source doc/build/html
+sphinx-apidoc -fo doc/api deckhand
+sphinx-build -b html doc/source doc/build/html
