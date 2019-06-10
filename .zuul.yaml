@@ -62,6 +62,12 @@
       - name: primary
         label: ubuntu-bionic
 
+- nodeset:
+    name: deckhand-single-node-airskiff
+    nodes:
+      - name: primary
+        label: ubuntu-xenial
+
 - job:
     name: deckhand-tox-py27-postgresql
     parent: openstack-tox-py27
@@ -226,7 +232,7 @@
 
 - job:
     name: deckhand-airskiff-deployment
-    nodeset: deckhand-single-node
+    nodeset: deckhand-single-node-airskiff
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
     timeout: 9600
@@ -237,13 +243,9 @@
     run: tools/gate/playbooks/airskiff-deploy.yaml
     post-run: tools/gate/playbooks/debug-report.yaml
     required-projects:
-      - airship/armada
-      - airship/pegleg
-      - airship/shipyard
       - airship/treasuremap
-      - openstack/openstack-helm-infra
     vars:
-      OSH_INFRA_PATH: "../../openstack/openstack-helm-infra"
+      CLONE_DECKHAND: false
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*$
