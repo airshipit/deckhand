@@ -33,7 +33,7 @@ from deckhand import types
 LOG = logging.getLogger(__name__)
 
 _DEFAULT_SCHEMAS = {}
-_SUPPORTED_SCHEMA_VERSIONS = ('v1',)
+_SUPPORTED_SCHEMA_VERSIONS = ('v1', 'v2')
 
 
 def _get_schema_parts(document, schema_key='schema'):
