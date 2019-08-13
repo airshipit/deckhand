@@ -81,7 +81,7 @@ class BaseValidator(object):
 
     __slots__ = ('_schema_map')
 
-    _supported_versions = ('v1',)
+    _supported_versions = _SUPPORTED_SCHEMA_VERSIONS
     _schema_re = re.compile(r'^[a-zA-Z]+\/[a-zA-Z]+\/v\d+$')
 
     def __init__(self):
