@@ -101,9 +101,8 @@ Deckhand strives to conform to the
 Python
 ------
 
-The Deckhand code base lives under ``/deckhand``. Deckhand supports py27
-and py35 interpreters. Once OpenStack deprecates usage of py27, Deckhand
-will as well.
+The Deckhand code base lives under ``/deckhand``. Deckhand supports py35 through py37
+versions of interpreters.
 
 See :ref:`coding-guide` for more information on contribution guidelines.
 

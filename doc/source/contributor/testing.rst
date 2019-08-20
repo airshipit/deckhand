@@ -57,19 +57,17 @@ Deckhand.
 
 To run unit tests using SQLite, execute::
 
-    $ tox -epy27
     $ tox -epy35
 
-against a py27- or py35-backed environment, respectively.
+against a py35-backed environment, respectively.
 
 To run unit tests using PostgreSQL, execute::
 
-    $ tox -epy27-postgresql
     $ tox -epy35-postgresql
 
 To run individual unit tests, run (for example)::
 
-    $ tox -e py27 -- deckhand.tests.unit.db.test_revisions
+    $ tox -e py35 -- deckhand.tests.unit.db.test_revisions
 
 .. warning::
 
@@ -168,12 +166,6 @@ Troubleshooting
   Ensure that ``tox`` is installed::
 
     $ sudo apt-get install tox -y
-
-* For any errors related to running ``tox -e py27``:
-
-  Ensure that ``python-dev`` is installed::
-
-    $ sudo apt-get install python-dev -y
 
 * For any errors related to running ``tox -e py35``:
 

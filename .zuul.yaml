@@ -13,15 +13,15 @@
 - project:
     templates:
       - openstack-cover-jobs
-      - openstack-python-jobs
       - docs-on-readthedocs
+      - openstack-python35-jobs
       - openstack-python3-train-jobs
+      - openstack-python3-ussuri-jobs
     vars:
       rtd_webhook_id: '38572'
       rtd_project_name: 'airship-deckhand'
     check:
       jobs:
-        - deckhand-tox-py27-postgresql
         - deckhand-tox-py35-postgresql
         - deckhand-functional-uwsgi-py35:
             voting: false
@@ -40,13 +40,13 @@
         - deckhand-airskiff-deployment
     gate:
       jobs:
-        - deckhand-tox-py27-postgresql
         - deckhand-tox-py35-postgresql
         - deckhand-functional-docker-py35-ubuntu
         - deckhand-functional-docker-py35-opensuse
         - deckhand-chart-build-gate
         - deckhand-docker-build-gate-ubuntu
         - deckhand-docker-build-gate-opensuse
+        - openstack-tox-pep8
     post:
       jobs:
         - deckhand-upload-git-mirror
@@ -66,14 +66,6 @@
     nodes:
       - name: primary
         label: ubuntu-xenial
-
-- job:
-    name: deckhand-tox-py27-postgresql
-    parent: openstack-tox-py27
-    pre-run:
-      - tools/gate/playbooks/install-postgresql.yaml
-    vars:
-      tox_envlist: py27-postgresql
 
 - job:
     name: deckhand-tox-py35-postgresql

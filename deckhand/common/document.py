@@ -184,5 +184,6 @@ def document_dict_representer(dumper, data):
 yaml.add_representer(DocumentDict, document_dict_representer)
 # Required for py27 compatibility: yaml.safe_dump/safe_dump_all doesn't
 # work unless SafeRepresenter add_representer method is called.
+# Upd: somehow required also for py3*.
 safe_representer = yaml.representer.SafeRepresenter
 safe_representer.add_representer(DocumentDict, document_dict_representer)

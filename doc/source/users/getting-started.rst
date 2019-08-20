@@ -335,9 +335,3 @@ included beneath each bullet.
   Ensure that ``python3-dev`` is installed::
 
     $ [sudo] apt-get install python3-dev -y
-
-* For any errors related to running ``tox -e py27``:
-
-  Ensure that ``python3-dev`` is installed::
-
-    $ [sudo] apt-get install python-dev -y
