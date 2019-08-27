@@ -48,9 +48,11 @@ RUN set -x && \
     libffi-devel \
     libopenssl-devel \
     libpqxx-devel \
-    && zypper --non-interactive --no-gpg-checks ar -f https://download.opensuse.org/repositories/devel:languages:python/openSUSE_Leap_15.1/devel:languages:python.repo \
-    && zypper --non-interactive --no-gpg-checks install python3-six-1.12.0-lp151.80.1.noarch \
-    && python3 -m pip install -U pip \
+    && zypper --non-interactive ar -f https://download.opensuse.org/repositories/devel:languages:python/openSUSE_Leap_15.1/devel:languages:python.repo \
+    && zypper --non-interactive --gpg-auto-import-keys refresh devel_languages_python \
+    && zypper --non-interactive install python3-six-1.12.0-lp151.80.1.noarch
+
+RUN pip3 install -U pip \
     && zypper clean -a \
     && rm -rf \
         /tmp/* \
