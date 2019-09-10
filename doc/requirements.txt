@@ -26,4 +26,4 @@ PasteDeploy==1.5.2
 python-barbicanclient==4.7.0
 oslo.db==4.41.1
 oslo.log==3.40.1
-Werkzeug==0.14.1
+Werkzeug>=0.15.0
