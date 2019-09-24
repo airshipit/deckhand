@@ -394,13 +394,17 @@ def redact_document(document):
     :returns: Document with redacted data.
     :rtype: dict
     """
-    d = _to_document(document)
-    if d.is_encrypted:
-        d.data = document_dict.redact(d.data)
-        for s in d.substitutions:
-            s['src']['path'] = document_dict.redact(s['src']['path'])
-            s['dest']['path'] = document_dict.redact(s['dest']['path'])
-    return d
+    doc = _to_document(document)
+    if doc.is_encrypted:
+        doc.data = document_dict.redact(doc.data)
+        for sub in doc.substitutions:
+            sub['src']['path'] = document_dict.redact(sub['src']['path'])
+            if isinstance(sub['dest'], list):
+                for dest in sub['dest']:
+                    dest['path'] = document_dict.redact(dest['path'])
+            else:
+                sub['dest']['path'] = document_dict.redact(sub['dest']['path'])
+    return doc
 
 
 def redact_documents(documents):

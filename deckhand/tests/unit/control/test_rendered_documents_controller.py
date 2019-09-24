@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
 import yaml
 
 import mock
@@ -220,7 +221,7 @@ class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
         certificate_data = 'sample-certificate'
         certificate_ref = ('http://127.0.0.1/key-manager/v1/secrets/%s'
                            % test_utils.rand_uuid_hex())
-        redacted_data = dd.redact(certificate_ref)
+        redacted_data = dd.redact(certificate_data)
 
         doc1 = {
             'data': certificate_data,
@@ -305,8 +306,151 @@ class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
         self._test_list_rendered_documents(cleartext_secrets=False)
 
 
-class TestRenderedDocumentsControllerNegative(
-        test_base.BaseControllerTest):
+class TestRenderedDocumentsControllerEncrypted(test_base.BaseControllerTest):
+
+    def test_substitution_rendered_documents_all_encrypted(self):
+        """Validates that substitution still functions correctly when all
+        the documents have a storagePolicy of encrypted
+        """
+        rules = {
+            'deckhand:list_cleartext_documents': '@',
+            'deckhand:list_encrypted_documents': '@',
+            'deckhand:create_cleartext_documents': '@',
+            'deckhand:create_encrypted_documents': '@'
+        }
+
+        self.policy.set_rules(rules)
+
+        doc_factory = factories.DocumentFactory(1, [1])
+
+        layering_policy = doc_factory.gen_test({})[0]
+        layering_policy['data']['layerOrder'] = ['global', 'site']
+        password_data = 'sample-super-secret-password'
+        original_data = 'http://admin:PASSWORD@service-name:8080/v1'
+        doc1_ref = ('http://127.0.0.1/key-manager/v1/secrets/%s'
+                    % test_utils.rand_uuid_hex())
+        doc2_ref = ('http://127.0.0.1/key-manager/v1/secrets/%s'
+                    % test_utils.rand_uuid_hex())
+        dest_data = {
+            'url': original_data
+        }
+        subbed_data = {
+            'url': re.sub('PASSWORD', password_data, original_data)
+        }
+        redacted_password = dd.redact(password_data)
+        redacted_data = dd.redact(subbed_data)
+
+        original_substitutions = [
+            {
+                'dest': {
+                    'path': '.url',
+                    'pattern': 'PASSWORD'
+                },
+                'src': {
+                    'schema': 'deckhand/Passphrase/v1',
+                    'name': 'example-password',
+                    'path': '.'
+                }
+            }
+        ]
+
+        # source
+        doc1 = {
+            'data': password_data,
+            'schema': 'deckhand/Passphrase/v1',
+            'name': 'example-password',
+            'layer': 'site',
+            'metadata': {
+                'labels': {
+                    'site': 'site1'
+                },
+                'storagePolicy': 'encrypted',
+                'layeringDefinition': {
+                    'abstract': False,
+                    'layer': 'site'
+                },
+                'name': 'example-password',
+                'schema': 'metadata/Document/v1',
+                'replacement': False
+            }
+        }
+
+        # destination
+        doc2 = {
+            'data': dest_data,
+            'schema': 'example/Kind/v1',
+            'name': 'deckhand-global',
+            'layer': 'global',
+            'metadata': {
+                'labels': {
+                    'global': 'global1'
+                },
+                'storagePolicy': 'encrypted',
+                'layeringDefinition': {
+                    'abstract': False,
+                    'layer': 'global'
+                },
+                'name': 'deckhand-global',
+                'schema': 'metadata/Document/v1',
+                'substitutions': original_substitutions,
+                'replacement': False
+            }
+        }
+
+        payload = [layering_policy, doc1, doc2]
+
+        # Create both documents and mock out SecretsManager.create to return
+        # a fake Barbican ref.
+        with mock.patch.object(  # noqa
+            secrets_manager.SecretsManager, 'create',
+            side_effect=[doc1_ref, doc2_ref]
+        ):
+            resp = self.app.simulate_put(
+                '/api/v1.0/buckets/mop/documents',
+                headers={'Content-Type': 'application/x-yaml'},
+                body=yaml.safe_dump_all(payload))
+        self.assertEqual(200, resp.status_code)
+        revision_id = list(yaml.safe_load_all(resp.text))[0]['status'][
+            'revision']
+
+        # Retrieve rendered documents and simulate a Barbican lookup by
+        # returning both the password and the destination data
+        with mock.patch(  # noqa
+            'deckhand.control.common._resolve_encrypted_data',
+            return_value={
+                doc1_ref: password_data,
+                doc2_ref: dest_data
+            }
+        ):
+            resp = self.app.simulate_get(
+                '/api/v1.0/revisions/%s/rendered-documents' % revision_id,
+                headers={'Content-Type': 'application/x-yaml'},
+                params={
+                    'metadata.name': ['example-password', 'deckhand-global'],
+                    'cleartext-secrets': False
+                },
+                params_csv=False)
+
+        self.assertEqual(200, resp.status_code)
+        rendered_documents = list(yaml.safe_load_all(resp.text))
+        self.assertEqual(2, len(rendered_documents))
+
+        # Expect redacted data for all documents to be returned -
+        # because the destination documents should receive redacted data.
+        data = list(map(lambda x: x['data'], rendered_documents))
+        self.assertTrue(redacted_password in data)
+        self.assertTrue(redacted_data in data)
+
+        # Expect the substitutions to be redacted since both docs are
+        # marked as encrypted
+        destination_doc = next(iter(filter(
+            lambda x: x['metadata']['name'] == 'deckhand-global',
+            rendered_documents)))
+        substitutions = destination_doc['metadata']['substitutions']
+        self.assertNotEqual(original_substitutions, substitutions)
+
+
+class TestRenderedDocumentsControllerNegative(test_base.BaseControllerTest):
 
     def test_rendered_documents_fail_schema_validation(self):
         """Validates that when fully rendered documents fail basic schema

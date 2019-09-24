@@ -23,7 +23,6 @@ import six
 
 from deckhand.barbican import cache as barbican_cache
 from deckhand.common import document as document_wrapper
-from deckhand.common import utils
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand import engine
 from deckhand.engine import cache as engine_cache
@@ -164,8 +163,6 @@ def get_rendered_docs(revision_id, cleartext_secrets=False, **filters):
     documents = document_wrapper.DocumentDict.from_list(data)
     encryption_sources = _resolve_encrypted_data(documents)
 
-    if not cleartext_secrets:
-        documents = utils.redact_documents(documents)
     try:
         return engine.render(
             revision_id,

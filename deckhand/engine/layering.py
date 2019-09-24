@@ -623,6 +623,24 @@ class DocumentLayering(object):
             if doc.is_control:
                 continue
 
+            # Retrieve the encrypted data for the document if its
+            # data has been encrypted so that future references use the actual
+            # secret payload, rather than the Barbican secret reference.
+            if doc.is_encrypted and doc.has_barbican_ref:
+                encrypted_data = self.secrets_substitution\
+                    .get_unencrypted_data(
+                        secret_ref=doc.data,
+                        src_doc=doc,
+                        dest_doc=doc
+                    )
+                if not doc.is_abstract:
+                    doc.data = encrypted_data
+                self.secrets_substitution.update_substitution_sources(
+                    meta=doc.meta,
+                    data=encrypted_data
+                )
+                self._documents_by_index[doc.meta].data = encrypted_data
+
             LOG.debug("Rendering document %s:%s:%s", *doc.meta)
 
             if doc.parent_selector:
@@ -633,15 +651,15 @@ class DocumentLayering(object):
                     parent = self._documents_by_index[parent_meta]
 
                     if doc.actions:
-                        rendered_data = parent
+                        rendered_doc = parent
                         # Apply each action to the current document.
                         for action in doc.actions:
                             LOG.debug('Applying action %s to document with '
                                       'schema=%s, layer=%s, name=%s.', action,
                                       *doc.meta)
                             try:
-                                rendered_data = self._apply_action(
-                                    action, doc, rendered_data)
+                                rendered_doc = self._apply_action(
+                                    action, doc, rendered_doc)
                             except Exception:
                                 with excutils.save_and_reraise_exception():
                                     try:
@@ -649,10 +667,10 @@ class DocumentLayering(object):
                                             doc, parent, action)
                                     except Exception:  # nosec
                                         pass
-                        doc.data = rendered_data.data
+                        doc.data = rendered_doc.data
                         self.secrets_substitution.update_substitution_sources(
-                            doc.meta, rendered_data.data)
-                        self._documents_by_index[doc.meta] = rendered_data
+                            doc.meta, rendered_doc.data)
+                        self._documents_by_index[doc.meta] = rendered_doc
                     else:
                         LOG.debug(
                             'Skipped layering for document [%s, %s] %s which '
@@ -664,7 +682,7 @@ class DocumentLayering(object):
             # inherit from it, but only update the document's data if concrete.
             if doc.substitutions:
                 try:
-                    substituted_data = list(
+                    substituted_doc = list(
                         self.secrets_substitution.substitute_all(doc))
                 except Exception:
                     with excutils.save_and_reraise_exception():
@@ -672,25 +690,14 @@ class DocumentLayering(object):
                             self._log_data_for_substitution_failure(doc)
                         except Exception:  # nosec
                             pass
-                if substituted_data:
-                    rendered_data = substituted_data[0]
+                if substituted_doc:
+                    rendered_doc = substituted_doc[0]
                     # Update the actual document data if concrete.
-                    doc.data = rendered_data.data
+                    doc.data = rendered_doc.data
                     if not doc.has_replacement:
                         self.secrets_substitution.update_substitution_sources(
-                            doc.meta, rendered_data.data)
-                    self._documents_by_index[doc.meta] = rendered_data
-            # Otherwise, retrieve the encrypted data for the document if its
-            # data has been encrypted so that future references use the actual
-            # secret payload, rather than the Barbican secret reference.
-            elif doc.is_encrypted and doc.has_barbican_ref:
-                encrypted_data = self.secrets_substitution\
-                    .get_unencrypted_data(doc.data, doc, doc)
-                if not doc.is_abstract:
-                    doc.data = encrypted_data
-                self.secrets_substitution.update_substitution_sources(
-                    doc.meta, encrypted_data)
-                self._documents_by_index[doc.meta] = encrypted_data
+                            doc.meta, rendered_doc.data)
+                    self._documents_by_index[doc.meta] = rendered_doc
 
             # NOTE: Since the child-replacement is always prioritized, before
             # other children, as soon as the child-replacement layers with the

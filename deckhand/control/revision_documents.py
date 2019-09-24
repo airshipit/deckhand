@@ -55,6 +55,8 @@ class RevisionDocumentsResource(api_base.BaseResource):
         sort_by = req.params.pop('sort', None)
         limit = req.params.pop('limit', None)
         cleartext_secrets = req.get_param_as_bool('cleartext-secrets')
+        if cleartext_secrets is None:
+            cleartext_secrets = True
         req.params.pop('cleartext-secrets', None)
 
         filters = req.params.copy()
@@ -114,6 +116,8 @@ class RenderedDocumentsResource(api_base.BaseResource):
             filters['metadata.storagePolicy'].append('encrypted')
 
         cleartext_secrets = req.get_param_as_bool('cleartext-secrets')
+        if cleartext_secrets is None:
+            cleartext_secrets = True
         req.params.pop('cleartext-secrets', None)
         rendered_documents, cache_hit = common.get_rendered_docs(
             revision_id, cleartext_secrets, **filters)
@@ -136,6 +140,9 @@ class RenderedDocumentsResource(api_base.BaseResource):
         sort_by = req.params.pop('sort', None)
         limit = req.params.pop('limit', None)
         user_filters = req.params.copy()
+
+        if not cleartext_secrets:
+            rendered_documents = utils.redact_documents(rendered_documents)
 
         rendered_documents = [
             d for d in rendered_documents if utils.deepfilter(
