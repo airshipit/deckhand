@@ -16,12 +16,13 @@
 
 {{- if .Values.manifests.deployment }}
 {{- $envAll := . }}
+{{- $labels :=  tuple $envAll "deckhand" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" -}}
 {{- $mounts_deckhand := .Values.pod.mounts.deckhand.deckhand }}
 {{- $mounts_deckhand_init := .Values.pod.mounts.deckhand.init_container }}
 {{- $serviceAccountName := "deckhand" }}
 {{ tuple $envAll "deckhand" $serviceAccountName | include "helm-toolkit.snippets.kubernetes_pod_rbac_serviceaccount" }}
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: deckhand-api
@@ -29,11 +30,14 @@ metadata:
     {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" }}
 spec:
   replicas: {{ .Values.pod.replicas.deckhand }}
+  selector:
+    matchLabels:
+{{ $labels | indent 6 }}
 {{ tuple $envAll | include "helm-toolkit.snippets.kubernetes_upgrades_deployment" | indent 2 }}
   template:
     metadata:
       labels:
-{{ tuple $envAll "deckhand" "api" | include "helm-toolkit.snippets.kubernetes_metadata_labels" | indent 8 }}
+{{ $labels | indent 8 }}
       annotations:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
         configmap-bin-hash: {{ tuple "configmap-bin.yaml" . | include "helm-toolkit.utils.hash" }}
