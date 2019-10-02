@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import ast
+import time
 
 import barbicanclient
+from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import base64
 from oslo_utils import excutils
@@ -25,6 +27,7 @@ from deckhand.barbican import client_wrapper
 from deckhand import errors
 from deckhand import types
 
+CONF = cfg.CONF
 LOG = logging.getLogger(__name__)
 
 
@@ -138,15 +141,43 @@ class BarbicanDriver(object):
             return payload
 
         # Store secret_ref in database for `secret_doc`.
-        kwargs = {
+        secret_args = {
             'name': secret_doc['metadata']['name'],
             'secret_type': secret_type,
             'payload': payload
         }
-        LOG.info('Storing encrypted document data in Barbican.')
 
+        LOG.info('Storing encrypted data in Barbican for document [{}, {}]'
+                 .format(secret_doc.schema, secret_doc.name))
+        for i in range(CONF.secret_create_attempts):
+            LOG.debug('Creating secret in Barbican, attempt {} of {}'
+                      .format((i + 1), CONF.secret_create_attempts))
+            try:
+                return self._do_create_secret(secret_args)
+            except Exception as e:
+                if i == (CONF.secret_create_attempts - 1):
+                    # This was the last attempt, re-raise any error
+                    raise
+                else:
+                    # This was not the last attempt, suppress the error and
+                    # try again after a brief sleep
+                    sleep_amount = (i + 1)
+                    LOG.error('Caught an error while trying to create a '
+                              'secret in Barbican, will try again in {} second'
+                              .format(sleep_amount))
+                    time.sleep(sleep_amount)
+
+    def _do_create_secret(self, secret_args):
+        """Using the cache construct, and the barbican client, create a secret
+
+        :param secret_args: Dict containing the data for the secret to create
+        :type secret_args: dict
+        :returns: Secret reference returned by Barbican
+        :rtype: str
+        """
         try:
-            secret_ref = cache.lookup_by_payload(self.barbicanclient, **kwargs)
+            return cache.lookup_by_payload(self.barbicanclient,
+                                           **secret_args)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError) as e:
             LOG.exception(str(e))
@@ -161,8 +192,6 @@ class BarbicanDriver(object):
             LOG.error('Caught %s error from Barbican, because the secret '
                       'payload type is unsupported.', e.__class__.__name__)
             raise errors.BarbicanServerException(details=str(e))
-
-        return secret_ref
 
     def _base64_decode_payload(self, payload):
         # If the secret_type is 'opaque' then this implies the

@@ -88,7 +88,10 @@ default_opts = [
                      "production."),
     cfg.BoolOpt('development_mode', default=False,
                 help="Enables development mode, which disables Keystone "
-                     "authentication. Do NOT use in production.")
+                     "authentication. Do NOT use in production."),
+    cfg.IntOpt('secret_create_attempts', default=2,
+               help="How many times Deckhand should attempt to create a "
+                    "secret in Barbican before raising an exception.")
 ]
 
 
