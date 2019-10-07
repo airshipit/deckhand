@@ -247,13 +247,13 @@ class SecretsSubstitution(object):
         exc_message = ''
         try:
             substituted_data = utils.jsonpath_replace(
-                document['data'], src_secret, dest_path,
+                document.data, src_secret, dest_path,
                 pattern=dest_pattern, recurse=dest_recurse)
-            if (isinstance(document['data'], dict) and
+            if (isinstance(document.data, dict) and
                     isinstance(substituted_data, dict)):
-                document['data'].update(substituted_data)
+                document.data.update(substituted_data)
             elif substituted_data:
-                document['data'] = substituted_data
+                document.data = substituted_data
             else:
                 exc_message = (
                     'Failed to create JSON path "%s" in the '
@@ -313,6 +313,7 @@ class SecretsSubstitution(object):
                              for d in documents_to_substitute]))
 
         for document in documents_to_substitute:
+            redact_dest = False
             LOG.debug('Checking for substitutions for document [%s, %s] %s.',
                       *document.meta)
             for sub in document.substitutions:
@@ -336,6 +337,9 @@ class SecretsSubstitution(object):
                     else:
                         LOG.warning(message)
                         continue
+
+                if src_doc.is_encrypted:
+                    redact_dest = True
 
                 # If the data is a dictionary, retrieve the nested secret
                 # via jsonpath_parse, else the secret is the primitive/string
@@ -390,6 +394,13 @@ class SecretsSubstitution(object):
                         dest_path=dest_path,
                         dest_pattern=dest_pattern,
                         dest_recurse=dest_recurse)
+
+            # If we just substituted from an encrypted document
+            # into a cleartext document, we need to redact the
+            # dest document as well so the secret stays hidden
+            if (not document.is_encrypted and redact_dest and not
+                    self._cleartext_secrets):
+                document.storage_policy = 'encrypted'
 
         yield document
 
