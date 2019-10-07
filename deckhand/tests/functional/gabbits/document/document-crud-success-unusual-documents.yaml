@@ -61,31 +61,3 @@ tests:
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].data: 9000
-
-  - name: verify_document_validation_success_in_list_view
-    desc: Check document validation success shows in list view
-    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/validations
-    status: 200
-    response_multidoc_jsonpaths:
-      $.`len`: 1
-      $.[0].count: 1
-      $.[0].results[0].status: success
-
-  - name: verify_document_validation_success_in_details_view
-    desc: Check document validation success shows in detailed view
-    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
-    status: 200
-    response_multidoc_jsonpaths:
-      $.`len`: 1
-      $.[0].count: 9
-      $.[0].results[*].status:
-        # 9 documents are created in total, including DataSchema documents.
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success

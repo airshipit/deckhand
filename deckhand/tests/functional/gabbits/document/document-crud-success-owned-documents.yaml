@@ -65,26 +65,3 @@ tests:
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].data: hunter2
-
-  - name: verify_schema_is_valid
-    desc: Check schema validation of the added schema
-    GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/validations/deckhand-schema-validation
-    status: 200
-    response_multidoc_jsonpaths:
-      $.`len`: 1
-      $.[0].results[*].status:
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success
-        - success

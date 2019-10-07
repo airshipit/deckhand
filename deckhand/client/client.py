@@ -30,7 +30,6 @@ from deckhand.client import buckets
 from deckhand.client import exceptions
 from deckhand.client import revisions
 from deckhand.client import tags
-from deckhand.client import validations
 
 
 class SessionClient(adapter.Adapter):
@@ -203,7 +202,6 @@ class Client(object):
         self.buckets = buckets.BucketManager(self)
         self.revisions = revisions.RevisionManager(self)
         self.tags = tags.RevisionTagManager(self)
-        self.validations = validations.ValidationManager(self)
 
         self.client = _construct_http_client(
             api_version=api_version,

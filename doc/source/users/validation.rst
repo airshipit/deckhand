@@ -41,10 +41,6 @@ Here is a list of internal validations:
 * ``deckhand-document-schema-validation`` - All concrete documents in the
   revision successfully pass their JSON schema validations. Will cause
   this to report an error.
-* ``deckhand-policy-validation`` (TODO) - All required policy documents are in-place,
-  and existing documents conform to those policies.  E.g. if a 3rd party
-  document specifies a ``layer`` that is not present in the layering policy,
-  that will cause this validation to report an error.
 
 Externally Provided Validations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -83,81 +79,6 @@ Schema validations are controlled by two mechanisms:
    documents can be registered by external services and subject the target
    document's ``data`` section to *additional* validations, validations
    specified by the ``data`` section of the ``DataSchema`` document.
-
-Policy Validations
-------------------
-
-*Not yet implemented*.
-
-Validation Policies
--------------------
-
-Validation policies are optional. Deckhand will perform all internal and
-externally registered schema validations against all documents, with or without
-any Validation Policies.
-
-All ``ValidationPolicy`` documents in Deckhand are externally registered. They
-allow services to report success or failure of named validations for a given
-revision. The intended purpose is to allow a simple mapping that enables
-consuming services to be able to quickly check whether the configuration in
-Deckhand is in a valid state for performing a specific action.
-
-``ValidationPolicy`` documents are not the same as ``DataSchema`` documents.
-A ``ValidationPolicy`` document can reference a list of internal Deckhand
-validations in addition to externally registered ``DataSchema`` documents.
-Whereas a ``DataSchema`` document specifies a new set of validations to check
-against relevant documents, a ``ValidationPolicy`` is a bookkeeping device
-that merely lists the set of validations in a revision that need to succeed
-in order for the revision itself to be valid.
-
-For example, given Revision 1 which contains a ``ValidationPolicy`` of:
-
-::
-
-  ---
-  schema: deckhand/ValidationPolicy/v1
-  metadata:
-    schema: metadata/Control/v1
-    name: later-validation
-    layeringDefinition:
-      abstract: False
-      layer: site
-  data:
-    validations:
-      - name: deckhand-schema-validation
-      - name: drydock-site-validation
-
-Deckhand automatically creates ``deckhand-schema-validation`` as soon as the
-revision itself is created. Afterward, Drydock can POST its result for
-``drydock-site-validation`` using Deckhand's Validations API. Finally, Shipyard
-query Deckhand's Validations API which in turn checks whether all validations
-contained in the ``ValidationPolicy`` above are successful, before it proceeds
-to the next stage in its workflow.
-
-Missing Validations
-^^^^^^^^^^^^^^^^^^^
-
-Validations contained in a ``ValidationPolicy`` but which were never created
-in Deckhand for a given revision are considered missing. Missing validations
-result in the entire validation result reporting "failure".
-
-If, for example, Drydock never POSTed a result for ``drydock-site-validation``
-then the Deckhand Validations API will return a "failure" result, even if
-``deckhand-schema-validation`` reports "success".
-
-Extra Validations
-^^^^^^^^^^^^^^^^^
-
-Validations that are registered in Deckhand via the Validations API
-but are not included in the ``ValidationPolicy`` (if one exists) for a given
-revision are **ignored** (with the original status reported as
-"ignored [failure]" or "ignored [success]").
-
-For example, given the ``ValidationPolicy`` example above, if Promenade POSTs
-``promenade-schema-validation`` with a result of "failure", then the *overall*
-validation status for the given revision returned by Deckhand will be *success*
-because the "failure" result from Promenade, since it was never registered,
-will be ignored.
 
 Validation Stages
 -----------------

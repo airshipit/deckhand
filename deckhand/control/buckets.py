@@ -48,7 +48,7 @@ class BucketsResource(api_base.BaseResource):
         try:
             doc_validator = document_validation.DocumentValidation(
                 documents, data_schemas, pre_validate=True)
-            validations = doc_validator.validate_all()
+            doc_validator.validate_all()
         except deckhand_errors.InvalidDocumentFormat as e:
             with excutils.save_and_reraise_exception():
                 LOG.exception(e.format_message())
@@ -63,10 +63,6 @@ class BucketsResource(api_base.BaseResource):
 
         created_documents = self._create_revision_documents(
             bucket_name, documents)
-
-        if created_documents:
-            revision_id = created_documents[0]['revision_id']
-            self._create_revision_validations(revision_id, validations)
 
         resp.body = self.view_builder.list(created_documents)
         resp.status = falcon.HTTP_200
@@ -88,8 +84,3 @@ class BucketsResource(api_base.BaseResource):
                 LOG.exception(e.format_message())
 
         return created_documents
-
-    def _create_revision_validations(self, revision_id, validations):
-        for validation in validations:
-            db_api.validation_create(revision_id, validation['name'],
-                                     validation)
