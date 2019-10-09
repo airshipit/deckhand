@@ -12,16 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Install pip3 and gabbi
-  shell: |
-    set -xe;
-    apt-get install -y python-pip
-    pip install --upgrade pip
-    pip install -r test-requirements.txt
-  args:
-    chdir: "{{ zuul.project.src_dir }}"
-  become: yes
-
 - name: Run Integration Tests with Docker
   when: disable_keystone == false
   block:

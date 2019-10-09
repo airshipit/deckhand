@@ -20,7 +20,7 @@
 - name: Deploy Required Packages
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/000-install-packages.sh
+    ./tools/deployment/common/install-packages.sh
   environment:
     zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
   args:
@@ -29,7 +29,7 @@
 - name: Deploy Kubernetes
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/010-deploy-k8s.sh
+    ./tools/deployment/common/deploy-k8s.sh
   environment:
     zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
   args:
@@ -38,48 +38,48 @@
 - name: Setup OS and Kubernetes Clients
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/020-setup-client.sh
+    ./tools/deployment/common/setup-client.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
 - name: Deploy Ingress
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/030-ingress.sh
+    ./tools/deployment/component/common/ingress.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
 - name: Deploy NFS
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/040-nfs-provisioner.sh
+    ./tools/deployment/component/nfs-provisioner/nfs-provisioner.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
 - name: Deploy MariaDB
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/050-mariadb.sh
+    ./tools/deployment/component/common/mariadb.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
 - name: Deploy RabbitMQ
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/060-rabbitmq.sh
+    ./tools/deployment/component/common/rabbitmq.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
 - name: Deploy Memcached
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/070-memcached.sh
+    ./tools/deployment/component/common/memcached.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
 - name: Deploy Keystone
   shell: |
     set -xe;
-    ./tools/deployment/developer/nfs/080-keystone.sh
+    ./tools/deployment/component/keystone/keystone.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"

@@ -29,10 +29,8 @@
         - deckhand-functional-docker-py35-opensuse
         - deckhand-integration-uwsgi-py35:
             voting: false
-        - deckhand-integration-docker-py35-ubuntu:
-            voting: false
-        - deckhand-integration-docker-py35-opensuse:
-            voting: false
+        - deckhand-integration-docker-py35-ubuntu
+        - deckhand-integration-docker-py35-opensuse
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate-ubuntu
@@ -43,6 +41,8 @@
         - deckhand-tox-py35-postgresql
         - deckhand-functional-docker-py35-ubuntu
         - deckhand-functional-docker-py35-opensuse
+        - deckhand-integration-docker-py35-ubuntu
+        - deckhand-integration-docker-py35-opensuse
         - deckhand-chart-build-gate
         - deckhand-docker-build-gate-ubuntu
         - deckhand-docker-build-gate-opensuse
