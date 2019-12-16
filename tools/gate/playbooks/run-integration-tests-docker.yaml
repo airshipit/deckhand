@@ -17,8 +17,8 @@
     - install-test-requirements
     - build-images
     - deploy-keystone-dependencies
-    - build-charts
     - deploy-barbican
+    - build-charts
     # NOTE: deploy-postgresql and deploy-deckhand must follow
     # deploy-keystone-dependencies which restarts Docker, causing
     # the first 2 containers that are deployed to fail.
@@ -29,8 +29,8 @@
   tags:
     - build-images
     - deploy-keystone-dependencies
-    - build-charts
     - deploy-barbican
+    - build-charts
     - deploy-postgresql
     - generate-test-config
     - deploy-deckhand

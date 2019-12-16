@@ -15,19 +15,7 @@
 - name: Deploy Barbican
   shell: |
     set -xe;
-
-    # Pull images and lint chart
-    make pull-images barbican
-
-    # Deploy command
-    helm upgrade --install barbican ./barbican \
-      --namespace=openstack
-
-    # Wait for deploy
-    ./tools/deployment/common/wait-for-pods.sh openstack
-
-    # Validate deployment info
-    helm status barbican
+    ./tools/deployment/component/barbican/barbican.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
