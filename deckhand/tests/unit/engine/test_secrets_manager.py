@@ -18,10 +18,8 @@ import yaml
 import mock
 from oslo_serialization import base64
 from oslo_utils import uuidutils
-import six
 import testtools
 
-from deckhand.barbican import driver
 from deckhand.common import document as document_wrapper
 from deckhand.engine import secrets_manager
 from deckhand import errors
@@ -64,9 +62,8 @@ class TestSecretsManager(test_base.DeckhandWithDBTestCase):
         elif encryption_type == 'encrypted':
             expected_kwargs = {
                 'name': secret_doc['metadata']['name'],
-                'secret_type': driver.BarbicanDriver._get_secret_type(
-                    'deckhand/' + secret_type),
-                'payload': payload
+                'secret_type': 'opaque',
+                'payload': base64.encode_as_text(repr(payload))
             }
             self.assertEqual(self.secret_ref, secret_ref)
             self.mock_barbicanclient.call.assert_called_once_with(
@@ -123,6 +120,8 @@ class TestSecretsManager(test_base.DeckhandWithDBTestCase):
             'secrets.get', secret_ref)
 
     def test_empty_payload_skips_encryption(self):
+        # NOTE: Not testing for the `None` case here, because gen_test
+        # factory method interprets `None` as "generate a passphrase"
         for empty_payload in ('', {}, []):
             secret_doc = self.factory.gen_test(
                 'Certificate', 'encrypted', empty_payload)
@@ -142,7 +141,7 @@ class TestSecretsManager(test_base.DeckhandWithDBTestCase):
         secret_doc = self.factory.gen_test(
             'Certificate', 'encrypted', payload)
 
-        expected_payload = base64.encode_as_text(six.text_type({'foo': 'bar'}))
+        expected_payload = base64.encode_as_text(repr({'foo': 'bar'}))
         expected_kwargs = {
             'name': secret_doc['metadata']['name'],
             'secret_type': 'opaque',

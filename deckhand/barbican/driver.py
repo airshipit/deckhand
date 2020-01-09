@@ -20,7 +20,6 @@ from oslo_config import cfg
 from oslo_log import log as logging
 from oslo_serialization import base64
 from oslo_utils import excutils
-import six
 
 from deckhand.barbican import cache
 from deckhand.barbican import client_wrapper
@@ -36,67 +35,15 @@ class BarbicanDriver(object):
     def __init__(self):
         self.barbicanclient = client_wrapper.BarbicanClientWrapper()
 
-    @staticmethod
-    def _get_secret_type(schema):
-        """Get the Barbican secret type based on the following mapping:
-
-        ``deckhand/Certificate/v1`` => certificate
-        ``deckhand/CertificateKey/v1`` => private
-        ``deckhand/CertificateAuthority/v1`` => certificate
-        ``deckhand/CertificateAuthorityKey/v1`` => private
-        ``deckhand/Passphrase/v1`` => passphrase
-        ``deckhand/PrivateKey/v1`` => private
-        ``deckhand/PublicKey/v1`` => public
-        Other => passphrase
-
-        :param schema: The document's schema.
-        :returns: The value corresponding to the mapping above.
-        """
-        parts = schema.split('/')
-        if len(parts) == 3:
-            namespace, kind, _ = parts
-        elif len(parts) == 2:
-            namespace, kind = parts
-        else:
-            raise ValueError(
-                'Schema %s must consist of namespace/kind/version.' % schema)
-
-        is_generic = (
-            '/'.join([namespace, kind]) not in types.DOCUMENT_SECRET_TYPES
-        )
-
-        # If the document kind is not a built-in secret type, then default to
-        # 'passphrase'.
-        if is_generic:
-            LOG.debug('Defaulting to secret_type="passphrase" for generic '
-                      'document schema %s.', schema)
-            return 'passphrase'
-
-        kind = kind.lower()
-
-        if kind in [
-            'certificateauthoritykey', 'certificatekey', 'privatekey'
-        ]:
-            return 'private'
-        elif kind == 'certificateauthority':
-            return 'certificate'
-        elif kind == 'publickey':
-            return 'public'
-        # NOTE(felipemonteiro): This branch below handles certificate and
-        # passphrase, both of which are supported secret types in Barbican.
-        return kind
-
     def _base64_encode_payload(self, secret_doc):
         """Ensures secret document payload is compatible with Barbican."""
 
         payload = secret_doc.data
-        secret_type = self._get_secret_type(secret_doc.schema)
-
-        # NOTE(felipemonteiro): The logic for the 2 conditions below is
-        # enforced from Barbican's Python client. Some pre-processing and
-        # transformation is needed to make Barbican work with non-compatible
-        # formats.
-        if not payload and payload is not False:
+        secret_type = None
+        # Explicitly list the "empty" payloads we are refusing to store.
+        # We don't use ``if not payload`` because that would not encrypt
+        # and store something like ``data: !!int 0``
+        if payload in ('', {}, [], None):
             # There is no point in even bothering to encrypt an empty
             # body, which just leads to needless overhead, so return
             # early.
@@ -104,19 +51,14 @@ class BarbicanDriver(object):
                      'Deckhand will not encrypt document [%s, %s] %s.',
                      secret_doc.schema, secret_doc.layer, secret_doc.name)
             secret_doc.storage_policy = types.CLEARTEXT
-        elif not isinstance(
-                payload, (six.text_type, six.binary_type)):
-            LOG.debug('Forcibly setting secret_type=opaque and '
-                      'base64-encoding non-string payload for '
-                      'document [%s, %s] %s.', secret_doc.schema,
-                      secret_doc.layer, secret_doc.name)
-            # NOTE(felipemonteiro): base64-encoding the non-string payload is
-            # done for serialization purposes, not for security purposes.
-            # 'opaque' is used to avoid Barbican doing any further
-            # serialization server-side.
+        else:
+            LOG.debug('Setting secret_type=opaque and '
+                      'base64-encoding payload of type %s for '
+                      'document [%s, %s] %s.', type(payload),
+                      secret_doc.schema, secret_doc.layer, secret_doc.name)
             secret_type = 'opaque'
             try:
-                payload = base64.encode_as_text(six.text_type(payload))
+                payload = base64.encode_as_text(repr(payload))
             except Exception:
                 message = ('Failed to base64-encode payload of type %s '
                            'for Barbican storage.', type(payload))
@@ -222,7 +164,7 @@ class BarbicanDriver(object):
 
         payload = secret.payload
         if secret.secret_type == 'opaque':
-            LOG.debug('Forcibly base64-decoding original non-string payload '
+            LOG.debug('Base64-decoding original payload '
                       'for document [%s, %s] %s.', *src_doc.meta)
             secret = self._base64_decode_payload(payload)
         else:
