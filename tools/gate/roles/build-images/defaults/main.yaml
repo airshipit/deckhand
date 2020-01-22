@@ -17,4 +17,4 @@ proxy:
   https: null
   noproxy: null
 
-distro: ubuntu_xenial
+distro: ubuntu_bionic

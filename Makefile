@@ -25,7 +25,7 @@ USE_PROXY          ?= false
 PUSH_IMAGE         ?= false
 # use this variable for image labels added in internal build process
 LABEL              ?= org.airshipit.build=community
-DISTRO             ?= ubuntu_xenial
+DISTRO             ?= ubuntu_bionic
 COMMIT             ?= $(shell git rev-parse HEAD)
 IMAGE              := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}-${DISTRO}
 

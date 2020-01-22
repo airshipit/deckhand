@@ -25,34 +25,42 @@
         - deckhand-tox-py35-postgresql
         - deckhand-functional-uwsgi-py35:
             voting: false
-        - deckhand-functional-docker-py35-ubuntu
+        - deckhand-functional-docker-py35-ubuntu_xenial
+        - deckhand-functional-docker-py35-ubuntu_bionic
         - deckhand-functional-docker-py35-opensuse
         - deckhand-integration-uwsgi-py35:
             voting: false
-        - deckhand-integration-docker-py35-ubuntu
+        - deckhand-integration-docker-py35-ubuntu_xenial
+        - deckhand-integration-docker-py35-ubuntu_bionic
         - deckhand-integration-docker-py35-opensuse
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
-        - deckhand-docker-build-gate-ubuntu
+        - deckhand-docker-build-gate-ubuntu_xenial
+        - deckhand-docker-build-gate-ubuntu_bionic
         - deckhand-docker-build-gate-opensuse
         - deckhand-airskiff-deployment
     gate:
       jobs:
         - deckhand-tox-py35-postgresql
-        - deckhand-functional-docker-py35-ubuntu
+        - deckhand-functional-docker-py35-ubuntu_xenial
+        - deckhand-functional-docker-py35-ubuntu_bionic
         - deckhand-functional-docker-py35-opensuse
-        - deckhand-integration-docker-py35-ubuntu
+        - deckhand-integration-docker-py35-ubuntu_xenial
+        - deckhand-integration-docker-py35-ubuntu_bionic
         - deckhand-integration-docker-py35-opensuse
         - deckhand-chart-build-gate
-        - deckhand-docker-build-gate-ubuntu
+        - deckhand-docker-build-gate-ubuntu_xenial
+        - deckhand-docker-build-gate-ubuntu_bionic
         - deckhand-docker-build-gate-opensuse
         - openstack-tox-pep8
     post:
       jobs:
         - deckhand-upload-git-mirror
-        - deckhand-docker-publish-ubuntu
+        - deckhand-docker-publish-ubuntu_xenial
+        - deckhand-docker-publish-ubuntu_bionic
         - deckhand-docker-publish-opensuse
-        - deckhand-docker-tag-ubuntu
+        - deckhand-docker-tag-ubuntu_xenial
+        - deckhand-docker-tag-ubuntu_bionic
         - deckhand-docker-tag-opensuse
 
 - nodeset:
@@ -65,7 +73,7 @@
     name: deckhand-single-node-airskiff
     nodes:
       - name: primary
-        label: ubuntu-xenial
+        label: ubuntu-bionic
 
 - job:
     name: deckhand-tox-py35-postgresql
@@ -109,7 +117,7 @@
       - openstack/openstack-helm-infra
 
 - job:
-    name: deckhand-functional-docker-py35-ubuntu
+    name: deckhand-functional-docker-py35-ubuntu_xenial
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.5. Uses tox with the ``functional-py35`` environment.
@@ -120,6 +128,26 @@
       tox_envlist: functional
       disable_keystone: true
       distro: ubuntu_xenial
+    irrelevant-files:
+      - ^.*\.rst$
+      - ^doc/.*$
+      - ^etc/.*$
+      - ^releasenotes/.*$
+      - ^setup.cfg$
+      - ^deckhand/tests/unit/.*$
+
+- job:
+    name: deckhand-functional-docker-py35-ubuntu_bionic
+    description: |
+      Run tox-based functional tests for the Airship Deckhand project under
+      cPython version 3.5. Uses tox with the ``functional-py35`` environment.
+      Ubuntu (default) image is built and used.
+    parent: deckhand-functional-docker-base
+    nodeset: deckhand-single-node
+    vars:
+      tox_envlist: functional
+      disable_keystone: true
+      distro: ubuntu_bionic
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*$
@@ -211,7 +239,7 @@
       - ^releasenotes/.*$
 
 - job:
-    name: deckhand-integration-docker-py35-ubuntu
+    name: deckhand-integration-docker-py35-ubuntu_xenial
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
       cPython version 3.5. Builds ubuntu (default) deckhand image.
@@ -220,6 +248,17 @@
     vars:
       disable_keystone: false
       distro: ubuntu_xenial
+
+- job:
+    name: deckhand-integration-docker-py35-ubuntu_bionic
+    description: |
+      Run tox-based integration tests for the Airship Deckhand project under
+      cPython version 3.5. Builds ubuntu (default) deckhand image.
+    parent: deckhand-integration-docker-base
+    nodeset: openstack-helm-single-node
+    vars:
+      disable_keystone: false
+      distro: ubuntu_bionic
 
 - job:
     name: deckhand-airskiff-deployment
@@ -254,7 +293,7 @@
       distro: opensuse_15
 
 - job:
-    name: deckhand-docker-build-gate-ubuntu
+    name: deckhand-docker-build-gate-ubuntu_xenial
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: deckhand-single-node
@@ -273,6 +312,19 @@
           patch_set: true
 
 - job:
+    name: deckhand-docker-build-gate-ubuntu_bionic
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-build.yaml
+    nodeset: deckhand-single-node
+    irrelevant-files: *non-code-files-template
+    vars:
+      publish: false
+      distro: ubuntu_bionic
+      tags:
+        dynamic:
+          patch_set: true
+
+- job:
     name: deckhand-docker-build-gate-opensuse
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
@@ -286,7 +338,7 @@
           patch_set: true
 
 - job:
-    name: deckhand-docker-publish-ubuntu
+    name: deckhand-docker-publish-ubuntu_xenial
     description: |
       Runs on every merge, unless files in a dictionary below are changed.
       Builds and publishes container ubuntu images on quay.io with a set of tags
@@ -300,6 +352,28 @@
     vars:
       publish: true
       distro: ubuntu_xenial
+      tags:
+        dynamic:
+          branch: true
+          commit: true
+        static:
+          - latest
+
+- job:
+    name: deckhand-docker-publish-ubuntu_bionic
+    description: |
+      Runs on every merge, unless files in a dictionary below are changed.
+      Builds and publishes container ubuntu images on quay.io with a set of tags
+      listed in vars section. Waits in Zuul queue for a node (VM) assignment.
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-build.yaml
+    nodeset: deckhand-single-node
+    secrets:
+      - airship_deckhand_quay_creds
+    irrelevant-files: *non-code-files-template
+    vars:
+      publish: true
+      distro: ubuntu_bionic
       tags:
         dynamic:
           branch: true
@@ -330,7 +404,7 @@
           - latest
 
 - job:
-    name: deckhand-docker-tag-ubuntu
+    name: deckhand-docker-tag-ubuntu_xenial
     description: |
       Runs on every merge when files in a dictionalry below are changed, and
       adds git commit id tag onto the ubuntu container image published on quay.io,
@@ -344,6 +418,22 @@
       - airship_deckhand_quay_creds
     vars:
       distro: ubuntu_xenial
+
+- job:
+    name: deckhand-docker-tag-ubuntu_bionic
+    description: |
+      Runs on every merge when files in a dictionalry below are changed, and
+      adds git commit id tag onto the ubuntu container image published on quay.io,
+      which has `latest` tag set. Does not wait in queue for a node (VM)
+      assignment, runs almost immediately.
+    timeout: 1800
+    run: tools/gate/playbooks/docker-image-tag.yaml
+    nodeset:
+      nodes: []
+    secrets:
+      - airship_deckhand_quay_creds
+    vars:
+      distro: ubuntu_bionic
 
 - job:
     name: deckhand-docker-tag-opensuse

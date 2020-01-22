@@ -14,6 +14,15 @@
 
 - hosts: primary
   tasks:
+    - name: stop systemd-resolved service
+      systemd:
+        state: stopped
+        enabled: no
+        masked: yes
+        daemon_reload: yes
+        name: systemd-resolved
+      become: yes
+
     - name: Clone Required Repositories
       shell: |
         export CLONE_DECKHAND={{ CLONE_DECKHAND }}
@@ -24,6 +33,12 @@
     - name: Deploy Kubernetes with Minikube
       shell: |
         ./tools/deployment/airskiff/developer/010-deploy-k8s.sh
+      args:
+        chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
+
+    - name: Setup AppArmor
+      shell: |
+        ./tools/deployment/airskiff/developer/015-setup-apparmor.sh
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
 

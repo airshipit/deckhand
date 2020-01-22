@@ -57,7 +57,7 @@ Finally, run Deckhand via Docker::
         --net=host \
         -p 9000:9000 \
         -v $CONF_DIR:/etc/deckhand \
-        quay.io/airshipit/deckhand:latest-ubuntu_xenial
+        quay.io/airshipit/deckhand:latest-ubuntu_bionic
 
 PostgreSQL
 ^^^^^^^^^^
@@ -101,7 +101,7 @@ Run an update to the Database to bring it to the current code level::
     $ [sudo] docker run --rm \
         --net=host \
         -v $CONF_DIR:/etc/deckhand \
-        quay.io/airshipit/deckhand:latest-ubuntu_xenial\
+        quay.io/airshipit/deckhand:latest-ubuntu_bionic\
         alembic upgrade head
 
 Finally, run Deckhand via Docker::
@@ -110,7 +110,7 @@ Finally, run Deckhand via Docker::
         --net=host \
         -p 9000:9000 \
         -v $CONF_DIR:/etc/deckhand \
-        quay.io/airshipit/deckhand:latest-ubuntu_xenial
+        quay.io/airshipit/deckhand:latest-ubuntu_bionic
 
 To kill the ephemeral DB afterward::
 
@@ -206,7 +206,7 @@ After, from the command line, execute:
         --net=host \
         -p 9000:9000 \
         -v $CONF_DIR:/etc/deckhand \
-        quay.io/airshipit/deckhand:latest-ubuntu_xenial server
+        quay.io/airshipit/deckhand:latest-ubuntu_bionic server
 
 .. _development-utilities:
 
