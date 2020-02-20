@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+- name: Airship-Deckhand image build path
+  shell: cd "{{ work_dir }}"; pwd
+  register: airship_deckhand_path
+  vars:
+    work_dir: "{{ zuul.project.src_dir | default('') }}/{{ zuul_airship_deckhand_relative_path | default('') }}"
+
 - name: Run Integration Tests with Docker
   when: disable_keystone == false
   block:

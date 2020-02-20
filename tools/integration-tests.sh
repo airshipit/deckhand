@@ -56,6 +56,14 @@ function deploy_osh_keystone_barbican {
     cd ${CURRENT_DIR}
     sudo -H -E pip install -r test-requirements.txt
 
+    # remove systemd-resolved local stub dns from resolv.conf
+    sudo sed -i.bkp '/^nameserver.*127.0.0.1/d
+                     w /dev/stdout' /etc/resolv.conf
+    # add external nameservers
+    echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
+    echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
+    cat /etc/resolv.conf
+
     cd ${OSH_PATH}
     # Setup clients on the host and assemble the charts
     ./tools/deployment/common/setup-client.sh

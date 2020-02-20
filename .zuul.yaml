@@ -93,7 +93,7 @@
     nodeset: deckhand-single-node
     vars:
       tox_envlist: functional-dev
-    irrelevant-files:
+    irrelevant-files: &irrelevant-files
       - ^.*\.rst$
       - ^doc/.*$
       - ^etc/.*$
@@ -121,40 +121,28 @@
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.5. Uses tox with the ``functional-py35`` environment.
-      Ubuntu (default) image is built and used.
+      Ubuntu (xenial) image is built and used.
     parent: deckhand-functional-docker-base
     nodeset: deckhand-single-node
     vars:
       tox_envlist: functional
       disable_keystone: true
       distro: ubuntu_xenial
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^etc/.*$
-      - ^releasenotes/.*$
-      - ^setup.cfg$
-      - ^deckhand/tests/unit/.*$
+    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-functional-docker-py35-ubuntu_bionic
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.5. Uses tox with the ``functional-py35`` environment.
-      Ubuntu (default) image is built and used.
+      Ubuntu (bionic) image is built and used.
     parent: deckhand-functional-docker-base
     nodeset: deckhand-single-node
     vars:
       tox_envlist: functional
       disable_keystone: true
       distro: ubuntu_bionic
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^etc/.*$
-      - ^releasenotes/.*$
-      - ^setup.cfg$
-      - ^deckhand/tests/unit/.*$
+    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-functional-docker-py35-opensuse
@@ -168,13 +156,7 @@
       tox_envlist: functional
       disable_keystone: true
       distro: opensuse_15
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^etc/.*$
-      - ^releasenotes/.*$
-      - ^setup.cfg$
-      - ^deckhand/tests/unit/.*$
+    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-integration-uwsgi-py35
@@ -185,13 +167,7 @@
     timeout: 3600
     run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     nodeset: deckhand-single-node
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^etc/.*$
-      - ^releasenotes/.*$
-      - ^setup.cfg$
-      - ^deckhand/tests/unit/.*$
+    irrelevant-files: *irrelevant-files
     vars:
       disable_keystone: true
 
@@ -242,7 +218,7 @@
     name: deckhand-integration-docker-py35-ubuntu_xenial
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.5. Builds ubuntu (default) deckhand image.
+      cPython version 3.5. Builds ubuntu (xenial) deckhand image.
     parent: deckhand-integration-docker-base
     nodeset: openstack-helm-single-node
     vars:
@@ -253,7 +229,7 @@
     name: deckhand-integration-docker-py35-ubuntu_bionic
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.5. Builds ubuntu (default) deckhand image.
+      cPython version 3.5. Builds ubuntu (bionic) deckhand image.
     parent: deckhand-integration-docker-base
     nodeset: openstack-helm-single-node
     vars:
