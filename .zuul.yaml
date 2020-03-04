@@ -24,12 +24,12 @@
       jobs:
         - deckhand-tox-py35-postgresql
         - deckhand-functional-uwsgi-py35:
-            voting: false
+            voting: true
         - deckhand-functional-docker-py35-ubuntu_xenial
         - deckhand-functional-docker-py35-ubuntu_bionic
         - deckhand-functional-docker-py35-opensuse
         - deckhand-integration-uwsgi-py35:
-            voting: false
+            voting: true
         - deckhand-integration-docker-py35-ubuntu_xenial
         - deckhand-integration-docker-py35-ubuntu_bionic
         - deckhand-integration-docker-py35-opensuse
@@ -183,7 +183,6 @@
     name: deckhand-chart-build-latest-htk
     description: |
       Build charts using latest Helm toolkit.
-    voting: false
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
     nodeset: deckhand-single-node
@@ -242,7 +241,6 @@
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
     timeout: 9600
-    voting: false
     pre-run:
       - tools/gate/playbooks/airskiff-reduce-site.yaml
       - tools/gate/playbooks/git-config.yaml
