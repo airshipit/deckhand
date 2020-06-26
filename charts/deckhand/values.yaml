@@ -328,7 +328,16 @@ pod:
   mandatory_access_control:
     type: apparmor
     deckhand-api:
+      init: runtime/default
       deckhand-api: runtime/default
+    deckhand-db-init:
+      init: runtime/default
+      deckhand-db-init: runtime/default
+    deckhand-db-sync:
+      init: runtime/default
+      deckhand-db-sync: runtime/default
+    deckhand-api-test:
+      deckhand-api-test: runtime/default
   security_context:
     deckhand:
       pod:
