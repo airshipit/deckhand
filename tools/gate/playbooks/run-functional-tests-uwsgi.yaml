@@ -17,6 +17,7 @@
   roles:
     - disable-systemd-resolved
     - install-postgresql
+    - install-test-requirements
     - run-functional-tests
   tags:
     - install-postgresql

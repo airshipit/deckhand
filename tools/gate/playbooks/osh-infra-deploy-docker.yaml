@@ -33,11 +33,13 @@
   become: yes
   roles:
     - setup-firewall
+    - install-test-requirements
     - deploy-python-pip
     - deploy-docker
     - deploy-jq
   tags:
     - setup-firewall
+    - install-test-requirements
     - deploy-python-pip
     - deploy-docker
     - deploy-jq

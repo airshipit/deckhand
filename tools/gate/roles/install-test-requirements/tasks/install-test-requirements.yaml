@@ -20,7 +20,8 @@
 - name: Install pip3 and gabbi
   shell: |
     set -xe;
-    apt-get install -y python-pip
+    apt-get install -y python-pip python3-pip \
+      python-setuptools python3-setuptools
     pip install --upgrade pip
     pip install -r test-requirements.txt
   args:

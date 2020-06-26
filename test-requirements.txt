@@ -16,3 +16,4 @@ gabbi==1.35.1
 pifpaf==2.1.2
 oslotest==3.7.0
 yq>=2.7.2
+tox
