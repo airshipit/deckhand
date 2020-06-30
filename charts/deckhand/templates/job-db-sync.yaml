@@ -36,6 +36,7 @@ spec:
 {{ tuple $envAll | include "helm-toolkit.snippets.release_uuid" | indent 8 }}
 {{ dict "envAll" $envAll "podName" "deckhand-db-sync" "containerNames" (list "init" "deckhand-db-sync") | include "helm-toolkit.snippets.kubernetes_mandatory_access_control_annotation" | indent 8 }}
     spec:
+{{ dict "envAll" $envAll "application" "db_sync" | include "helm-toolkit.snippets.kubernetes_pod_security_context" | indent 6 }}
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
       nodeSelector:
@@ -47,6 +48,7 @@ spec:
           image: {{ .Values.images.tags.db_sync | quote }}
           imagePullPolicy: {{ .Values.images.pull_policy | quote }}
 {{ tuple $envAll $envAll.Values.pod.resources.jobs.db_sync | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}
+{{ dict "envAll" $envAll "application" "db_sync" "container" "deckhand_db_sync" | include "helm-toolkit.snippets.kubernetes_container_security_context" | indent 10 }}
           env:
             - name: DECKHAND_DB_URL
               valueFrom:

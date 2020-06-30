@@ -346,6 +346,27 @@ pod:
         deckhand_api:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
+    db_init:
+      pod:
+        runAsUser: 65534
+      container:
+        deckhand_db_init:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+    db_sync:
+      pod:
+        runAsUser: 65534
+      container:
+        deckhand_db_sync:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
+    api_test:
+      pod:
+        runAsUser: 65534
+      container:
+        deckhand_api_test:
+          readOnlyRootFilesystem: true
+          allowPrivilegeEscalation: false
   mounts:
     deckhand_db_init:
       init_container: null
