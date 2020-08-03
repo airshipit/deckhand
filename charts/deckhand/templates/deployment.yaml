@@ -66,7 +66,7 @@ spec:
             - name: 'DECKHAND_API_WORKERS'
               value: {{ .Values.conf.uwsgi.workers | default 1 | quote }}
             - name: 'DECKHAND_API_THREADS'
-              value: {{ .Values.conf.uwsgi.threads | default 4 | quote }}
+              value: {{ .Values.conf.uwsgi.threads | default 16 | quote }}
           image: {{ .Values.images.tags.deckhand }}
           imagePullPolicy: {{ .Values.images.pull_policy }}
 {{ tuple $envAll $envAll.Values.pod.resources.api | include "helm-toolkit.snippets.kubernetes_resources" | indent 10 }}

@@ -234,7 +234,7 @@ conf:
     # SQLAlchemy engine pooled connection strings when workers > 1. As a
     # workaround, we use multiple threads but only 1 worker. For more
     # information, see: https://github.com/att-comdev/deckhand/issues/20
-    threads: 4
+    threads: 16
     workers: 1
   policy:
     admin_api: role:admin

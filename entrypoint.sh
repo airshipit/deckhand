@@ -30,7 +30,7 @@ DECKHAND_API_TIMEOUT=${DECKHAND_API_TIMEOUT:-"600"}
 # Number of uWSGI workers to handle API requests
 DECKHAND_API_WORKERS=${DECKHAND_API_WORKERS:-"1"}
 # Threads per worker
-DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"4"}
+DECKHAND_API_THREADS=${DECKHAND_API_THREADS:-"16"}
 # The Deckhand configuration directory containing deckhand.conf
 DECKHAND_CONFIG_DIR=${DECKHAND_CONFIG_DIR:-"/etc/deckhand"}
 
@@ -43,13 +43,16 @@ if [ "$1" = 'server' ]; then
         --die-on-term \
         --enable-threads \
         --http :${PORT} \
-        --http-timeout $DECKHAND_API_TIMEOUT \
+        --http-timeout ${DECKHAND_API_TIMEOUT} \
         -L \
         --lazy-apps \
         --master \
         --pyargv "--config-file ${DECKHAND_CONFIG_DIR}/deckhand.conf" \
-        --threads $DECKHAND_API_THREADS \
-        --workers $DECKHAND_API_WORKERS \
+        --threads ${DECKHAND_API_THREADS} \
+        --workers ${DECKHAND_API_WORKERS} \
+        --strict \
+        --vacuum \
+        --need-app \
         -w deckhand.cmd
 elif [ "$1" = 'alembic' ]; then
     exec alembic ${@:2}
