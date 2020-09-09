@@ -31,6 +31,7 @@ EXPOSE $PORT
 RUN set -x && \
     zypper -q update -y && \
     zypper install -y --no-recommends \
+    automake \
     ca-certificates \
     curl \
     gcc \
@@ -39,6 +40,7 @@ RUN set -x && \
     libffi-devel \
     libopenssl-devel \
     libpqxx-devel \
+    libtool \
     make \
     netcat-openbsd \
     netcfg \
@@ -60,6 +62,21 @@ RUN pip3 install -U pip \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base
+
+# Install LibYAML
+ENV LD_LIBRARY_PATH=/usr/local/lib
+
+ARG LIBYAML_VERSION=0.2.5
+RUN set -ex \
+    && git clone https://github.com/yaml/libyaml.git \
+    && cd libyaml \
+    && git checkout $LIBYAML_VERSION \
+    && ./bootstrap \
+    && ./configure \
+    && make \
+    && make install \
+    && cd .. \
+    && rm -fr libyaml
 
 # Create deckhand user
 RUN useradd -ms /bin/bash deckhand
