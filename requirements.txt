@@ -29,6 +29,7 @@ pbr==5.1.0
 PasteDeploy==1.5.2
 Paste==3.0.1
 psycopg2-binary==2.8.4
+pylibyaml~=0.1
 pyyaml~=5.1
 
 # TODO(alanmeadows)
