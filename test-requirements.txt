@@ -9,7 +9,7 @@ python-subunit==1.3.0
 os-testr==1.0.0
 testrepository==0.0.20
 testtools==2.3.0
-bandit==1.5.1
+bandit==1.6.2
 # NOTE(felipemonteiro): Pin here because later versions require that
 # content-type be present in empty responses.
 gabbi==1.35.1

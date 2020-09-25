@@ -56,7 +56,7 @@ class BarbicanDriver(object):
                       'base64-encoding payload of type %s for '
                       'document [%s, %s] %s.', type(payload),
                       secret_doc.schema, secret_doc.layer, secret_doc.name)
-            secret_type = 'opaque'
+            secret_type = 'opaque'  # nosec  # not a hardcoded password
             try:
                 payload = base64.encode_as_text(repr(payload))
             except Exception:
@@ -96,7 +96,7 @@ class BarbicanDriver(object):
                       .format((i + 1), CONF.secret_create_attempts))
             try:
                 return self._do_create_secret(secret_args)
-            except Exception as e:
+            except Exception:
                 if i == (CONF.secret_create_attempts - 1):
                     # This was the last attempt, re-raise any error
                     raise

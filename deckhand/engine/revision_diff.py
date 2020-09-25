@@ -258,7 +258,7 @@ def _diff_buckets(b1, b2):
                         DeepDiff(d['metadata'],
                                  b2_tmp[k]['metadata']).json)
                 except Exception as ex:
-                        raise errors.DeepDiffException(details=str(ex))
+                    raise errors.DeepDiffException(details=str(ex))
 
                 change_details.update({
                     str(k): {'data_changed': data_changed,

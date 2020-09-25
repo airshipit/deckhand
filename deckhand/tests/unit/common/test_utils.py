@@ -198,7 +198,7 @@ class TestJSONPathReplaceNegative(test_base.DeckhandTestCase):
         error_re = (".*missing the pattern %s specified under .* at path %s.*")
 
         self.assertRaisesRegex(errors.MissingDocumentPattern,
-                               error_re % ("way invalid", "\$.path"),
+                               error_re % ("way invalid", r"\$.path"),
                                utils.jsonpath_replace,
                                empty_body,
                                value="test",
