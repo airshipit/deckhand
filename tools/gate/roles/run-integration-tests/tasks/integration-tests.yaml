@@ -53,8 +53,8 @@
     # NOTE(felipemonteiro): We don't use a venv because they don't play nicely
     # with OpenStack-Helm, which is used to orchestrate various OpenStack
     # services in the integration script called below.
-    sudo -H -E pip install -e .
-    sudo -H -E pip install -r requirements.txt -r test-requirements.txt
+    sudo -H -E pip3 install -e .
+    sudo -H -E pip3 install -r requirements.txt -r test-requirements.txt
     pifpaf run postgresql -- ./tools/integration-tests.sh
   args:
     chdir: "{{ zuul.project.src_dir }}"

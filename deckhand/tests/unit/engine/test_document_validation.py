@@ -64,8 +64,8 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
     @mock.patch.object(document_validation, 'jsonschema', autospec=True)
     def test_validation_failure_sanitizes_error_section_secrets(
             self, mock_jsonschema):
-        m_args = mock.Mock()
-        mock_jsonschema.Draft4Validator(m_args).iter_errors.side_effect = [
+        mock_jsonschema.Draft4Validator = mock.Mock()
+        mock_jsonschema.Draft4Validator().iter_errors.side_effect = [
             # Return empty list of errors for base schema and metadata
             # validator and pretend that 1 error is returned for next
             # validator.
