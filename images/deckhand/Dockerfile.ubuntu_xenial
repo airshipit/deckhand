@@ -51,7 +51,7 @@ RUN set -x && \
     python3-pip \
     python3-setuptools \
     --no-install-recommends \
-    && python3 -m pip install -U pip \
+    && python3 -m pip install -U 'pip<21.0' \
     && apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \

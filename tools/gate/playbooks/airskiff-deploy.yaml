@@ -35,6 +35,7 @@
     - name: Clone Required Repositories
       shell: |
         export CLONE_DECKHAND={{ CLONE_DECKHAND }}
+        export OSH_INFRA_COMMIT=master
         ./tools/deployment/airskiff/developer/000-clone-dependencies.sh
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
@@ -50,13 +51,6 @@
         ./tools/deployment/airskiff/developer/010-deploy-k8s.sh
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
-
-    - name: Setup OpenStack Client
-      shell: |
-        ./tools/deployment/airskiff/developer/020-setup-client.sh
-      args:
-        chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
-      become: yes
 
     - name: Build Deckhand with submitted changes
       shell: |

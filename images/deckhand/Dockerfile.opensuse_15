@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG FROM=opensuse/leap:15.1
+ARG FROM=opensuse/leap:15.3
 FROM ${FROM}
 
 LABEL org.opencontainers.image.authors='airship-discuss@lists.airshipit.org, irc://#airshipit@freenode'
@@ -50,9 +50,9 @@ RUN set -x && \
     python3-pip \
     python3-python-dateutil \
     python3-setuptools \
-    && zypper --non-interactive ar -f https://download.opensuse.org/repositories/devel:languages:python/openSUSE_Leap_15.1/devel:languages:python.repo \
+    && zypper --non-interactive ar -f https://download.opensuse.org/repositories/devel:languages:python/openSUSE_Leap_15.3/devel:languages:python.repo \
     && zypper --non-interactive --gpg-auto-import-keys refresh devel_languages_python \
-    && zypper --non-interactive install python3-six-1.11.0-lp151.3.1.noarch
+    && zypper --non-interactive install python3-six-1.16.0-lp153.103.1.noarch
 
 RUN pip3 install -U pip \
     && zypper clean -a \
