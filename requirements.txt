@@ -46,7 +46,7 @@ python-memcached==1.59
 Routes==2.4.1
 six>=1.15.0
 stevedore>=1.30.0
-urllib3==1.25.9
+urllib3==1.26.5
 uwsgi~=2.0.19.1
 # To support profiling in non-prod
 Werkzeug==0.16.1
