@@ -11,7 +11,7 @@ cryptography>=2.7
 deepdiff==3.3.0
 falcon==1.4.1
 jsonpath-ng==1.4.3
-jsonschema>=3.0.1<4
+jsonschema==4.0.0a2
 keystoneauth1>=3.18.0
 keystonemiddleware==5.3.0
 kombu<4.7,>=4.6.10

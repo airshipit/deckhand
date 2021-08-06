@@ -12,4 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-zuul_airship_deckhand_relative_path: ../airship-deckhand
+barbican_stable_commit: 3ac3caa0138d44aa6031848d5b83802128a169b5

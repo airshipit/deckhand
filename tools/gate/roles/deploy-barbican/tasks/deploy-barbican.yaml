@@ -15,6 +15,7 @@
 - name: Deploy Barbican
   shell: |
     set -xe;
+    git reset --hard "{{ barbican_stable_commit | default('') }}"
     ./tools/deployment/component/barbican/barbican.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"

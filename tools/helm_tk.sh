@@ -18,7 +18,7 @@
 HELM=$1
 HTK_REPO=${HTK_REPO:-"https://github.com/openstack/openstack-helm-infra"}
 HTK_PATH=${HTK_PATH:-""}
-HTK_STABLE_COMMIT=${HTK_COMMIT:-"4fe6212dad6e3f07d43122485d60ab8f38642293"}
+HTK_STABLE_COMMIT=${HTK_COMMIT:-"830df06628e4257ddc656a8869f3705e7b148f49"}
 BUILD_DIR=${BUILD_DIR:-$(mktemp -d)}
 
 if [[ ! -z $(echo $http_proxy) ]]

@@ -61,5 +61,6 @@
   environment:
     DECKHAND_TEST_URL: "127.0.0.1:9000"
     DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/integration/gabbits"
+    BARBICAN_STABLE_COMMIT: "{{ barbican_stable_commit }}"
   register: result
   failed_when: "result.rc != 0"
