@@ -18,7 +18,7 @@ beaker==1.10.0
 deepdiff==3.3.0
 falcon==1.4.1
 jsonpath-ng==1.4.3
-jsonschema==4.0.0a2
+jsonschema>=3.0.1,<4
 keystoneauth1==3.11.1
 networkx==2.2
 Paste==3.0.1
