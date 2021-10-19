@@ -226,7 +226,7 @@ To run the Python linter, execute::
 
 To run unit tests, execute::
 
-  $ tox -e py35
+  $ tox -e py36
 
 To run the test coverage job::
 
@@ -330,7 +330,7 @@ included beneath each bullet.
 
     $ [sudo] apt-get install tox -y
 
-* For any errors related to running ``tox -e py35``:
+* For any errors related to running ``tox -e py36``:
 
   Ensure that ``python3-dev`` is installed::
 

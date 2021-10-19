@@ -101,7 +101,7 @@ Deckhand strives to conform to the
 Python
 ------
 
-The Deckhand code base lives under ``/deckhand``. Deckhand supports py35 through py37
+The Deckhand code base lives under ``/deckhand``. Deckhand supports py36 through py37
 versions of interpreters.
 
 See :ref:`coding-guide` for more information on contribution guidelines.

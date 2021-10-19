@@ -14,7 +14,7 @@
     templates:
       - openstack-cover-jobs
       - docs-on-readthedocs
-      - openstack-python35-jobs
+      - openstack-python36-jobs
       - openstack-python3-train-jobs
       - openstack-python3-ussuri-jobs
     vars:
@@ -22,17 +22,15 @@
       rtd_project_name: 'airship-deckhand'
     check:
       jobs:
-        - deckhand-tox-py35-postgresql
-        - deckhand-functional-uwsgi-py35:
-            voting: true
-        - deckhand-functional-docker-py35-ubuntu_xenial
-        - deckhand-functional-docker-py35-ubuntu_bionic
-        - deckhand-functional-docker-py35-opensuse
-        - deckhand-integration-uwsgi-py35:
-            voting: true
-        - deckhand-integration-docker-py35-ubuntu_xenial
-        - deckhand-integration-docker-py35-ubuntu_bionic
-        - deckhand-integration-docker-py35-opensuse
+        - deckhand-tox-py36-postgresql
+        - deckhand-functional-uwsgi-py36
+        - deckhand-functional-docker-py36-ubuntu_xenial
+        - deckhand-functional-docker-py36-ubuntu_bionic
+        - deckhand-functional-docker-py36-opensuse
+        - deckhand-integration-uwsgi-py36
+        - deckhand-integration-docker-py36-ubuntu_xenial
+        - deckhand-integration-docker-py36-ubuntu_bionic
+        - deckhand-integration-docker-py36-opensuse
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate-ubuntu_xenial
@@ -41,13 +39,13 @@
         - deckhand-airskiff-deployment
     gate:
       jobs:
-        - deckhand-tox-py35-postgresql
-        - deckhand-functional-docker-py35-ubuntu_xenial
-        - deckhand-functional-docker-py35-ubuntu_bionic
-        - deckhand-functional-docker-py35-opensuse
-        - deckhand-integration-docker-py35-ubuntu_xenial
-        - deckhand-integration-docker-py35-ubuntu_bionic
-        - deckhand-integration-docker-py35-opensuse
+        - deckhand-tox-py36-postgresql
+        - deckhand-functional-docker-py36-ubuntu_xenial
+        - deckhand-functional-docker-py36-ubuntu_bionic
+        - deckhand-functional-docker-py36-opensuse
+        - deckhand-integration-docker-py36-ubuntu_xenial
+        - deckhand-integration-docker-py36-ubuntu_bionic
+        - deckhand-integration-docker-py36-opensuse
         - deckhand-chart-build-gate
         - deckhand-docker-build-gate-ubuntu_xenial
         - deckhand-docker-build-gate-ubuntu_bionic
@@ -76,19 +74,19 @@
         label: ubuntu-bionic
 
 - job:
-    name: deckhand-tox-py35-postgresql
-    parent: openstack-tox-py35
+    name: deckhand-tox-py36-postgresql
+    parent: openstack-tox-py36
     pre-run:
       - tools/gate/playbooks/install-postgresql.yaml
     vars:
-      tox_envlist: py35-postgresql
+      tox_envlist: py36-postgresql
 
 - job:
-    name: deckhand-functional-uwsgi-py35
+    name: deckhand-functional-uwsgi-py36
     description: |
       Run tox-based functional tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
-      for ephemeral PostgreSQL DB, under cPython version 3.5.
+      for ephemeral PostgreSQL DB, under cPython version 3.6.
     run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
     nodeset: deckhand-single-node
     vars:
@@ -117,10 +115,11 @@
       - openstack/openstack-helm-infra
 
 - job:
-    name: deckhand-functional-docker-py35-ubuntu_xenial
+    name: deckhand-functional-docker-py36-ubuntu_xenial
+    voting: false
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
-      cPython version 3.5. Uses tox with the ``functional-py35`` environment.
+      cPython version 3.6. Uses tox with the ``functional-py36`` environment.
       Ubuntu (xenial) image is built and used.
     parent: deckhand-functional-docker-base
     nodeset: deckhand-single-node
@@ -131,10 +130,10 @@
     irrelevant-files: *irrelevant-files
 
 - job:
-    name: deckhand-functional-docker-py35-ubuntu_bionic
+    name: deckhand-functional-docker-py36-ubuntu_bionic
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
-      cPython version 3.5. Uses tox with the ``functional-py35`` environment.
+      cPython version 3.6. Uses tox with the ``functional-py36`` environment.
       Ubuntu (bionic) image is built and used.
     parent: deckhand-functional-docker-base
     nodeset: deckhand-single-node
@@ -145,10 +144,11 @@
     irrelevant-files: *irrelevant-files
 
 - job:
-    name: deckhand-functional-docker-py35-opensuse
+    name: deckhand-functional-docker-py36-opensuse
+    voting: false
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
-      cPython version 3.5. Uses tox with the ``functional-py35`` environment.
+      cPython version 3.6. Uses tox with the ``functional-py36`` environment.
       Opensuse image is built and used.
     parent: deckhand-functional-docker-base
     nodeset: deckhand-single-node
@@ -159,11 +159,11 @@
     irrelevant-files: *irrelevant-files
 
 - job:
-    name: deckhand-integration-uwsgi-py35
+    name: deckhand-integration-uwsgi-py36
     description: |
       Run tox-based integration tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
-      for ephemeral PostgreSQL DB, under cPython version 3.5.
+      for ephemeral PostgreSQL DB, under cPython version 3.6.
     timeout: 3600
     run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     nodeset: deckhand-single-node
@@ -214,10 +214,11 @@
       - ^releasenotes/.*$
 
 - job:
-    name: deckhand-integration-docker-py35-ubuntu_xenial
+    name: deckhand-integration-docker-py36-ubuntu_xenial
+    voting: false
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.5. Builds ubuntu (xenial) deckhand image.
+      cPython version 3.6. Builds ubuntu (xenial) deckhand image.
     parent: deckhand-integration-docker-base
     nodeset: openstack-helm-single-node
     vars:
@@ -225,10 +226,10 @@
       distro: ubuntu_xenial
 
 - job:
-    name: deckhand-integration-docker-py35-ubuntu_bionic
+    name: deckhand-integration-docker-py36-ubuntu_bionic
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.5. Builds ubuntu (bionic) deckhand image.
+      cPython version 3.6. Builds ubuntu (bionic) deckhand image.
     parent: deckhand-integration-docker-base
     nodeset: openstack-helm-single-node
     vars:
@@ -237,6 +238,7 @@
 
 - job:
     name: deckhand-airskiff-deployment
+    voting: false
     nodeset: deckhand-single-node-airskiff
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
@@ -256,10 +258,11 @@
       - ^releasenotes/.*$
 
 - job:
-    name: deckhand-integration-docker-py35-opensuse
+    name: deckhand-integration-docker-py36-opensuse
+    voting: false
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.5. Builds opensuse deckhand image.
+      cPython version 3.6. Builds opensuse deckhand image.
     parent: deckhand-integration-docker-base
     nodeset: openstack-helm-single-node
     vars:
@@ -268,6 +271,7 @@
 
 - job:
     name: deckhand-docker-build-gate-ubuntu_xenial
+    voting: false
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: deckhand-single-node
@@ -300,6 +304,7 @@
 
 - job:
     name: deckhand-docker-build-gate-opensuse
+    voting: false
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: deckhand-single-node
@@ -313,6 +318,7 @@
 
 - job:
     name: deckhand-docker-publish-ubuntu_xenial
+    voting: false
     description: |
       Runs on every merge, unless files in a dictionary below are changed.
       Builds and publishes container ubuntu images on quay.io with a set of tags
@@ -357,6 +363,7 @@
 
 - job:
     name: deckhand-docker-publish-opensuse
+    voting: false
     description: |
       Runs on every merge, unless files in a dictionary below are changed.
       Builds and publishes container opensuse images on quay.io with a set of tags
@@ -379,6 +386,7 @@
 
 - job:
     name: deckhand-docker-tag-ubuntu_xenial
+    voting: false
     description: |
       Runs on every merge when files in a dictionalry below are changed, and
       adds git commit id tag onto the ubuntu container image published on quay.io,
@@ -411,6 +419,7 @@
 
 - job:
     name: deckhand-docker-tag-opensuse
+    voting: false
     description: |
       Runs on every merge when files in a dictionalry below are changed, and
       adds git commit id tag onto the opensuse container image published on quay.io,
