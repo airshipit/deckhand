@@ -380,6 +380,84 @@ depth. Any other positive integer will specify how many levels deep to recurse
 in order to optimize recursive pattern replacement. Take care to specify the
 required recursion depth or else too-deep patterns won't be replaced.
 
+Source Pattern Matching (Substring Extraction)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In some cases, only a substring of the substitution source is needed in the
+destination document. For example, the source document may specify a full image
+path, while the destination chart requires the repo and tag as separate fields.
+
+This type of substitution can be accomplished with the optional parameters:
+* ``src.pattern`` - a regular expression, with optional capture groups.
+* ``src.match_group`` - the number of the desired capture group.
+
+.. note::
+
+  It is an error to specify ``src.pattern`` if the substitution source is not a
+  string (e.g. an object or an array).
+
+.. note::
+
+  If the regex does not match, a warning is logged, and the entire source
+  string is used.
+
+.. note::
+
+  The default ``src.match_group`` is 0 (i.e. the entire match). This allows the
+  use of expressions like ``sha256:.*`` without parentheses, and without
+  explicitly specifying a match group.
+
+For example, given the following source documents, the distinct values for
+``repo`` and ``tag`` will be extracted from the source image:
+
+.. code-block:: yaml
+
+  ---
+  # Source document.
+  schema: pegleg/SoftwareVersions/v1
+  metadata:
+    schema: metadata/Document/v1
+    name: software-versions
+    layeringDefinition:
+      abstract: false
+      layer: global
+    storagePolicy: cleartext
+  data:
+    images:
+      hello: docker.io/library/hello-world:latest
+  ---
+  # Destination document.
+  schema: armada/Chart/v1
+  metadata:
+    name: example-chart-01
+    schema: metadata/Document/v1
+    layeringDefinition:
+      abstract: false
+      layer: global
+    substitutions:
+      - src:
+          schema: pegleg/SoftwareVersions/v1
+          name: software-versions
+          path: .images.hello
+          pattern: '^(.*):(.*)'
+          match_group: 1
+        dest:
+          path: .values.images.hello.repo
+      - src:
+          schema: pegleg/SoftwareVersions/v1
+          name: software-versions
+          path: .images.hello
+          pattern: '^(.*):(.*)'
+          match_group: 2
+        dest:
+          path: .values.images.hello.tag
+  data:
+    values:
+      images:
+        hello:
+          repo:  # docker.io/library/hello-world
+          tag:   # latest
+
 Substitution of Encrypted Data
 ------------------------------
 

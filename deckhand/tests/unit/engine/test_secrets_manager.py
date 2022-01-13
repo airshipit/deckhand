@@ -874,6 +874,67 @@ data:
         substituted_docs = list(secret_substitution.substitute_all(documents))
         self.assertEqual(expected, substituted_docs[0])
 
+    def test_doc_substitution_src_pattern(self):
+        image = "docker.io/library/hello-world:latest"
+        repo, tag = image.split(":")
+        test_yaml = """
+---
+# Source document.
+schema: pegleg/SoftwareVersions/v1
+metadata:
+  schema: metadata/Document/v1
+  name: software-versions
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+data:
+  images:
+    hello: %s
+---
+# Destination document.
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  schema: metadata/Document/v1
+  layeringDefinition:
+    abstract: false
+    layer: global
+  substitutions:
+    - src:
+        schema: pegleg/SoftwareVersions/v1
+        name: software-versions
+        path: .images.hello
+        pattern: '^(.*):(.*)'
+        match_group: 1
+      dest:
+        path: .values.images.hello.repo
+    - src:
+        schema: pegleg/SoftwareVersions/v1
+        name: software-versions
+        path: .images.hello
+        pattern: '^(.*):(.*)'
+        match_group: 2
+      dest:
+        path: .values.images.hello.tag
+data:
+  values:
+    images:
+      hello:
+        repo:  # docker.io/library/hello-world
+        tag:   # latest
+""" % image
+        documents = list(yaml.safe_load_all(test_yaml))
+        expected = copy.deepcopy(documents[1])
+        expected['data']['values']['images']['hello']['repo'] = repo
+        expected['data']['values']['images']['hello']['tag'] = tag
+
+        secret_substitution = secrets_manager.SecretsSubstitution(
+            documents)
+        substituted_docs = list(secret_substitution.substitute_all(
+            documents))
+        self.assertEqual(expected, substituted_docs[0])
+
 
 class TestSecretsSubstitutionNegative(test_base.DeckhandWithDBTestCase):
 

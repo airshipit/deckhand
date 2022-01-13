@@ -242,13 +242,15 @@ class SecretsSubstitution(object):
                             dest_doc.name)
 
     def _substitute_one(self, document, src_doc, src_secret, dest_path,
-                        dest_pattern, dest_recurse=None):
+                        dest_pattern, dest_recurse=None,
+                        src_pattern=None, src_match_group=0):
         dest_recurse = dest_recurse or {}
         exc_message = ''
         try:
             substituted_data = utils.jsonpath_replace(
                 document.data, src_secret, dest_path,
-                pattern=dest_pattern, recurse=dest_recurse)
+                pattern=dest_pattern, recurse=dest_recurse,
+                src_pattern=src_pattern, src_match_group=src_match_group)
             if (isinstance(document.data, dict) and
                     isinstance(substituted_data, dict)):
                 document.data.update(substituted_data)
@@ -320,6 +322,8 @@ class SecretsSubstitution(object):
                 src_schema = sub['src']['schema']
                 src_name = sub['src']['name']
                 src_path = sub['src']['path']
+                src_pattern = sub['src'].get('pattern', None)
+                src_match_group = sub['src'].get('match_group', 0)
 
                 if (src_schema, src_name) in self._substitution_sources:
                     src_doc = self._substitution_sources[
@@ -391,6 +395,8 @@ class SecretsSubstitution(object):
                         document,
                         src_doc=src_doc,
                         src_secret=src_secret,
+                        src_pattern=src_pattern,
+                        src_match_group=src_match_group,
                         dest_path=dest_path,
                         dest_pattern=dest_pattern,
                         dest_recurse=dest_recurse)

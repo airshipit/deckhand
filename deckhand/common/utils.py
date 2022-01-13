@@ -210,7 +210,8 @@ def _execute_data_expansion(data, jsonpath):
         d = d.get(path)
 
 
-def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None):
+def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None,
+                     src_pattern=None, src_match_group=0):
     """Update value in ``data`` at the path specified by ``jsonpath``.
 
     If the nested path corresponding to ``jsonpath`` isn't found in ``data``,
@@ -246,6 +247,13 @@ def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None):
         a JSON path that lives closer to the nested strings in question.
         Optimize performance by choosing an ideal ``depth`` value; -1 will
         cause recursion depth to be infinite.
+    :param src_pattern: An optional regular expression pattern to apply to the
+        source ``value``. The pattern is applied using re.search(), and may
+        include parenthesized subgroups. Only the matched portion of ``value``
+        is considered when substituting into the destination document.
+    :param src_match_group: The numbered subgroup of the ``src_pattern`` match
+        to use as the substitution source, where 0 (the default) represents the
+        entire match, 1 is the first parenthesized subgroup, etc.
     :returns: Updated value at ``data[jsonpath]``.
     :raises: MissingDocumentPattern if ``pattern`` is not None and
         ``data[jsonpath]`` doesn't exist.
@@ -257,6 +265,18 @@ def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None):
     # data. We only want to update destination data.
     data_copy = copy.copy(data)
     value_copy = copy.copy(value)
+
+    # If a src_pattern is specified, attempt a regex match.
+    if src_pattern:
+        if not isinstance(value_copy, six.string_types):
+            err = 'not a string: {}' % value_copy
+            LOG.error(err)
+            raise ValueError(err)
+        result = re.search(src_pattern, value_copy)
+        if not result:
+            LOG.warn("no match found, using entire value")
+        else:
+            value_copy = result.group(src_match_group)
 
     jsonpath = _normalize_jsonpath(jsonpath)
     recurse = recurse or {}

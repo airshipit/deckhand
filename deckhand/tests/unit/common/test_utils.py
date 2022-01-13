@@ -189,6 +189,64 @@ class TestJSONPathReplace(test_base.DeckhandTestCase):
                                         recurse={'depth': 3})
         self.assertEqual(expected, result)
 
+    def test_jsonpath_replace_with_src_pattern(self):
+        src = 'repo.example.com/image@sha256:e3b0c44298fc...'
+        src_pattern = 'sha256.*'
+        path = ".values.image.sha"
+        body = {"values": {}}
+        expected = {"values": {"image": {
+            "sha": "sha256:e3b0c44298fc..."}}}
+        result = utils.jsonpath_replace(body, src, jsonpath=path,
+                                        src_pattern=src_pattern)
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_src_pattern_implicit_match_group_0(self):
+        src = 'repo.example.com/image:v1.2.3'
+        src_pattern = '^(.*):(.*)'
+        path = ".values.image"
+        body = {"values": {}}
+        expected = {"values": {"image": "repo.example.com/image:v1.2.3"}}
+        result = utils.jsonpath_replace(body, src, jsonpath=path,
+                                        src_pattern=src_pattern)
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_src_pattern_match_group_0(self):
+        src = 'repo.example.com/image:v1.2.3'
+        src_pattern = '^(.*):(.*)'
+        src_match_group = 0
+        path = ".values.image"
+        body = {"values": {}}
+        expected = {"values": {"image": "repo.example.com/image:v1.2.3"}}
+        result = utils.jsonpath_replace(body, src, jsonpath=path,
+                                        src_pattern=src_pattern,
+                                        src_match_group=src_match_group)
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_src_pattern_match_group_1(self):
+        src = 'repo.example.com/image:v1.2.3'
+        src_pattern = '^(.*):(.*)'
+        src_match_group = 1
+        path = ".values.image.repository"
+        body = {"values": {}}
+        expected = {"values": {
+            "image": {"repository": "repo.example.com/image"}}}
+        result = utils.jsonpath_replace(body, src, jsonpath=path,
+                                        src_pattern=src_pattern,
+                                        src_match_group=src_match_group)
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_src_pattern_match_group_2(self):
+        src = 'repo.example.com/image:v1.2.3'
+        src_pattern = '^(.*):(.*)'
+        src_match_group = 2
+        path = ".values.image.tag"
+        body = {"values": {}}
+        expected = {"values": {"image": {"tag": "v1.2.3"}}}
+        result = utils.jsonpath_replace(body, src, jsonpath=path,
+                                        src_pattern=src_pattern,
+                                        src_match_group=src_match_group)
+        self.assertEqual(expected, result)
+
 
 class TestJSONPathReplaceNegative(test_base.DeckhandTestCase):
     """Validate JSONPath replace negative scenarios."""
