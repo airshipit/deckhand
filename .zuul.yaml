@@ -227,6 +227,7 @@
 
 - job:
     name: deckhand-integration-docker-py36-ubuntu_bionic
+    voting: false
     description: |
       Run tox-based integration tests for the Airship Deckhand project under
       cPython version 3.6. Builds ubuntu (bionic) deckhand image.
