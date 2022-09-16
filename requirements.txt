@@ -26,7 +26,7 @@ oslo.log==3.45.2
 oslo.middleware==3.36.0
 oslo.policy==1.40.1
 oslo.serialization==2.29.2
-oslo.utils==3.42.1
+oslo.utils==4.10.1
 pbr==5.4.5
 PasteDeploy==1.5.2
 Paste==3.0.1
