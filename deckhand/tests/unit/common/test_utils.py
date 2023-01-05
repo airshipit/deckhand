@@ -14,7 +14,7 @@
 
 import hashlib
 import jsonpath_ng
-import mock
+from unittest import mock
 
 from oslo_serialization import jsonutils as json
 from testtools.matchers import Equals

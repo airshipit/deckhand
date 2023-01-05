@@ -102,10 +102,10 @@ def format_error_resp(req,
     }
 
     resp.status = status_code
-    resp.body = yaml.safe_dump(error_response)
+    resp.text = yaml.safe_dump(error_response)
 
 
-def default_exception_handler(ex, req, resp, params):
+def default_exception_handler(req, resp, ex, params):
     """Catch-all exception handler for standardized output.
 
     If this is a standard falcon HTTPError, rethrow it for handling by

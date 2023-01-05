@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
+from unittest import mock
 
 from deckhand.control import base as api_base
 from deckhand.tests.unit.control import base as test_base

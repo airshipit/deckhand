@@ -14,7 +14,7 @@
 
 import copy
 
-import mock
+from unittest import mock
 
 from deckhand.engine import layering
 from deckhand import errors

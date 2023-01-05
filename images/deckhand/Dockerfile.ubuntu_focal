@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ARG FROM=ubuntu:16.04
+ARG FROM=ubuntu:20.04
 FROM ${FROM}
 
 LABEL org.opencontainers.image.authors='airship-discuss@lists.airshipit.org, irc://#airshipit@freenode'
@@ -51,7 +51,7 @@ RUN set -x && \
     python3-pip \
     python3-setuptools \
     --no-install-recommends \
-    && python3 -m pip install -U 'pip<21.0' \
+    && python3 -m pip install -U pip \
     && apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
@@ -88,8 +88,16 @@ RUN chown -R deckhand: /home/deckhand \
 
 # Set work directory and install dependencies
 WORKDIR /home/deckhand
-RUN pip3 install -r requirements.txt
-RUN python3 setup.py install
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Setting deckhand version for BPR
+ENV PBR_VERSION 1.0
+
+
+COPY . /opt/deckhand
+RUN pip3 install -e /opt/deckhand \
+    && echo "/opt/deckhand" \
+        > /usr/local/lib/python3.8/dist-packages/deckhand.pth
 
 # Set user to deckhand
 USER deckhand

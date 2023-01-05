@@ -17,7 +17,7 @@ import os
 import falcon
 from oslo_config import cfg
 from oslo_log import log
-from werkzeug.contrib.profiler import ProfilerMiddleware
+from werkzeug.middleware.profiler import ProfilerMiddleware
 
 from deckhand.control import base
 from deckhand.control import buckets
@@ -88,7 +88,7 @@ def deckhand_app_factory(global_config, **local_config):
                        middleware.ContextMiddleware(),
                        middleware.LoggingMiddleware()]
 
-    app = falcon.API(request_type=base.DeckhandRequest,
+    app = falcon.App(request_type=base.DeckhandRequest,
                      middleware=middleware_list)
     if CONF.profiler:
         LOG.warning("Profiler ENABLED. Expect significant "

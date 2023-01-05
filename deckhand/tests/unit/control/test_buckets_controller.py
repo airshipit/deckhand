@@ -14,7 +14,7 @@
 
 import yaml
 
-import mock
+from unittest import mock
 from oslo_config import cfg
 
 from deckhand.engine import secrets_manager

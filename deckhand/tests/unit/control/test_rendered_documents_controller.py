@@ -15,7 +15,7 @@
 import re
 import yaml
 
-import mock
+from unittest import mock
 
 from deckhand.common.document import DocumentDict as dd
 from deckhand.control import revision_documents

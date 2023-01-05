@@ -47,7 +47,7 @@ function deploy_osh_keystone_barbican {
     fi
 
     cd ${OSH_PATH}
-    git reset --hard ${BARBICAN_STABLE_COMMIT}
+    # git reset --hard ${BARBICAN_STABLE_COMMIT}
     # Deploy required packages
     ./tools/deployment/common/install-packages.sh
     # Deploy Kubernetes

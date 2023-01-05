@@ -17,7 +17,7 @@ from __future__ import absolute_import
 import os
 
 import fixtures
-import mock
+from unittest import mock
 from oslo_config import cfg
 from oslo_log import log as logging
 import testtools
@@ -26,7 +26,7 @@ from deckhand.conf import config  # noqa: Calls register_opts(CONF)
 from deckhand.db.sqlalchemy import api as db_api
 from deckhand.engine import cache
 from deckhand.tests import test_utils
-from deckhand.tests.unit import fixtures as dh_fixtures
+from deckhand.tests.unit import dh_fixtures
 
 CONF = cfg.CONF
 logging.register_options(CONF)

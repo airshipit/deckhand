@@ -248,7 +248,8 @@ def _diff_buckets(b1, b2):
                         # serializing to json then deserializing
                         # to dict.
                         data_changed = jsonpickle.decode(
-                            DeepDiff(d['data'], b2_tmp[k]['data']).json)
+                            DeepDiff(d['data'], b2_tmp[k]['data']).to_json())
+
                     # deepdiff doesn't provide custom exceptions;
                     # have to use Exception.
                     except Exception as ex:
@@ -256,7 +257,7 @@ def _diff_buckets(b1, b2):
                 try:
                     metadata_changed = jsonpickle.decode(
                         DeepDiff(d['metadata'],
-                                 b2_tmp[k]['metadata']).json)
+                                 b2_tmp[k]['metadata']).to_json())
                 except Exception as ex:
                     raise errors.DeepDiffException(details=str(ex))
 

@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
+try:
+    from collections.abc import Mapping
+except ImportError:
+    from collections import Mapping
 
 from deckhand.common import utils
 
@@ -32,7 +35,7 @@ def deep_merge(dct, merge_dct):
     """
     for k, v in merge_dct.items():
         if (k in dct and isinstance(dct[k], dict) and
-                isinstance(merge_dct[k], collections.Mapping)):
+                isinstance(merge_dct[k], Mapping)):
             deep_merge(dct[k], merge_dct[k])
         else:
             dct[k] = merge_dct[k]

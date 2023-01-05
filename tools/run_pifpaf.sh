@@ -14,7 +14,7 @@ trap cleanup EXIT
 # variables for debugging purposes.
 set -ex
 if [ -z $(which pg_config) ]; then
-    sudo apt-get install libpq-dev -y
+    sudo apt-get install libpq-dev postgresql -y
 fi
 
 eval `pifpaf run postgresql`

@@ -111,6 +111,7 @@ ENV/
 # makefile build/lint artifacts
 /charts/deckhand/*.tgz
 /charts/deckhand/*.lock
+/charts/deps/*/
 # git
 Changelog
 AUTHORS

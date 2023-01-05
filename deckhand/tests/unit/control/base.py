@@ -19,7 +19,7 @@ from falcon import testing as falcon_testing
 
 from deckhand import service
 from deckhand.tests.unit import base as test_base
-from deckhand.tests.unit import fixtures
+from deckhand.tests.unit import dh_fixtures
 
 
 class BaseControllerTest(test_base.DeckhandWithDBTestCase,
@@ -30,10 +30,10 @@ class BaseControllerTest(test_base.DeckhandWithDBTestCase,
         super(BaseControllerTest, self).setUp()
         self.app = falcon_testing.TestClient(
             service.deckhand_app_factory(None))
-        self.policy = self.useFixture(fixtures.RealPolicyFixture())
+        self.policy = self.useFixture(dh_fixtures.RealPolicyFixture())
         # NOTE: development_mode allows these unit tests to get around
         # Keystone authentication.
-        self.useFixture(fixtures.ConfPatcher(development_mode=True))
+        self.useFixture(dh_fixtures.ConfPatcher(development_mode=True))
 
     def _read_data(self, file_name):
         # Reads data from a file in the resources directory

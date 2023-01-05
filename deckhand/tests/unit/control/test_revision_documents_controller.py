@@ -14,7 +14,7 @@
 
 import yaml
 
-import mock
+from unittest import mock
 
 from deckhand.common.document import DocumentDict as document_dict
 from deckhand.engine import secrets_manager

@@ -163,7 +163,7 @@ class BarbicanDriver(object):
             raise errors.BarbicanServerException(details=str(e))
 
         payload = secret.payload
-        if secret.secret_type == 'opaque':
+        if secret.secret_type == 'opaque':  # nosec
             LOG.debug('Base64-decoding original payload '
                       'for document [%s, %s] %s.', *src_doc.meta)
             secret = self._base64_decode_payload(payload)
@@ -182,7 +182,7 @@ class BarbicanDriver(object):
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPServerError) as e:
             LOG.exception(str(e))
-            raise errors.BarbicanException(details=str(e))
+            raise errors.BarbicanClientException(details=str(e))
         except barbicanclient.exceptions.HTTPClientError as e:
             if e.status_code == 404:
                 LOG.warning('Could not delete secret %s because it was not '

@@ -20,9 +20,9 @@
   gather_facts: False
   become: yes
   roles:
-    - deploy-python
+    - ensure-python
   tags:
-    - deploy-python
+    - ensure-python
 
 - hosts: all
   vars_files:
@@ -31,15 +31,20 @@
     work_dir: "{{ zuul.project.src_dir }}/{{ zuul_osh_infra_relative_path | default('') }}"
   gather_facts: True
   become: yes
+
   roles:
-    - setup-firewall
+    - clear-firewall
+    - ensure-python
+    - ensure-pip
+    - ensure-docker
+    - ensure-tox
     - install-test-requirements
-    - deploy-python-pip
-    - deploy-docker
     - deploy-jq
   tags:
-    - setup-firewall
+    - clear-firewall
+    - ensure-python
+    - ensure-pip
+    - ensure-docker
+    - ensure-tox
     - install-test-requirements
-    - deploy-python-pip
-    - deploy-docker
     - deploy-jq

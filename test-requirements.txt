@@ -2,22 +2,28 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process, which may cause wedges in the gate later.
 
-amqp<2.7,>=2.6.0
-coverage==4.5.1
+amqp==5.0.8
+coverage==5.5
 fixtures==3.0.0
-python-subunit>=1.4.0
-os-testr==1.0.0
+python-subunit==1.4.0
+os-testr==2.0.1
 testrepository==0.0.20
-testtools==2.3.0
-bandit==1.6.2
+testtools==2.5.0
+bandit==1.7.4
 # NOTE(felipemonteiro): Pin here because later versions require that
 # content-type be present in empty responses.
 gabbi==1.35.1
-pifpaf==2.1.2
-oslotest==3.7.0
-yq>=2.7.2
-tox
-pylibyaml~=0.1
-six>=1.15.0
-pyparsing>=2.1.0
-openstacksdk==0.36.5
+pifpaf==3.1.5
+oslotest==4.5.0
+yq==3.1.0
+tox<=4
+pylibyaml==0.1.0
+six==1.16.0
+pyparsing==2.4.7
+openstacksdk==0.59.0
+stestr==3.2.0
+requests==2.28.2
+urllib3==1.26.6
+chardet==4.0.0
+pyproject-api==1.5.0
+packaging>=23

@@ -20,9 +20,9 @@
   gather_facts: False
   become: yes
   roles:
-    - deploy-python
+    - ensure-python
   tags:
-    - deploy-python
+    - ensure-python
 
 - hosts: all
   vars_files:

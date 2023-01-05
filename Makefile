@@ -25,7 +25,7 @@ USE_PROXY          ?= false
 PUSH_IMAGE         ?= false
 # use this variable for image labels added in internal build process
 LABEL              ?= org.airshipit.build=community
-DISTRO             ?= ubuntu_bionic
+DISTRO             ?= ubuntu_focal
 COMMIT             ?= $(shell git rev-parse HEAD)
 IMAGE              := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}-${DISTRO}
 
@@ -37,13 +37,13 @@ images: build_deckhand
 
 # Create tgz of the chart
 .PHONY: charts
-charts: helm-init
+charts: helm-toolkit
 	$(HELM) dep up charts/deckhand
 	$(HELM) package charts/deckhand
 
 # Initialize local helm config
-.PHONY: helm-init
-helm-init: helm-install
+.PHONY: helm-toolkit
+helm-toolkit: helm-install
 	tools/helm_tk.sh $(HELM)
 
 # Install helm binary

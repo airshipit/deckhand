@@ -161,7 +161,7 @@ class YAMLTranslator(HookableMiddlewareMixin, object):
                 )
                 raise falcon.HTTPUnsupportedMediaType(description=message)
 
-    def process_response(self, req, resp, resource):
+    def process_response(self, req, resp, resource, req_succeeded):
         """Converts responses to ``application/x-yaml`` content type."""
         if resp.status != '204 No Content':
             resp.set_header('Content-Type', 'application/x-yaml')

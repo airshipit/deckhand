@@ -14,7 +14,7 @@
 
 import yaml
 
-import mock
+from unittest import mock
 
 from deckhand import factories
 from deckhand.tests.unit.control import base as test_base
@@ -118,16 +118,17 @@ class TestYAMLTranslatorNegative(test_base.BaseControllerTest):
                 'errorType': 'HTTPMissingHeader',
                 'messageList': [{
                     'error': True,
-                    'message': "The Content-Type header is required."
+                    'message': "The \"Content-Type\" header is required."
                 }]
             },
             'kind': 'Status',
-            'message': "The Content-Type header is required.",
+            'message': "The \"Content-Type\" header is required.",
             'metadata': {},
             'reason': 'Unspecified',
             'retry': False,
             'status': 'Failure'
         }
+
         self.assertEqual(expected, yaml.safe_load(resp.content))
 
     def test_request_with_invalid_content_type_raises_exception(self):

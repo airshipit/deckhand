@@ -241,7 +241,8 @@ tests:
       $.[0].'bucket_a diff'.document_changed.details:
         ('example/Kind/v1', 'doc-a'):
           data_changed:
-            dictionary_item_added: !!set {"root['foo']"}
+            dictionary_item_added:
+              ["root['foo']"]
           metadata_changed: {}
 
   - name: removing_key_in_doc-a
@@ -273,7 +274,8 @@ tests:
       $.[0].'bucket_a diff'.document_changed.details:
         ('example/Kind/v1', 'doc-a'):
           data_changed:
-            dictionary_item_removed: !!set {"root['foo']"}
+            dictionary_item_removed:
+              ["root['foo']"]
           metadata_changed: {}
 
   - name: verify_invalid_input

@@ -55,7 +55,7 @@ class BaseResource(object):
         :param allow_empty: Whether the request body can be empty.
         :returns: List of dicts if ``expect_list`` is True or else a dict.
         """
-        raw_data = req.stream.read(req.content_length or 0)
+        raw_data = req.bounded_stream.read()
 
         if not allow_empty and not raw_data:
             error_msg = ("The request body must not be empty.")

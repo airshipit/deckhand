@@ -15,7 +15,7 @@
 import inspect
 import os
 
-import mock
+from unittest import mock
 
 from deckhand.common import utils
 from deckhand.control import api
@@ -72,7 +72,7 @@ class TestApi(test_base.DeckhandTestCase):
     @mock.patch('deckhand.service.falcon', autospec=True)
     def test_init_application(self, mock_falcon, mock_logging,
                               mock_db_api, _):
-        mock_falcon_api = mock_falcon.API.return_value
+        mock_falcon_api = mock_falcon.App.return_value
         self.override_config(
             'connection', mock.sentinel.db_connection, group='database')
 

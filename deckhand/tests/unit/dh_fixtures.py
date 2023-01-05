@@ -22,7 +22,7 @@ import os
 import yaml
 
 import fixtures
-import mock
+from unittest import mock
 from oslo_config import cfg
 from oslo_policy import opts as policy_opts
 from oslo_policy import policy as oslo_policy
@@ -41,7 +41,6 @@ class ConfPatcher(fixtures.Fixture):
     it's teardown.
 
     """
-
     def __init__(self, **kwargs):
         """Constructor
 

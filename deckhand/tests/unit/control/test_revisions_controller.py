@@ -14,7 +14,7 @@
 
 import os
 
-import mock
+from unittest import mock
 import yaml
 
 from deckhand.engine import secrets_manager

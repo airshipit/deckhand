@@ -13,13 +13,14 @@
 # limitations under the License.
 
 import falcon
-import mock
+from falcon import testing as falcon_testing
+from unittest import mock
 from oslo_policy import policy as common_policy
 
 from deckhand.control import base as api_base
 import deckhand.policy
 from deckhand.tests.unit import base as test_base
-from deckhand.tests.unit import fixtures
+from deckhand.tests.unit import dh_fixtures
 
 
 class PolicyBaseTestCase(test_base.DeckhandTestCase):
@@ -34,7 +35,7 @@ class PolicyBaseTestCase(test_base.DeckhandTestCase):
             "deckhand:list_cleartext_documents": [['rule:admin_api']]
         }
 
-        self.useFixture(fixtures.RealPolicyFixture(False))
+        self.useFixture(dh_fixtures.RealPolicyFixture(False))
         self._set_rules()
 
     def _set_rules(self):
@@ -51,9 +52,23 @@ class PolicyBaseTestCase(test_base.DeckhandTestCase):
         noop(*api_args)
 
     def _get_args(self):
+        env = falcon_testing.create_environ(
+            path='/',
+            query_string='',
+            scheme='http',
+            host='falconframework.org',
+            port=None,
+            headers={'Content-Type': 'application/x-yaml'},
+            app='',
+            body='',
+            method='POST',
+            wsgierrors=None,
+            file_wrapper=None)
+
+        falcon_req = api_base.DeckhandRequest(env)
+
         # Returns the first two arguments that would be passed to any falcon
         # on_{HTTP_VERB} method: (self (which is mocked), falcon Request obj).
-        falcon_req = api_base.DeckhandRequest(mock.MagicMock())
         return (mock.Mock(), falcon_req)
 
 

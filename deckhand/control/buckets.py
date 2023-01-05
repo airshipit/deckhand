@@ -64,7 +64,7 @@ class BucketsResource(api_base.BaseResource):
         created_documents = self._create_revision_documents(
             bucket_name, documents)
 
-        resp.body = self.view_builder.list(created_documents)
+        resp.text = self.view_builder.list(created_documents)
         resp.status = falcon.HTTP_200
 
     def _encrypt_secret_documents(self, documents):

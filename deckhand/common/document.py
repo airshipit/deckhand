@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
+from collections.abc import Iterable
 import re
 
 import hashlib
@@ -167,7 +167,7 @@ class DocumentDict(dict):
         :param documents: Documents to wrap in this class.
         :type documents: iterable
         """
-        if not isinstance(documents, collections.Iterable):
+        if not isinstance(documents, Iterable):
             documents = [documents]
 
         return [DocumentDict(d) for d in documents]

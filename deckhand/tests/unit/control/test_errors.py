@@ -16,7 +16,7 @@ import os
 import yaml
 
 import falcon
-import mock
+from unittest import mock
 
 from deckhand.common import document as document_wrapper
 from deckhand import policy
@@ -58,7 +58,7 @@ class TestErrorFormatting(test_base.BaseControllerTest):
             'message': 'Unhandled Exception raised: test error',
             'metadata': {}
         }
-        body = yaml.load(resp.text)
+        body = yaml.safe_load(resp.text)
 
         self.assertEqual(500, resp.status_code)
         self.assertEqual(expected, body)

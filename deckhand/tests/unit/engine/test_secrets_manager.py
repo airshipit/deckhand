@@ -15,7 +15,7 @@
 import copy
 import yaml
 
-import mock
+from unittest import mock
 from oslo_serialization import base64
 from oslo_utils import uuidutils
 import testtools

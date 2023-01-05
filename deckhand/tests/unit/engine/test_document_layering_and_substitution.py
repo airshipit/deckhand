@@ -14,7 +14,7 @@
 
 import itertools
 
-import mock
+from unittest import mock
 import yaml
 
 from deckhand import factories
