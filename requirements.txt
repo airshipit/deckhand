@@ -49,4 +49,4 @@ stevedore>=1.30.0
 urllib3==1.25.9
 uwsgi~=2.0.19.1
 # To support profiling in non-prod
-Werkzeug==0.16.1
+Werkzeug==2.2.3
