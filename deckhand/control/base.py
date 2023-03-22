@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import falcon
+import six
 from oslo_log import log as logging
 import yaml
 
@@ -74,7 +75,7 @@ class BaseResource(object):
             raise falcon.HTTPBadRequest(description=error_msg)
 
         if expect_list:
-            bad_entries = [str(i + 1) for i, x in enumerate(data)
+            bad_entries = [six.text_type(i + 1) for i, x in enumerate(data)
                            if not x or not isinstance(x, dict)]
             if bad_entries:
                 error_msg = (

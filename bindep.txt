@@ -4,3 +4,11 @@
 # PlantUML is used for documentation builds, graphviz is it's soft  dependancy
 plantuml
 graphviz
+libffi-dev [test platform:dpkg]
+libkrb5-dev [platform:dpkg]
+libpq-dev [platform:dpkg]
+libsasl2-dev [platform:dpkg]
+libssl-dev [platform:dpkg]
+libre2-dev [platform:dpkg]
+postgresql [platform:dpkg]
+ethtool [platform:dpkg]

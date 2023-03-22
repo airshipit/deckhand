@@ -16,14 +16,19 @@
   shell: |
     set -xe;
     sudo modprobe br_netfilter
+    sudo sysctl net.bridge.bridge-nf-call-iptables=1
+    sudo sysctl net.bridge.bridge-nf-call-ip6tables=1
 
 - name: Install pip3 and gabbi
   shell: |
     set -xe;
-    apt-get install -y python3-pip \
-      python-setuptools python3-setuptools
+    apt-get install -y \
+      python3-pip \
+      python3-setuptools \
+      python3-dev
     pip3 install --upgrade pip
     pip3 install -r test-requirements.txt
+    pip3 install -r requirements-frozen.txt
   args:
     chdir: "{{ zuul.project.src_dir }}"
   become: yes

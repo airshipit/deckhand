@@ -39,7 +39,8 @@ class RevisionTagsResource(api_base.BaseResource):
                 errors.RevisionTagBadFormat,
                 errors.errors.RevisionTagNotFound) as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_201
@@ -60,7 +61,8 @@ class RevisionTagsResource(api_base.BaseResource):
         except (errors.RevisionNotFound,
                 errors.RevisionTagNotFound) as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_200
@@ -73,7 +75,8 @@ class RevisionTagsResource(api_base.BaseResource):
             resp_tags = db_api.revision_tag_get_all(revision_id)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp_body = revision_tag_view.ViewBuilder().list(resp_tags)
         resp.status = falcon.HTTP_200
@@ -94,7 +97,8 @@ class RevisionTagsResource(api_base.BaseResource):
         except (errors.RevisionNotFound,
                 errors.RevisionTagNotFound) as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp.status = falcon.HTTP_204
 
@@ -105,6 +109,7 @@ class RevisionTagsResource(api_base.BaseResource):
             db_api.revision_tag_delete_all(revision_id)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp.status = falcon.HTTP_204

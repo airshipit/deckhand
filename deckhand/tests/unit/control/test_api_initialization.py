@@ -14,6 +14,7 @@
 
 import inspect
 import os
+import six
 
 from unittest import mock
 
@@ -113,4 +114,4 @@ class TestApi(test_base.DeckhandTestCase):
         ], any_order=True)
 
         mock_db_api.setup_db.assert_called_once_with(
-            str(mock.sentinel.db_connection))
+            six.text_type(mock.sentinel.db_connection))

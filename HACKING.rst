@@ -45,7 +45,7 @@ without the patch and passes with the patch.
 
 Running Tests
 -------------
-The testing system is based on a combination of tox and testr. The canonical
+The testing system is based on a combination of tox and stestr. The canonical
 approach to running tests is to simply run the command ``tox``. This will
 create virtual environments, populate them with dependencies and run all of
 the tests that OpenStack CI systems run. Behind the scenes, tox is running

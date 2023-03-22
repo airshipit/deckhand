@@ -46,7 +46,8 @@ class ValidationsResource(api_base.BaseResource):
                 revision_id, validation_name, validation_data)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp.status = falcon.HTTP_201
         resp.body = self.view_builder.show(resp_body)
@@ -80,7 +81,8 @@ class ValidationsResource(api_base.BaseResource):
         except (errors.RevisionNotFound,
                 errors.ValidationNotFound) as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp_body = self.view_builder.show_entry(entry)
         return resp_body
@@ -93,7 +95,8 @@ class ValidationsResource(api_base.BaseResource):
                                                         validation_name)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp_body = self.view_builder.list_entries(entries)
         return resp_body
@@ -104,7 +107,8 @@ class ValidationsResource(api_base.BaseResource):
             validations = db_api.validation_get_all(revision_id)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp_body = self.view_builder.list(validations)
         return resp_body

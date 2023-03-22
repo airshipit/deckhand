@@ -11,11 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import collections
 import importlib
 import os
 import pkgutil
+
+import collections
 
 LIST_OPTS_FUNC_NAME = "list_opts"
 IGNORED_MODULES = ('opts', 'constants', 'utils')

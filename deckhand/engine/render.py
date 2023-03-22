@@ -82,7 +82,8 @@ def validate_render(revision_id, rendered_documents, validator):
         # rendering bug, so override the default code to 500.
         e.code = 500
         LOG.error('Failed to post-validate rendered documents.')
-        LOG.exception(e.format_message())
+        message = (e.format_message())
+        LOG.exception(message)
         raise e
 
     error_list = []

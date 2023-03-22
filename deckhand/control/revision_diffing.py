@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import falcon
+import six
 from oslo_log import log as logging
 from oslo_utils import excutils
 
@@ -32,19 +33,21 @@ class RevisionDiffingResource(api_base.BaseResource):
         try:
             revision_id = int(revision_id)
         except ValueError:
-            raise errors.InvalidInputException(input_var=str(revision_id))
+            raise errors.InvalidInputException(input_var=six.text_type(
+                revision_id))
         try:
             comparison_revision_id = int(comparison_revision_id)
         except ValueError:
             raise errors.InvalidInputException(
-                input_var=str(comparison_revision_id))
+                input_var=six.text_type(comparison_revision_id))
 
         try:
             resp_body = revision_diff(
                 revision_id, comparison_revision_id)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         resp.status = falcon.HTTP_200
         resp.body = resp_body

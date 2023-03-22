@@ -16,11 +16,18 @@
   vars_files:
     - vars.yaml
   gather_facts: False
+
   roles:
+    - clear-firewall
+    - bindep
+    - ensure-docker
+    - ensure-python
+    - ensure-pip
     - disable-systemd-resolved
     - install-postgresql
     - install-test-requirements
     - run-integration-tests
+
   tags:
     - install-postgresql
     - run-integration-tests

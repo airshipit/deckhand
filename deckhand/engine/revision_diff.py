@@ -15,6 +15,7 @@
 from deepdiff import DeepDiff
 from deepdiff.helper import RemapDict
 import jsonpickle
+import six
 
 from deckhand.control import common
 from deckhand.db.sqlalchemy import api as db_api
@@ -253,17 +254,18 @@ def _diff_buckets(b1, b2):
                     # deepdiff doesn't provide custom exceptions;
                     # have to use Exception.
                     except Exception as ex:
-                        raise errors.DeepDiffException(details=str(ex))
+                        raise errors.DeepDiffException(
+                            details=six.text_type(ex))
                 try:
                     metadata_changed = jsonpickle.decode(
                         DeepDiff(d['metadata'],
                                  b2_tmp[k]['metadata']).to_json())
                 except Exception as ex:
-                    raise errors.DeepDiffException(details=str(ex))
+                    raise errors.DeepDiffException(details=six.text_type(ex))
 
                 change_details.update({
-                    str(k): {'data_changed': data_changed,
-                             'metadata_changed': metadata_changed}})
+                    six.text_type(k): {'data_changed': data_changed,
+                                       'metadata_changed': metadata_changed}})
 
     if change_count > 0:
         diff_result.update({'document_changed': {
@@ -283,7 +285,7 @@ def _format_diff_result(dr):
                 v = dict(v)
                 dr.update({k: v})
             if isinstance(v, type):
-                dr.update({k: str(v)})
+                dr.update({k: six.text_type(v)})
             if isinstance(v, dict):
                 _format_diff_result(v)
     return dr

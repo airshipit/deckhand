@@ -18,6 +18,7 @@ import copy
 import functools
 import hashlib
 import threading
+import six
 
 from oslo_config import cfg
 from oslo_db import exception as db_exception
@@ -866,7 +867,7 @@ def revision_rollback(revision_id, latest_revision, session=None):
     if revision_id == 0:
         # Delete all existing documents in all buckets
         all_buckets = bucket_get_all(deleted=False)
-        bucket_names = [str(b['name']) for b in all_buckets]
+        bucket_names = [six.text_type(b['name']) for b in all_buckets]
         revision = documents_delete_from_buckets_list(bucket_names,
                                                       session=session)
 
@@ -898,7 +899,7 @@ def revision_rollback(revision_id, latest_revision, session=None):
     all_buckets = bucket_get_all(deleted=False)
     for bucket in all_buckets:
         if bucket['id'] not in unique_buckets:
-            buckets_to_delete.append(str(bucket['name']))
+            buckets_to_delete.append(six.text_type(bucket['name']))
 
     # Create the new revision,
     if len(buckets_to_delete) > 0:

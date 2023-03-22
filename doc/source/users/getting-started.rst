@@ -131,7 +131,7 @@ Install dependencies needed to spin up Deckhand via ``uwsgi``::
     $ [sudo] pip install uwsgi
     $ virtualenv -p python3 /var/tmp/deckhand
     $ . /var/tmp/deckhand/bin/activate
-    $ pip install -r requirements.txt -r test-requirements.txt
+    $ pip install -r requirements-frozen.txt
     $ python setup.py install
 
 Afterward, create a sample configuration file automatically::

@@ -21,44 +21,32 @@
     check:
       jobs:
         - deckhand-tox-py38-postgresql
-        # Remove in favor of deckhand-functional-docker-py38 it runs the
-        #  same tests just in a container
-        # - deckhand-functional-uwsgi-py38
+        - deckhand-functional-uwsgi-py38
         - deckhand-functional-docker-py38-ubuntu_focal
-        # non-voting, failing, incompatable with updates
-        # - deckhand-functional-docker-py36-ubuntu_bionic
-        # non-voting, failing, incompatable with updates
-        # Remove in favor of deckhand-uwsgi-docker-py38 it runs the
-        #  same tests just in a container
-        # - deckhand-integration-uwsgi-py38
+        - deckhand-integration-uwsgi-py38
         - deckhand-integration-docker-py38-ubuntu_focal
-        # non-voting, failing, incompatable with updates
-        # - deckhand-integration-docker-py36-ubuntu_bionic
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate-ubuntu_focal
-        # non-voting, failing, incompatable with updates
-        # - deckhand-docker-build-gate-ubuntu_bionic
         - openstack-tox-pep8
+        # non-voting, failing gate - has to be fixed in treasuremap
         - deckhand-airskiff-deployment
     gate:
       jobs:
         - deckhand-tox-py38-postgresql
+        - deckhand-functional-uwsgi-py38
         - deckhand-functional-docker-py38-ubuntu_focal
-        - deckhand-functional-docker-py36-ubuntu_bionic
+        - deckhand-integration-uwsgi-py38
         - deckhand-integration-docker-py38-ubuntu_focal
-        - deckhand-integration-docker-py36-ubuntu_bionic
         - deckhand-chart-build-gate
         - deckhand-docker-build-gate-ubuntu_focal
-        - deckhand-docker-build-gate-ubuntu_bionic
         - openstack-tox-pep8
     post:
       jobs:
         - deckhand-upload-git-mirror
         - deckhand-docker-publish-ubuntu_focal
-        - deckhand-docker-publish-ubuntu_bionic
         - deckhand-docker-tag-ubuntu_focal
-        - deckhand-docker-tag-ubuntu_bionic
+
 
 - nodeset:
     name: deckhand-single-node
@@ -79,10 +67,10 @@
         label: ubuntu-focal
 
 - nodeset:
-    name: deckhand-single-node-jammy
+    name: deckhand-single-node-airskiff-focal
     nodes:
       - name: primary
-        label: ubuntu-jammy
+        label: ubuntu-focal
 
 - job:
     name: deckhand-tox-py38-postgresql
@@ -95,7 +83,7 @@
 
 - job:
     name: deckhand-functional-uwsgi-py38
-    voting: false
+    voting: true
     description: |
       Run tox-based functional tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
@@ -142,24 +130,10 @@
       distro: ubuntu_focal
     irrelevant-files: *irrelevant-files
 
-- job:
-    name: deckhand-functional-docker-py36-ubuntu_bionic
-    voting: false
-    description: |
-      Run tox-based functional tests for the Airship Deckhand project under
-      cPython version 3.6. Uses tox with the ``functional-py36`` environment.
-      Ubuntu (bionic) image is built and used.
-    parent: deckhand-functional-docker-base
-    nodeset: deckhand-single-node
-    vars:
-      tox_envlist: functional
-      disable_keystone: true
-      distro: ubuntu_bionic
-    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-integration-uwsgi-py38
-    voting: false
+    voting: true
     description: |
       Run tox-based integration tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
@@ -226,22 +200,11 @@
       disable_keystone: false
       distro: ubuntu_focal
 
-- job:
-    name: deckhand-integration-docker-py36-ubuntu_bionic
-    voting: false
-    description: |
-      Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.6. Builds ubuntu (bionic) deckhand image.
-    parent: deckhand-integration-docker-base
-    nodeset: openstack-helm-single-node
-    vars:
-      disable_keystone: false
-      distro: ubuntu_bionic
 
 - job:
     name: deckhand-airskiff-deployment
-    voting: false
-    nodeset: deckhand-single-node-airskiff
+    voting: true
+    nodeset: deckhand-single-node-airskiff-focal
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
     timeout: 9600
@@ -263,7 +226,7 @@
     name: deckhand-docker-build-gate-ubuntu_focal
     timeout: 1800
     run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: deckhand-single-node
+    nodeset: deckhand-single-node-focal
     irrelevant-files: &non-code-files-template
       - ^.*\.rst$
       - ^doc/.*$
@@ -274,20 +237,6 @@
     vars:
       publish: false
       distro: ubuntu_focal
-      tags:
-        dynamic:
-          patch_set: true
-
-- job:
-    name: deckhand-docker-build-gate-ubuntu_bionic
-    voting: false
-    timeout: 1800
-    run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: deckhand-single-node
-    irrelevant-files: *non-code-files-template
-    vars:
-      publish: false
-      distro: ubuntu_bionic
       tags:
         dynamic:
           patch_set: true
@@ -314,28 +263,6 @@
         static:
           - latest
 
-- job:
-    name: deckhand-docker-publish-ubuntu_bionic
-    voting: false
-    description: |
-      Runs on every merge, unless files in a dictionary below are changed.
-      Builds and publishes container ubuntu images on quay.io with a set of tags
-      listed in vars section. Waits in Zuul queue for a node (VM) assignment.
-    timeout: 1800
-    run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: deckhand-single-node
-    secrets:
-      - airship_deckhand_quay_creds
-    irrelevant-files: *non-code-files-template
-    vars:
-      publish: true
-      distro: ubuntu_bionic
-      tags:
-        dynamic:
-          branch: true
-          commit: true
-        static:
-          - latest
 
 - job:
     name: deckhand-docker-tag-ubuntu_focal
@@ -353,22 +280,6 @@
     vars:
       distro: ubuntu_focal
 
-- job:
-    name: deckhand-docker-tag-ubuntu_bionic
-    voting: false
-    description: |
-      Runs on every merge when files in a dictionalry below are changed, and
-      adds git commit id tag onto the ubuntu container image published on quay.io,
-      which has `latest` tag set. Does not wait in queue for a node (VM)
-      assignment, runs almost immediately.
-    timeout: 1800
-    run: tools/gate/playbooks/docker-image-tag.yaml
-    nodeset:
-      nodes: []
-    secrets:
-      - airship_deckhand_quay_creds
-    vars:
-      distro: ubuntu_bionic
 
 - secret:
     name: airship_deckhand_quay_creds

@@ -15,6 +15,10 @@
 - hosts: all
   gather_facts: False
   roles:
+    - bindep
+    - ensure-docker
+    - ensure-python
+    - ensure-pip
     - disable-systemd-resolved
     - install-postgresql
     - install-test-requirements

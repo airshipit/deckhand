@@ -16,6 +16,10 @@
   vars_files:
     - vars.yaml
   roles:
+    - bindep
+    - ensure-docker
+    - ensure-python
+    - ensure-pip
     - install-test-requirements
     - build-images
     - deploy-keystone-dependencies

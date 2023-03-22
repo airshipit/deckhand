@@ -13,25 +13,13 @@
 # limitations under the License.
 
 - hosts: primary
+  roles:
+    - clear-firewall
+    - bindep
+    - disable-systemd-resolved
+    - install-test-requirements
+
   tasks:
-    - name: stop systemd-resolved service
-      systemd:
-        state: stopped
-        enabled: no
-        masked: yes
-        daemon_reload: yes
-        name: systemd-resolved
-      become: yes
-    - name: ensure pip is installed
-      apt:
-        name: "{{ item }}"
-      with_items:
-        - python-pip
-        - python3-pip
-        - python-setuptools
-        - python3-setuptools
-      when: ansible_os_family == 'Debian'
-      become: true
     - name: Clone Required Repositories
       shell: |
         export CLONE_DECKHAND={{ CLONE_DECKHAND }}
@@ -59,9 +47,15 @@
         chdir: "{{ zuul.project.src_dir }}"
       become: yes
 
+    - name: Setup clients
+      shell: |
+        ./tools/deployment/airskiff/developer/020-setup-client.sh
+      args:
+        chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
+
     - name: Deploy Airship components using Armada
       shell: |
-        mkdir ~/.kube
+        mkdir -p ~/.kube
         cp -rp /home/zuul/.kube/config ~/.kube/config
         ./tools/deployment/airskiff/developer/030-armada-bootstrap.sh
       args:

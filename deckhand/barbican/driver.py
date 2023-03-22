@@ -14,6 +14,7 @@
 
 import ast
 import time
+import six
 
 import barbicanclient
 from oslo_config import cfg
@@ -89,11 +90,13 @@ class BarbicanDriver(object):
             'payload': payload
         }
 
-        LOG.info('Storing encrypted data in Barbican for document [{}, {}]'
-                 .format(secret_doc.schema, secret_doc.name))
+        message = ('Storing encrypted data in Barbican for document'
+                   ' [{}, {}]').format(secret_doc.schema, secret_doc.name)
+        LOG.info(message)
         for i in range(CONF.secret_create_attempts):
-            LOG.debug('Creating secret in Barbican, attempt {} of {}'
-                      .format((i + 1), CONF.secret_create_attempts))
+            message = ('Creating secret in Barbican, attempt {} of {}'
+                       .format((i + 1), CONF.secret_create_attempts))
+            LOG.debug(message)
             try:
                 return self._do_create_secret(secret_args)
             except Exception:
@@ -104,9 +107,10 @@ class BarbicanDriver(object):
                     # This was not the last attempt, suppress the error and
                     # try again after a brief sleep
                     sleep_amount = (i + 1)
-                    LOG.error('Caught an error while trying to create a '
-                              'secret in Barbican, will try again in {} second'
-                              .format(sleep_amount))
+                    message('Caught an error while trying to create a '
+                            'secret in Barbican, will try again in {} second'
+                            .format(sleep_amount))
+                    LOG.error(message)
                     time.sleep(sleep_amount)
 
     def _do_create_secret(self, secret_args):
@@ -122,18 +126,18 @@ class BarbicanDriver(object):
                                            **secret_args)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError) as e:
-            LOG.exception(str(e))
+            LOG.exception(six.text_type(e))
             raise errors.BarbicanClientException(code=e.status_code,
-                                                 details=str(e))
+                                                 details=six.text_type(e))
         except barbicanclient.exceptions.HTTPServerError as e:
             LOG.error('Caught %s error from Barbican, likely due to a '
                       'configuration or deployment issue.',
                       e.__class__.__name__)
-            raise errors.BarbicanServerException(details=str(e))
+            raise errors.BarbicanServerException(details=six.text_type(e))
         except barbicanclient.exceptions.PayloadException as e:
             LOG.error('Caught %s error from Barbican, because the secret '
                       'payload type is unsupported.', e.__class__.__name__)
-            raise errors.BarbicanServerException(details=str(e))
+            raise errors.BarbicanServerException(details=six.text_type(e))
 
     def _base64_decode_payload(self, payload):
         # If the secret_type is 'opaque' then this implies the
@@ -154,13 +158,13 @@ class BarbicanDriver(object):
             secret = cache.lookup_by_ref(self.barbicanclient, secret_ref)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPClientError) as e:
-            LOG.exception(str(e))
+            LOG.exception(six.text_type(e))
             raise errors.BarbicanClientException(code=e.status_code,
-                                                 details=str(e))
+                                                 details=six.text_type(e))
         except (barbicanclient.exceptions.HTTPServerError,
                 ValueError) as e:
-            LOG.exception(str(e))
-            raise errors.BarbicanServerException(details=str(e))
+            LOG.exception(six.text_type(e))
+            raise errors.BarbicanServerException(details=six.text_type(e))
 
         payload = secret.payload
         if secret.secret_type == 'opaque':  # nosec
@@ -181,8 +185,8 @@ class BarbicanDriver(object):
             return self.barbicanclient.call("secrets.delete", secret_ref)
         except (barbicanclient.exceptions.HTTPAuthError,
                 barbicanclient.exceptions.HTTPServerError) as e:
-            LOG.exception(str(e))
-            raise errors.BarbicanClientException(details=str(e))
+            LOG.exception(six.text_type(e))
+            raise errors.BarbicanClientException(details=six.text_type(e))
         except barbicanclient.exceptions.HTTPClientError as e:
             if e.status_code == 404:
                 LOG.warning('Could not delete secret %s because it was not '

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+
 - name: Airship-Deckhand image build path
   shell: cd "{{ work_dir }}"; pwd
   register: airship_deckhand_path
@@ -53,8 +55,8 @@
     # NOTE(felipemonteiro): We don't use a venv because they don't play nicely
     # with OpenStack-Helm, which is used to orchestrate various OpenStack
     # services in the integration script called below.
-    sudo -H -E pip3 install -e .
-    sudo -H -E pip3 install -r requirements.txt -r test-requirements.txt
+    sudo -H -E pip3 install -e . --verbose --use-pep517
+    sudo -E -H pip3 install -r requirements-frozen.txt
     pifpaf run postgresql -- ./tools/integration-tests.sh
   args:
     chdir: "{{ zuul.project.src_dir }}"

@@ -56,7 +56,8 @@ class RevisionsResource(api_base.BaseResource):
             revision = db_api.revision_get(revision_id)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         revision_resp = self.view_builder.show(revision)
         resp.status = falcon.HTTP_200

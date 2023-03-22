@@ -14,6 +14,7 @@
 #    under the License.
 
 import random
+import six
 import string
 import uuid
 
@@ -37,7 +38,7 @@ def rand_name(name='', prefix='deckhand'):
              (e.g. 'prefixfoo-namebar-154876201')
     :rtype: string
     """
-    randbits = str(random.randint(1, 0x7fffffff))
+    randbits = six.text_type(random.randint(1, 0x7fffffff))
     rand_name = randbits
     if name:
         rand_name = name + '-' + rand_name

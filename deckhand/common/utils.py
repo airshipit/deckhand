@@ -15,13 +15,13 @@
 import ast
 import copy
 import re
+import six
 import string
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 import jsonpath_ng
 from oslo_log import log as logging
-import six
 
 from deckhand.common.document import DocumentDict as document_dict
 from deckhand.conf import config
@@ -49,7 +49,7 @@ def to_camel_case(s):
 
 def to_snake_case(name):
     """Convert string to snake case."""
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', str(name))
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', six.text_type(name))
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 

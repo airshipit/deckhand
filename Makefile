@@ -37,14 +37,10 @@ images: build_deckhand
 
 # Create tgz of the chart
 .PHONY: charts
-charts: helm-toolkit
+charts: helm-init
 	$(HELM) dep up charts/deckhand
 	$(HELM) package charts/deckhand
 
-# Initialize local helm config
-.PHONY: helm-toolkit
-helm-toolkit: helm-install
-	tools/helm_tk.sh $(HELM)
 
 # Install helm binary
 .PHONY: helm-install
@@ -57,8 +53,8 @@ lint: pep8 helm_lint
 
 # Dry run templating of chart
 .PHONY: dry-run
-dry-run: clean
-	tools/helm_tk.sh $(HELM)
+dry-run: helm-init
+	$(HELM) dep up charts/deckhand
 	$(HELM) template charts/deckhand
 
 .PHONY: tests
@@ -115,6 +111,10 @@ pep8:
 	tox -e pep8
 
 .PHONY: helm_lint
-helm_lint: clean
-	tools/helm_tk.sh $(HELM)
+helm_lint: helm-init
+	$(HELM) dep up charts/deckhand
 	$(HELM) lint charts/deckhand
+
+# Initialize local helm config
+helm-init: helm-install
+	tools/helm_tk.sh $(HELM)

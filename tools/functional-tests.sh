@@ -14,7 +14,7 @@ function cleanup_deckhand {
     set +e
 
     # Kill PostgreSQL if it is still running.
-    pifpaf_stop || deactive
+    # pifpaf_stop || deactive
 
     # Kill uwsgi service if it is still running.
     PID=$( sudo netstat -tulpn | grep ":9000" | head -n 1 | awk '{print $NF}' )

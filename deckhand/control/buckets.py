@@ -51,7 +51,8 @@ class BucketsResource(api_base.BaseResource):
             doc_validator.validate_all()
         except deckhand_errors.InvalidDocumentFormat as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         for document in documents:
             if secrets_manager.SecretsManager.requires_encryption(document):
@@ -81,6 +82,7 @@ class BucketsResource(api_base.BaseResource):
         except (deckhand_errors.DuplicateDocumentExists,
                 deckhand_errors.SingletonDocumentConflict) as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         return created_documents

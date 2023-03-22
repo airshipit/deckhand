@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
 from keystoneauth1 import loading
 from keystoneauth1 import session
 
@@ -62,9 +63,9 @@ class BarbicanClientWrapper(object):
                 self._cached_client = cli
 
         except barbican_exc.HTTPAuthError as e:
-            LOG.exception(str(e))
+            LOG.exception(six.text_type(e))
             raise errors.BarbicanClientException(code=e.status_code,
-                                                 details=str(e))
+                                                 details=six.text_type(e))
 
         return cli
 

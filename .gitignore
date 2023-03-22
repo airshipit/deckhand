@@ -21,7 +21,6 @@ parts/
 sdist/
 var/
 wheels/
-*.egg-info/
 .installed.cfg
 *.egg
 *.tgz
@@ -50,7 +49,7 @@ coverage.xml
 cover/*
 results/*
 .stestr/
-
+.fiotest
 # Translations
 *.mo
 *.pot
@@ -111,10 +110,21 @@ ENV/
 # makefile build/lint artifacts
 /charts/deckhand/*.tgz
 /charts/deckhand/*.lock
+/charts/*.tgz
+/charts/*/charts
+/charts/*/requirements.lock
 /charts/deps/*/
+/*.tgz
+
+
 # git
 Changelog
 AUTHORS
 
 # Ansible
 *.retry
+
+
+# build
+tmp.*
+.pytest_cache

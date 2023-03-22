@@ -36,7 +36,8 @@ class RollbackResource(api_base.BaseResource):
             latest_revision = db_api.revision_get_latest()
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         for document in latest_revision['documents']:
             if document['metadata'].get('storagePolicy') == 'encrypted':
@@ -49,7 +50,8 @@ class RollbackResource(api_base.BaseResource):
                 revision_id, latest_revision)
         except errors.RevisionNotFound as e:
             with excutils.save_and_reraise_exception():
-                LOG.exception(e.format_message())
+                message = (e.format_message())
+                LOG.exception(message)
 
         revision_resp = self.view_builder.show(rollback_revision)
         resp.status = falcon.HTTP_201

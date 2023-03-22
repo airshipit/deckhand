@@ -20,7 +20,6 @@
     docker run \
       --rm \
       --net=host \
-      --dns 10.96.0.10 \
       -v "{{ deckhand_conf_dir | default('') }}":/etc/deckhand "{{ airship_deckhand_image_id.stdout }}" alembic upgrade head
 
     # Allow migrations to complete.
@@ -35,7 +34,6 @@
       --rm \
       --net=host \
       -p 9000:9000 \
-      --dns 10.96.0.10 \
       -v "{{ deckhand_conf_dir | default('') }}":/etc/deckhand "{{ airship_deckhand_image_id.stdout }}" server &
 
     # Give the server a chance to come up. Better to poll a health check.

@@ -6,6 +6,7 @@ Create Date: 2018-04-04 17:19:24.222703
 
 """
 import logging
+import six
 
 from alembic import op
 import sqlalchemy as sa
@@ -70,7 +71,7 @@ def upgrade():
     LOG.info("Finding tables with query: %s", tables_select)
     rs = conn.execute(tables_select)
     existing_tables = [row[0] for row in rs]
-    LOG.info("Existing tables: %s", str(existing_tables))
+    LOG.info("Existing tables: %s", six.text_type(existing_tables))
 
     if 'buckets' not in existing_tables:
         LOG.info("'buckets' not present. Creating table")
@@ -131,7 +132,7 @@ def upgrade():
                  check_documents_columns)
         rs = conn.execute(check_documents_columns)
         columns = [row[0] for row in rs]
-        LOG.info("Columns are: %s", str(columns))
+        LOG.info("Columns are: %s", six.text_type(columns))
 
         if '_metadata' in columns:
             LOG.info("Found '_metadata' column; will rename to 'meta'")

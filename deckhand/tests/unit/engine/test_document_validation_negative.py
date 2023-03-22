@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
+
 from unittest import mock
 
 from deckhand.engine import document_validation
@@ -165,7 +167,8 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
             missing_property = parts[-1]
 
             error_re = r"%s is a required property" % missing_property
-            self.assertRegex(str(e.error_list).replace("\'", ""), error_re)
+            self.assertRegex(six.text_type(e.error_list).replace("\'", ""),
+                             error_re)
 
     def test_layering_policy_missing_required_sections(self):
         properties_to_remove = tuple(self.BASIC_CONTROL_PROPERTIES) + (
@@ -185,7 +188,8 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
         doc_validator = document_validation.DocumentValidation(payload)
         e = self.assertRaises(errors.InvalidDocumentFormat,
                               doc_validator.validate_all)
-        self.assertRegex(str(e.error_list[0]).replace("\'", ""), error_re)
+        self.assertRegex(six.text_type(e.error_list[0]).replace("\'", ""),
+                         error_re)
 
     def test_passphrase_missing_required_sections(self):
         document = self._read_data('sample_passphrase')
@@ -241,7 +245,7 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
         # Validate that broken built-in base schema raises RuntimeError.
         doc_validator = document_validation.DocumentValidation(document)
         doc_validator._validators[0].base_schema = 'fake'
-        with self.assertRaisesRegexp(RuntimeError, 'Unknown error'):
+        with self.assertRaisesRegex(RuntimeError, 'Unknown error'):
             doc_validator.validate_all()
 
         # Validate that broken data schema for ``DataSchemaValidator`` raises
@@ -252,7 +256,7 @@ class TestDocumentValidationNegative(test_base.TestDocumentValidationBase):
         data_schema['data'] = 'fake'
         doc_validator = document_validation.DocumentValidation(
             [document, data_schema], pre_validate=False)
-        with self.assertRaisesRegexp(RuntimeError, 'Unknown error'):
+        with self.assertRaisesRegex(RuntimeError, 'Unknown error'):
             doc_validator.validate_all()
 
     def test_parent_selector_but_no_actions_raises_validation_error(self):

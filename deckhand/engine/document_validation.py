@@ -241,13 +241,13 @@ class DataSchemaValidator(GenericValidator):
 
         :returns: Dictionary in the above format.
         """
-        error_path = '.'.join([str(x) for x in error.path])
+        error_path = '.'.join([six.text_type(x) for x in error.path])
         if error_path:
             path_to_error_in_document = '.'.join([root_path, error_path])
         else:
             path_to_error_in_document = root_path
         path_to_error_in_schema = '.' + '.'.join(
-            [str(x) for x in error.schema_path])
+            [six.text_type(x) for x in error.schema_path])
 
         parent_path_to_error_in_document = '.'.join(
             path_to_error_in_document.split('.')[:-1]) or '.'

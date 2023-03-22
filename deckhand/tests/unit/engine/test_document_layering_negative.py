@@ -231,7 +231,7 @@ class TestDocumentLayeringNegative(
 
         layering_policy['data']['layerOrder'] = []
         error_re = "layer \'global\' .* was not found in layerOrder.*"
-        self.assertRaisesRegexp(
+        self.assertRaisesRegex(
             errors.InvalidDocumentLayer, error_re, self._test_layering,
             [layering_policy, document])
 

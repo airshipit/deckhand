@@ -15,8 +15,8 @@
 apiVersion: v1
 description: A Helm chart for Deckhand
 name: deckhand
-version: 0.2.0
-appVersion: 1.0
+version: 0.2.2
+appVersion: 1.1.0
 keywords:
 - deckhand
 home: https://github.com/openstack/airship-deckhand

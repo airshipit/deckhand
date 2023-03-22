@@ -1,0 +1,554 @@
+CHANGES
+=======
+
+* [focal] Deckhand project updates
+* update to focal and python 3.8
+* Allow source substring extraction
+* Make failing Zuul job non-voting
+* Update HTK stable commit (Ingress)
+* Drop Python 3.5, make xenial/opensuse non-voting
+* Helm 3: Fix Job labels
+* (zuul) Fix Deckhand post jobs
+* Revert jsonschema to 3.2.0
+* Deckhand gate fix
+* Gate fixes
+* Update pip package versions in preparation of pip 20.3
+* Accelerate YAML operations with LibYAML
+* Include LibYAML in container builds
+* Sort package list in Dockerfiles
+* Change helm-toolkit dependency version to ">= 0.1.0"
+* Fix pep8 gate running on py3.8
+* Scaling deckhand uwsgi workers
+* Update HTK stable commit
+* Add configmap-hash annotations for deckhand
+* Implement helm-toolkit snippet to deckhand pods/containers
+* [FIX] Image build checks missing setuptools
+* Enabling Apparmor profile to deckhand init containers
+* Remove unused code for policy validation as feature not implemented
+* Re-enable all Zuul CI tests
+* Add SECURITY.md
+* Fix deckhand-integration-uwsgi-py35 tests
+* (fix) Address uwsgi and other gating issues
+* Add Docker default AppArmor profile to deckhand
+* Add support for Ubuntu bionic base image
+* Barbican driver simplification
+* Gate fixes: pin amqp, use barbican deploy script
+* Fix Deckhand integration test gates
+* Remove Python 2.x support
+* Fix encrypted doc rendering
+* Add retries to Barbican secret create
+* CI: Build image after Docker installed in airskiff
+* Pin back amqp version
+* Use apps/v1 k8s controllers and add labels
+* CI: Remove call to deleted Airskiff script
+* Allow to configure service network policy
+* Let the Werkzeug package version float
+* Fix for opensuse image build issue
+* CI: Update Airskiff full-site manifest location
+* Upgrade six to 1.12
+* Fix v2 schema support
+* Add Python 3 Train unit tests
+* Update packages related to requests
+* Update base image from leap15.0 to leap15.1
+* Add release uuid annotation to POD spec
+* Support v2 schema versions
+* Add node selector to test pod
+* Remove required-projects from Airskiff gate
+* Add pod anti-affinity to Deckhand
+* CI: Fix doc build gate
+* Fixing secret name used for publishing image on quay.io
+* Adding opensuse image build for deckhand
+* Move nodeset to bionic
+* Encrypt git mirroring ssh\_key to specific project
+* Add Zuul job for mirroring to GitHub
+* Make Deckhand integration tests non-voting
+* Fix rtd publishing
+* Docs build fix (#4)
+* Docs build fix (#3)
+* Docs build fix (#2)
+* Docs build fix (#1)
+* CI: Add Airskiff check
+* CI: Update OSH relative paths for OpenDev
+* OpenDev Migration Patch
+* Implement Security Context for Deckhand
+* Log client-id in UCP API endpoints
+* CI: Add chart build jobs
+* (zuul) Fix image publish post pipeline
+* tools: Update Helm to v2.13.1
+* Updating Docker Gate use of zuul.newrev
+* [FIX] Change Helm-toolkit pinning to new commit
+* Use helm-toolkit for DB initialization
+* [chart] Enable liveness probe in DH
+* [ad-hoc] Update oslo.utils ver to 3.40.2
+* Embed UML generated diagrams into docs, fix docs build
+* Added filename to logging message format for troubleshooting purpose
+* Update oslo.util version in requirements
+* schema: Fix metadata schema patterns
+* Add openstack-discuss
+* CI: Fix integration job
+* docs(substitution): mention that all occurrences are replaced
+* Add Python 3.6 classifier to setup.cfg
+* Revision diffing issue with revision rollback
+* Remove proxy ARG and ENV from Dockerfile
+* Update url in HACKING.rst
+* [FIX] Secrets substitution issue
+* Fix: proper ordering: tagging after build
+* fix wrong spelling
+* omit the twice occured words in  layering-with-replacement-single-bucket.yaml
+* Create Makefile target to install Helm binary
+* Minor: meaningful default label
+* docs: Add use cases for each of the mutation operations
+* Fix logging when "Duplicate document exists" error occurs
+* fix: Use schema instead of metadata.schema for replacement check
+* Validate additional 'metadata.replacement' scenarios
+* Fix document is\_control method
+* docs: Add config documentation to operator's section
+* docs: Use sphinx-apidoc library for autodoc compatibility
+* fix: Add missing requirements to doc/requirements.txt for RTD
+* rtd: Fix warnings in RTD causing autodoc to fail
+* requirements: Update pinned requirements
+* fix: Redact secondhand substitutions of sensitive data
+* Redact rendered Documents
+* Fix: adding back the possibility to add arbitrary labels
+* trivial: Add missing alembic upgrade head to manual install
+* refactor: Move replacement checks into separate module
+* docs: Add documentation on data redaction
+* Redacts Raw Documents
+* Validate bucket diffing works with revision rollback
+* fix: Address small issues with revision rollback controller
+* chore: Migrate templates from project-config to in-tree
+* fix: Pin down Deckhand package requirements
+* fix: Add validation logic to check for duplicate documents in engine
+* Adding image tags on every commit
+* docs: Elaborate on document layering in documentation
+* fix: Correct .data path layering edge case
+* Add explicit start/end to Deckhand response middleware
+* [Gate Fix] Fix failing functional/integration tests
+* optimization: Skip post-validation for rendered document cache hit
+* trivial: Fix README documentation badge
+* docs: Reorganize documentation structure
+* Fix: various documentation and URL fixes
+* Fix: git commit id labels on images
+* Replace Chinese quotes with English quotes
+* Adding api for revisions deep diffing
+* trivial: Fix error message for non-matching policy checks
+* Add release uuid to pods and rc objects (deckhand)
+* Unify publishing of docs
+* trivial: update description + homepage in setup.cfg
+* feat(tls): add tls to ingress for public endpoint
+* add python 3.6 unit test job
+* substitution: Recursive pattern replacement
+* Fix: Transaction rollback following DB creation error
+* Fix typo
+* Correct docs-on-readthedocs to work with RTD publish
+* [fix] Substitution source documents accidentally modified
+* trivial: Update deprecated Airship links in docs
+* [Trivial Fix] Change b46enc to b64enc in chart
+* Add venv tox environment
+* Support rolling back to revision 0
+* Update Keystone API ports in Deckhand chart
+* Chart: Use k8s secret to store config
+* Implement Barbican cache for quick secret payload/ref data
+* Invalidate rendered documents cache when deleting all revisions
+* Remove the duplicated word
+* chore(py3): update doc build to use py3
+* refactor: Clean up jsonpath\_replace method
+* caching: Add test to validate shared caching across threads
+* Fix typo in revision\_diff function
+* Update Deckhand for latest HTK
+* doc(typo): Correct spelling
+* docs: Update document types documentation
+* Add cryptography to Deckhand
+* Implement rendered documents caching
+* Remove deprecated substitution\_sources kwarg
+* Rename some instances of ucp to airship
+* Use concurrency to retrieve unencrypted secret data
+* integration tests: Add Barbican validation/assertions
+* Delete secret references from Barbican when deleting all revisions
+* Move to stestr for functional/integration tests
+* Fix failing integration uwsgi job
+* trivial: Use airship-deckhand-single-node for nodeset in zuul.yaml
+* Add test pods labels
+* refactor: Use yaml.add\_representer to reduce complexity
+* Move retrieval of encrypted documents to Deckhand controller
+* optimization: Remove needless json.loads from middleware
+* Combine integration and airship-deckhand-ubuntu jobs together
+* Simplify schema validation
+* Add better caching to jsonpath-ng wrapper functions
+* Add integration tests job to .zuul.yaml
+* Fix gate: update osh-infra-deploy-docker.yaml to align with osh
+* trivial: Add orientation='reverse' to find\_cycle in layering
+* layering: Support layering for primitive types
+* Add functional test for validating single source multi dest substitution
+* Fix gate following strange PyYAML 4.1 behavior
+* Unifying proxy variables for docker build
+* replacement: Fix update substitution source for replacement
+* Makefile HTTP fix
+* Add a readthedocs publish trigger to .zuul.yaml
+* docs: Add developer overview documentation
+* docs: Expand on definition of document uniqueness
+* Update Deckhand test-/requirements.txt
+* [test] Add integration test scenario for encrypting generic type
+* chore(gate): consolidate zuul job
+* trivial: Remove unused method from secrets\_manager module
+* Add missing Keystone options to registration of config
+* fix(gate): make the functional gate to pass
+* Regression test: Validate that index >= 10 works with substitution
+* [docs] Add documentation on document encryption
+* Add irrelevant-files to all appropriate .zuul.yaml jobs
+* fix tox python3 overrides
+* (zuul) Docker image jobs
+* Docker: support build behind proxy
+* Allow Deckhand image to be built behind proxy
+* Remove mox3 dependency
+* Clean up tox.ini
+* Add docs-on-readthedocs to .zuul.yaml templates
+* Rename docs to doc to align with OpenStack standard
+* trivial: Fix error message format
+* Add py27/35 postgresql unit tests to .zuul.yaml
+* style(pep8): remove identation ignores
+* Zuul: Integration tests via uwsgi
+* Add uwsgi functional test check to .zuul.yaml
+* chore(tox): cleanup tox
+* Use Ansible playbooks for functional testing gating
+* Drop gather prom metrics from airship-deckhand-ubuntu job
+* fix typos in documentation
+* chore(image): update image
+* Add functional tests to .zuul.yaml
+* Update .gitreview for openstack infra
+* Zuul: Initial Airship-Deckhand checks
+* [fix] Parent substitution/layering before replacement
+* Update Deckhand API Pod Labels
+* Update Apache LICENSE
+* [chart] Remove liveness probe to stop DH pod from being killed
+* Add limit query filter param
+* [fix gate] Fix pep8 errors
+* Add no oauth middleware to bypass keystone authentication
+* [fix gate] Unblock failing integration job
+* [validation] Add validation codes DXXX for validation failures
+* Add tests target to Makefile for Deckhand
+* Add single resource substitution feeds multi destinations
+* [test] Unskip integration tests
+* Clean up integration test script
+* Update README to correct typos and deprecated, misleading sections
+* [feature] Endpoint for listing revision validations with details
+* Add verbose: true to all functional tests
+* [test] Cover all secret Deckhand types in integration tests
+* [fix] Handles quotes in JSON path for substitution
+* Make Deckhand validation exceptions adhere to UCP standard
+* Add .idea/ to gitignore
+* Update releasenotes/docs tox jobs
+* Clean up functional test directory and entrypoint script
+* Change name of Deckhand Container
+* Add integration tests
+* [docs] Publish releasenotes alongside docs to readthedocs
+* [fix] Pass secret URI instead of UUID to barbican get\_secret
+* Add negative functional test for substitution
+* docs: Distinguish replace layering action from document replacement
+* Fix running functional tests via uwsgi
+* Raise exception on unfound secret in source document
+* [fix] Drop deckhand.conf from default DECKHAND\_CONF\_DIR path
+* [396582] Add alembic support to Deckhand
+* [Fix] Multidigit array index
+* Document replacement documentation
+* [fix] Extend liveness and readiness check times
+* Document replacement: Layering dependency integration
+* Test that Deckhand works with YAML anchors/pointers
+* Remove unused functions from DB module
+* Trivial fix: Fix coverage tox.ini job
+* [fix] Add uwsgi entrypoint options
+* [fix] Updates to use cached jsonpath
+* Enable multiple threads, disabled muliple workers
+* Update kubernetes-entrypoint
+* Add validation for empty documents inside multi-document payload
+* [test] Improve validation policy test coverage for success scenario
+* Update Makefile - Dryrun
+* [TrivialFix] Unblock gate due to failing test after rebase
+* Log all document data following any layering action failure
+* Add functional tests for Validation Policy changes
+* Add functional tests for document replacement
+* Engine implementation for document replacement
+* Document replacement: Update Document unique constraint
+* Switch to stestr
+* [398395] Update Indentation for Resource limits
+* Fix secret\_uuid used to query Barbican's Secrets API
+* Deprecate substitution\_sources from layering module
+* Add functional test for chained substitution
+* Fix uniqueness not being enforced at DB level for documents
+* Skip layering for control documents
+* Add readthedocs link to Deckhand readme
+* Docs: Update ValidationPolicy documentation
+* Trivial: Add import to base unit test to register CONF opts
+* Fix: Document should not layer with parent if no layering actions
+* Trivial: Rename doc to docs to align with UCP standard
+* Fix condition for checking whether substitution is secret
+* Fix Revision Resource print out in Deckhand client
+* Deckhand API - Liveness and Readiness Probes
+* Security fix: Remove document data printout from exception message
+* ValidationPolicy integration with Validations API
+* Improve secrets\_manager logging after 500 Internal Server Error
+* Optimization: Use \_\_slots\_\_ in Deckhand engine
+* Images: depreciate kolla heat-engine image for LOCI
+* Add helm test to Deckhand
+* Allow layering paths to include numeric indices
+* Fix abstract parent documents substitutions not propagating
+* Remove uwsgi.ini as it's no longer used
+* Add resource declaration to deckhand job-ks-service chart template
+* DH Client urls remove api/v1.0
+* Render the documents based on topological order
+* Sanitize secrets contained in validation error message
+* [TrivialFix] Correct regex used in jsonpath\_replace
+* [TrivialFix] Fix AttributeError thrown in revision\_documents
+* [TrivialFix] Log only if document parentSelector set
+* Remove microversions from document versions
+* Deckhand schemas as YAML files
+* Update Deckhand Dockerfile
+* Fix: Inject secret payload rather than reference into document
+* Fix: Substitution sources not always updated during layering
+* Update Makefile
+* [TrivialFix] Fix BarbicanException error propagation
+* Remove auto-generated AUTHORS file
+* Docs: Touch up getting started documentation
+* Fix Promenade: Introduce flag to only warn on missing sub source
+* Add additional layering + substitution unit tests
+* Docs: Update README and create Getting Started docs
+* Fail fast on bad substitution input during layering
+* Add label to docker image Makefile
+* [client] Fix 503 exception raising attribute error instead
+* Fix tox -v skipping over sqlite unit test jobs
+* [Trivial Fix] Make profile directory if it doesn't exist
+* Collect profile data on DH requests
+* [Trivial Fix] Add document layer to error message output
+* (small fix): add full path for sphinx
+* Bump up package requirements versions
+* Docs: Update testing documentation
+* Allow unit tests to be run against in-memory sqlite
+* Use DAG to resolve substitution dependency chain
+* Fix: return only concrete documents from layering module
+* Reduce number of pre-validation false positives
+* Make layering work for grandparents not just parents
+* Documentation for Exceptions
+* Allow parentSelector to use multiple labels to select parent document
+* [Fix gate] Fix ValueError being thrown if sub path starts with $
+* Bug Fix - DeckHand/Barbican URI Lookup
+* The field returned by barbican is secret\_ref, not secret\_href
+* Add missing barbican api\_endpoint to deckhand configuration
+* Resolves liberal building of keystone auth parameters that end up pulling in default configuration options from the keystone\_authtoken sectiont hat are not supported by v3.Password
+* Bug Fix - Update Deckhand Ingress Port
+* Optimize runtime for excluding deleted documents
+* Additional validation functional tests
+* Fix various substitution issues
+* Fix jsonpath\_replace failing to create missing array keys
+* Update Deckhand README
+* Fix: Make layering more performant
+* Update Deckhand Chart - Database Configurability
+* Improve validation error messages returned by Deckhand
+* Improve secret substitution logging and look up runtime
+* [TrivialFix] Un-comment-out test code in test\_revision\_diff
+* Functional tests for layering + substitution scenarios
+* Fix typos
+* Layering edge case: Multiple empty layers
+* Simplify document wrapper class
+* Layering edge case: Apply substiutions to parentless document
+* Allow same tag to be created for multiple revisions
+* Move DB calls out of engine module into controllers
+* Make the uWSGI http-timeout configurable
+* Fix pifpaf not returning error code upon test failure
+* Improve document validation module
+* Validate correct documents used for rendering
+* Sorting/filtering for rendered-documents
+* Docs: Include a high-level overview of Deckhand functionality
+* Update Deckhand image: logging configuration values
+* Fix: Allow generic documents to be used as substitution sources
+* Revert fix pifpaf run postgresql failing
+* Test: add unusual documents to functional testing
+* fix: Testing with multiple workers
+* functional tests: Dump logs to stdout/stderr
+* [Gate fix] Fix pifpaf run postgresql failing
+* Remove dead validation policy code
+* Update DeckHand Chart - Multi-Threads/Workers
+* Update entrypoint.sh
+* Simplify document layering interface
+* Enable Multi-Threads in DeckHand
+* Create doc/requirements.txt
+* RBAC: Update serviceaccount and k8s rbac for deckhand
+* Add functional tests for "owned" documents
+* Test: add real-world functional schema validation
+* Add blurb about using Deckhand client with Keystone Token
+* DECKHAND-89: Integrate layering with rendered documents
+* Test fix: remove conflicting docker run option
+* DECKHAND-87: Deckhand API client library
+* Functional tests via Deckhand container and Docker
+* Fix up tags attribute in revisions API
+* Correct recent copyright change
+* [TrivialFix] Fix incorrect copyright
+* Fix documentation formatting
+* Fix readthedocs document build job for Deckhand
+* [docs] Document schemas used for document validation
+* Always rollback to the target revision
+* Support filtering by schema namespace
+* Implement sort filter
+* Header enforcement on Content-Length 0
+* Reset primary key back to 1 after deleting all revisions
+* Add expected length validation to gabbi functional tests
+* Exclude previously deleted documents from current revision
+* Allow anonymous access for health and versions
+* Images: Remove Kolla-Toolbox image as not required
+* Update to latest entrypoint container image
+* DECKHAND-67: Post-rendering document validation
+* Unit tests for health/versions controller
+* Fix initial 'make charts' failure
+* Align code with docs for validation entries
+* Request middleware conditionally require content-type
+* Fix corner case for document re-creation in different bucket
+* Refactor unit test policy fixture
+* Fix Makefile using wrong target in docker build command
+* Fix rendered documents not returning all concrete documents
+* Prevent same DataSchema from being used more than once for validation
+* Change .to\_oslo\_conf to .to\_ini
+* Deckhand Negative RBAC test scenarios
+* Deckhand Makefile for CICD
+* Rename Deckhand bucket endpoint to buckets for consistency
+* Only allow one LayeringPolicy to exist in the system
+* Create results directory for functional test results if doesn't exist
+* Extended default tox testing (postgres, bandit, docs)
+* Update Deckhand README and testing documentation
+* HTML test report for Deckhand functional tests
+* Add expected errors decorator for more resiliency
+* Update DeckHand Chart
+* Add health resource for ucp-integration API convention
+* Make middleware enforce and validate content-type
+* DECKHAND-80: Validations API Implementation
+* Move Deckhand Chart
+* [TrivialFix] Fix IOError being thrown by unit test
+* Revamp Deckhand documentation
+* Integrate Deckhand with keystone auth
+* DECKHAND-66: Document substitution implementation
+* Update policy and validation design documentation
+* DECKHAND-61: oslo.policy integration
+* Support filtering revision (documents) by any legal filter
+* Add requirements for memcached
+* Fix AttributeError being raised in buckets controller
+* Unskip some pep8 rules
+* Add releasenote management
+* Fix bandit [B101:assert\_used]
+* Revamp document hashing
+* [tests] Downgrade postgresql to 9.5 for functional tests
+* Revision rollback API
+* Revision diffing API
+* Deckhand postgresql compatibility
+* Add sphinx job for auto-generating docs
+* [flake8] Enable extra, optional hacking checks
+* Clean up Deckhand 405/404 error handling
+* Fix Deckhand logging
+* Bucket deletion implementation
+* [TrivialFix] Remove redundant requirements
+* DeckHand Dockerfile
+* Add basic schema validation tests
+* [feat] DECKHAND-38: Secrets DB model and secrets manager
+* Unskip all multi-doc CRUD functional tests
+* Unskip all revision tag functional tests
+* Document buckets - update logic
+* Expand functional tests for revision read
+* Add basic revision diffing
+* [feat] DECKHAND-36 Revision tagging API
+* Add rollback documentation and tests
+* Initial implementation of buckets
+* Add basic functional tests for substitution
+* DECKHAND-33: Add oslo.config options for keystone auth
+* Add concept of buckets
+* Replace existing functional tests with Gabbi
+* [bug] Fix response code for /POST documents if response empty
+* Add bandit job to Deckhand
+* [feat] DECKHAND-13: Document layering (merge) logic
+* Add viewbuilder for document creation
+* Add Deckhand coverage job
+* Fix flake8 errors
+* Add gitreview file
+* [docs] Add revision tag API information to design document
+* [feat] DECKHAND-28: Document pre-validation logic and API integration
+* Refactor some code
+* Add endpoint/tests for GET /revisions/{revision\_id}
+* Fix naming conflict error
+* Add view abstraction layer for modifying DB data into view data
+* Raise exception instead of return
+* Updated /GET revisions response body
+* Remove old docstring
+* Update control README (with current response bodies, even though they're a WIP
+* Return YAML response body
+* Add endpoint for GET /revisions
+* Use built-in oslo\_db types for Columns serialized as dicts
+* Finish retrieving documents by revision\_id, including with filters
+* Clean up
+* Test and DB API changes
+* Add Revision resource
+* More tests for revisions-api. Fix minor bugs
+* Clarify layering actions start from full parent data
+* Add DELETE endpoint
+* Skip validation for abstract documents & add unit tests
+* Update schema validation to be internal validation
+* Update schema/db model/db api to align with design document
+* Add basic RBAC details to design document
+* Update documents/revisions relationship/tables
+* Update revision and document tables and add more unit tests
+* temp
+* Revisions database and API implementation
+* Update API paths for consistency
+* Add clarifications based on review
+* Use safe\_load\_all instead of safe\_load
+* Add unit tests for db documents api
+* Remove oslo\_versionedobjects
+* Change application/yaml to application/x-yaml
+* Cleaned up some logic, added exception handling to document creation
+* Add currently necessary oslo namespaces to oslo-config-generator conf file
+* Successfully creating document
+* Added logic for establishing DB connection
+* Refactor database sqlalchemy api/models
+* Added oslo\_context-based context for oslo\_db compatibility
+* Update database documents schema
+* Helper for generating versioned object automatically from dictionary payload
+* Add description of substitution
+* Update README
+* Temporary change - do not commit
+* Reference Layering section in layeringDefinition description
+* Add overall layering description
+* Initial DB API models implementation
+* Added control (API) readme
+* [WIP] Implement documents API
+* Add kind param to SchemaVersion class
+* Change apiVersion references to schemaVersion
+* Remove apiVersion attribute from substitutions.src attributes
+* Remove apiVersion attribute from substitutions.src attributes
+* Update default\_schema with our updated schema definition
+* Trivial fix to default\_schema
+* Use regexes for jsonschema pre-validation
+* Add additional documentation
+* Add jsonschema validation to Deckhand
+* Initial engine framework
+* fix typo
+* Provide a separate rendered-documents endpoint
+* Move reporting of validation status
+* Add samples for remaining endpoints
+* Address some initial review comments
+* WIP: Add initial design document
+* Fix incorrect comment
+* Deckhand initial ORM implementation
+* Deckhand initial ORM implementation
+* Add kind param to SchemaVersion class
+* Change apiVersion references to schemaVersion
+* Remove apiVersion attribute from substitutions.src attributes
+* Remove apiVersion attribute from substitutions.src attributes
+* Update default\_schema with our updated schema definition
+* Trivial fix to default\_schema
+* Use regexes for jsonschema pre-validation
+* Add additional documentation
+* Add jsonschema validation to Deckhand
+* Initial engine framework
+* Add oslo.log integration
+* DECKHAND-10: Add Barbican integration to Deckhand
+* Update ChangeLog
+* Update AUTHORS
+* DECKHAND-2: Design core Deckhand API framework
+* Oslo config integration (#1)
+* Add ChangeLog
+* Initial commit

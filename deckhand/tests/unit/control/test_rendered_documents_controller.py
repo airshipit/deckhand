@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import re
+import six
 import yaml
 
 from unittest import mock
@@ -276,7 +277,7 @@ class TestRenderedDocumentsControllerRedaction(test_base.BaseControllerTest):
                 headers={'Content-Type': 'application/x-yaml'},
                 params={
                     'metadata.name': ['example-cert', 'deckhand-global'],
-                    'cleartext-secrets': str(cleartext_secrets)
+                    'cleartext-secrets': six.text_type(cleartext_secrets)
                 },
                 params_csv=False)
 
@@ -438,8 +439,8 @@ class TestRenderedDocumentsControllerEncrypted(test_base.BaseControllerTest):
         # Expect redacted data for all documents to be returned -
         # because the destination documents should receive redacted data.
         data = list(map(lambda x: x['data'], rendered_documents))
-        self.assertTrue(redacted_password in data)
-        self.assertTrue(redacted_data in data)
+        self.assertIn(redacted_password, data)
+        self.assertIn(redacted_data, data)
 
         # Expect the substitutions to be redacted since both docs are
         # marked as encrypted

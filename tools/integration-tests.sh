@@ -31,7 +31,7 @@ function deploy_barbican {
     ./tools/deployment/common/wait-for-pods.sh openstack
 
     # Validate deployment info
-    helm status barbican
+    helm status barbican -n openstack
 }
 
 
@@ -46,16 +46,23 @@ function deploy_osh_keystone_barbican {
         git clone https://git.openstack.org/openstack/openstack-helm.git ../openstack-helm
     fi
 
+    cd ${OSH_INFRA_PATH}
+    # git reset --hard ${BARBICAN_STABLE_COMMIT}
+    # Deploy required packages
+    ./tools/deployment/common/000-install-packages.sh
+    ./tools/deployment/common/001-setup-apparmor-profiles.sh
+    #
     cd ${OSH_PATH}
     # git reset --hard ${BARBICAN_STABLE_COMMIT}
     # Deploy required packages
     ./tools/deployment/common/install-packages.sh
+    #
     # Deploy Kubernetes
     sudo modprobe br_netfilter
     ./tools/deployment/common/deploy-k8s.sh
 
     cd ${CURRENT_DIR}
-    sudo -H -E pip install -r test-requirements.txt
+    sudo -H -E pip install -r requirements-frozen.txt
 
     # remove systemd-resolved local stub dns from resolv.conf
     sudo sed -i.bkp '/^nameserver.*127.0.0.1/d
@@ -96,15 +103,16 @@ function deploy_deckhand {
     interfaces=("admin" "public" "internal")
     deckhand_endpoint="http://127.0.0.1:9000"
 
-    if [ -z "$( openstack service list --format value | grep deckhand )" ]; then
-        openstack service create --enable --name deckhand deckhand
+    if [ -z "$( openstack service list --format value 2>/dev/null | grep deckhand )" ]; then
+        openstack service create --enable --name deckhand deckhand 2>/dev/null
     fi
 
     for iface in ${interfaces[@]}; do
-        if [ -z "$( openstack endpoint list --format value | grep deckhand | grep $iface )" ]; then
+        if [ -z "$( openstack endpoint list --format value 2>/dev/null | grep deckhand | grep $iface )" ]; then
             openstack endpoint create --enable \
                 --region RegionOne \
-                deckhand $iface $deckhand_endpoint/api/v1.0
+                deckhand $iface $deckhand_endpoint/api/v1.0 \
+                     2>/dev/null
         fi
     done
 
@@ -126,8 +134,8 @@ function deploy_deckhand {
 
     # NOTE(fmontei): Generate an admin token instead of hacking a policy
     # file with no permissions to test authN as well as authZ.
-    export TEST_AUTH_TOKEN=$( openstack token issue --format value -c id )
-    local test_barbican_url=$( openstack endpoint list --format value | grep barbican | grep public | awk '{print $7}' )
+    export TEST_AUTH_TOKEN=$( openstack token issue --format value -c id  2>/dev/null )
+    local test_barbican_url=$( openstack endpoint list --format value  2>/dev/null | grep barbican | grep public | awk '{print $7}' )
 
     if [[ $test_barbican_url == */ ]]; then
         test_barbican_url=$( echo $test_barbican_url | sed 's/.$//' )
@@ -144,9 +152,9 @@ function run_tests {
 
     posargs=$@
     if [ ${#posargs} -ge 1 ]; then
-        stestr --test-path deckhand/tests/common/ run --serial --slowest --force-subunit-trace --color $1
+        stestr --test-path deckhand/tests/common/ run --verbose --serial --slowest --force-subunit-trace --color $1
     else
-        stestr --test-path deckhand/tests/common/ run --serial --slowest --force-subunit-trace --color
+        stestr --test-path deckhand/tests/common/ run --verbose --serial --slowest --force-subunit-trace --color
     fi
     TEST_STATUS=$?
 

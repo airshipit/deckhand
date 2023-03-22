@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import six
+
 from unittest import mock
 
 from deckhand.common import utils
@@ -95,8 +97,9 @@ class TestDocumentValidation(engine_test_base.TestDocumentValidationBase):
 
         self.assertEqual(1, len(validations[0]['errors']))
         self.assertIn('Sanitized to avoid exposing secret.',
-                      str(validations[0]['errors'][-1]))
-        self.assertNotIn('scary-secret.', str(validations[0]['errors'][-1]))
+                      six.text_type(validations[0]['errors'][-1]))
+        self.assertNotIn('scary-secret.',
+                         six.text_type(validations[0]['errors'][-1]))
 
     def test_validation_document_duplication(self):
         """Validate that duplicate document fails when duplicate passed in."""

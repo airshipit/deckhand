@@ -182,7 +182,8 @@ def get_rendered_docs(revision_id, cleartext_secrets=False, **filters):
             errors.UnknownSubstitutionError,
             errors.UnsupportedActionMethod) as e:
         with excutils.save_and_reraise_exception():
-            LOG.exception(e.format_message())
+            message = (e.format_message())
+            LOG.exception(message)
     except errors.EncryptionSourceNotFound as e:
         # This branch should be unreachable, but if an encryption source
         # wasn't found, then this indicates the controller fed bad data
@@ -212,7 +213,8 @@ def _retrieve_documents_for_rendering(revision_id, **filters):
             layering_policy = db_api.document_get(
                 **layering_policy_filters)
         except errors.DocumentNotFound as e:
-            LOG.exception(e.format_message())
+            message = (e.format_message())
+            LOG.exception(message)
         else:
             documents.append(layering_policy)
 
