@@ -7,11 +7,11 @@ ConfigParser
 coverage
 cryptography==3.4.8
 deepdiff<=5.8.1
-docutils
-falcon
+docutils<=0.17
+falcon==1.4.1
 hacking
-importlib-metadata
-Jinja2
+importlib-metadata~=2.0
+Jinja2<=3.0.3
 jsonpath_ng
 jsonpath-rw-ext>=1.0.0
 jsonpickle==1.4.1
@@ -48,13 +48,13 @@ pymongo
 pyparsing<=2.4.7
 pyproject-api
 python-barbicanclient<=5.2.0
-python-dateutil
+python-dateutil==2.8.1
 python-keystoneclient
 python-memcached
 python-subunit<=1.4.0
 PyYAML<=5.4.1
 reno
-requests==2.27.0
+requests==2.23.0
 Routes
 setuptools<=45.2.0
 six
@@ -74,4 +74,4 @@ virtualenv
 Werkzeug
 wheel
 wsgi-intercept>=1.2.2
-yq
+yq==3.2.1

@@ -19,7 +19,7 @@ pyparsing==2.4.7
 pytest >= 3.0
 pytest-cov==4.0.0
 python-subunit==1.4.0
-requests==2.27.0
+requests==2.23.0
 six==1.16.0
 stestr==3.2.0
 testrepository==0.0.20

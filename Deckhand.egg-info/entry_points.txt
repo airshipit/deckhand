@@ -3,4 +3,3 @@ deckhand.conf = deckhand.conf.opts:list_opts
 
 [oslo.policy.policies]
 deckhand = deckhand.policies:list_rules
-

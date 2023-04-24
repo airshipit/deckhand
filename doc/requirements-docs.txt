@@ -1,7 +1,7 @@
 plantuml
-sphinxcontrib-apidoc>=0.2.0  # BSD
+sphinxcontrib-apidoc==0.2.0  # BSD
 sphinxcontrib-plantuml
-Sphinx==6.1.3
+Sphinx==3.3.1
 sphinx-rtd-theme==0.5.0
 reno==4.0.0
 pylibyaml==0.1.0
@@ -23,3 +23,4 @@ oslo.db==10.0.0
 oslo.log==5.2.0
 Werkzeug==2.1.2
 jsonpickle==3.0.1
+Jinja2<=3.0.3
