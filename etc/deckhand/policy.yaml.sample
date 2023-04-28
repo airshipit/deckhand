@@ -1,53 +1,45 @@
 # Default rule for most Admin APIs.
 #"admin_api": "role:admin"
 
-# Create a batch of documents specified in the request body, whereby
-# a new revision is created. Also, roll back a revision to a previous
-# one in the
-# revision history, whereby the target revision's documents are re-
-# created for
-# the new revision.
+# Create a batch of documents specified in the request body, whereby a
+# new revision is created. Also, roll back a revision to a previous
+# one in the revision history, whereby the target revision's documents
+# are re-created for the new revision.
 # PUT  /api/v1.0/buckets/{bucket_name}/documents
 # POST  /api/v1.0/rollback/{target_revision_id}
 #"deckhand:create_cleartext_documents": "rule:admin_api"
 
-# Create a batch of documents specified in the request body, whereby
-# a new revision is created. Also, roll back a revision to a previous
-# one in the
-# history, whereby the target revision's documents are re-created for
-# the new
-# revision.
+# Create a batch of documents specified in the request body, whereby a
+# new revision is created. Also, roll back a revision to a previous
+# one in the history, whereby the target revision's documents are re-
+# created for the new revision.
 #
 # Only enforced after ``create_cleartext_documents`` passes.
 #
 # Conditionally enforced for the endpoints below if the any of the
-# documents in
-# the request body have a ``metadata.storagePolicy`` of "encrypted".
+# documents in the request body have a ``metadata.storagePolicy`` of
+# "encrypted".
 # PUT  /api/v1.0/buckets/{bucket_name}/documents
 # POST  /api/v1.0/rollback/{target_revision_id}
 #"deckhand:create_encrypted_documents": "rule:admin_api"
 
 # List cleartext documents for a revision (with no layering or
 # substitution applied) as well as fully layered and substituted
-# concrete
-# documents.
+# concrete documents.
 # GET  api/v1.0/revisions/{revision_id}/documents
 # GET  api/v1.0/revisions/{revision_id}/rendered-documents
 #"deckhand:list_cleartext_documents": "rule:admin_api"
 
 # List encrypted documents for a revision (with no layering or
 # substitution applied) as well as fully layered and substituted
-# concrete
-# documents.
+# concrete documents.
 #
 # Only enforced after ``list_cleartext_documents`` passes.
 #
 # Conditionally enforced for the endpoints below if any of the
-# documents in the
-# request body have a ``metadata.storagePolicy`` of "encrypted". If
-# policy
-# enforcement fails, encrypted documents are excluded from the
-# response.
+# documents in the request body have a ``metadata.storagePolicy`` of
+# "encrypted". If policy enforcement fails, encrypted documents are
+# excluded from the response.
 # GET  api/v1.0/revisions/{revision_id}/documents
 # GET  api/v1.0/revisions/{revision_id}/rendered-documents
 #"deckhand:list_encrypted_documents": "rule:admin_api"
@@ -65,7 +57,7 @@
 # DELETE  /api/v1.0/revisions
 #"deckhand:delete_revisions": "rule:admin_api"
 
-# Show revision deepdiff between two revisions.
+# Show revision deep diff between two revisions.
 # GET  /api/v1.0/revisions/{revision_id}/deepdiff/{comparison_revision_id}
 #"deckhand:show_revision_deepdiff": "rule:admin_api"
 

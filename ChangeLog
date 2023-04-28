@@ -1,6 +1,8 @@
 CHANGES
 =======
 
+* Removing egg-info folder
+* Sync requirements with shipyard
 * [focal] Deckhand project updates
 * update to focal and python 3.8
 * Allow source substring extraction
