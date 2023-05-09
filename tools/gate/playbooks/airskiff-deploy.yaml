@@ -20,10 +20,11 @@
     - install-test-requirements
 
   tasks:
+
     - name: Clone Required Repositories
       shell: |
         export CLONE_DECKHAND={{ CLONE_DECKHAND }}
-        export OSH_INFRA_COMMIT=master
+        export OSH_INFRA_COMMIT={{ OSH_INFRA_COMMIT }}
         ./tools/deployment/airskiff/developer/000-clone-dependencies.sh
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
@@ -47,11 +48,13 @@
         chdir: "{{ zuul.project.src_dir }}"
       become: yes
 
-    - name: Setup clients
+    - name: Build all charts locally
       shell: |
-        ./tools/deployment/airskiff/developer/020-setup-client.sh
+        set -ex
+        ./tools/deployment/airskiff/developer/015-make-all-charts.sh
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
+      become: yes
 
     - name: Deploy Airship components using Armada
       shell: |
