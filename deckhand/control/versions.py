@@ -26,7 +26,7 @@ class VersionsResource(api_base.BaseResource):
     no_authentication_methods = ['GET']
 
     def on_get(self, req, resp):
-        resp.body = {
+        resp.text = {
             'v1.0': {
                 'path': '/api/v1.0',
                 'status': 'stable'

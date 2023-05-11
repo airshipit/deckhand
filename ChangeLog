@@ -1,6 +1,8 @@
 CHANGES
 =======
 
+* Update airskiff deployment gate
+* Deckhand updates
 * Removing egg-info folder
 * Sync requirements with shipyard
 * [focal] Deckhand project updates

@@ -61,7 +61,7 @@ class RevisionsResource(api_base.BaseResource):
 
         revision_resp = self.view_builder.show(revision)
         resp.status = falcon.HTTP_200
-        resp.body = revision_resp
+        resp.text = revision_resp
 
     @policy.authorize('deckhand:list_revisions')
     @common.sanitize_params(['tag', 'order', 'sort'])
@@ -74,7 +74,7 @@ class RevisionsResource(api_base.BaseResource):
             revisions = utils.multisort(revisions, sort_by, order_by)
 
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(revisions)
+        resp.text = self.view_builder.list(revisions)
 
     def _delete_all_barbican_secrets(self):
         filters = {'metadata.storagePolicy': 'encrypted'}

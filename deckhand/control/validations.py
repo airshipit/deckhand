@@ -50,7 +50,7 @@ class ValidationsResource(api_base.BaseResource):
                 LOG.exception(message)
 
         resp.status = falcon.HTTP_201
-        resp.body = self.view_builder.show(resp_body)
+        resp.text = self.view_builder.show(resp_body)
 
     def on_get(self, req, resp, revision_id, validation_name=None,
                entry_id=None):
@@ -64,7 +64,7 @@ class ValidationsResource(api_base.BaseResource):
             resp_body = self._list_all_validations(req, resp, revision_id)
 
         resp.status = falcon.HTTP_200
-        resp.body = resp_body
+        resp.text = resp_body
 
     @policy.authorize('deckhand:show_validation')
     def _show_validation_entry(self, req, resp, revision_id, validation_name,
@@ -128,4 +128,4 @@ class ValidationsDetailsResource(api_base.BaseResource):
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.detail(entries)
+        resp.text = self.view_builder.detail(entries)

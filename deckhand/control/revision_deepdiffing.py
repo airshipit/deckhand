@@ -51,4 +51,4 @@ class RevisionDeepDiffingResource(api_base.BaseResource):
                 LOG.exception(message)
 
         resp.status = falcon.HTTP_200
-        resp.body = resp_body
+        resp.text = resp_body

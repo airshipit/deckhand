@@ -44,7 +44,7 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_201
-        resp.body = resp_body
+        resp.text = resp_body
 
     def on_get(self, req, resp, revision_id, tag=None):
         """Show tag details or list all tags for a revision."""
@@ -66,7 +66,7 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_200
-        resp.body = resp_body
+        resp.text = resp_body
 
     @policy.authorize('deckhand:list_tags')
     def _list_all_tags(self, req, resp, revision_id):
@@ -80,7 +80,7 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().list(resp_tags)
         resp.status = falcon.HTTP_200
-        resp.body = resp_body
+        resp.text = resp_body
 
     def on_delete(self, req, resp, revision_id, tag=None):
         """Deletes a single tag or deletes all tags for a revision."""

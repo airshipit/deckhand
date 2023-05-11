@@ -81,7 +81,7 @@ class RevisionDocumentsResource(api_base.BaseResource):
             documents = documents[:limit]
 
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(documents)
+        resp.text = self.view_builder.list(documents)
 
 
 class RenderedDocumentsResource(api_base.BaseResource):
@@ -156,4 +156,4 @@ class RenderedDocumentsResource(api_base.BaseResource):
             rendered_documents = rendered_documents[:limit]
 
         resp.status = falcon.HTTP_200
-        resp.body = self.view_builder.list(rendered_documents)
+        resp.text = self.view_builder.list(rendered_documents)
