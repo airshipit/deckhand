@@ -43,7 +43,14 @@
 
     - name: Build Deckhand with submitted changes
       shell: |
-        make
+        set -ex
+        export DISTRO={{ DECKHAND_IMAGE_DISTRO }}
+        make images
+        if test "${DISTRO}" = 'ubuntu_bionic'
+        then
+          # this trick is needed to use bionic image instead of focal in airskiff deployment test
+          docker tag quay.io/airshipit/deckhand:latest-ubuntu_bionic quay.io/airshipit/deckhand:latest-ubuntu_focal
+        fi
       args:
         chdir: "{{ zuul.project.src_dir }}"
       become: yes

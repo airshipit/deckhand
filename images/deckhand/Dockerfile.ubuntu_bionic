@@ -88,8 +88,14 @@ RUN chown -R deckhand: /home/deckhand \
 
 # Set work directory and install dependencies
 WORKDIR /home/deckhand
-RUN pip3 install -r requirements.txt
-RUN python3 setup.py install
+RUN pip3 install --no-cache-dir -r requirements-frozen-bionic.txt
+# Setting deckhand version for BPR
+ENV PBR_VERSION 1.1
+
+# RUN python3 setup.py install --verbose
+RUN pip3 install -e . --verbose --use-pep517 \
+    && echo "/home/deckhand" \
+        > /usr/local/lib/python3.6/dist-packages/deckhand.pth
 
 # Set user to deckhand
 USER deckhand

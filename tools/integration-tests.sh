@@ -62,7 +62,6 @@ function deploy_osh_keystone_barbican {
     ./tools/deployment/common/deploy-k8s.sh
 
     cd ${CURRENT_DIR}
-    sudo -H -E pip install -r requirements-frozen.txt
 
     # remove systemd-resolved local stub dns from resolv.conf
     sudo sed -i.bkp '/^nameserver.*127.0.0.1/d

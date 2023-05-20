@@ -67,7 +67,7 @@ testresources
 testscenarios
 testtools<=2.5.0
 tiddlyweb
-typing-extensions==3.7.2
+typing-extensions==3.7.4.3
 urllib3 >= 1.21.1, <= 1.25.11
 uWSGI==2.0.21
 virtualenv
