@@ -15,18 +15,9 @@
 - name: Install pip3 and gabbi
   shell: |
     set -xe;
-    apt-get install -y \
-      python3-pip \
-      python3-setuptools \
-      python3-dev
-    pip3 install --upgrade pip
-    pip3 install -r test-requirements.txt
-    if test "{{ distro }}" = 'ubuntu_bionic'
-    then
-      pip3 install -r requirements-frozen-bionic.txt
-    else
-      pip3 install -r requirements-frozen.txt
-    fi
+    pip3 install \
+      -r test-requirements.txt \
+      -r requirements-frozen.txt
   args:
     chdir: "{{ zuul.project.src_dir }}"
   become: yes

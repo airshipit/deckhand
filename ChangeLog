@@ -1,6 +1,9 @@
 CHANGES
 =======
 
+* Airflow stable 2.6.2
+* Restored ubuntu\_bionic image build
+* [focal] Fix requests.body attribute deprecation
 * Update airskiff deployment gate
 * Deckhand updates
 * Removing egg-info folder

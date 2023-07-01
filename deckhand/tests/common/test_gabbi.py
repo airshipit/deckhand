@@ -90,7 +90,7 @@ class MultidocJsonpaths(jsonhandler.JSONHandler):
         # NOTE: The simple approach to handling dictionary versus list response
         # bodies is to always parse the response body as a list and index into
         # the first element using [0] throughout the tests.
-        return list(yaml.load_all(string))
+        return list(yaml.safe_load_all(string))
 
 
 def load_tests(loader, tests, pattern):

@@ -17,6 +17,8 @@
     - clear-firewall
     - bindep
     - ensure-docker
+    - ensure-python
+    - ensure-pip
     - disable-systemd-resolved
     - install-test-requirements
 
@@ -31,6 +33,7 @@
 
     - name: Clone Required Repositories
       shell: |
+        set -ex
         export CLONE_DECKHAND={{ CLONE_DECKHAND }}
         export OSH_INFRA_COMMIT={{ OSH_INFRA_COMMIT }}
         ./tools/deployment/airskiff/developer/000-clone-dependencies.sh
@@ -60,6 +63,14 @@
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
 
+    - name: Setup openstack client
+      shell: |
+        set -ex
+        ./tools/deployment/airskiff/developer/020-setup-client.sh
+      args:
+        chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
+      become: yes
+
     - name: Build Deckhand with submitted changes
       shell: |
         set -ex
@@ -76,18 +87,10 @@
         export DISTRO={{ DECKHAND_IMAGE_DISTRO }}
         docker rm registry --force || true
         docker run -d -p 5000:5000 --restart=always --name registry registry:2
-        if test "${DISTRO}" = 'ubuntu_bionic'
-        then
-          docker tag quay.io/airshipit/deckhand:latest-ubuntu_bionic localhost:5000/deckhand:latest-ubuntu_bionic
-          docker push localhost:5000/deckhand:latest-ubuntu_bionic
-          sed -i "s#quay.io/airshipit/deckhand:latest-ubuntu_focal#localhost:5000/deckhand:latest-ubuntu_bionic#g" ./site/airskiff/software/config/versions.yaml
-          sed -i "s#quay.io/airshipit/deckhand:latest-ubuntu_focal#localhost:5000/deckhand:latest-ubuntu_bionic#g" ./global/software/config/versions.yaml
-        else
-          docker tag quay.io/airshipit/deckhand:latest-ubuntu_focal localhost:5000/deckhand:latest-ubuntu_focal
-          docker push localhost:5000/deckhand:latest-ubuntu_focal
-          sed -i "s#quay.io/airshipit/deckhand:latest-ubuntu_focal#localhost:5000/deckhand:latest-ubuntu_focal#g" ./site/airskiff/software/config/versions.yaml
-          sed -i "s#quay.io/airshipit/deckhand:latest-ubuntu_focal#localhost:5000/deckhand:latest-ubuntu_focal#g" ./global/software/config/versions.yaml
-        fi
+        docker tag quay.io/airshipit/deckhand:latest-ubuntu_focal localhost:5000/deckhand:latest-ubuntu_focal
+        docker push localhost:5000/deckhand:latest-ubuntu_focal
+        sed -i "s#quay.io/airshipit/deckhand:latest-ubuntu_focal#localhost:5000/deckhand:latest-ubuntu_focal#g" ./site/airskiff/software/config/versions.yaml
+        sed -i "s#quay.io/airshipit/deckhand:latest-ubuntu_focal#localhost:5000/deckhand:latest-ubuntu_focal#g" ./global/software/config/versions.yaml
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
       become: yes
@@ -116,6 +119,7 @@
       shell: |
         mkdir -p ~/.kube
         cp -rp /home/zuul/.kube/config ~/.kube/config
+        pip3 install packaging
         ./tools/deployment/airskiff/developer/030-armada-bootstrap.sh
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
@@ -130,6 +134,7 @@
 
     - name: Wait for deployment completion
       shell: |
+        set -x
         ./tools/gate/wait-for-shipyard.sh
       args:
         chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"

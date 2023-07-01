@@ -17,30 +17,49 @@
   set_fact:
     zuul_site_mirror_fqdn: "{{ lookup('env','zuul_site_mirror_fqdn') }}"
 
-- name: Deploy Required Packages
+- name: Checkout treasuremap v1.9 branch
   shell: |
     set -xe;
-    ./tools/deployment/common/install-packages.sh
+    git checkout v1.9
   environment:
     zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
   args:
-    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_treasuremap_relative_path | default('') }}"
 
 - name: Deploy Kubernetes
   shell: |
     set -xe;
-    ./tools/deployment/common/deploy-k8s.sh
+    ./tools/deployment/airskiff/developer/010-deploy-k8s.sh
+  environment:
+    zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_treasuremap_relative_path | default('') }}"
+
+- name: Make OSH charts
+  shell: |
+    set -xe
+    make all
   environment:
     zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
 
-- name: Setup OS and Kubernetes Clients
+- name: Make OSH_INFRA charts
+  shell: |
+    set -xe
+    make all
+  environment:
+    zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_infra_relative_path | default('') }}"
+
+
+- name: Setup docker-based openstack client
   shell: |
     set -xe;
-    ./tools/deployment/common/setup-client.sh
+    ./tools/deployment/airskiff/developer/020-setup-client.sh
   args:
-    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_treasuremap_relative_path | default('') }}"
 
 - name: Deploy Ingress
   shell: |

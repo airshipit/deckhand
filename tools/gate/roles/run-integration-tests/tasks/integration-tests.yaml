@@ -55,13 +55,10 @@
     # NOTE(felipemonteiro): We don't use a venv because they don't play nicely
     # with OpenStack-Helm, which is used to orchestrate various OpenStack
     # services in the integration script called below.
-    sudo -H -E pip3 install -e . --verbose --use-pep517
-    if test "{{ distro }}" = 'ubuntu_bionic'
-    then
-      sudo -E -H pip3 install -r requirements-frozen-bionic.txt
-    else
-      sudo -E -H pip3 install -r requirements-frozen.txt
-    fi
+    sudo -E -H pip3 install -e . --verbose --use-pep517
+    sudo -E -H pip3 install -r requirements-frozen.txt
+    echo "$(pwd)" | sudo tee /usr/local/lib/python3.8/dist-packages/deckhand.pth
+
     sudo fdisk --list
     df -h
     sudo mkdir -p /opt/ext_vol

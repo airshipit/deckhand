@@ -38,13 +38,13 @@ echo "Command: $1 with arguments $@"
 # Start deckhand application
 if [ "$1" = 'server' ]; then
     exec uwsgi \
-        -b 32768 \
+        --buffer-size 32768 \
         --callable deckhand_callable \
         --die-on-term \
         --enable-threads \
         --http :${PORT} \
         --http-timeout ${DECKHAND_API_TIMEOUT} \
-        -L \
+        --disable-logging \
         --lazy-apps \
         --master \
         --pyargv "--config-file ${DECKHAND_CONFIG_DIR}/deckhand.conf" \
@@ -53,7 +53,7 @@ if [ "$1" = 'server' ]; then
         --strict \
         --vacuum \
         --need-app \
-        -w deckhand.cmd
+        --module deckhand.cmd
 elif [ "$1" = 'alembic' ]; then
     exec alembic ${@:2}
 else

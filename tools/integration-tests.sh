@@ -102,6 +102,7 @@ function deploy_deckhand {
 
     cd ${CURRENT_DIR}
 
+
     # TODO(fmontei): Use Keystone bootstrap override instead.
     interfaces=("admin" "public" "internal")
     deckhand_endpoint="http://127.0.0.1:9000"

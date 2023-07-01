@@ -43,7 +43,7 @@ barbican_opts = [
                 help="Whether to enable Barbican secret caching. Useful "
                      "for testing to avoid cross-test caching conflicts."),
     cfg.StrOpt(
-        'cache_timeout', default=3600,
+        'cache_timeout', default='3600',
         help="How long (in seconds) Barbican secret reference/payload lookup "
              "results should remain cached in memory.")
 ]
@@ -63,7 +63,7 @@ engine_opts = [
     cfg.BoolOpt('enable_cache', default=True,
                 help="Whether to enable the document rendering caching. Useful"
                      " for testing to avoid cross-test caching conflicts."),
-    cfg.IntOpt('cache_timeout', default=3600,
+    cfg.IntOpt('cache_timeout', default='3600',
                help="How long (in seconds) document rendering results should "
                     "remain cached in memory."),
 ]
@@ -76,7 +76,7 @@ jsonpath_group = cfg.OptGroup(
 
 
 jsonpath_opts = [
-    cfg.IntOpt('cache_timeout', default=3600,
+    cfg.IntOpt('cache_timeout', default='3600',
                help="How long (in seconds) JSONPath lookup results should "
                     "remain cached in memory.")
 ]
