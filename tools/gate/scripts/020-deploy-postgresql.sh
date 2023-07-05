@@ -23,7 +23,7 @@ POSTGRES_ID=$(
         -e POSTGRES_DB=deckhand \
         -e POSTGRES_USER=deckhand \
         -e POSTGRES_PASSWORD=password \
-            postgres:14.6
+            postgres:14.8
 )
 
 POSTGRES_IP=$(

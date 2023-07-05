@@ -54,6 +54,13 @@
             executable: pip3
       become: True
 
+    - name: Install tox python module for ansible docker login
+      block:
+        - pip:
+            name: tox
+            version: 3.28.0
+            executable: pip3
+      become: True
 
     - name: Make images
       when: not publish

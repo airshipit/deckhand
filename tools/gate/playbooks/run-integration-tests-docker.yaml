@@ -16,10 +16,12 @@
   vars_files:
     - vars.yaml
   roles:
+    - clear-firewall
     - bindep
     - ensure-docker
     - ensure-python
     - ensure-pip
+    - disable-systemd-resolved
     - install-test-requirements
     - build-images
     - deploy-keystone-dependencies

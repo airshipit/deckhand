@@ -16,7 +16,7 @@
   tasks:
     - name: Git config
       shell: |
-        set -xe;
+        set -xe
         tee .git/config << EOF
         [remote "origin"]
         url = https://opendev.org/airship/treasuremap.git

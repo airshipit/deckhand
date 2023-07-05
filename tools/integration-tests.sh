@@ -13,8 +13,18 @@
 set -xe
 
 CURRENT_DIR="$(pwd)"
-: ${OSH_INFRA_PATH:="../openstack-helm-infra"}
-: ${OSH_PATH:="../openstack-helm"}
+: "${OSH_INFRA_PATH:="../openstack-helm-infra"}"
+: "${OSH_PATH:="../openstack-helm"}"
+: "${TM_PATH:="../treasuremap"}"
+
+export MAKE_CHARTS_OPENSTACK_HELM="${MAKE_CHARTS_OPENSTACK_HELM:-true}"
+export MAKE_CHARTS_OSH_INFRA="${MAKE_CHARTS_OSH_INFRA:-true}"
+export MAKE_CHARTS_ARMADA="${MAKE_CHARTS_ARMADA:-false}"
+export MAKE_CHARTS_DECKHAND="${MAKE_CHARTS_DECKHAND:-false}"
+export MAKE_CHARTS_SHIPYARD="${MAKE_CHARTS_SHIPYARD:-false}"
+export MAKE_CHARTS_MAAS="${MAKE_CHARTS_MAAS:-false}"
+export MAKE_CHARTS_PORTHOLE="${MAKE_CHARTS_PORTHOLE:-false}"
+export MAKE_CHARTS_PROMENADE="${MAKE_CHARTS_PROMENADE:-false}"
 
 
 function deploy_barbican {
@@ -46,34 +56,28 @@ function deploy_osh_keystone_barbican {
         git clone https://git.openstack.org/openstack/openstack-helm.git ../openstack-helm
     fi
 
-    cd ${OSH_INFRA_PATH}
-    # git reset --hard ${BARBICAN_STABLE_COMMIT}
+    if [ ! -d "$TM_PATH" ]; then
+        git clone https://git.openstack.org/airship/treasuremap.git ../treasuremap
+        pushd ../treasuremap
+        git checkout v1.9
+        popd
+    fi
+
+    cd "${TM_PATH}"
     # Deploy required packages
-    ./tools/deployment/common/000-install-packages.sh
-    ./tools/deployment/common/001-setup-apparmor-profiles.sh
-    #
-    cd ${OSH_PATH}
-    # git reset --hard ${BARBICAN_STABLE_COMMIT}
-    # Deploy required packages
-    ./tools/deployment/common/install-packages.sh
+    ./tools/deployment/airskiff/developer/009-setup-apparmor.sh
     #
     # Deploy Kubernetes
-    sudo modprobe br_netfilter
-    ./tools/deployment/common/deploy-k8s.sh
+    ./tools/deployment/airskiff/developer/010-deploy-k8s.sh
+    #
+    # Make charts
+    ./tools/deployment/airskiff/developer/015-make-all-charts.sh
+    #
+    # Deploy docker-based openstack client
+    ./tools/deployment/airskiff/developer/020-setup-client.sh
 
-    cd ${CURRENT_DIR}
 
-    # remove systemd-resolved local stub dns from resolv.conf
-    sudo sed -i.bkp '/^nameserver.*127.0.0.1/d
-                     w /dev/stdout' /etc/resolv.conf
-    # add external nameservers
-    echo "nameserver 8.8.8.8" | sudo tee -a /etc/resolv.conf
-    echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf
-    cat /etc/resolv.conf
-
-    cd ${OSH_PATH}
-    # Setup clients on the host and assemble the charts
-    ./tools/deployment/common/setup-client.sh
+    cd "${OSH_PATH}"
     # Deploy the ingress controller
     ./tools/deployment/component/common/ingress.sh
     # Deploy NFS Provisioner
@@ -102,7 +106,7 @@ function deploy_deckhand {
     interfaces=("admin" "public" "internal")
     deckhand_endpoint="http://127.0.0.1:9000"
 
-    if [ -z "$( openstack service list --format value 2>/dev/null | grep deckhand )" ]; then
+    if [ -z "$( openstack_client openstack service list --format value 2>/dev/null | grep deckhand )" ]; then
         openstack service create --enable --name deckhand deckhand 2>/dev/null
     fi
 

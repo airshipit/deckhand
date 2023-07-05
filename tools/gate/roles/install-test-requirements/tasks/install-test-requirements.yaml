@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- name: Set modprobe br_netfilter
-  shell: |
-    set -xe;
-    sudo modprobe br_netfilter
-    sudo sysctl net.bridge.bridge-nf-call-iptables=1
-    sudo sysctl net.bridge.bridge-nf-call-ip6tables=1
-
 - name: Install pip3 and gabbi
   shell: |
     set -xe;
