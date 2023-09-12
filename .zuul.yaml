@@ -169,6 +169,8 @@
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
     nodeset: deckhand-single-node-focal
+    vars:
+      HTK_COMMIT: ae91cf3fc3f288b6d92ace4a3a405606a653638f
 
 - job:
     name: deckhand-chart-build-latest-htk
@@ -235,8 +237,11 @@
       - airship/treasuremap
     vars:
       CLONE_DECKHAND: false
-      OSH_INFRA_COMMIT: 443ff3e3e340c94c5cbb214d1e2a8b2a3937541d
       DECKHAND_IMAGE_DISTRO: ubuntu_focal
+      HELM_ARTIFACT_URL: https://get.helm.sh/helm-v3.12.2-linux-amd64.tar.gz
+      HTK_COMMIT: ae91cf3fc3f288b6d92ace4a3a405606a653638f
+      OSH_INFRA_COMMIT: db3537e56b182a54e7f6931ce57e2a190714019b
+      OSH_COMMIT: 75c30f43db44218e7842611e880fd8d7a30fa79c
       distro: ubuntu_focal
     irrelevant-files:
       - ^.*\.rst$
