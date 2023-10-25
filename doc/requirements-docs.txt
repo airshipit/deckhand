@@ -21,6 +21,6 @@ PasteDeploy==3.0.1
 python-barbicanclient==5.5.0
 oslo.db==10.0.0
 oslo.log==5.2.0
-Werkzeug==2.1.2
+Werkzeug==3.0.1
 jsonpickle==3.0.1
 Jinja2<=3.0.3
