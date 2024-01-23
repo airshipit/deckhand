@@ -1,7 +1,7 @@
 plantuml
 sphinxcontrib-apidoc==0.2.0  # BSD
 sphinxcontrib-plantuml
-Sphinx==3.3.1
+Sphinx==5.3.0
 sphinx-rtd-theme==0.5.0
 reno==4.0.0
 pylibyaml==0.1.0

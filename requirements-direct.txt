@@ -26,3 +26,4 @@ tiddlyweb
 Werkzeug
 psycopg2-binary
 uwsgi
+xattr==0.10.1
