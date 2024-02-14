@@ -11,11 +11,11 @@
 # limitations under the License.
 
 - project:
-    templates:
-      - openstack-cover-jobs
-      - docs-on-readthedocs
-      - openstack-python38-jobs
-      - openstack-python36-jobs
+    # templates:
+    #   - openstack-cover-jobs
+    #   - docs-on-readthedocs
+    #   - openstack-python38-jobs
+    #   - openstack-python36-jobs
     vars:
       rtd_webhook_id: '38572'
       rtd_project_name: 'airship-deckhand'
@@ -38,6 +38,10 @@
         - openstack-tox-pep8
         - deckhand-airskiff-deployment-focal
         - deckhand-airskiff-deployment-bionic
+        - deckhand-openstack-tox-docs
+        - deckhand-openstack-tox-cover
+        - deckhand-openstack-tox-py38
+        - deckhand-openstack-tox-py36
     gate:
       jobs:
         - deckhand-tox-py36-postgresql
@@ -56,6 +60,10 @@
         - openstack-tox-pep8
         - deckhand-airskiff-deployment-focal
         - deckhand-airskiff-deployment-bionic
+        - deckhand-openstack-tox-docs
+        - deckhand-openstack-tox-cover
+        - deckhand-openstack-tox-py38
+        - deckhand-openstack-tox-py36
     post:
       jobs:
         - deckhand-upload-git-mirror
@@ -88,6 +96,27 @@
     nodes:
       - name: primary
         label: ubuntu-focal
+
+- job:
+    name: deckhand-openstack-tox-docs
+    parent: openstack-tox-docs
+    nodeset: deckhand-single-node-focal
+
+- job:
+    name: deckhand-openstack-tox-cover
+    parent: openstack-tox-cover
+    nodeset: deckhand-single-node-focal
+
+- job:
+    name: deckhand-openstack-tox-py38
+    parent: openstack-tox-py38
+    nodeset: deckhand-single-node-focal
+
+- job:
+    name: deckhand-openstack-tox-py36
+    parent: openstack-tox-py36
+    nodeset: deckhand-single-node
+
 
 - job:
     name: deckhand-tox-py38-postgresql
@@ -238,16 +267,17 @@
 
 - job:
     name: deckhand-integration-docker-base
+    abstract: true
     description: |
       Base job for running deckhand integration tests. Runs tests
       against Docker image generated from source code.
-    nodeset: deckhand-single-node-focal
     timeout: 3600
     roles:
       - zuul: openstack/openstack-helm-infra
     vars:
       zuul_osh_relative_path: ../../openstack/openstack-helm/
       zuul_osh_infra_relative_path: ../../openstack/openstack-helm-infra/
+      zuul_treasuremap_relative_path: ../../airship/treasuremap/
     pre-run:
       - tools/gate/playbooks/osh-infra-upgrade-host.yaml
       - tools/gate/playbooks/osh-infra-deploy-docker.yaml
@@ -255,8 +285,10 @@
       - tools/gate/playbooks/run-integration-tests-docker.yaml
     post-run: tools/gate/playbooks/osh-infra-collect-logs.yaml
     required-projects:
-      - openstack/openstack-helm
-      - openstack/openstack-helm-infra
+      - name: openstack/openstack-helm
+      - name: openstack/openstack-helm-infra
+      - name: airship/treasuremap
+        override-checkout: v1.9
     irrelevant-files:
       - ^.*\.rst$
       - ^doc/.*$
@@ -268,7 +300,7 @@
       Run tox-based integration tests for the Airship Deckhand project under
       cPython version 3.8. Builds ubuntu (focal) deckhand image.
     parent: deckhand-integration-docker-base
-    nodeset: openstack-helm-single-node
+    nodeset: deckhand-single-node-focal
     vars:
       disable_keystone: false
       distro: ubuntu_focal
@@ -279,10 +311,10 @@
       Run tox-based integration tests for the Airship Deckhand project under
       cPython version 3.6. Builds ubuntu (focal) deckhand image.
     parent: deckhand-integration-docker-base
-    nodeset: openstack-helm-single-node
+    nodeset: deckhand-single-node-focal
     vars:
       disable_keystone: false
-      distro: ubuntu_focal
+      distro: ubuntu_bionic
 
 - job:
     name: deckhand-airskiff-deployment-focal
@@ -300,7 +332,7 @@
       - airship/treasuremap
     vars:
       CLONE_DECKHAND: false
-      OSH_INFRA_COMMIT: 443ff3e3e340c94c5cbb214d1e2a8b2a3937541d
+      OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
       DECKHAND_IMAGE_DISTRO: ubuntu_focal
       distro: ubuntu_focal
     irrelevant-files:
@@ -324,7 +356,7 @@
       - airship/treasuremap
     vars:
       CLONE_DECKHAND: false
-      OSH_INFRA_COMMIT: 443ff3e3e340c94c5cbb214d1e2a8b2a3937541d
+      OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
       DECKHAND_IMAGE_DISTRO: ubuntu_bionic
       distro: ubuntu_focal
     irrelevant-files:

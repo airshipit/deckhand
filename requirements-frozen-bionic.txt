@@ -17,7 +17,7 @@ cmd2==2.4.3
 configparser==5.2.0
 coverage==6.2
 cryptography==3.4.8
-dataclasses==0.8
+dataclasses==0.6
 debtcollector==2.5.0
 decorator==4.4.2
 deepdiff==5.7.0
@@ -154,3 +154,4 @@ xmltodict==0.13.0
 yappi==1.4.0
 yq==3.2.1
 zipp==3.6.0
+xattr==0.10.1

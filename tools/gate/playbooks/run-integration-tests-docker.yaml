@@ -23,7 +23,6 @@
     - ensure-pip
     - disable-systemd-resolved
     - install-test-requirements
-    - build-images
     - deploy-keystone-dependencies
     - deploy-barbican
     - build-charts
@@ -31,6 +30,7 @@
     # deploy-keystone-dependencies which restarts Docker, causing
     # the first 2 containers that are deployed to fail.
     - deploy-postgresql
+    - build-images
     - generate-test-config
     - deploy-deckhand
     - run-integration-tests
