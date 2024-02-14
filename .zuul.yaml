@@ -78,13 +78,13 @@
     name: deckhand-openstack-tox-pep8-focal
     parent: openstack-tox-pep8
     description: Runs pep8 job on focal
-    nodeset: deckhand-single-node-airskiff-focal
+    nodeset: deckhand-single-node-focal
 
 - job:
     name: deckhand-openstack-tox-cover-focal
     parent: openstack-tox-cover
     description: Runs cover job on focal
-    nodeset: deckhand-single-node-airskiff-focal
+    nodeset: deckhand-single-node-focal
 
 - job:
     name: deckhand-tox-py38-postgresql
@@ -216,7 +216,7 @@
       Run tox-based integration tests for the Airship Deckhand project under
       cPython version 3.8. Builds ubuntu (focal) deckhand image.
     parent: deckhand-integration-docker-base
-    nodeset: openstack-helm-single-node
+    nodeset: deckhand-single-node-focal
     vars:
       disable_keystone: false
       distro: ubuntu_focal
@@ -238,10 +238,10 @@
     vars:
       CLONE_DECKHAND: false
       DECKHAND_IMAGE_DISTRO: ubuntu_focal
-      HELM_ARTIFACT_URL: https://get.helm.sh/helm-v3.12.2-linux-amd64.tar.gz
-      HTK_COMMIT: ae91cf3fc3f288b6d92ace4a3a405606a653638f
-      OSH_INFRA_COMMIT: db3537e56b182a54e7f6931ce57e2a190714019b
-      OSH_COMMIT: 75c30f43db44218e7842611e880fd8d7a30fa79c
+      HELM_ARTIFACT_URL: https://get.helm.sh/helm-v3.13.2-linux-amd64.tar.gz
+      HTK_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
+      OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
+      OSH_COMMIT: 2d9457e34ca4200ed631466bd87569b0214c92e7
       distro: ubuntu_focal
     irrelevant-files:
       - ^.*\.rst$
