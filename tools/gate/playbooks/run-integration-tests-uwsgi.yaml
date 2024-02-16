@@ -13,21 +13,9 @@
 # limitations under the License.
 
 - hosts: all
-  vars_files:
-    - vars.yaml
-  gather_facts: False
 
   roles:
-    - clear-firewall
-    - bindep
-    - ensure-docker
-    - ensure-python
-    - ensure-pip
-    - disable-systemd-resolved
-    - install-postgresql
     - install-test-requirements
-    - run-integration-tests
-
-  tags:
-    - install-postgresql
+    - deploy-keystone-dependencies
+    - deploy-barbican
     - run-integration-tests

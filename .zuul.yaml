@@ -30,6 +30,7 @@
         - deckhand-openstack-tox-pep8-focal
         - deckhand-openstack-tox-cover-focal
         - deckhand-airskiff-deployment-focal
+        # - deckhand-airskiff-deployment-focal-kubeadm
 
     gate:
       jobs:
@@ -39,6 +40,7 @@
         - deckhand-integration-uwsgi-py38
         - deckhand-integration-docker-py38
         - deckhand-chart-build-gate
+        - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate
         - deckhand-openstack-tox-pep8-focal
         - deckhand-openstack-tox-cover-focal
@@ -78,36 +80,34 @@
     name: deckhand-openstack-tox-pep8-focal
     parent: openstack-tox-pep8
     description: Runs pep8 job on focal
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
 
 - job:
     name: deckhand-openstack-tox-cover-focal
     parent: openstack-tox-cover
     description: Runs cover job on focal
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
 
 - job:
     name: deckhand-tox-py38-postgresql
     parent: openstack-tox-py38
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     pre-run:
-      - tools/gate/playbooks/install-postgresql.yaml
+      - tools/gate/playbooks/prepare-hosts.yaml
     vars:
       tox_envlist: py38-postgresql
 
-
 - job:
-    name: deckhand-functional-uwsgi-py38
-    voting: true
-    description: |
-      Run tox-based functional tests for the Airship Deckhand project using a
-      minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
-      for ephemeral PostgreSQL DB, under cPython version 3.8.
-    run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
-    nodeset: deckhand-single-node-focal
-    vars:
-      tox_envlist: py38-functional-dev
-      distro: ubuntu_focal
+    name: deckhand-base
+    abstract: true
+    roles:
+      - zuul: openstack/openstack-helm-infra
+      - zuul: zuul/zuul-jobs
+    required-projects:
+      - name: openstack/openstack-helm
+      - name: openstack/openstack-helm-infra
+      - name: airship/treasuremap
+        override-checkout: v1.9
     irrelevant-files: &irrelevant-files
       - ^.*\.rst$
       - ^doc/.*$
@@ -115,22 +115,43 @@
       - ^releasenotes/.*$
       - ^setup.cfg$
       - ^deckhand/tests/unit/.*$
-
-- job:
-    name: deckhand-functional-docker-base
-    description: |
-      Base job for running deckhand functional tests. Runs tests
-      against Docker image generated from source code.
-    nodeset: deckhand-single-node-focal
-    roles:
-      - zuul: openstack/openstack-helm-infra
-    timeout: 3600
+    timeout: 10800
     pre-run:
-      - tools/gate/playbooks/osh-infra-upgrade-host.yaml
-      - tools/gate/playbooks/osh-infra-deploy-docker.yaml
-    run: tools/gate/playbooks/run-functional-tests-docker.yaml
-    required-projects:
-      - openstack/openstack-helm-infra
+      - tools/gate/playbooks/prepare-hosts.yaml
+      - tools/gate/playbooks/mount-volumes.yaml
+      - tools/gate/playbooks/deploy-env.yaml
+    run:
+      - tools/gate/playbooks/airship-run-scripts.yaml
+    post-run:
+      - tools/gate/playbooks/osh-infra-collect-logs.yaml
+    vars:
+      extra_volume:
+        size: 80G
+        type: Linux
+        mount_point: /opt/ext_vol
+      docker:
+        root_path: "/opt/ext_vol/docker"
+      containerd:
+        root_path: "/opt/ext_vol/containerd"
+      kubeadm:
+        pod_network_cidr: "10.244.0.0/24"
+        service_cidr: "10.96.0.0/16"
+      loopback_setup: true
+      loopback_device: /dev/loop100
+      loopback_image: "/opt/ext_vol/openstack-helm/ceph-loop.img"
+      ceph_osd_data_device: /dev/loop100
+      kube_version: "1.28.4-1.1"
+      calico_version: "v3.27.0"
+      coredns_version: "v1.11.1"
+      helm_version: "v3.13.2"
+      yq_version: "v4.6.0"
+      crictl_version: "v1.26.1"
+      zuul_osh_relative_path: ../../openstack/openstack-helm
+      zuul_osh_infra_relative_path: ../../openstack/openstack-helm-infra
+      zuul_treasuremap_relative_path: ../../airship/treasuremap
+      gate_scripts_relative_path: ../../openstack/openstack-helm-infra
+      run_helm_tests: "no"
+
 
 - job:
     name: deckhand-functional-docker-py38
@@ -138,29 +159,57 @@
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.8. Uses tox with the ``functional-py38`` environment.
       Ubuntu (focal) image is built and used.
-    parent: deckhand-functional-docker-base
-    nodeset: deckhand-single-node-focal
+    parent: deckhand-base
+    run: tools/gate/playbooks/run-functional-tests-docker.yaml
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     vars:
       tox_envlist: py38-functional
       disable_keystone: true
       distro: ubuntu_focal
     irrelevant-files: *irrelevant-files
 
+- job:
+    name: deckhand-functional-uwsgi-py38
+    description: |
+      Run tox-based functional tests for the Airship Deckhand project using a
+      minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
+      for ephemeral PostgreSQL DB, under cPython version 3.8.
+    parent: deckhand-base
+    run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
+    vars:
+      tox_envlist: py38-functional-dev
+      distro: ubuntu_focal
+    irrelevant-files: *irrelevant-files
+
 
 - job:
     name: deckhand-integration-uwsgi-py38
-    voting: true
     description: |
       Run tox-based integration tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
       for ephemeral PostgreSQL DB, under cPython version 3.8.
-    timeout: 9600
+    parent: deckhand-base
     run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     irrelevant-files: *irrelevant-files
     vars:
       disable_keystone: true
       distro: ubuntu_focal
+
+- job:
+    name: deckhand-integration-docker-py38
+    description: |
+      Run tox-based integration tests for the Airship Deckhand project under
+      cPython version 3.8. Builds ubuntu (focal) deckhand image.
+    parent: deckhand-base
+    run: tools/gate/playbooks/run-integration-tests-docker.yaml
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
+    vars:
+      tox_envlist: py38-functional
+      disable_keystone: false
+      distro: ubuntu_focal
+    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-chart-build-gate
@@ -168,9 +217,9 @@
       Build charts using pinned Helm toolkit.
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     vars:
-      HTK_COMMIT: ae91cf3fc3f288b6d92ace4a3a405606a653638f
+      HTK_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
 
 - job:
     name: deckhand-chart-build-latest-htk
@@ -178,53 +227,14 @@
       Build charts using latest Helm toolkit.
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     vars:
       HTK_COMMIT: master
 
 - job:
-    name: deckhand-integration-docker-base
-    description: |
-      Base job for running deckhand integration tests. Runs tests
-      against Docker image generated from source code.
-    nodeset: deckhand-single-node-focal
-    timeout: 3600
-    roles:
-      - zuul: openstack/openstack-helm-infra
-    vars:
-      zuul_osh_relative_path: ../../openstack/openstack-helm/
-      zuul_osh_infra_relative_path: ../../openstack/openstack-helm-infra/
-      zuul_treasuremap_relative_path: ../../airship/treasuremap/
-    pre-run:
-      - tools/gate/playbooks/osh-infra-upgrade-host.yaml
-      - tools/gate/playbooks/osh-infra-deploy-docker.yaml
-    run:
-      - tools/gate/playbooks/run-integration-tests-docker.yaml
-    post-run: tools/gate/playbooks/osh-infra-collect-logs.yaml
-    required-projects:
-      - openstack/openstack-helm
-      - openstack/openstack-helm-infra
-      - airship/treasuremap
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^releasenotes/.*$
-
-- job:
-    name: deckhand-integration-docker-py38
-    description: |
-      Run tox-based integration tests for the Airship Deckhand project under
-      cPython version 3.8. Builds ubuntu (focal) deckhand image.
-    parent: deckhand-integration-docker-base
-    nodeset: deckhand-single-node-focal
-    vars:
-      disable_keystone: false
-      distro: ubuntu_focal
-
-- job:
     name: deckhand-airskiff-deployment-focal
     voting: true
-    nodeset: deckhand-single-node-airskiff-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
     timeout: 9600
@@ -243,17 +253,48 @@
       OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
       OSH_COMMIT: 2d9457e34ca4200ed631466bd87569b0214c92e7
       distro: ubuntu_focal
-    irrelevant-files:
-      - ^.*\.rst$
-      - ^doc/.*$
-      - ^releasenotes/.*$
+    irrelevant-files: *irrelevant-files
 
+- job:
+    name: deckhand-airskiff-deployment-focal-kubeadm
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
+    description: |
+      Deploy Memcached using Airskiff and submitted Deckhand changes.
+    parent: deckhand-base
+    vars:
+      site: airskiff
+      HELM_ARTIFACT_URL: https://get.helm.sh/helm-v3.13.2-linux-amd64.tar.gz
+      HTK_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
+      OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
+      OSH_COMMIT: 2d9457e34ca4200ed631466bd87569b0214c92e7
+      distro: ubuntu_focal
+      CLONE_DECKHAND: false
+      DECKHAND_IMAGE_DISTRO: ubuntu_focal
+      gate_scripts_relative_path: ../../airship/treasuremap
+      gate_scripts:
+        - ./tools/deployment/airskiff/developer/000-prepare-k8s.sh
+        - ./tools/deployment/airskiff/developer/009-setup-apparmor.sh
+        - ./tools/deployment/airskiff/developer/000-clone-dependencies.sh
+        - ./tools/deployment/airskiff/developer/020-setup-client.sh
+        - ./tools/deployment/airskiff/developer/015-make-all-charts.sh
+        - ./tools/deployment/airskiff/developer/025-start-artifactory.sh
+        - ./tools/deployment/airskiff/developer/026-reduce-site.sh
+        - ./tools/deployment/airskiff/common/sleep.sh
+        # TODO
+        # in treasuremap we need to create make local images script that will build
+        # local version of the image in order to be used instead of upstream image
+        - ./tools/deployment/airskiff/developer/030-armada-bootstrap.sh
+        - ./tools/deployment/airskiff/developer/100-deploy-osh.sh
+        - ./tools/deployment/airskiff/common/os-env.sh
+        - ./tools/gate/wait-for-shipyard.sh
+        - ./tools/deployment/airskiff/common/sleep.sh
+    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-docker-build-gate
     timeout: 3600
     run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     irrelevant-files: &non-code-files-template
       - ^.*\.rst$
       - ^doc/.*$
@@ -276,7 +317,7 @@
       listed in vars section. Waits in Zuul queue for a node (VM) assignment.
     timeout: 3600
     run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: deckhand-single-node-focal
+    nodeset: treasuremap-airskiff-1node-ubuntu_focal
     secrets:
       - airship_deckhand_quay_creds
     irrelevant-files: *non-code-files-template

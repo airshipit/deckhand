@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- hosts: primary
+- hosts: all
   tasks:
     - name: Git config
       shell: |
-        set -xe
+        set -xe;
+
         tee .git/config << EOF
         [remote "origin"]
         url = https://opendev.org/airship/treasuremap.git
         EOF
       args:
-        chdir: "{{ zuul.projects['opendev.org/airship/treasuremap'].src_dir }}"
+        chdir: "{{ zuul.project.src_dir }}"

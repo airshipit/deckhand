@@ -27,74 +27,6 @@ export MAKE_CHARTS_PORTHOLE="${MAKE_CHARTS_PORTHOLE:-false}"
 export MAKE_CHARTS_PROMENADE="${MAKE_CHARTS_PROMENADE:-false}"
 
 
-function deploy_barbican {
-    set -xe
-
-    # Pull images and lint chart
-    make pull-images barbican
-
-    # Deploy command
-    helm upgrade --install barbican ./barbican \
-        --namespace=openstack
-
-    # Wait for deploy
-    ./tools/deployment/common/wait-for-pods.sh openstack
-
-    # Validate deployment info
-    helm status barbican -n openstack
-}
-
-
-function deploy_osh_keystone_barbican {
-    set -xe
-
-    if [ ! -d "$OSH_INFRA_PATH" ]; then
-        git clone https://git.openstack.org/openstack/openstack-helm-infra.git ../openstack-helm-infra
-    fi
-
-    if [ ! -d "$OSH_PATH" ]; then
-        git clone https://git.openstack.org/openstack/openstack-helm.git ../openstack-helm
-    fi
-
-    if [ ! -d "$TM_PATH" ]; then
-        git clone https://git.openstack.org/airship/treasuremap.git ../treasuremap
-        pushd ../treasuremap
-        git checkout v1.9
-        popd
-    fi
-
-    cd "${TM_PATH}"
-    # Deploy required packages
-    ./tools/deployment/airskiff/developer/009-setup-apparmor.sh
-    #
-    # Deploy Kubernetes
-    ./tools/deployment/airskiff/developer/010-deploy-k8s.sh
-    #
-    # Make charts
-    ./tools/deployment/airskiff/developer/015-make-all-charts.sh
-    #
-    # Deploy docker-based openstack client
-    ./tools/deployment/airskiff/developer/020-setup-client.sh
-
-
-    cd "${OSH_PATH}"
-    # Deploy the ingress controller
-    ./tools/deployment/component/common/ingress.sh
-    # Deploy NFS Provisioner
-    ./tools/deployment/component/nfs-provisioner/nfs-provisioner.sh
-    # Deploy MariaDB
-    ./tools/deployment/component/common/mariadb.sh
-    # Deploy RabbitMQ
-    ./tools/deployment/component/common/rabbitmq.sh
-    # Deploy Memcached
-    ./tools/deployment/component/common/memcached.sh
-    # Deploy Keystone
-    ./tools/deployment/component/keystone/keystone.sh
-
-    deploy_barbican
-}
-
-
 function deploy_deckhand {
     set -xe
 
@@ -176,9 +108,6 @@ function run_tests {
 source ${CURRENT_DIR}/tools/common-tests.sh
 
 export AIRSHIP_DECKHAND_DATABASE_URL=${PIFPAF_POSTGRESQL_URL}
-
-# Clone openstack-helm-infra and setup host and k8s.
-deploy_osh_keystone_barbican
 
 # Deploy Deckhand.
 deploy_deckhand

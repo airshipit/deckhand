@@ -59,16 +59,6 @@
     sudo -E -H pip3 install -r requirements-frozen.txt
     echo "$(pwd)" | sudo tee /usr/local/lib/python3.8/dist-packages/deckhand.pth
 
-    sudo fdisk --list
-    df -h
-    sudo mkdir -p /opt/ext_vol
-    BIG_VOLUME=$(sudo fdisk -l 2>&1 | grep  -E 80G | grep Linux | awk '{print $1}')
-    if ! mount | grep "${BIG_VOLUME}"
-    then
-      sudo mkfs.ext4 "${BIG_VOLUME}"
-      sudo mount "${BIG_VOLUME}" /opt/ext_vol
-      df -h
-    fi
     pifpaf run postgresql -- ./tools/integration-tests.sh
   args:
     chdir: "{{ zuul.project.src_dir }}"
