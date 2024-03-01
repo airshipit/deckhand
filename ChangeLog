@@ -1,7 +1,7 @@
 CHANGES
 =======
 
-* Airflow stable 2.6.2
+* Airflow stable 2.8.2
 * Restored ubuntu\_bionic image build
 * [focal] Fix requests.body attribute deprecation
 * Update airskiff deployment gate

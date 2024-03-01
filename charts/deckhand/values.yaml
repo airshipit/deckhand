@@ -95,7 +95,6 @@ dependencies:
       jobs:
       - deckhand-ks-endpoints
       - deckhand-ks-user
-      - deckhand-ks-endpoints
       services:
       - service: identity
         endpoint: internal
