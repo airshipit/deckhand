@@ -29,8 +29,7 @@
         - deckhand-docker-build-gate
         - deckhand-openstack-tox-pep8-focal
         - deckhand-openstack-tox-cover-focal
-        - deckhand-airskiff-deployment-focal
-        # - deckhand-airskiff-deployment-focal-kubeadm
+        - deckhand-airskiff-deployment-focal-kubeadm
 
     gate:
       jobs:
@@ -44,7 +43,7 @@
         - deckhand-docker-build-gate
         - deckhand-openstack-tox-pep8-focal
         - deckhand-openstack-tox-cover-focal
-        - deckhand-airskiff-deployment-focal
+
 
     post:
       jobs:
@@ -168,7 +167,7 @@
     vars:
       tox_envlist: py38-functional
       disable_keystone: true
-      distro: ubuntu_focal
+      DISTRO: ubuntu_focal
     irrelevant-files: *irrelevant-files
 
 - job:
@@ -182,7 +181,7 @@
     nodeset: treasuremap-airskiff-1node-ubuntu_focal
     vars:
       tox_envlist: py38-functional-dev
-      distro: ubuntu_focal
+      DISTRO: ubuntu_focal
     irrelevant-files: *irrelevant-files
 
 
@@ -198,7 +197,7 @@
     irrelevant-files: *irrelevant-files
     vars:
       disable_keystone: true
-      distro: ubuntu_focal
+      DISTRO: ubuntu_focal
 
 - job:
     name: deckhand-integration-docker-py38
@@ -211,7 +210,7 @@
     vars:
       tox_envlist: py38-functional
       disable_keystone: false
-      distro: ubuntu_focal
+      DISTRO: ubuntu_focal
     irrelevant-files: *irrelevant-files
 
 - job:
@@ -234,29 +233,29 @@
     vars:
       HTK_COMMIT: master
 
-- job:
-    name: deckhand-airskiff-deployment-focal
-    voting: true
-    nodeset: treasuremap-airskiff-1node-ubuntu_focal
-    description: |
-      Deploy Memcached using Airskiff and submitted Deckhand changes.
-    timeout: 9600
-    pre-run:
-      - tools/gate/playbooks/git-config.yaml
-      - tools/gate/playbooks/airskiff-reduce-site.yaml
-    run: tools/gate/playbooks/airskiff-deploy.yaml
-    post-run: tools/gate/playbooks/debug-report.yaml
-    required-projects:
-      - airship/treasuremap
-    vars:
-      CLONE_DECKHAND: false
-      DECKHAND_IMAGE_DISTRO: ubuntu_focal
-      HELM_ARTIFACT_URL: https://get.helm.sh/helm-v3.13.2-linux-amd64.tar.gz
-      HTK_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
-      OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
-      OSH_COMMIT: 2d9457e34ca4200ed631466bd87569b0214c92e7
-      distro: ubuntu_focal
-    irrelevant-files: *irrelevant-files
+# - job:
+#     name: deckhand-airskiff-deployment-focal
+#     voting: true
+#     nodeset: treasuremap-airskiff-1node-ubuntu_focal
+#     description: |
+#       Deploy Memcached using Airskiff and submitted Deckhand changes.
+#     timeout: 9600
+#     pre-run:
+#       - tools/gate/playbooks/git-config.yaml
+#       - tools/gate/playbooks/airskiff-reduce-site.yaml
+#     run: tools/gate/playbooks/airskiff-deploy.yaml
+#     post-run: tools/gate/playbooks/debug-report.yaml
+#     required-projects:
+#       - airship/treasuremap
+#     vars:
+#       CLONE_DECKHAND: false
+#       DECKHAND_IMAGE_DISTRO: ubuntu_focal
+#       HELM_ARTIFACT_URL: https://get.helm.sh/helm-v3.13.2-linux-amd64.tar.gz
+#       HTK_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
+#       OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
+#       OSH_COMMIT: 2d9457e34ca4200ed631466bd87569b0214c92e7
+#       DISTRO: ubuntu_focal
+#     irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-airskiff-deployment-focal-kubeadm
@@ -270,9 +269,10 @@
       HTK_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
       OSH_INFRA_COMMIT: cfff60ec10a6c386f38db79bb9f59a552c2b032f
       OSH_COMMIT: 2d9457e34ca4200ed631466bd87569b0214c92e7
-      distro: ubuntu_focal
       CLONE_DECKHAND: false
-      DECKHAND_IMAGE_DISTRO: ubuntu_focal
+      DISTRO: ubuntu_focal
+      DOCKER_REGISTRY: localhost:5000
+      MAKE_DECKHAND_IMAGES: true
       gate_scripts_relative_path: ../../airship/treasuremap
       gate_scripts:
         - ./tools/deployment/airskiff/developer/000-prepare-k8s.sh
@@ -280,17 +280,13 @@
         - ./tools/deployment/airskiff/developer/000-clone-dependencies.sh
         - ./tools/deployment/airskiff/developer/020-setup-client.sh
         - ./tools/deployment/airskiff/developer/015-make-all-charts.sh
+        - ./tools/deployment/airskiff/developer/017-make-all-images.sh
         - ./tools/deployment/airskiff/developer/025-start-artifactory.sh
         - ./tools/deployment/airskiff/developer/026-reduce-site.sh
-        - ./tools/deployment/airskiff/common/sleep.sh
-        # TODO
-        # in treasuremap we need to create make local images script that will build
-        # local version of the image in order to be used instead of upstream image
         - ./tools/deployment/airskiff/developer/030-armada-bootstrap.sh
         - ./tools/deployment/airskiff/developer/100-deploy-osh.sh
         - ./tools/deployment/airskiff/common/os-env.sh
         - ./tools/gate/wait-for-shipyard.sh
-        - ./tools/deployment/airskiff/common/sleep.sh
     irrelevant-files: *irrelevant-files
 
 - job:
@@ -307,7 +303,7 @@
       - ^setup.cfg$
     vars:
       publish: false
-      distro: ubuntu_focal
+      DISTRO: ubuntu_focal
       tags:
         dynamic:
           patch_set: true
@@ -326,7 +322,7 @@
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
-      distro: ubuntu_focal
+      DISTRO: ubuntu_focal
       tags:
         dynamic:
           branch: true
@@ -349,7 +345,7 @@
     secrets:
       - airship_deckhand_quay_creds
     vars:
-      distro: ubuntu_focal
+      DISTRO: ubuntu_focal
 
 
 - secret:

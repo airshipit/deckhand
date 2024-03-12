@@ -30,7 +30,7 @@
     - block:
         - name: Get id of the distro specific container image currently tagged as latest
           uri:
-            url: "{{ quay_repo_api_url }}/{{ org }}/{{ image }}/tag/?specificTag={{ latest_tag }}-{{ Distro }}&limit=1"
+            url: "{{ quay_repo_api_url }}/{{ org }}/{{ image }}/tag/?specificTag={{ latest_tag }}-{{ DISTRO }}&limit=1"
             return_content: yes
           register: response_1
         - name: Debug response

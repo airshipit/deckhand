@@ -70,7 +70,7 @@
             target: images
             params:
               IMAGE_TAG: "{{ item }}"
-              DISTRO: "{{ distro }}"
+              DISTRO: "{{ DISTRO }}"
           with_items: "{{ image_tags.stdout_lines }}"
 
         - shell: "docker images"
@@ -100,7 +100,7 @@
               IMAGE_TAG: "{{ item }}"
               COMMIT: "{{ zuul.newrev | default('') }}"
               PUSH_IMAGE: "true"
-              DISTRO: "{{ distro }}"
+              DISTRO: "{{ DISTRO }}"
           with_items: "{{ image_tags.stdout_lines }}"
 
         - shell: "docker images"

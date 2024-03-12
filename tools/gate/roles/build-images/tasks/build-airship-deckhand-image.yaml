@@ -38,7 +38,7 @@
                 --force-rm \
                 --tag deckhand \
                 --label zuul \
-                --file images/deckhand/Dockerfile.{{ distro }} \
+                --file images/deckhand/Dockerfile.{{ DISTRO }} \
                 {% if zuul_site_mirror_fqdn is defined and zuul_site_mirror_fqdn %}
                 --build-arg UBUNTU_URL="http://{{ zuul_site_mirror_fqdn }}/ubuntu/" \
                 --build-arg ALLOW_UNAUTHENTICATED="true" \
@@ -60,7 +60,7 @@
                 --force-rm \
                 --tag deckhand \
                 --label zuul \
-                --file images/deckhand/Dockerfile.{{ distro }} \
+                --file images/deckhand/Dockerfile.{{ DISTRO }} \
                 --build-arg HTTP_PROXY="{{ proxy.http }}" \
                 --build-arg HTTPS_PROXY="{{ proxy.https }}" \
                 --build-arg NO_PROXY="{{ proxy.noproxy }}" \
