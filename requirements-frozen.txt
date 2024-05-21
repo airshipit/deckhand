@@ -94,7 +94,7 @@ pytz==2024.1
 PyYAML==6.0.1
 referencing==0.33.0
 repoze.lru==0.7
-requests==2.31.0
+requests==2.32.0
 resolver==0.2.1
 rfc3986==1.5.0
 Routes==2.5.1
