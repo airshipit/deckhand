@@ -29,8 +29,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -38,7 +38,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize_layering_policy_base_case
     desc: |
@@ -47,6 +47,8 @@ tests:
       is abstract has layer region.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -66,6 +68,8 @@ tests:
       substitutions from secret documents.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_base_case
@@ -74,6 +78,8 @@ tests:
     query_parameters:
       metadata.name: armada-chart-01
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: armada-chart-01
@@ -95,6 +101,8 @@ tests:
       Re-initailize the layering policy with 3 layers so that the top is empty
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -113,6 +121,8 @@ tests:
       Same case as before, except with a top empty layer.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_empty_top_layer
@@ -121,6 +131,8 @@ tests:
     query_parameters:
       metadata.name: armada-chart-01
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: armada-chart-01
@@ -143,6 +155,8 @@ tests:
       empty
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -162,6 +176,8 @@ tests:
       Same case as before, except with multiple empty top layers.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_multiple_empty_top_layers
@@ -170,6 +186,8 @@ tests:
     query_parameters:
       metadata.name: armada-chart-01
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: armada-chart-01
@@ -192,6 +210,8 @@ tests:
       layers.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -212,6 +232,8 @@ tests:
       Same case as before, except with multiple empty interspersed layers.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/layering-and-substitution-sample.yaml
 
   - name: verify_multiple_empty_interspersed_layers
@@ -220,6 +242,8 @@ tests:
     query_parameters:
       metadata.name: armada-chart-01
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: armada-chart-01
@@ -241,6 +265,8 @@ tests:
       Initailize the layering policy with 2 layers.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -260,6 +286,8 @@ tests:
       the correct substitution order.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/layering-and-substitution-dag-sample.yaml
 
   - name: verify_substitution_dependency_chain
@@ -275,6 +303,8 @@ tests:
       schema: armada/Chart/v1
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
       $.[0].metadata.name: armada-chart-01

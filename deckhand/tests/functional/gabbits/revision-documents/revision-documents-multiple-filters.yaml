@@ -9,8 +9,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -18,12 +18,14 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: filter_by_multiple_different_filters_expect_site
@@ -33,6 +35,8 @@ tests:
       metadata.layeringDefinition.layer: site
       metadata.layeringDefinition.abstract: false
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: site-1234
@@ -46,6 +50,8 @@ tests:
       metadata.layeringDefinition.layer: region
       metadata.layeringDefinition.abstract: true
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: region-1234
@@ -60,6 +66,8 @@ tests:
         - site
         - region
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 2
       $.[*].metadata.name:
@@ -77,6 +85,8 @@ tests:
         - foo=bar
         - baz=qux
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: site-1234

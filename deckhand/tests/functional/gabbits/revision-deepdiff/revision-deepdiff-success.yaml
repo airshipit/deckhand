@@ -28,8 +28,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -37,12 +37,14 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: create_a
     desc: Create documents in bucket_a
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -70,6 +72,8 @@ tests:
     desc: Modify data value of doc-a document in bucket_a
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -88,6 +92,8 @@ tests:
     desc: Verify deepdiff of modified data value of doc-a document
     GET: /api/v1.0/revisions/1/deepdiff/2
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].'bucket_a': modified
@@ -105,6 +111,8 @@ tests:
     desc: Verify deepdiff when revision=0 comparision_revision=0
     GET: /api/v1.0/revisions/0/deepdiff/0
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]: {}
@@ -113,6 +121,8 @@ tests:
     desc: Verify deepdiff when revision=0
     GET: /api/v1.0/revisions/0/deepdiff/2
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -122,6 +132,8 @@ tests:
     desc: Verify deepdiff when comparision_revision=0
     GET: /api/v1.0/revisions/2/deepdiff/0
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -131,6 +143,8 @@ tests:
     desc: Add new document doc-b in bucket_a
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -161,6 +175,8 @@ tests:
     desc: Verify deepdiff of newly added doc-b document
     GET: /api/v1.0/revisions/2/deepdiff/3
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].'bucket_a': modified
@@ -171,6 +187,8 @@ tests:
     desc: Delete document doc-b in bucket_a
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -189,6 +207,8 @@ tests:
     desc: Verify deepdiff of deleted doc-b document
     GET: /api/v1.0/revisions/3/deepdiff/4
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].'bucket_a': modified
@@ -199,6 +219,8 @@ tests:
     desc: Verify deepdiff of the same revisions
     GET: /api/v1.0/revisions/3/deepdiff/3
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].'bucket_a': unmodified
@@ -207,6 +229,8 @@ tests:
     desc: Verify deepdiff of different revisions of same document
     GET: /api/v1.0/revisions/2/deepdiff/4
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].'bucket_a': unmodified
@@ -215,6 +239,8 @@ tests:
     desc: Adding a new key in doc-a
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -234,6 +260,8 @@ tests:
     desc: Verify deepdiff of addition of a new key in doc-a
     GET: /api/v1.0/revisions/4/deepdiff/5
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].'bucket_a': modified
@@ -249,6 +277,8 @@ tests:
     desc: Removing a key in doc-a
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -267,6 +297,8 @@ tests:
     desc: Verify deepdiff of removal of a key in doc-a
     GET: /api/v1.0/revisions/5/deepdiff/6
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].'bucket_a': modified
@@ -282,8 +314,11 @@ tests:
     desc: Verify deepdiff when invalid revision id pass in input
     GET: /api/v1.0/revisions/test/deepdiff/2
     status: 400
+    response_headers:
+      content-type: application/x-yaml
 
   - name: verify_revision_not_found
     desc: Verify deepdiff when input revision id is not found
     GET: /api/v1.0/revisions/1000/deepdiff/2
     status: 404
+    response_headers: {}

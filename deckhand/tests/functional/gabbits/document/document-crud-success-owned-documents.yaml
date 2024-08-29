@@ -9,8 +9,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -18,18 +18,22 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/deckhand-owned-sample.yaml
 
   - name: verify_certificate_content
     desc: Verify Passphrase content
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=deckhand/Certificate/v1
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].data: |
@@ -62,6 +66,8 @@ tests:
     desc: Verify Passphrase content
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents?schema=deckhand/Passphrase/v1
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].data: hunter2

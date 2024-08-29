@@ -35,8 +35,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -44,12 +44,14 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: verify_initial
@@ -58,6 +60,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -80,17 +84,23 @@ tests:
     desc: Push a duplicate bucket of documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: verify_ignore
     desc: Verify duplicate documents were ignored
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -113,6 +123,8 @@ tests:
     desc: Update a single document, ignore other documents in the bucket
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-with-update.yaml
 
   - name: verify_update
@@ -121,6 +133,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -146,6 +160,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -169,6 +185,8 @@ tests:
     desc: Delete a single document
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-with-delete.yaml
 
   - name: verify_delete
@@ -177,6 +195,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
       $.[*].status.revision:
@@ -199,6 +219,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -224,6 +246,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:

@@ -1,7 +1,18 @@
 CHANGES
 =======
 
+* Update deploy-env parameters
+* Kubeadm based Airskiff gate
+* Fix deckhand-api dependences
 * Airflow stable 2.8.2
+* Airflow stable 2.8.1
+* Use deploy-env role
+* Rollback python deps update
+* Remove openstack-helm nodeset
+* Update helm toolkit reference
+* Deprecating the Ingress Class Annotation
+* Airflow stable 2.6.2
+* Deckhand updates
 * Restored ubuntu\_bionic image build
 * [focal] Fix requests.body attribute deprecation
 * Update airskiff deployment gate

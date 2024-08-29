@@ -340,7 +340,7 @@ pod:
   security_context:
     deckhand:
       pod:
-        runAsUser: 65534
+        runAsUser: 1000
       container:
         deckhand_api:
           readOnlyRootFilesystem: true
@@ -354,7 +354,7 @@ pod:
           allowPrivilegeEscalation: false
     db_sync:
       pod:
-        runAsUser: 65534
+        runAsUser: 1000
       container:
         deckhand_db_sync:
           readOnlyRootFilesystem: true

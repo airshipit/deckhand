@@ -12,8 +12,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -21,13 +21,15 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: create_documents_for_validating_replacement_of_sub_source
     desc: |
       Create documents for validating replacement of a substitution source.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -102,6 +104,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
 
@@ -128,6 +132,8 @@ tests:
       Create documents for validating replacement of a layering source.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -222,6 +228,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
 

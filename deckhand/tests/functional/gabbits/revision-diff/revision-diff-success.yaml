@@ -18,8 +18,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -27,12 +27,14 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: create_a
     desc: Create documents in bucket a
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -51,6 +53,8 @@ tests:
     desc: Create documents in bucket b
     PUT: /api/v1.0/buckets/bucket_b/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -69,6 +73,8 @@ tests:
     desc: Create documents in bucket c
     PUT: /api/v1.0/buckets/bucket_c/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -87,6 +93,8 @@ tests:
     desc: Create documents in bucket d
     PUT: /api/v1.0/buckets/bucket_d/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -105,6 +113,8 @@ tests:
     desc: Validates response for null diff for first revision
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -114,6 +124,8 @@ tests:
     desc: Validates response for null diff for second revision
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_b'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -124,6 +136,8 @@ tests:
     desc: Validates response for null diff for third revision
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_c'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -135,6 +149,8 @@ tests:
     desc: Validates response for null diff for fourth revision
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_d'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -147,6 +163,8 @@ tests:
     desc: Validates response for null diff for fourth revision
     GET: /api/v1.0/revisions/0/diff/0
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]: {}
@@ -155,6 +173,8 @@ tests:
     desc: Update document in bucket c
     PUT: /api/v1.0/buckets/bucket_c/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -173,6 +193,8 @@ tests:
     desc: Validates response for null diff between the first 4 buckets and single update
     GET: /api/v1.0/revisions/$HISTORY['create_d'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['update_c'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -185,12 +207,16 @@ tests:
     desc: Delete documents from bucket b
     PUT: /api/v1.0/buckets/bucket_b/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: ""
 
   - name: create_mistake
     desc: Create documents in bucket mistake
     PUT: /api/v1.0/buckets/bucket_mistake/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -208,6 +234,8 @@ tests:
     desc: Delete documents from bucket mistake
     PUT: /api/v1.0/buckets/bucket_mistake/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: ""
     # Verification for whether a bucket_name was returned even though all the
     # documents for this bucket were deleted.
@@ -219,6 +247,8 @@ tests:
     desc: Validates response for deletion between the last 2 revisions
     GET: /api/v1.0/revisions/$HISTORY['create_mistake'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['delete_mistake'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -231,6 +261,8 @@ tests:
     desc: Create documents in bucket e
     PUT: /api/v1.0/buckets/bucket_e/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: example/Kind/v1
@@ -249,6 +281,8 @@ tests:
     desc: Validates response for null diff between the first 4 buckets and now
     GET: /api/v1.0/revisions/$HISTORY['create_d'].$RESPONSE['$.[0].status.revision']/diff/$HISTORY['create_e'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:
@@ -262,6 +296,8 @@ tests:
     desc: Validates response for null diff and now
     GET: /api/v1.0/revisions/0/diff/$HISTORY['create_e'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0]:

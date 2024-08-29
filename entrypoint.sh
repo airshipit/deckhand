@@ -56,6 +56,8 @@ if [ "$1" = 'server' ]; then
         --module deckhand.cmd
 elif [ "$1" = 'alembic' ]; then
     exec alembic ${@:2}
+elif [ "$1" = 'shell' ]; then
+    exec bash
 else
     echo "Valid commands are 'alembic <command>' and 'server'"
 fi

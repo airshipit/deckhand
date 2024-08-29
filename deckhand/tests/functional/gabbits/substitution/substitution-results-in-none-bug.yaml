@@ -7,8 +7,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -16,7 +16,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize_documents_with_missing_src_substitution_path
     desc: |
@@ -24,6 +24,8 @@ tests:
       a path via `src.path` that doesn't exist in the source document.
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/substitution-results-in-none-bug.yaml
 
   - name: verify_bad_request_raised
@@ -34,3 +36,5 @@ tests:
     query_parameters:
       schema: deckhand/Dest/v1
     status: 400
+    response_headers:
+      content-type: application/x-yaml

@@ -8,8 +8,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -17,18 +17,22 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: add_bucket_a
     desc: Create documents for bucket a
     PUT: /api/v1.0/buckets/a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-substitution-sample-split-bucket-a.yaml
 
   - name: add_bucket_b
     desc: Create documents for bucket b
     PUT: /api/v1.0/buckets/b/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-substitution-sample-split-bucket-b.yaml
 
   - name: verify_substitutions
@@ -37,6 +41,8 @@ tests:
     query_parameters:
       schema: armada/Chart/v1
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[*].metadata.name: example-chart-01

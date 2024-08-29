@@ -26,8 +26,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -35,18 +35,22 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: create_tag
     desc: Create a tag for the revision
     POST: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/tags/foo
     status: 201
+    response_headers:
+      content-type: application/x-yaml
 
     response_multidoc_jsonpaths:
       $.[0].`len`: 1
@@ -56,6 +60,8 @@ tests:
     desc: Verify showing created tag works
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
     status: 200
+    response_headers:
+      content-type: application/x-yaml
 
     response_multidoc_jsonpaths:
       $.`len`: 1
@@ -65,6 +71,8 @@ tests:
     desc: Verify showing created tag on revision detail
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].tags.`len`: 1
@@ -84,6 +92,8 @@ tests:
     desc: Create a tag with data for the revision
     POST: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/bar
     status: 201
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/sample-tag-data.yaml
 
     response_multidoc_jsonpaths:
@@ -97,6 +107,8 @@ tests:
     desc: Verify listing tags contains created tag
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
     status: 200
+    response_headers:
+      content-type: application/x-yaml
 
     response_multidoc_jsonpaths:
       $.`len`: 1
@@ -111,6 +123,8 @@ tests:
     desc: Verify showing created tag on revision detail
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].tags.`len`: 2
@@ -132,12 +146,14 @@ tests:
     desc: Verify deleting tag works
     DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: verify_tag_delete
     desc: Verify listing tags contains non-deleted tag
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
     status: 200
+    response_headers:
+      content-type: application/x-yaml
 
     response_multidoc_jsonpaths:
       $.`len`: 1
@@ -150,6 +166,8 @@ tests:
     desc: Verify not showing deleted tag on revision detail
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].tags.`len`: 1
@@ -161,6 +179,8 @@ tests:
     desc: Verify not showing deleted tag on revision list
     GET: /api/v1.0/revisions
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.[0].results.`len`: 1
       $.[0].results[0].tags.`len`: 1
@@ -170,12 +190,14 @@ tests:
     desc: Verify deleting tag works
     DELETE: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: verify_revision_detail_deleted_all
     desc: Verify empty tags on revision detail
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].tags: {}
@@ -184,6 +206,8 @@ tests:
     desc: Verify empty tags on revision list
     GET: /api/v1.0/revisions
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.[0].results.`len`: 1
       $.[0].results[0].tags: []
@@ -192,6 +216,8 @@ tests:
     desc: Verify all tags have been deleted
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags
     status: 200
+    response_headers:
+      content-type: application/x-yaml
 
     response_multidoc_jsonpaths:
       $.`len`: 1

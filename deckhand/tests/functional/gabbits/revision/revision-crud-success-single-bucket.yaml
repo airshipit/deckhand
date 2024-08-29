@@ -9,8 +9,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -18,7 +18,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
     # Validates whether creating a revision works.
     # Required parameters:
@@ -28,6 +28,8 @@ tests:
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
     # Validates whether revision was created.
@@ -38,6 +40,8 @@ tests:
     desc: Verify that revision was created for document above
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].id: $HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
@@ -50,6 +54,8 @@ tests:
     desc: Verify that revision was created for document above
     GET: /api/v1.0/revisions
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].count: 1
@@ -64,7 +70,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
     # Validates whether revision was deleted.
     # Required parameters:
@@ -74,3 +80,4 @@ tests:
     desc: Verify that the revision was deleted
     GET: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 404
+    response_headers: {}

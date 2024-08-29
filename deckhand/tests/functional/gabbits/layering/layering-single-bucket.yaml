@@ -8,8 +8,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -17,12 +17,14 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: create_documents_for_validating_2_level_layering
     desc: Create documents for validating 2 levels of layering (global, site)
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-2-layers.yaml
 
   - name: verify_layering_2_layers
@@ -31,6 +33,8 @@ tests:
     query_parameters:
       sort: schema
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 2
       $.[0].schema: deckhand/LayeringPolicy/v1
@@ -47,12 +51,16 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers:
+      content-type: application/x-yaml
+    response_headers: {}
 
   - name: create_documents_for_validating_3_level_layering
     desc: Create documents for validating 3 levels of layering (global, region, site)
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: verify_layering_3_layers
@@ -61,6 +69,8 @@ tests:
     query_parameters:
       sort: schema
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 2
       $.[0].schema: deckhand/LayeringPolicy/v1

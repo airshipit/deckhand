@@ -16,8 +16,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -25,18 +25,22 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: create_a
     desc: Create documents in one bucket (a)
     PUT: /api/v1.0/buckets/a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/layering-needs-substitution-source.yaml
 
   - name: verify_first_bucket
     desc: Verify document count and revisions
     GET: /api/v1.0/revisions/$RESPONSE['$.[0].status.revision']/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
       $.[*].metadata.name:
@@ -56,6 +60,8 @@ tests:
     desc: Create documents in a second bucket (b)
     PUT: /api/v1.0/buckets/b/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/passphrase.yaml
 
   - name: verify_second_bucket
@@ -84,6 +90,8 @@ tests:
     desc: Verify initial revision is unchanged
     GET: /api/v1.0/revisions/$HISTORY['create_a'].$RESPONSE['$.[0].status.revision']/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
       $.[*].metadata.name:

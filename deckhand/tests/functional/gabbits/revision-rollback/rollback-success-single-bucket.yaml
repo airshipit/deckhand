@@ -15,8 +15,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -24,30 +24,38 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: update_single_document
     desc: Update a single document, ignore other documents in the bucket
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-with-update.yaml
 
   - name: delete_document
     desc: Delete a single document
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-with-delete.yaml
 
   - name: rollback
     desc: Rollback to revision 1
     POST: /api/v1.0/rollback/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']
     status: 201
+    response_headers:
+      content-type: application/x-yaml
 
   # Verify document history
   - name: verify_revision_1
@@ -56,6 +64,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -85,6 +95,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -114,6 +126,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
       $.[*].metadata.name:
@@ -139,6 +153,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:

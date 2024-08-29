@@ -5,7 +5,7 @@ bandit==1.6.0
 # chardet==3.0.4
 # fixtures==3.0.0
 flake8==3.8.4
-gabbi==1.35.1
+gabbi==2.8.0
 # jsonpickle==1.4.1
 # openstacksdk==0.36.5
 openstacksdk==0.36.5
@@ -21,9 +21,9 @@ pytest-cov
 python-subunit==1.4.0
 # requests==2.23.0
 # six==1.16.0
-stestr==3.2.0
+stestr==4.1.0
 testrepository==0.0.20
 # testtools==2.5.0
-tox>=3.28.0, <4.0.0
+tox>=3.28.0
 # urllib3==1.25.11
 # yq==3.2.1

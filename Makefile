@@ -25,10 +25,11 @@ USE_PROXY          ?= false
 PUSH_IMAGE         ?= false
 # use this variable for image labels added in internal build process
 LABEL              ?= org.airshipit.build=community
-DISTRO             ?= ubuntu_focal
+DISTRO             ?= ubuntu_jammy
+DISTRO_ALIAS	   ?= ubuntu_focal
 COMMIT             ?= $(shell git rev-parse HEAD)
 IMAGE              := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}-${DISTRO}
-
+IMAGE_ALIAS              := ${DOCKER_REGISTRY}/${IMAGE_PREFIX}/${IMAGE_NAME}:${IMAGE_TAG}-${DISTRO_ALIAS}
 export
 
 # Build Deckhand Docker image for this project
@@ -86,6 +87,13 @@ else
 		--label "org.opencontainers.image.title=$(IMAGE_NAME)" \
 		$(_BASE_IMAGE_ARG) \
 		-f images/deckhand/Dockerfile.$(DISTRO) .
+endif
+ifneq ($(DISTRO), $(DISTRO_ALIAS))
+	docker tag $(IMAGE) $(IMAGE_ALIAS)
+endif
+ifeq ($(DOCKER_REGISTRY), localhost:5000)
+	docker push $(IMAGE)
+	docker push $(IMAGE_ALIAS)
 endif
 ifeq ($(PUSH_IMAGE), true)
 	docker push $(IMAGE)

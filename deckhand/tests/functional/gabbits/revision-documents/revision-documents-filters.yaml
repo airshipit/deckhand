@@ -10,8 +10,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -19,12 +19,14 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: filter_by_schema
@@ -33,6 +35,8 @@ tests:
     query_parameters:
       schema: deckhand/LayeringPolicy/v1
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: layering-policy
@@ -44,6 +48,8 @@ tests:
     query_parameters:
       schema: example
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
       $.[0].metadata.name: global-1234
@@ -59,6 +65,8 @@ tests:
     query_parameters:
       schema: example/Kind
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 3
       $.[0].metadata.name: global-1234
@@ -74,6 +82,8 @@ tests:
     query_parameters:
       metadata.name: layering-policy
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: layering-policy
@@ -84,6 +94,8 @@ tests:
     query_parameters:
       metadata.label: key1=value1
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 2
       $.[*].metadata.name:
@@ -99,6 +111,8 @@ tests:
     query_parameters:
       metadata.layeringDefinition.abstract: true
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 2
       $.[*].metadata.name:
@@ -114,6 +128,8 @@ tests:
     query_parameters:
       metadata.layeringDefinition.layer: site
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].metadata.name: site-1234
@@ -126,6 +142,8 @@ tests:
       status.bucket: mop
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -145,6 +163,8 @@ tests:
     query_parameters:
       sort: metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -159,6 +179,8 @@ tests:
     query_parameters:
       sort: schema
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].schema:
@@ -175,6 +197,8 @@ tests:
         - schema
         - metadata.name
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].schema:
@@ -196,6 +220,8 @@ tests:
         - metadata.name
         - schema
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 4
       $.[*].metadata.name:
@@ -218,6 +244,8 @@ tests:
         - schema
       limit: 2
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 2
       $.[*].metadata.name:

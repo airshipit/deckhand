@@ -9,8 +9,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -18,7 +18,7 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: |-
@@ -30,6 +30,8 @@ tests:
 
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: |-
       ---
       schema: deckhand/LayeringPolicy/v1
@@ -114,6 +116,8 @@ tests:
       schema: armada/Chart/v1
       metadata.name: nova
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[*].metadata.name: nova

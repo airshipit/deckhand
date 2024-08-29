@@ -16,4 +16,5 @@
   gather_facts: False
   roles:
     - install-test-requirements
+    - ensure-tox
     - run-functional-tests

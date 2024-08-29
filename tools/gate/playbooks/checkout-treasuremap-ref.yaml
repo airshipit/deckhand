@@ -1,5 +1,3 @@
-# Copyright 2018 AT&T Intellectual Property.  All other rights reserved.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -12,14 +10,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+---
 - hosts: all
-  gather_facts: False
-  become: yes
-  roles:
-    - install-test-requirements
-    - ensure-tox
-    - build-images
-    - deploy-postgresql
-    - generate-test-config
-    - deploy-deckhand
-    - run-functional-tests
+
+  tasks:
+    - name: Checkout treasuremap ref
+      shell: |
+        set -xe;
+
+        : "${TREASUREMAP_REF:=v1.9}"
+
+        cd ../treasuremap
+        git fetch https://review.opendev.org/airship/treasuremap ${TREASUREMAP_REF} && git checkout FETCH_HEAD
+
+      args:
+        chdir: "{{ zuul.project.src_dir }}"
+      environment:
+        TREASUREMAP_REF: "{{ treasuremap_ref }}"
+
+...

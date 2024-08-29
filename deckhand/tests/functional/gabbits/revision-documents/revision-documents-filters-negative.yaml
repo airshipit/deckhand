@@ -6,8 +6,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -15,12 +15,14 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create initial documents
     PUT: /api/v1.0/buckets/mop/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: filter_by_schema_partial_namespace
@@ -29,6 +31,8 @@ tests:
     query_parameters:
       schema: exam
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths: null
 
   - name: filter_by_schema_partial_kind
@@ -37,6 +41,8 @@ tests:
     query_parameters:
       schema: example/Ki
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths: null
 
   - name: filter_by_schema_incorrect_version
@@ -45,6 +51,8 @@ tests:
     query_parameters:
       schema: example/Kind/v2
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths: null
 
   - name: filter_by_limit_illegal_value
@@ -53,3 +61,5 @@ tests:
     query_parameters:
       limit: 'illegal'
     status: 400
+    response_headers:
+      content-type: application/x-yaml

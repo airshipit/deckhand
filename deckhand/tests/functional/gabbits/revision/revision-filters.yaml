@@ -7,8 +7,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -16,35 +16,45 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: initialize
     desc: Create first revision for testing
     PUT: /api/v1.0/buckets/bucket_a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/design-doc-layering-sample-3-layers.yaml
 
   - name: initialize_again
     desc:  Create second revision for testing
     PUT: /api/v1.0/buckets/bucket_b/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/sample-doc.yaml
 
   - name: initialize_once_again
     desc:  Create third revision for testing
     PUT: /api/v1.0/buckets/bucket_c/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/sample-schema.yaml
 
   - name: create_tag
     desc: Create a tag for testing filtering a revision by tag
     POST: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/foo
     status: 201
+    response_headers:
+      content-type: application/x-yaml
 
   - name: create_another_tag
     desc: Create another tag for testing filtering a revision by many tags
     POST: /api/v1.0/revisions/$HISTORY['initialize'].$RESPONSE['$.[0].status.revision']/tags/bar
     status: 201
+    response_headers:
+      content-type: application/x-yaml
 
   - name: verify_revision_list_for_one_valid_filter
     desc: Verify that revision is returned for filter tag="foo"
@@ -52,6 +62,8 @@ tests:
     query_parameters:
       tag: foo
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].count: 1
@@ -70,6 +82,8 @@ tests:
         - foo
         - bar
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].count: 1
@@ -85,6 +99,8 @@ tests:
     query_parameters:
       tag: baz
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.`len`: 1
       $.[0].count: 0
@@ -96,6 +112,8 @@ tests:
     query_parameters:
       sort: id
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.[0].results.`len`: 3
       $.[0].results[*].id:
@@ -110,6 +128,8 @@ tests:
       sort: id
       order: desc
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     response_multidoc_jsonpaths:
       $.[0].results.`len`: 3
       $.[0].results[*].id:

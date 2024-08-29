@@ -8,8 +8,8 @@
 defaults:
   request_headers:
     content-type: application/x-yaml
-  response_headers:
-    content-type: application/x-yaml
+  # response_headers:
+  #   content-type: application/x-yaml
   verbose: true
 
 tests:
@@ -17,16 +17,20 @@ tests:
     desc: Begin testing from known state.
     DELETE: /api/v1.0/revisions
     status: 204
-    response_headers: null
+    response_headers: {}
 
   - name: create
     desc: Create initial documents
     PUT: /api/v1.0/buckets/a/documents
     status: 200
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/sample-doc.yaml
 
   - name: error
     desc: Trigger error case
     PUT: /api/v1.0/buckets/b/documents
     status: 409
+    response_headers:
+      content-type: application/x-yaml
     data: <@resources/sample-doc.yaml
