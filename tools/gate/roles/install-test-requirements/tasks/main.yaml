@@ -12,4 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: install-test-requirements.yaml
+- name: Install pip3 and gabbi
+  shell: |
+    set -xe;
+    pip3 install \
+      -r test-requirements.txt \
+      -r requirements-frozen.txt
+  args:
+    chdir: "{{ zuul.project.src_dir }}"
+  become: yes

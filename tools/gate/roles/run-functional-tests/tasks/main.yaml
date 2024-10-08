@@ -12,4 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: functional-tests.yaml
+- name: Airship-Deckhand image build path
+  shell: cd "{{ work_dir }}"; pwd
+  register: airship_deckhand_path
+  vars:
+    work_dir: "{{ zuul.project.src_dir | default('') }}/{{ zuul_airship_deckhand_relative_path | default('') }}"
+
+- name: Run Functional Tests
+  shell: |
+    set -xe;
+    tox -e "{{ tox_envlist }}"
+  args:
+    chdir: "{{ zuul.project.src_dir }}"
+  environment:
+    DECKHAND_TEST_URL: "127.0.0.1:9000"
+    DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/functional/gabbits"
+  register: result
+  failed_when: "result.rc != 0"

@@ -12,4 +12,81 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: deploy-keystone-dependencies.yaml
+- name: Set zuul_site_mirror_fqdn from env var if not defined
+  when: zuul_site_mirror_fqdn is not defined
+  set_fact:
+    zuul_site_mirror_fqdn: "{{ lookup('env','zuul_site_mirror_fqdn') }}"
+
+- name: Make OSH charts
+  shell: |
+    set -xe
+    make all
+  environment:
+    zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+
+- name: Make OSH_INFRA charts
+  shell: |
+    set -xe
+    make all
+  environment:
+    zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_infra_relative_path | default('') }}"
+
+- name: Prepare kubernetes
+  shell: |
+    set -xe;
+    ./tools/deployment/common/prepare-k8s.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_infra_relative_path | default('') }}"
+
+- name: Setup docker-based openstack client
+  shell: |
+    set -xe;
+    ./tools/deployment/airskiff/developer/020-setup-client.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_treasuremap_relative_path | default('') }}"
+
+- name: Deploy Ingress
+  shell: |
+    set -xe;
+    ./tools/deployment/common/ingress.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+
+- name: Deploy NFS
+  shell: |
+    set -xe;
+    ./tools/deployment/component/nfs-provisioner/nfs-provisioner.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+
+- name: Deploy MariaDB
+  shell: |
+    set -xe;
+    ./tools/deployment/component/common/mariadb.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+
+- name: Deploy RabbitMQ
+  shell: |
+    set -xe;
+    ./tools/deployment/component/common/rabbitmq.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+
+- name: Deploy Memcached
+  shell: |
+    set -xe;
+    ./tools/deployment/component/common/memcached.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+
+- name: Deploy Keystone
+  shell: |
+    set -xe;
+    ./tools/deployment/component/keystone/keystone.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"

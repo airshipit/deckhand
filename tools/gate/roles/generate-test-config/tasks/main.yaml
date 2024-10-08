@@ -12,5 +12,81 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: generate-test-config.yaml
-- include: generate-test-paste.yaml
+- name: Create temporary deckhand conf directory
+  tempfile:
+    state: directory
+    suffix: airship-deckhand
+  register: _deckhand_conf_dir
+
+- name: Store deckhand_conf_dir in variable
+  set_fact:
+    deckhand_conf_dir: "{{ _deckhand_conf_dir.path | default('') }}"
+  environment:
+    # Used by Deckhand's initialization script to search for config files.
+    AIRSHIP_DECKHAND_CONFIG_DIR: "{{ deckhand_conf_dir | default('') }}"
+
+- name: Generate test deckhand.conf file when disable_keystone is true
+  when: disable_keystone == true
+  shell: |-
+    set -ex;
+
+    chmod 777 -R "{{ deckhand_conf_dir  | default('')}}"
+    conf_file="{{ deckhand_conf_dir | default('') }}"/deckhand.conf
+
+    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir | default('') }}"/logging.conf
+    envsubst '$AIRSHIP_DECKHAND_DATABASE_URL' < deckhand/tests/deckhand.conf.test > $conf_file
+
+    echo "Toggling development_mode on to disable Keystone authentication."
+    sed -i -e 's/development_mode = false/development_mode = true/g' $conf_file
+
+    echo $conf_file 1>&2
+    cat $conf_file 1>&2
+
+    echo "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
+    cat "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
+  args:
+    chdir: "{{ airship_deckhand_path.stdout }}"
+  environment:
+    AIRSHIP_DECKHAND_DATABASE_URL: "{{ airship_deckhand_database_url }}"
+  become: yes
+
+- name: Generate test deckhand.conf file when disable_keystone is false
+  when: disable_keystone == false
+  shell: |-
+    set -ex;
+
+    chmod 777 -R "{{ deckhand_conf_dir | default('') }}"
+    conf_file="{{ deckhand_conf_dir | default('') }}"/deckhand.conf
+
+    cp etc/deckhand/logging.conf.sample "{{ deckhand_conf_dir | default('') }}"/logging.conf
+    envsubst '$AIRSHIP_DECKHAND_DATABASE_URL $TEST_BARBICAN_URL' < deckhand/tests/deckhand.conf.test > $conf_file
+
+    echo $conf_file 1>&2
+    cat $conf_file 1>&2
+
+    echo "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
+    cat "{{ deckhand_conf_dir | default('') }}"/logging.conf 1>&2
+  args:
+    chdir: "{{ airship_deckhand_path.stdout }}"
+  environment:
+    AIRSHIP_DECKHAND_DATABASE_URL: "{{ airship_deckhand_database_url }}"
+    TEST_BARBICAN_URL: "{{ test_barbican_url.stdout }}"
+  become: yes
+
+
+- name: Generate test paste.ini file when disable_keystone is true
+  when: disable_keystone == true
+  shell: |-
+    set -ex;
+    echo "Using noauth-paste.ini to disable Keystone authentication."
+    cp etc/deckhand/noauth-paste.ini "{{ deckhand_conf_dir | default('') }}"/noauth-paste.ini
+  args:
+    chdir: "{{ airship_deckhand_path.stdout }}"
+
+- name: Generate test paste.ini file when disable_keystone is false
+  when: disable_keystone == false
+  shell: |-
+    set -ex;
+    cp etc/deckhand/deckhand-paste.ini "{{ deckhand_conf_dir | default('') }}"/deckhand-paste.ini
+  args:
+    chdir: "{{ airship_deckhand_path.stdout }}"

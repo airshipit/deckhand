@@ -12,4 +12,59 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- include: integration-tests.yaml
+
+
+- name: Airship-Deckhand image build path
+  shell: cd "{{ work_dir }}"; pwd
+  register: airship_deckhand_path
+  vars:
+    work_dir: "{{ zuul.project.src_dir | default('') }}/{{ zuul_airship_deckhand_relative_path | default('') }}"
+
+- name: Run Integration Tests with Docker
+  when: disable_keystone == false
+  block:
+    - name: Generate Keystone token for integration tests
+      shell: |-
+        set -e;
+        echo $( openstack token issue --format value -c id )
+      args:
+        chdir: "{{ zuul.project.src_dir }}"
+      register: test_auth_token
+      environment:
+        OS_CLOUD: openstack_helm
+
+    - name: Run Integration Tests
+      shell: |
+        set -ex;
+        stestr --test-path deckhand/tests/common/ run --serial --slowest --force-subunit-trace --color
+      args:
+        chdir: "{{ zuul.project.src_dir }}"
+      environment:
+        DECKHAND_IMAGE: "{{ airship_deckhand_image_id.stdout }}"
+        DECKHAND_TEST_URL: "127.0.0.1:9000"
+        DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/integration/gabbits"
+        TEST_AUTH_TOKEN: "{{ test_auth_token.stdout }}"
+        TEST_BARBICAN_URL: "{{ test_barbican_url.stdout }}"
+      register: result
+      failed_when: "result.rc != 0"
+
+- name: Run Integration Tests with uwsgi
+  when: disable_keystone == true
+  shell: |
+    set -xe;
+    # NOTE(felipemonteiro): We don't use a venv because they don't play nicely
+    # with OpenStack-Helm, which is used to orchestrate various OpenStack
+    # services in the integration script called below.
+    sudo -E -H pip3 install -e . --verbose --use-pep517
+    sudo -E -H pip3 install -r requirements-frozen.txt
+    echo "$(pwd)" | sudo tee /usr/local/lib/python3.10/dist-packages/deckhand.pth
+
+    pifpaf run postgresql -- ./tools/integration-tests.sh
+  args:
+    chdir: "{{ zuul.project.src_dir }}"
+  environment:
+    DECKHAND_TEST_URL: "127.0.0.1:9000"
+    DECKHAND_TEST_DIR: "{{ airship_deckhand_path.stdout }}/deckhand/tests/integration/gabbits"
+    # BARBICAN_STABLE_COMMIT: "{{ barbican_stable_commit }}"
+  register: result
+  failed_when: "result.rc != 0"
