@@ -18,6 +18,7 @@ import six
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from deckhand.common import utils
 from deckhand.control import base as api_base
 from deckhand.engine.revision_diff import revision_diff
 from deckhand import errors
@@ -51,4 +52,4 @@ class RevisionDeepDiffingResource(api_base.BaseResource):
                 LOG.exception(message)
 
         resp.status = falcon.HTTP_200
-        resp.text = resp_body
+        resp.text = utils.safe_yaml_dump(resp_body)

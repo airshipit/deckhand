@@ -14,6 +14,7 @@
 
 import falcon
 
+from deckhand.common import utils
 from deckhand.control import base as api_base
 
 
@@ -26,10 +27,11 @@ class VersionsResource(api_base.BaseResource):
     no_authentication_methods = ['GET']
 
     def on_get(self, req, resp):
-        resp.text = {
+        resp_body = {
             'v1.0': {
                 'path': '/api/v1.0',
                 'status': 'stable'
             }
         }
+        resp.text = utils.safe_yaml_dump(resp_body)
         resp.status = falcon.HTTP_200

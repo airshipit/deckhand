@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import falcon
+
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from deckhand.common import utils
 from deckhand.control import base as api_base
 from deckhand.control.views import revision_tag as revision_tag_view
 from deckhand.db.sqlalchemy import api as db_api
@@ -44,7 +46,7 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_201
-        resp.text = resp_body
+        resp.text = utils.safe_yaml_dump(resp_body)
 
     def on_get(self, req, resp, revision_id, tag=None):
         """Show tag details or list all tags for a revision."""
@@ -66,7 +68,7 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().show(resp_tag)
         resp.status = falcon.HTTP_200
-        resp.text = resp_body
+        resp.text = utils.safe_yaml_dump(resp_body)
 
     @policy.authorize('deckhand:list_tags')
     def _list_all_tags(self, req, resp, revision_id):
@@ -80,7 +82,7 @@ class RevisionTagsResource(api_base.BaseResource):
 
         resp_body = revision_tag_view.ViewBuilder().list(resp_tags)
         resp.status = falcon.HTTP_200
-        resp.text = resp_body
+        resp.text = utils.safe_yaml_dump(resp_body)
 
     def on_delete(self, req, resp, revision_id, tag=None):
         """Deletes a single tag or deletes all tags for a revision."""

@@ -17,6 +17,7 @@ import copy
 import re
 import six
 import string
+import yaml
 
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
@@ -39,6 +40,18 @@ _CACHE_OPTS = {
 _CACHE = CacheManager(**parse_cache_config_options(_CACHE_OPTS))
 
 _ARRAY_RE = re.compile(r'.*\[\d+\].*')
+
+
+def safe_yaml_dump(data):
+    """
+    Automatically handle the difference between
+    yaml.safe_dump and yaml.safe_dump_all
+    to avoid errors when dumping YAML.
+    """
+    if isinstance(data, (list, tuple)):  # Multiple documents
+        return yaml.safe_dump_all(data)
+    else:  # Single document
+        return yaml.safe_dump(data)
 
 
 def to_camel_case(s):

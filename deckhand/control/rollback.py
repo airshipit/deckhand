@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import falcon
+
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from deckhand.common import utils
 from deckhand.control import base as api_base
 from deckhand.control.views import revision as revision_view
 from deckhand.db.sqlalchemy import api as db_api
@@ -55,4 +57,4 @@ class RollbackResource(api_base.BaseResource):
 
         revision_resp = self.view_builder.show(rollback_revision)
         resp.status = falcon.HTTP_201
-        resp.text = revision_resp
+        resp.text = utils.safe_yaml_dump(revision_resp)

@@ -15,6 +15,7 @@ RES=$(find . \
   -not -name "*.html" \
   -not -name "favicon_32.png" \
   -not -name "*.pyc" \
+  -not -path "*/cover/*" \
   -type f -exec egrep -l " +$" {} \;)
 
 if [[ -n $RES ]]; then

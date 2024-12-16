@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import falcon
+
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from deckhand.common import utils
 from deckhand.common import document as document_wrapper
 from deckhand.control import base as api_base
 from deckhand.control.views import document as document_view
@@ -65,7 +67,8 @@ class BucketsResource(api_base.BaseResource):
         created_documents = self._create_revision_documents(
             bucket_name, documents)
 
-        resp.text = self.view_builder.list(created_documents)
+        resp.text = utils.safe_yaml_dump(
+            self.view_builder.list(created_documents))
         resp.status = falcon.HTTP_200
 
     def _encrypt_secret_documents(self, documents):

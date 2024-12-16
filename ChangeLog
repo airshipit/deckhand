@@ -1,6 +1,11 @@
 CHANGES
 =======
 
+* Airflow and Openstack modules upgrade
+* Remove ubuntu\_focal as image alias
+* Bump up docker Pypi module version
+* Airflow 2.10.2 fixes
+* Airflow 2.10.2 + ubuntu\_jammy
 * Update deploy-env parameters
 * Kubeadm based Airskiff gate
 * Fix deckhand-api dependences

@@ -13,9 +13,11 @@
 # limitations under the License.
 
 import falcon
+
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from deckhand.common import utils
 from deckhand.control import base as api_base
 from deckhand.control.views import validation as validation_view
 from deckhand.db.sqlalchemy import api as db_api
@@ -50,7 +52,7 @@ class ValidationsResource(api_base.BaseResource):
                 LOG.exception(message)
 
         resp.status = falcon.HTTP_201
-        resp.text = self.view_builder.show(resp_body)
+        resp.text = utils.safe_yaml_dump(self.view_builder.show(resp_body))
 
     def on_get(self, req, resp, revision_id, validation_name=None,
                entry_id=None):
@@ -64,7 +66,7 @@ class ValidationsResource(api_base.BaseResource):
             resp_body = self._list_all_validations(req, resp, revision_id)
 
         resp.status = falcon.HTTP_200
-        resp.text = resp_body
+        resp.text = utils.safe_yaml_dump(resp_body)
 
     @policy.authorize('deckhand:show_validation')
     def _show_validation_entry(self, req, resp, revision_id, validation_name,
@@ -128,4 +130,4 @@ class ValidationsDetailsResource(api_base.BaseResource):
             raise falcon.HTTPNotFound(description=e.format_message())
 
         resp.status = falcon.HTTP_200
-        resp.text = self.view_builder.detail(entries)
+        resp.text = utils.safe_yaml_dump(self.view_builder.detail(entries))

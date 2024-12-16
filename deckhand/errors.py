@@ -15,7 +15,7 @@
 import falcon
 from oslo_log import log as logging
 import six
-import yaml
+from deckhand.common import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ def format_error_resp(req,
     }
 
     resp.status = status_code
-    resp.text = yaml.safe_dump(error_response)
+    resp.text = utils.safe_yaml_dump(error_response)
 
 
 def default_exception_handler(req, resp, ex, params):
