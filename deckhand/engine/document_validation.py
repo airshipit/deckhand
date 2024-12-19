@@ -15,7 +15,8 @@
 import abc
 import copy
 import os
-import pkg_resources
+from importlib.resources import files
+
 import re
 import yaml
 
@@ -44,7 +45,7 @@ def _get_schema_parts(document, schema_key='schema'):
 
 
 def _get_schema_dir():
-    return pkg_resources.resource_filename('deckhand.engine', 'schemas')
+    return str(files('deckhand.engine') / 'schemas')
 
 
 def _build_schema_map():
