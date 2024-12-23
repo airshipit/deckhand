@@ -18,7 +18,7 @@ metadata:
   name: deckhand/LayeringPolicy/v1
   schema: metadata/Control/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: object
   properties:
     layerOrder:

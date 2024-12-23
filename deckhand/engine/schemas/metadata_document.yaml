@@ -4,7 +4,7 @@ metadata:
   name: metadata/Document/v1
   schema: metadata/Control/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   definitions:
     parent_selector_requires_actions:
       dependencies:

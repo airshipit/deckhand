@@ -13,7 +13,7 @@ metadata:
   schema: metadata/Control/v1
   name: unusual/DictWithSecret/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: object
   properties:
     secret:

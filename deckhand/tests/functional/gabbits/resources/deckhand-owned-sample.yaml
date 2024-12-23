@@ -218,7 +218,7 @@ metadata:
   schema: metadata/Control/v1
   name: deckhand/CertificateAuthority/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: string
 ---
 schema: deckhand/DataSchema/v1
@@ -226,7 +226,7 @@ metadata:
   schema: metadata/Control/v1
   name: deckhand/CertificateAuthorityKey/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: string
 ---
 schema: deckhand/DataSchema/v1
@@ -234,7 +234,7 @@ metadata:
   schema: metadata/Control/v1
   name: deckhand/Certificate/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: string
 ---
 schema: deckhand/DataSchema/v1
@@ -242,7 +242,7 @@ metadata:
   schema: metadata/Control/v1
   name: deckhand/CertificateKey/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: string
 ---
 schema: deckhand/DataSchema/v1
@@ -250,7 +250,7 @@ metadata:
   schema: metadata/Control/v1
   name: deckhand/PublicKey/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: string
 ---
 schema: deckhand/DataSchema/v1
@@ -258,7 +258,7 @@ metadata:
   schema: metadata/Control/v1
   name: deckhand/PrivateKey/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: string
 ---
 schema: deckhand/DataSchema/v1
@@ -266,5 +266,5 @@ metadata:
   schema: metadata/Control/v1
   name: deckhand/Passphrase/v1
 data:
-  $schema: http://json-schema.org/schema#
+  $schema: http://json-schema.org/draft-04/schema#
   type: string
