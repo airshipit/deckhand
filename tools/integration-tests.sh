@@ -13,7 +13,7 @@
 set -xe
 
 CURRENT_DIR="$(pwd)"
-: "${OSH_INFRA_PATH:="../openstack-helm-infra"}"
+: "${OSH_INFRA_PATH:="../openstack-helm"}"
 : "${OSH_PATH:="../openstack-helm"}"
 : "${TM_PATH:="../treasuremap"}"
 

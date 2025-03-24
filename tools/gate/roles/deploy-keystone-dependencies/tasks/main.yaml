@@ -20,20 +20,11 @@
 - name: Make OSH charts
   shell: |
     set -xe
-    make all
+    make all SKIP_CHANGELOG=1
   environment:
     zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
-
-- name: Make OSH_INFRA charts
-  shell: |
-    set -xe
-    make all
-  environment:
-    zuul_site_mirror_fqdn: "{{ zuul_site_mirror_fqdn }}"
-  args:
-    chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_infra_relative_path | default('') }}"
 
 - name: Prepare kubernetes
   shell: |
@@ -62,6 +53,14 @@
     ./tools/deployment/component/nfs-provisioner/nfs-provisioner.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+  environment:
+    OSH_HELM_REPO: "{{ osh_helm_repo | default('../openstack-helm') }}"
+    OSH_INFRA_HELM_REPO: "{{ osh_infra_helm_repo | default('../openstack-helm') }}"
+    DOWNLOAD_OVERRIDES: "{{ download_overrides | default('') }}"
+    OSH_PATH: "{{ zuul_osh_relative_path | default('../openstack-helm/') }}"
+    OSH_INFRA_PATH: "{{ zuul_osh_infra_relative_path | default('../openstack-helm/') }}"
+    OSH_VALUES_OVERRIDES_PATH: "{{ osh_values_overrides_path }}"
+    OSH_INFRA_VALUES_OVERRIDES_PATH: "{{ osh_infra_values_overrides_path }}"
 
 - name: Deploy MariaDB
   shell: |
@@ -69,6 +68,14 @@
     ./tools/deployment/component/common/mariadb.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+  environment:
+    OSH_HELM_REPO: "{{ osh_helm_repo | default('../openstack-helm') }}"
+    OSH_INFRA_HELM_REPO: "{{ osh_infra_helm_repo | default('../openstack-helm') }}"
+    DOWNLOAD_OVERRIDES: "{{ download_overrides | default('') }}"
+    OSH_PATH: "{{ zuul_osh_relative_path | default('../openstack-helm/') }}"
+    OSH_INFRA_PATH: "{{ zuul_osh_infra_relative_path | default('../openstack-helm/') }}"
+    OSH_VALUES_OVERRIDES_PATH: "{{ osh_values_overrides_path }}"
+    OSH_INFRA_VALUES_OVERRIDES_PATH: "{{ osh_infra_values_overrides_path }}"
 
 - name: Deploy RabbitMQ
   shell: |
@@ -76,6 +83,14 @@
     ./tools/deployment/component/common/rabbitmq.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+  environment:
+    OSH_HELM_REPO: "{{ osh_helm_repo | default('../openstack-helm') }}"
+    OSH_INFRA_HELM_REPO: "{{ osh_infra_helm_repo | default('../openstack-helm') }}"
+    DOWNLOAD_OVERRIDES: "{{ download_overrides | default('') }}"
+    OSH_PATH: "{{ zuul_osh_relative_path | default('../openstack-helm/') }}"
+    OSH_INFRA_PATH: "{{ zuul_osh_infra_relative_path | default('../openstack-helm/') }}"
+    OSH_VALUES_OVERRIDES_PATH: "{{ osh_values_overrides_path }}"
+    OSH_INFRA_VALUES_OVERRIDES_PATH: "{{ osh_infra_values_overrides_path }}"
 
 - name: Deploy Memcached
   shell: |
@@ -83,6 +98,14 @@
     ./tools/deployment/component/common/memcached.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+  environment:
+    OSH_HELM_REPO: "{{ osh_helm_repo | default('../openstack-helm') }}"
+    OSH_INFRA_HELM_REPO: "{{ osh_infra_helm_repo | default('../openstack-helm') }}"
+    DOWNLOAD_OVERRIDES: "{{ download_overrides | default('') }}"
+    OSH_PATH: "{{ zuul_osh_relative_path | default('../openstack-helm/') }}"
+    OSH_INFRA_PATH: "{{ zuul_osh_infra_relative_path | default('../openstack-helm/') }}"
+    OSH_VALUES_OVERRIDES_PATH: "{{ osh_values_overrides_path }}"
+    OSH_INFRA_VALUES_OVERRIDES_PATH: "{{ osh_infra_values_overrides_path }}"
 
 - name: Deploy Keystone
   shell: |
@@ -90,3 +113,11 @@
     ./tools/deployment/component/keystone/keystone.sh
   args:
     chdir: "{{ zuul.project.src_dir }}/{{ zuul_osh_relative_path | default('') }}"
+  environment:
+    OSH_HELM_REPO: "{{ osh_helm_repo | default('../openstack-helm') }}"
+    OSH_INFRA_HELM_REPO: "{{ osh_infra_helm_repo | default('../openstack-helm') }}"
+    DOWNLOAD_OVERRIDES: "{{ download_overrides | default('') }}"
+    OSH_PATH: "{{ zuul_osh_relative_path | default('../openstack-helm/') }}"
+    OSH_INFRA_PATH: "{{ zuul_osh_infra_relative_path | default('../openstack-helm/') }}"
+    OSH_VALUES_OVERRIDES_PATH: "{{ osh_values_overrides_path }}"
+    OSH_INFRA_VALUES_OVERRIDES_PATH: "{{ osh_infra_values_overrides_path }}"
