@@ -38,26 +38,15 @@ EXPOSE $PORT
 RUN set -x && \
     apt-get update && apt-get upgrade -y && \
     apt-get -y install \
-    automake \
     ca-certificates \
     curl \
-    g++ \
-    gcc \
-    git \
-    libffi-dev \
-    libpq-dev \
-    libssl-dev \
-    libtool \
-    make \
     netbase \
     netcat \
     python3 \
     python3-dateutil \
     python3-dev \
-    python3-pip \
     python3-setuptools \
     --no-install-recommends \
-    && python3 -m pip install -U pip \
     && apt-get clean \
     && rm -rf \
         /var/lib/apt/lists/* \
@@ -66,21 +55,6 @@ RUN set -x && \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base
-
-# Install LibYAML
-ENV LD_LIBRARY_PATH=/usr/local/lib
-
-ARG LIBYAML_VERSION=0.2.5
-RUN set -ex \
-    && git clone https://github.com/yaml/libyaml.git \
-    && cd libyaml \
-    && git checkout $LIBYAML_VERSION \
-    && ./bootstrap \
-    && ./configure \
-    && make \
-    && make install \
-    && cd .. \
-    && rm -fr libyaml
 
 # Create deckhand user
 RUN useradd -ms /bin/bash deckhand
@@ -94,7 +68,34 @@ RUN chown -R deckhand: /home/deckhand \
 
 # Set work directory and install dependencies
 WORKDIR /home/deckhand
-RUN pip3 install --no-cache-dir -r requirements-frozen.txt
+
+RUN set -ex \
+        && buildDeps=' \
+        automake \
+        gcc \
+        libffi-dev \
+        libpq-dev \
+        libssl-dev \
+        libtool \
+        libyaml-dev \
+        make \
+        python3-pip \
+        ' \
+        && apt-get -qq update \
+        # Keep git separate so it's not removed below
+        && apt-get install -y $buildDeps git --no-install-recommends \
+        && python3 -m pip install -U pip \
+        && pip3 install -r requirements-frozen.txt --no-cache-dir \
+        && apt-get purge -y --auto-remove $buildDeps \
+        && apt-get autoremove -yqq --purge \
+        && apt-get clean \
+        && rm -rf \
+            /var/lib/apt/lists/* \
+            /tmp/* \
+            /var/tmp/* \
+            /usr/share/man \
+            /usr/share/doc \
+            /usr/share/doc-base
 
 # Setting deckhand version for BPR
 ENV PBR_VERSION 1.1
