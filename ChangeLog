@@ -1,6 +1,14 @@
 CHANGES
 =======
 
+* Libyaml install from apt
+* Set stable HTK\_COMMIT value
+* Preparation for osh-infra merger
+* HTK and OSH uplift
+* Airship testing gate updates
+* Schema updates
+* Updated base image docker repo url
+* Docker.io ratelimit workaround
 * Airflow and Openstack modules upgrade
 * Remove ubuntu\_focal as image alias
 * Bump up docker Pypi module version

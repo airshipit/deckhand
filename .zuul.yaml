@@ -319,7 +319,7 @@
           commit: true
         static:
           - latest
-          - airflow_2.10.4
+          - airflow_3.0.2
 
 - job:
     name: deckhand-docker-tag-ubuntu_jammy
