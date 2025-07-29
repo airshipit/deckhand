@@ -29,7 +29,7 @@ images:
   tags:
     deckhand: quay.io/airshipit/deckhand:latest-ubuntu_jammy
     dep_check: quay.io/airshipit/kubernetes-entrypoint:latest-ubuntu_jammy
-    db_init: quay.io/airshipit/postgres:14.8
+    db_init: quay.io/airshipit/postgres:17.5
     db_sync: quay.io/airshipit/deckhand:latest-ubuntu_jammy
     image_repo_sync: quay.io/airshipit/docker:27.5.0
     ks_endpoints: quay.io/airshipit/heat:2024.1-ubuntu_jammy

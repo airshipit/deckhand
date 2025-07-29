@@ -14,7 +14,7 @@
 
 - name: Deploy PostgreSQL
   shell: |-
-        set -e;
+        set -ex
         ./tools/gate/scripts/020-deploy-postgresql.sh
   args:
     chdir: "{{ zuul.project.src_dir | default('') }}"

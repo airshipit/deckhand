@@ -37,6 +37,7 @@ EXPOSE $PORT
 
 RUN set -x && \
     apt-get update && apt-get upgrade -y && \
+    apt-mark unhold perl-base && \
     apt-get -y install \
     ca-certificates \
     curl \

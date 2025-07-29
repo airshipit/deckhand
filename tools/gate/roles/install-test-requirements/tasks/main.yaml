@@ -20,4 +20,12 @@
       -r requirements-frozen.txt
   args:
     chdir: "{{ zuul.project.src_dir }}"
+  become: true
+
+- name: Remove 'set -x' from /usr/local/bin/openstack
+  ansible.builtin.lineinfile:
+    path: /usr/local/bin/openstack
+    regexp: '^set -x$'
+    state: absent
+    backup: yes
   become: yes

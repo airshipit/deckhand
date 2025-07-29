@@ -22,8 +22,8 @@
         - deckhand-tox-py310-postgresql
         - deckhand-functional-uwsgi-py310
         - deckhand-functional-docker-py310
-        - deckhand-integration-uwsgi-py310
-        - deckhand-integration-docker-py310
+        - deckhand-integration-uwsgi-gabbi
+        - deckhand-integration-docker-gabbi
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate
@@ -37,8 +37,8 @@
         - deckhand-tox-py310-postgresql
         - deckhand-functional-uwsgi-py310
         - deckhand-functional-docker-py310
-        - deckhand-integration-uwsgi-py310
-        - deckhand-integration-docker-py310
+        - deckhand-integration-uwsgi-gabbi
+        - deckhand-integration-docker-gabbi
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate
@@ -90,25 +90,17 @@
 
 - job:
     name: deckhand-tox-py310-postgresql
-    parent: openstack-tox-py310
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
-    pre-run:
-      - tools/gate/playbooks/prepare-hosts.yaml
-    vars:
-      tox_envlist: py310-postgresql
-
-- job:
-    name: deckhand-base
-    abstract: true
-    roles:
-      - zuul: airship/kubernetes-entrypoint
-      - zuul: openstack/openstack-helm
-      - zuul: zuul/zuul-jobs
+    parent: treasuremap-airskiff-infra-deploy-base
     required-projects:
-      - name: openstack/openstack-helm
-      - name: openstack/openstack-helm-plugin
       - name: airship/treasuremap
         override-checkout: v1.9
+    roles:
+      - zuul: airship/treasuremap
+    run:
+      - tools/gate/playbooks/run-tox-tests.yaml
+    vars:
+      tox_envlist: py310-postgresql
     irrelevant-files: &irrelevant-files
       - ^.*\.rst$
       - ^doc/.*$
@@ -116,51 +108,6 @@
       - ^releasenotes/.*$
       - ^setup.cfg$
       - ^deckhand/tests/unit/.*$
-    timeout: 10800
-    pre-run:
-      - tools/gate/playbooks/checkout-treasuremap-ref.yaml
-      - tools/gate/playbooks/prepare-hosts.yaml
-      - tools/gate/playbooks/mount-volumes.yaml
-      - tools/gate/playbooks/deploy-env.yaml
-    run:
-      - tools/gate/playbooks/airship-run-scripts.yaml
-    post-run:
-      - tools/gate/playbooks/osh-infra-collect-logs.yaml
-    vars:
-      treasuremap_ref: v1.9
-      extra_volume:
-        size: 80G
-        type: Linux
-        mount_point: /opt/ext_vol
-      docker:
-        root_path: "/opt/ext_vol/docker"
-      containerd:
-        root_path: "/opt/ext_vol/containerd"
-      kubeadm:
-        pod_network_cidr: "10.244.0.0/16"
-        service_cidr: "10.96.0.0/16"
-      osh_plugin_repo: "{{ zuul.project.src_dir }}/../../openstack/openstack-helm-plugin"
-      loopback_setup: true
-      loopback_device: /dev/loop100
-      loopback_image: "/opt/ext_vol/openstack-helm/ceph-loop.img"
-      ceph_osd_data_device: /dev/loop100
-      kube_version_repo: "v1.31"
-      kube_version: "1.31.3-1.1"
-      calico_setup: true
-      calico_version: "v3.27.4"
-      cilium_setup: false
-      cilium_version: "1.16.0"
-      flannel_setup: false
-      flannel_version: v0.25.4
-      metallb_setup: false
-      metallb_version: "0.13.12"
-      helm_version: "v3.17.3"
-      crictl_version: "v1.30.1"
-      zuul_osh_relative_path: ../../openstack/openstack-helm
-      zuul_osh_infra_relative_path: ../../openstack/openstack-helm
-      zuul_treasuremap_relative_path: ../../airship/treasuremap
-      gate_scripts_relative_path: ../../openstack/openstack-helm
-      run_helm_tests: "no"
 
 
 - job:
@@ -169,9 +116,15 @@
       Run tox-based functional tests for the Airship Deckhand project under
       cPython version 3.10. Uses tox with the ``functional-py310`` environment.
       Ubuntu (jammy) image is built and used.
-    parent: deckhand-base
-    run: tools/gate/playbooks/run-functional-tests-docker.yaml
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    parent: treasuremap-airskiff-infra-deploy-base
+    required-projects:
+      - name: airship/treasuremap
+        override-checkout: v1.9
+    roles:
+      - zuul: airship/treasuremap
+    run:
+      - tools/gate/playbooks/run-functional-tests-docker.yaml
     vars:
       tox_envlist: py310-functional
       disable_keystone: true
@@ -184,46 +137,73 @@
       Run tox-based functional tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
       for ephemeral PostgreSQL DB, under cPython version 3.10.
-    parent: deckhand-base
-    run: tools/gate/playbooks/run-functional-tests-uwsgi.yaml
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    parent: treasuremap-airskiff-infra-deploy-base
+    required-projects:
+      - name: airship/treasuremap
+        override-checkout: v1.9
+    roles:
+      - zuul: airship/treasuremap
+    run:
+      - tools/gate/playbooks/run-functional-tests-uwsgi.yaml
     vars:
       tox_envlist: py310-functional-dev
       DISTRO: ubuntu_jammy
     irrelevant-files: *irrelevant-files
 
+- job:
+    name: deckhand-integration-base
+    description: |
+      Run integration tests for the Airship Deckhand project
+    abstract: true
+    parent: treasuremap-airskiff-infra-deploy-base
+    required-projects:
+      - name: airship/treasuremap
+        override-checkout: v1.9
+    roles:
+      - zuul: airship/treasuremap
+    vars:
+      gate_scripts_relative_path: ../../openstack/openstack-helm
+      gate_scripts:
+        - ./tools/deployment/common/prepare-k8s.sh
+        - ./tools/deployment/common/prepare-charts.sh
+        - ./tools/deployment/common/setup-client.sh
+        - ./tools/deployment/ceph/ceph.sh
+        - ./tools/deployment/ceph/ceph-ns-activate.sh
+        - ./tools/deployment/db/mariadb.sh
+        - ./tools/deployment/component/common/memcached.sh
+        - ./tools/deployment/component/common/rabbitmq.sh
+        - ./tools/deployment/component/keystone/keystone.sh
+        - ./tools/deployment/component/barbican/barbican.sh
+    irrelevant-files: *irrelevant-files
 
 - job:
-    name: deckhand-integration-uwsgi-py310
+    name: deckhand-integration-uwsgi-gabbi
     description: |
-      Run tox-based integration tests for the Airship Deckhand project using a
+      Run gabbi-based integration tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
       for ephemeral PostgreSQL DB, under cPython version 3.10.
-    parent: deckhand-base
-    run: tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
-    irrelevant-files: *irrelevant-files
+    parent: deckhand-integration-base
+    run:
+      - tools/gate/playbooks/airship-run-scripts.yaml
+      - tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     vars:
       disable_keystone: true
-      DISTRO: ubuntu_jammy
-      zuul_osh_relative_path: ../../openstack/openstack-helm
-      zuul_osh_infra_relative_path: ../../openstack/openstack-helm
 
 - job:
-    name: deckhand-integration-docker-py310
+    name: deckhand-integration-docker-gabbi
     description: |
-      Run tox-based integration tests for the Airship Deckhand project under
+      Run gabbi-based integration tests for the Airship Deckhand project under
       cPython version 3.10. Builds ubuntu (jammy) deckhand image.
-    parent: deckhand-base
-    run: tools/gate/playbooks/run-integration-tests-docker.yaml
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    parent: deckhand-integration-base
+    run:
+      - tools/gate/playbooks/airship-run-scripts.yaml
+      - tools/gate/playbooks/run-integration-tests-docker.yaml
     vars:
-      tox_envlist: py310-functional
       disable_keystone: false
       DISTRO: ubuntu_jammy
-      zuul_osh_relative_path: ../../openstack/openstack-helm
-      zuul_osh_infra_relative_path: ../../openstack/openstack-helm
-    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-chart-build-gate
@@ -233,7 +213,7 @@
     run: tools/gate/playbooks/build-charts.yaml
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
     vars:
-      HTK_COMMIT: 49c117443391cec75e0bd52bb4a9d033325927ad
+      HTK_COMMIT: 80041dfbb5c22aa67dcd8dfa3332a943aa0d366c
 
 - job:
     name: deckhand-chart-build-latest-htk
@@ -248,36 +228,21 @@
 
 - job:
     name: deckhand-airskiff-deployment-jammy-kubeadm
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
-    parent: deckhand-base
+    parent: treasuremap-airskiff-infra-deploy-base
+    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    required-projects:
+      - name: airship/treasuremap
+        override-checkout: v1.9
+    roles:
+      - zuul: airship/treasuremap
     vars:
-      site: airskiff
-      HELM_ARTIFACT_URL: https://get.helm.sh/helm-v3.17.3-linux-amd64.tar.gz
-      HTK_COMMIT: 49c117443391cec75e0bd52bb4a9d033325927ad
-      OSH_COMMIT: 49c117443391cec75e0bd52bb4a9d033325927ad
+      treasuremap_ref: v1.9
       CLONE_DECKHAND: false
-      DISTRO: ubuntu_jammy
-      DOCKER_REGISTRY: localhost:5000
       MAKE_DECKHAND_IMAGES: true
+      USE_ARMADA_GO: true
       gate_scripts_relative_path: ../../airship/treasuremap
-      gate_scripts:
-        - ./tools/deployment/airskiff/developer/000-prepare-k8s.sh
-        - ./tools/deployment/airskiff/developer/009-setup-apparmor.sh
-        - ./tools/deployment/airskiff/developer/000-clone-dependencies.sh
-        - ./tools/deployment/airskiff/developer/020-setup-client.sh
-        - ./tools/deployment/airskiff/developer/015-make-all-charts.sh
-        - ./tools/deployment/airskiff/developer/017-make-all-images.sh
-        - ./tools/deployment/airskiff/developer/025-start-artifactory.sh
-        - ./tools/deployment/airskiff/developer/026-reduce-site.sh
-        - ./tools/deployment/airskiff/developer/030-armada-bootstrap.sh
-        # - ./tools/deployment/airskiff/common/sleep.sh
-        - ./tools/deployment/airskiff/developer/100-deploy-osh.sh
-        - ./tools/deployment/airskiff/common/os-env.sh
-        - ./tools/gate/wait-for-shipyard.sh
-        - ./tools/deployment/airskiff/common/get-airflow-worker-logs.sh
-    irrelevant-files: *irrelevant-files
 
 - job:
     name: deckhand-docker-build-gate
@@ -293,7 +258,7 @@
       - ^setup.cfg$
     vars:
       publish: false
-      DISTRO: ubuntu_jammy
+      distro: ubuntu_jammy
       tags:
         dynamic:
           patch_set: true
@@ -312,7 +277,7 @@
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
-      DISTRO: ubuntu_jammy
+      distro: ubuntu_jammy
       tags:
         dynamic:
           branch: true
@@ -320,23 +285,6 @@
         static:
           - latest
           - airflow_3.0.2
-
-- job:
-    name: deckhand-docker-tag-ubuntu_jammy
-    description: |
-      Runs on every merge when files in a dictionalry below are changed, and
-      adds git commit id tag onto the ubuntu container image published on quay.io,
-      which has `latest` tag set. Does not wait in queue for a node (VM)
-      assignment, runs almost immediately.
-    timeout: 3600
-    run: tools/gate/playbooks/docker-image-tag.yaml
-    nodeset:
-      nodes: []
-    secrets:
-      - airship_deckhand_quay_creds
-    vars:
-      DISTRO: ubuntu_jammy
-
 
 - secret:
     name: airship_deckhand_quay_creds

@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-- hosts: all
+- hosts: primary
   roles:
+    - bindep
     - install-test-requirements
-    - deploy-keystone-dependencies
-    - deploy-barbican
     - build-charts
     # NOTE: deploy-postgresql and deploy-deckhand must follow
     # deploy-keystone-dependencies which restarts Docker, causing
