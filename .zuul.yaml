@@ -242,6 +242,8 @@
       CLONE_DECKHAND: false
       MAKE_DECKHAND_IMAGES: true
       USE_ARMADA_GO: true
+      DISTRO: ubuntu_jammy
+      DOCKER_REGISTRY: localhost:5000
       gate_scripts_relative_path: ../../airship/treasuremap
 
 - job:
