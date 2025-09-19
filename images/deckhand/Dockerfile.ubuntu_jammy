@@ -28,9 +28,9 @@ LABEL org.opencontainers.image.source='https://opendev.org/airship/deckhand'
 LABEL org.opencontainers.image.vendor='The Airship Authors'
 LABEL org.opencontainers.image.licenses='Apache-2.0'
 
-ENV DEBIAN_FRONTEND noninteractive
-ENV container docker
-ENV PORT 9000
+ENV DEBIAN_FRONTEND=noninteractive
+ENV container=docker
+ENV PORT=9000
 
 # Expose port 9000 for application
 EXPOSE $PORT
@@ -99,7 +99,7 @@ RUN set -ex \
             /usr/share/doc-base
 
 # Setting deckhand version for BPR
-ENV PBR_VERSION 1.1
+ENV PBR_VERSION=1.1
 
 
 # RUN python3 setup.py install --verbose
