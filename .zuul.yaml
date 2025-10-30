@@ -126,6 +126,7 @@
     run:
       - tools/gate/playbooks/run-functional-tests-docker.yaml
     vars:
+      treasuremap_ref: v1.9
       tox_envlist: py310-functional
       disable_keystone: true
       DISTRO: ubuntu_jammy
@@ -147,6 +148,7 @@
     run:
       - tools/gate/playbooks/run-functional-tests-uwsgi.yaml
     vars:
+      treasuremap_ref: v1.9
       tox_envlist: py310-functional-dev
       DISTRO: ubuntu_jammy
     irrelevant-files: *irrelevant-files
@@ -163,6 +165,11 @@
     roles:
       - zuul: airship/treasuremap
     vars:
+      osh_params:
+        openstack_release: "2025.1"
+        container_distro_name: ubuntu
+        container_distro_version: jammy
+      osh_values_overrides_path: ../../openstack/openstack-helm
       gate_scripts_relative_path: ../../openstack/openstack-helm
       gate_scripts:
         - ./tools/deployment/common/prepare-k8s.sh
@@ -213,7 +220,7 @@
     run: tools/gate/playbooks/build-charts.yaml
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
     vars:
-      HTK_COMMIT: 80041dfbb5c22aa67dcd8dfa3332a943aa0d366c
+      HTK_COMMIT: c1be7b83ff530b2aa39bb81e9ac35f8155266123
 
 - job:
     name: deckhand-chart-build-latest-htk
@@ -286,7 +293,7 @@
           commit: true
         static:
           - latest
-          - airflow_3.0.2
+          - airflow_3.1.1
 
 - secret:
     name: airship_deckhand_quay_creds

@@ -79,7 +79,7 @@
     - name: Register Deckhand Image ID
       shell: |-
               set -e;
-              echo $( docker images --filter label=zuul | awk '{print $3}' | head -2 | tail -1 )
+              docker images --filter label=zuul --format '{{ "{{.ID}}" }}' | head -1
       register: airship_deckhand_image_id
       args:
         chdir: "{{ airship_deckhand_path.stdout }}"
