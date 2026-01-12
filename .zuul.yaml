@@ -282,7 +282,7 @@
     run: tools/gate/playbooks/docker-image-build.yaml
     nodeset: treasuremap-airskiff-1node-ubuntu_jammy
     secrets:
-      - airship_deckhand_quay_creds
+      - airship_deckhand_quay_creds_2026
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
@@ -332,6 +332,34 @@
           CN9JZdtqR49JpHajubfYrtWxPHuiwnTwgsnpkpM0+5Z1nss/nQhW70uCBXvJkYUtenV87
           c4Exr6ncOjgtqtjheW16hAGLtm2o36ZvBoLD7yqwYAjwb0bfuzDrw8oWa2yAgOcWnHPO6
           w0lNv46YTHiJK9hezHqI0hgn5wifVI8avRZmHwaArVvX4LUXD2N/Tk7mxi7r2U=
+
+
+- secret:
+    name: airship_deckhand_quay_creds_2026
+    data:
+      username: !encrypted/pkcs1-oaep
+        - oAiaCHuAuXq4UhXlNv9nxeyCQLYP17uRF3C2X48sTE+d1SH8ODXKCJ9LeDnbmJsAevmfU
+          F68oU8ScERQSekZw6beD2MNag5zmwHScL+PRZnVyWimZVIirVS7j/l/YWMPPdbXUw1TgL
+          d/jnk/1I2qYUxrvKYg2GZwGIPflIiWW2T9t8adK+ACGk98uOroC7YICUMvXEeP/5LAw3P
+          7f/yD5tpYuHpr8I1Y8WBJH5aI/oai6AbrVcVKpTklGGXWkuNfc64Z1NOzX3HZE1vMQRRi
+          soEeGWmDKH5P//ZEsSoIALjzvvVNkG2txO+vdmiltMsljwTKPe+IhgD0IxjdEnBduUmpK
+          JwIChO0KRx/rkEmRt63RfW27QoZjIVJ8McyBxuq1E5ehY78w5s4lWTIokQ6L0Ie0upGYc
+          SFu5uZ9JMTUfNv5ULi/nwHhvsq5bAyNV7RyTmIA/RjYw/umgcJx70RMRsLEQMp2q05D/+
+          mKg7nW3UKI3ENRGWgSGyofSDfOzRRoIMBDzyI0NPs75Kb7D4YpoeplWpS5BefwL6eT4Fe
+          aKBcmvTxLvy3+5i+Hxg5e+teofO0LQOERE3fDHA+IissVidHieoaMMCY6pSdaoUfXVxuP
+          5aPaNAc/e+p4+vzPKlNdGomsUpgJeYZ6/fDonTfBky/kKqS2y/w9mBdR5yk1r0=
+      password: !encrypted/pkcs1-oaep
+        - Bj0yi4T+JARjP3xTpxOQIPsYsRataAAB4M6b1Smxy9kGJ5zFnP7X+X81xAA8hQ8VuX40X
+          x+KFx+npaArsie5U6DYKS//yzyYBnuigHd53T1dId2kpWztk+b9EXrRSb3jwvUi8qiaw9
+          Uxf4IUjr+tt0WqoNMHI+Id1Wp1N3BDzgEdk4RwfOWq+yd+suqtoYuc6kfOz4g9q3ZSKRh
+          xki8H27S0FRkLfbGliZZRRzg9vdMGntoQY+O04jLLd5yqhmpYIBmWgsqhFctP+SpLPn/d
+          xvWVDF0LNFTLbVLl01N9yNGsvQ2T6ElpgYj5nQ3wdb+OfmVvXta+wW6h4anBAmAvhem31
+          /LMzvyRiSvpuL8poPUmuEk1amb4zFNApkp5yf1xyAxk07qgLmkXxqye8TKEBtDnNhz44d
+          RuJRuIZ3Y6rYWODNqYpc5Lkrx8Ba2/CWN/1RobUTxJntr0FGPuVuWjPBBbZ4FXBbiHUGo
+          7oOueYwiF1Jh/YBfuFFkxTusk8cDFa/6pXB+7Cx5MGhupW+/UH4xV66wkcJJ/JZkcLe3G
+          tmrd712WfM5yFNRDJAhtQDd8OZGZk7PcYsOzfnL3NoOoHQT44XSMERVahLrTkcTQcdkNJ
+          YYqEyoL1aqHrloksH4o4nv9uqEh4PnOCP4ZGldtlApqnxNjlxndkS6cWUtpcik=
+
 
 - job:
     name: deckhand-upload-git-mirror
