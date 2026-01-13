@@ -369,7 +369,7 @@
       git_mirror_repository: airshipit/deckhand
     secrets:
       - name: git_mirror_credentials
-        secret: deckhand-airshipit-github-secret-2023-03-23
+        secret: deckhand-airshipit-github-ed25519-secret-2026-01-13
         pass-to-parent: true
 
 - secret:
@@ -419,3 +419,21 @@
           EB7ifHO7pRvtSwlkYd7PqAkqXpawvdtBxja9DGZq5SIfW6zJ5RTruCsdDS04Z74DRoj5s
           yfpMFpiwwuyqSNlrKFVzwwo6b9psvqJNEVukS2+qTNyjtgBsP/pDJWGcuUjeOrY1biFvB
           f4vyCrgJNJQWwfqx4FHSvrM8yI+8GqGwUl69I/1FioXHrPHwRnIsHBbjLL6lOk=
+
+- secret:
+    name: deckhand-airshipit-github-ed25519-secret-2026-01-13
+    data:
+      user: git
+      host: github.com
+      host_key: github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+      ssh_key: !encrypted/pkcs1-oaep
+        - Ofb35I3j/KwuI9unTIn9VfAxBjPqj/BH5nTE3gfd8wdDfsIKF2HuAgifCJYCWX4W2syWk
+          SLUXyuFN1FtuxLaL1AiTCF1CapaakM+Zst9OKeTrPmKME9AWISpJ93ozHBohchmbL5zjc
+          dZcRt90jdWpIptYOJtB8ZyXMaqSlnn24rnbGzUDIb/AdqlPBDrNW5NsM4pddPLGQcYsua
+          uDiMcTp/OkM66T5H20VSr/p0QwnHsoyxJdT9F37YokMQX9Ouir/3Np7DHYL0I86GjQ0Wd
+          G/nhwEQRtAhG3K+PKEeDJLTJRNKl0PqRI0Nc5xXaYtbqDh8Kvxfue+PlAWm0j91Pw58NJ
+          zJDBv2EWlnFOMvh131NM2buCYQGB51DawrNJKuGoXyvNg9dwKwpqZY3LWMShYEJdONyP6
+          YaAk5f/qE0J0BelmJJITabspOI7IbCWrwdSXa4TlgnBje1CJya3u+mK8ebI3NPqDhtmLC
+          quhAn821OqZEyPNyIOk8o7ZYCU7fG5bX/VqbJQutJsWL/BgVcq4O2ANKQvIDkVND4iZN6
+          50uxcKhumr8sd4C2yf2YrEw0bzG+qrI4hX/CFWxxBkSemlnx4//5b6jozhN8x3HJC4FT9
+          dKYm1J5KIwyqyRubPPGuq0DpG9l7Fbofptaal1OkLiMGPRnmPyIDBKfTRR9if8=
