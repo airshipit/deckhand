@@ -83,14 +83,14 @@ class PolicyNegativeTestCase(PolicyBaseTestCase):
 
     def test_enforce_disallowed_action(self):
         action = "deckhand:list_cleartext_documents"
-        error_re = "Policy doesn't allow %s to be performed." % action
+        error_re = "Policy doesn't allow %s to be performed" % action
         e = self.assertRaises(
             falcon.HTTPForbidden, self._enforce_policy, action)
-        self.assertRegexpMatches(error_re, e.description)
+        self.assertRegex(e.description, error_re)
 
     def test_enforce_nonexistent_action(self):
         action = "example:undefined"
         error_re = "Policy %s has not been registered" % action
         e = self.assertRaises(
             falcon.HTTPForbidden, self._enforce_policy, action)
-        self.assertRegexpMatches(error_re, e.description)
+        self.assertRegex(e.description, error_re)

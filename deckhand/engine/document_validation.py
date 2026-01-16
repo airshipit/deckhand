@@ -86,7 +86,6 @@ class BaseValidator(object):
     _schema_re = re.compile(r'^[a-zA-Z]+\/[a-zA-Z]+\/v\d+$')
 
     def __init__(self):
-        global _DEFAULT_SCHEMAS
         self._schema_map = _DEFAULT_SCHEMAS
 
     @abc.abstractmethod
@@ -216,7 +215,6 @@ class DataSchemaValidator(GenericValidator):
 
     def __init__(self, data_schemas):
         super(DataSchemaValidator, self).__init__()
-        global _DEFAULT_SCHEMAS
 
         self._default_schema_map = _DEFAULT_SCHEMAS
         self._current_data_schemas = [d.data for d in data_schemas]

@@ -53,6 +53,7 @@
         - pip:
             name: docker
             executable: pip3
+            break_system_packages: true
       become: True
 
     - name: Install tox python module for ansible docker login
@@ -60,7 +61,9 @@
         - pip:
             name: tox
             executable: pip3
+            break_system_packages: true
       become: True
+
 
     - name: Make images - verbosive
       when: not publish
@@ -96,6 +99,7 @@
         - pip:
             name: requests
             executable: pip3
+            break_system_packages: true
         - docker_login:
             username: "{{ airship_deckhand_quay_creds_2026.username }}"
             password: "{{ airship_deckhand_quay_creds_2026.password }}"

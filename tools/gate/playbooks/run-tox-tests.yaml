@@ -28,8 +28,8 @@
 
     - name: Run tox tests
       shell: |
-        whereis tox || pip3 install tox
-        tox --version || pip3 install tox
+        whereis tox || pip3 install tox --break-system-packages
+        tox --version || pip3 install tox --break-system-packages
         tox -e "$TOX_ENVLIST"
       args:
         chdir: "{{ zuul.project.src_dir | default(ansible_env.HOME + '/porthole') }}"

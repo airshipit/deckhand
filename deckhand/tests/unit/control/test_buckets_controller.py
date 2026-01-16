@@ -196,7 +196,7 @@ class TestBucketsControllerNegative(test_base.BaseControllerTest):
             body=yaml.safe_dump_all([payload]))
         self.assertEqual(409, resp.status_code)
         resp_error = ' '.join(resp.text.split())
-        self.assertRegexpMatches(resp_error, error_re)
+        self.assertRegex(resp_error, error_re)
 
     def test_put_conflicting_document(self):
         rules = {'deckhand:create_cleartext_documents': '@'}

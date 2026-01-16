@@ -4,7 +4,7 @@
 bandit==1.6.0
 # chardet==3.0.4
 # fixtures==3.0.0
-flake8==3.8.4
+flake8
 gabbi==2.8.0
 # jsonpickle==1.4.1
 # openstacksdk==0.36.5

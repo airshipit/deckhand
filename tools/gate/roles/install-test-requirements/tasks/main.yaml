@@ -16,6 +16,8 @@
   shell: |
     set -xe;
     pip3 install \
+      --break-system-packages \
+      --ignore-installed \
       -r test-requirements.txt \
       -r requirements-frozen.txt
   args:

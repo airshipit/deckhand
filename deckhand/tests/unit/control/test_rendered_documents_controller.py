@@ -71,8 +71,10 @@ class TestRenderedDocumentsController(test_base.BaseControllerTest):
         self.assertFalse(is_abstract)
         for key, value in concrete_doc.items():
             if isinstance(value, dict):
-                self.assertDictContainsSubset(value,
-                                              rendered_documents[-1][key])
+                self.assertTrue(
+                    value.items() <= rendered_documents[-1][key].items(),
+                    f"Expected {value} to be a subset of "
+                    f"{rendered_documents[-1][key]}")
             else:
                 self.assertEqual(value, rendered_documents[-1][key])
 

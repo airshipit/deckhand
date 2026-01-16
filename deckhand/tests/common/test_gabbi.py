@@ -63,7 +63,6 @@ __create_temp_test_dir()
 
 @atexit.register
 def __remove_temp_test_dir():
-    global TEST_DIR
 
     if TEST_DIR is not None and os.path.exists(TEST_DIR):
         shutil.rmtree(TEST_DIR)
@@ -95,7 +94,6 @@ class MultidocJsonpaths(jsonhandler.JSONHandler):
 
 def load_tests(loader, tests, pattern):
     """Provide a TestSuite to the discovery process."""
-    global TEST_DIR
 
     return driver.build_tests(
         TEST_DIR,

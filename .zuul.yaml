@@ -18,51 +18,44 @@
       rtd_project_name: 'airship-deckhand'
     check:
       jobs:
-        - openstack-tox-py310
-        - deckhand-tox-py310-postgresql
-        - deckhand-functional-uwsgi-py310
-        - deckhand-functional-docker-py310
+        - openstack-tox-py312
+        - deckhand-tox-py312-postgresql
+        - deckhand-functional-uwsgi-py312
+        - deckhand-functional-docker-py312
         - deckhand-integration-uwsgi-gabbi
         - deckhand-integration-docker-gabbi
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate
-        - deckhand-openstack-tox-pep8-jammy
-        - deckhand-openstack-tox-cover-jammy
-        - deckhand-airskiff-deployment-jammy-kubeadm
+        - deckhand-openstack-tox-pep8-noble
+        - deckhand-openstack-tox-cover-noble
+        - deckhand-airskiff-deployment-noble-kubeadm
 
     gate:
       jobs:
-        - openstack-tox-py310
-        - deckhand-tox-py310-postgresql
-        - deckhand-functional-uwsgi-py310
-        - deckhand-functional-docker-py310
+        - openstack-tox-py312
+        - deckhand-tox-py312-postgresql
+        - deckhand-functional-uwsgi-py312
+        - deckhand-functional-docker-py312
         - deckhand-integration-uwsgi-gabbi
         - deckhand-integration-docker-gabbi
         - deckhand-chart-build-gate
         - deckhand-chart-build-latest-htk
         - deckhand-docker-build-gate
-        - deckhand-openstack-tox-pep8-jammy
-        - deckhand-openstack-tox-cover-jammy
+        - deckhand-openstack-tox-pep8-noble
+        - deckhand-openstack-tox-cover-noble
 
 
     post:
       jobs:
         - deckhand-upload-git-mirror
-        - deckhand-docker-publish-ubuntu_jammy
-
-
-- nodeset:
-    name: deckhand-single-node
-    nodes:
-      - name: primary
-        label: ubuntu-bionic
+        - deckhand-docker-publish-ubuntu_noble
 
 - nodeset:
-    name: deckhand-single-node-airskiff
+    name: deckhand-single-node-noble
     nodes:
       - name: primary
-        label: ubuntu-bionic
+        label: ubuntu-noble
 
 - nodeset:
     name: deckhand-single-node-jammy
@@ -70,27 +63,21 @@
       - name: primary
         label: ubuntu-jammy
 
-- nodeset:
-    name: deckhand-single-node-airskiff-jammy
-    nodes:
-      - name: primary
-        label: ubuntu-jammy
-
 - job:
-    name: deckhand-openstack-tox-pep8-jammy
+    name: deckhand-openstack-tox-pep8-noble
     parent: openstack-tox-pep8
-    description: Runs pep8 job on jammy
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    description: Runs pep8 job on noble
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
 
 - job:
-    name: deckhand-openstack-tox-cover-jammy
+    name: deckhand-openstack-tox-cover-noble
     parent: openstack-tox-cover
-    description: Runs cover job on jammy
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    description: Runs cover job on noble
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
 
 - job:
-    name: deckhand-tox-py310-postgresql
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    name: deckhand-tox-py312-postgresql
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
     parent: treasuremap-airskiff-infra-deploy-base
     required-projects:
       - name: airship/treasuremap
@@ -100,7 +87,7 @@
     run:
       - tools/gate/playbooks/run-tox-tests.yaml
     vars:
-      tox_envlist: py310-postgresql
+      tox_envlist: py312-postgresql
     irrelevant-files: &irrelevant-files
       - ^.*\.rst$
       - ^doc/.*$
@@ -111,12 +98,12 @@
 
 
 - job:
-    name: deckhand-functional-docker-py310
+    name: deckhand-functional-docker-py312
     description: |
       Run tox-based functional tests for the Airship Deckhand project under
-      cPython version 3.10. Uses tox with the ``functional-py310`` environment.
-      Ubuntu (jammy) image is built and used.
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+      cPython version 3.12. Uses tox with the ``functional-py312`` environment.
+      Ubuntu (noble) image is built and used.
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
     parent: treasuremap-airskiff-infra-deploy-base
     required-projects:
       - name: airship/treasuremap
@@ -126,19 +113,18 @@
     run:
       - tools/gate/playbooks/run-functional-tests-docker.yaml
     vars:
-      treasuremap_ref: v1.9
-      tox_envlist: py310-functional
+      tox_envlist: py312-functional
       disable_keystone: true
-      DISTRO: ubuntu_jammy
+      DISTRO: ubuntu_noble
     irrelevant-files: *irrelevant-files
 
 - job:
-    name: deckhand-functional-uwsgi-py310
+    name: deckhand-functional-uwsgi-py312
     description: |
       Run tox-based functional tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
-      for ephemeral PostgreSQL DB, under cPython version 3.10.
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+      for ephemeral PostgreSQL DB, under cPython version 3.12.
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
     parent: treasuremap-airskiff-infra-deploy-base
     required-projects:
       - name: airship/treasuremap
@@ -148,9 +134,8 @@
     run:
       - tools/gate/playbooks/run-functional-tests-uwsgi.yaml
     vars:
-      treasuremap_ref: v1.9
-      tox_envlist: py310-functional-dev
-      DISTRO: ubuntu_jammy
+      tox_envlist: py312-functional-dev
+      DISTRO: ubuntu_noble
     irrelevant-files: *irrelevant-files
 
 - job:
@@ -165,18 +150,19 @@
     roles:
       - zuul: airship/treasuremap
     vars:
+      treasuremap_ref: v1.9
       osh_params:
-        openstack_release: "2025.1"
+        openstack_release: "2025.2"
         container_distro_name: ubuntu
-        container_distro_version: jammy
+        container_distro_version: noble
       osh_values_overrides_path: ../../openstack/openstack-helm
       gate_scripts_relative_path: ../../openstack/openstack-helm
       gate_scripts:
         - ./tools/deployment/common/prepare-k8s.sh
         - ./tools/deployment/common/prepare-charts.sh
         - ./tools/deployment/common/setup-client.sh
-        - ./tools/deployment/ceph/ceph.sh
-        - ./tools/deployment/ceph/ceph-ns-activate.sh
+        - ./tools/deployment/ceph/ceph-rook.sh
+        - ./tools/deployment/ceph/ceph-adapter-rook.sh
         - ./tools/deployment/db/mariadb.sh
         - ./tools/deployment/component/common/memcached.sh
         - ./tools/deployment/component/common/rabbitmq.sh
@@ -189,8 +175,8 @@
     description: |
       Run gabbi-based integration tests for the Airship Deckhand project using a
       minimalistic deployment consisting of uwsgi for Deckhand API and pifpaf
-      for ephemeral PostgreSQL DB, under cPython version 3.10.
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+      for ephemeral PostgreSQL DB, under cPython version 3.12.
+    nodeset: treasuremap-airskiff-5nodes-ubuntu_noble
     parent: deckhand-integration-base
     run:
       - tools/gate/playbooks/airship-run-scripts.yaml
@@ -202,15 +188,15 @@
     name: deckhand-integration-docker-gabbi
     description: |
       Run gabbi-based integration tests for the Airship Deckhand project under
-      cPython version 3.10. Builds ubuntu (jammy) deckhand image.
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+      cPython version 3.12. Builds ubuntu (noble) deckhand image.
+    nodeset: treasuremap-airskiff-5nodes-ubuntu_noble
     parent: deckhand-integration-base
     run:
       - tools/gate/playbooks/airship-run-scripts.yaml
       - tools/gate/playbooks/run-integration-tests-docker.yaml
     vars:
       disable_keystone: false
-      DISTRO: ubuntu_jammy
+      DISTRO: ubuntu_noble
 
 - job:
     name: deckhand-chart-build-gate
@@ -218,7 +204,7 @@
       Build charts using pinned Helm toolkit.
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    nodeset: deckhand-single-node-noble
     vars:
       HTK_COMMIT: c1be7b83ff530b2aa39bb81e9ac35f8155266123
 
@@ -228,28 +214,27 @@
       Build charts using latest Helm toolkit.
     timeout: 900
     run: tools/gate/playbooks/build-charts.yaml
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    nodeset: deckhand-single-node-noble
     vars:
       HTK_COMMIT: master
 
 
 - job:
-    name: deckhand-airskiff-deployment-jammy-kubeadm
+    name: deckhand-airskiff-deployment-noble-kubeadm
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
     parent: treasuremap-airskiff-infra-deploy-base
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
     required-projects:
       - name: airship/treasuremap
         override-checkout: v1.9
     roles:
       - zuul: airship/treasuremap
     vars:
-      treasuremap_ref: v1.9
       CLONE_DECKHAND: false
       MAKE_DECKHAND_IMAGES: true
       USE_ARMADA_GO: true
-      DISTRO: ubuntu_jammy
+      DISTRO: ubuntu_noble
       DOCKER_REGISTRY: localhost:5000
       gate_scripts_relative_path: ../../airship/treasuremap
 
@@ -257,7 +242,7 @@
     name: deckhand-docker-build-gate
     timeout: 3600
     run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
     irrelevant-files: &non-code-files-template
       - ^.*\.rst$
       - ^doc/.*$
@@ -267,26 +252,26 @@
       - ^setup.cfg$
     vars:
       publish: false
-      distro: ubuntu_jammy
+      distro: ubuntu_noble
       tags:
         dynamic:
           patch_set: true
 
 - job:
-    name: deckhand-docker-publish-ubuntu_jammy
+    name: deckhand-docker-publish-ubuntu_noble
     description: |
       Runs on every merge, unless files in a dictionary below are changed.
       Builds and publishes container ubuntu images on quay.io with a set of tags
       listed in vars section. Waits in Zuul queue for a node (VM) assignment.
     timeout: 3600
     run: tools/gate/playbooks/docker-image-build.yaml
-    nodeset: treasuremap-airskiff-1node-ubuntu_jammy
+    nodeset: treasuremap-airskiff-1node-ubuntu_noble
     secrets:
       - airship_deckhand_quay_creds_2026
     irrelevant-files: *non-code-files-template
     vars:
       publish: true
-      distro: ubuntu_jammy
+      distro: ubuntu_noble
       tags:
         dynamic:
           branch: true
@@ -294,45 +279,6 @@
         static:
           - latest
           - airflow_3.1.5
-
-- secret:
-    name: airship_deckhand_quay_creds
-    data:
-      username: !encrypted/pkcs1-oaep
-        - eC+ZaBS1TN37yuvL2WoGkJQ8OFBSLiXxV0wAkH+2l9wLNjmT3QxwnjXTNSw883zEkE9C/
-          XPDUxgv7RMLO/Bfs7uXKH1QjCbIJREPJ7Vk6WY9BUvn6olT/JCafpRcsmAkIS4W8p0l7J
-          ZxelQnGm/Z2zcq4eWeKzKsFLGiAHyoFASXqlDf93NesR+lZ4xnZkO24+oPMpZq6o2Xr2D
-          eWrxEcEsn817o7bA5d9mHb3u2e4tgyxhRevz43VD+0p1bK1thjRnUVpmOvHNjGI+jphAT
-          Vf2+Zqys0+xJ4yJ62bhnayvLZeaKD96rLIXCsbm4xYWsyrzCYvJQ4nESY7McYoDEG6PgL
-          3Gr/6oyNUzobQNAxuwo0GpecaBVy5Z1/8Ihlb8r1nNM3J0a7oz1PyPS4O7WRlQmXgHJ/x
-          jJJmh66ruDxi1bcarmn4AR6lWmfyFqHwIlptsvX9AcJd4FWII9ZYdTUiidJ9ob4KmchIY
-          G0wdqGDaekNR01VgB+JD05IM4UMLjwRnFmLUKIvo0H9YU5X253rv/GXNks1Ov2OevIlch
-          RnnnpCESNso+xup0IztfWBkcGPGBpgmIh6T5s5bfg0n9CYEzsJMGiJuMKgeZcBvnif6Qb
-          y1mzFxQiyEUUPzngF6ger7sBdXSrkCv8cqWsxdeVf2xEXLCDl/x2rhfj7fa5C8=
-      password: !encrypted/pkcs1-oaep
-        - TL/cjk3UCv2QQTk/QX6ujvLpHQDgijFmBWG3r9Hg/migT1Iry/eQi/HftHhShWjF0lk6Y
-          kesdX49H8wXHkRutGxrmcb4HMde4clebtT0dIvVFU7/Ieoq5OnxVLdIPP3YBLZYLy5Ah5
-          jLtfV1FJsuRN5gVGJeOXQUhPitrEnNrcj50ke1+llvfRl7PIR1byAM/6gQLbV3oUtOgk6
-          jmpieqxq55yO+o76bXOp8YNNVr0eqI1nISfBoku2GL7nipAcfxDIeR3a5J4pdaJEEhJR7
-          qqgp1RMt/aADkBUDqw1xbF86V2Mh2l60mWtYUHm4EvOFotrzeOd6Th73K9y57cBuQRJwT
-          qP+T+3yuTtuwvzjgTG+h5deppsRb3EFtPYSI6TqWVKtH2zwRbTJCSbgdY03Tjrwn9vZJK
-          QA4O1fRLBhchBqaIcpOFj8AFNPYCtz6cvL0uzAHXfQoQ3r9icNlPg0N5W2VINxYvDIiOc
-          Lfpty/EyKOJJpOXoBiJlsGHFLi/8gdMAAtMDf72yrQH6KxdNxdRGs5oALkUQ1IcuLbXng
-          ySP8WG+DBiwjt4IAtwd/sF+jyVBzDaywxdbS6RJycI+lRThvibQ5UFpr349yOhUdETB6p
-          yzFswIVmx1tHM7NhD80zwdSEj4EjG0AL3GXuwfLHGbr5WIeCaVEuCMW+XUwQpw=
-      # Token is valid for 10 years, expires on 10/10/2028
-      token: !encrypted/pkcs1-oaep
-        - Can0JzCSPRnujg8fZBtSXvLuGVRNaaoVkvCm8EKlqohnUmaryU7ColJxWYjPBxEEePxhB
-          mzkM5pD9o8PVkkUj5wxxUXlFDO73AMiwStmh2r/p+sd7bkgw5a2jzhYpBmVtn/qmEemsm
-          iIxQi0kz81qrU0H6w3r58lgskIIbD4yOYgu4DeoWmBU+yZ1V1E5RoumVQBdxB1fyenaKG
-          zR4Y6ebek31+VAlqSN0HUIYMgbc6Mt7ErEn2wjj9MxNvvP52pWDyxr5U2kKpOYdJpZt9h
-          EZgM2cF2zfuG+4KnpdONap54uVRnRcJCf6poI/l4UVYO5Z+EvlF3Xawp3jiPCMCGGy3dd
-          lEeEkvNzJppwAj5bEWT1NoFi7PigkK91znppVHu17jBEKkcl2S6LK87RTjfqnBsAmE30d
-          ibxqS7pCoSCGuUCP4XrW8QfI70Ml4Gb636bZUqZFi1WxzhfNKSO8LBPHekVQnwrmhhv2Z
-          CN9JZdtqR49JpHajubfYrtWxPHuiwnTwgsnpkpM0+5Z1nss/nQhW70uCBXvJkYUtenV87
-          c4Exr6ncOjgtqtjheW16hAGLtm2o36ZvBoLD7yqwYAjwb0bfuzDrw8oWa2yAgOcWnHPO6
-          w0lNv46YTHiJK9hezHqI0hgn5wifVI8avRZmHwaArVvX4LUXD2N/Tk7mxi7r2U=
-
 
 - secret:
     name: airship_deckhand_quay_creds_2026
@@ -371,54 +317,6 @@
       - name: git_mirror_credentials
         secret: deckhand-airshipit-github-ed25519-secret-2026-01-13
         pass-to-parent: true
-
-- secret:
-    name: deckhand-airshipit-github-secret-2023-03-23
-    data:
-      user: git
-      host: github.com
-      host_key: github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
-      ssh_key: !encrypted/pkcs1-oaep
-        - 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
 
 - secret:
     name: deckhand-airshipit-github-ed25519-secret-2026-01-13

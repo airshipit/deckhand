@@ -45,7 +45,7 @@ _LOCK = threading.Lock()
 
 
 def _create_facade_lazily():
-    global _LOCK, _FACADE
+    global _FACADE
     if _FACADE is None:
         with _LOCK:
             if _FACADE is None:

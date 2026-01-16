@@ -1,6 +1,16 @@
 CHANGES
 =======
 
+* Noble image update
+* New Github upload credentials
+* New Quay.io credentials
+* Airflow 3.1.5 update
+* Airflow 3.1.1 update
+* Bump Helm version to 3.19.0
+* Openstack 2025.1 Epoxy support
+* Remove apparmor annotations
+* Inherit base job from treasuremap repository
+* Airflow upgrade to 3.0.2
 * Libyaml install from apt
 * Set stable HTK\_COMMIT value
 * Preparation for osh-infra merger

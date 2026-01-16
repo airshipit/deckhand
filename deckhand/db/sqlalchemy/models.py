@@ -236,7 +236,6 @@ def create_tables(engine):
     This will be done only by tests that do not have their tables
     set up by Alembic running during the associated helm chart db_sync job.
     """
-    global BASE
 
     LOG.debug('Creating DB tables')
 
@@ -245,6 +244,5 @@ def create_tables(engine):
 
 def unregister_models(engine):
     """Drop database tables for all models with the given engine."""
-    global BASE
 
     BASE.metadata.drop_all(engine)
