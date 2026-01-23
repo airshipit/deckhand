@@ -58,12 +58,16 @@ RUN set -x && \
         /usr/share/doc-base
 
 # Add deckhand user
-RUN groupmod -n deckhand ubuntu \
-      && usermod -l deckhand -d /home/deckhand  ubuntu
+RUN (userdel -r ubuntu || true) 2>/dev/null \
+      && (groupdel ubuntu || true) 2>/dev/null \
+      && groupadd -g 1000 deckhand \
+      && useradd -u 1000 -g deckhand -m -d /home/deckhand -s /bin/bash deckhand
 
 # Clone the deckhand repository
-COPY --chown=deckhand:deckhand --chmod=755 entrypoint.sh /home/deckhand/entrypoint.sh
+COPY --chown=deckhand:deckhand entrypoint.sh /home/deckhand/entrypoint.sh
 COPY --chown=deckhand:deckhand . /home/deckhand/
+
+RUN chmod 755 /home/deckhand/entrypoint.sh
 
 # Set work directory and install dependencies
 WORKDIR /home/deckhand
