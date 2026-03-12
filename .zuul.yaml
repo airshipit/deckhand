@@ -225,7 +225,7 @@
     description: |
       Deploy Memcached using Airskiff and submitted Deckhand changes.
     parent: treasuremap-airskiff-infra-deploy-base
-    nodeset: treasuremap-airskiff-1node-ubuntu_noble
+    nodeset: treasuremap-airskiff-5nodes-ubuntu_noble
     required-projects:
       - name: airship/treasuremap
         override-checkout: v1.9
@@ -236,7 +236,8 @@
       MAKE_DECKHAND_IMAGES: true
       USE_ARMADA_GO: true
       DISTRO: ubuntu_noble
-      DOCKER_REGISTRY: localhost:5000
+      DOCKER_REGISTRY: "control-plane.minikube.internal:5000"
+      overlay_network_setup: true
       gate_scripts_relative_path: ../../airship/treasuremap
 
 - job:

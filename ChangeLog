@@ -1,6 +1,9 @@
 CHANGES
 =======
 
+* add extraObjects to prepare for gateway api
+* Deckhand gates update
+* Fix docker images
 * Noble image update
 * New Github upload credentials
 * New Quay.io credentials
