@@ -152,10 +152,11 @@
     vars:
       treasuremap_ref: v1.9
       osh_params:
-        openstack_release: "2025.2"
+        openstack_release: 2025.1
         container_distro_name: ubuntu
         container_distro_version: noble
-      osh_values_overrides_path: ../../openstack/openstack-helm
+        feature_gates: gateway
+      osh_values_overrides_path: ../../openstack/openstack-helm/values_overrides
       gate_scripts_relative_path: ../../openstack/openstack-helm
       gate_scripts:
         - ./tools/deployment/common/prepare-k8s.sh
@@ -206,7 +207,7 @@
     run: tools/gate/playbooks/build-charts.yaml
     nodeset: deckhand-single-node-noble
     vars:
-      HTK_COMMIT: c1be7b83ff530b2aa39bb81e9ac35f8155266123
+      HTK_COMMIT: d89bc42b57f8c2898520181550b5019dcf31c06f
 
 - job:
     name: deckhand-chart-build-latest-htk

@@ -34,5 +34,5 @@ password = password
 project_name = admin
 project_domain_name = Default
 user_domain_name = Default
-auth_url = http://keystone.openstack.svc.cluster.local/v3
+auth_url = http://keystone.openstack-helm.org/v3
 auth_type = password
