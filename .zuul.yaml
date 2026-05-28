@@ -243,6 +243,8 @@
       CLONE_DECKHAND: false
       MAKE_DECKHAND_IMAGES: true
       USE_ARMADA_GO: true
+      helm_version: 4.2.0
+      HELM_ARTIFACT_URL: https://get.helm.sh/helm-v4.2.0-linux-amd64.tar.gz
       DISTRO: ubuntu_noble
       DOCKER_REGISTRY: "control-plane.minikube.internal:5000"
       overlay_network_setup: true
