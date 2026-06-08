@@ -14,6 +14,7 @@
 
 """Defines interface for DB access."""
 
+import contextlib
 import copy
 import functools
 import hashlib
@@ -23,7 +24,7 @@ import six
 from oslo_config import cfg
 from oslo_db import exception as db_exception
 from oslo_db import options
-from oslo_db.sqlalchemy import session
+from oslo_db.sqlalchemy import enginefacade
 from oslo_log import log as logging
 from oslo_serialization import jsonutils as json
 import sqlalchemy.orm as sa_orm
@@ -40,36 +41,64 @@ CONF = cfg.CONF
 
 options.set_defaults(CONF)
 
-_FACADE = None
+_context_manager = None
 _LOCK = threading.Lock()
 
 
-def _create_facade_lazily():
-    global _FACADE
-    if _FACADE is None:
+def _create_context_manager():
+    global _context_manager
+    if _context_manager is None:
         with _LOCK:
-            if _FACADE is None:
-                _FACADE = session.EngineFacade.from_config(
-                    CONF, sqlite_fk=True)
-    return _FACADE
+            if _context_manager is None:
+                _context_manager = enginefacade.transaction_context()
+                _context_manager.configure(
+                    connection=CONF.database.connection,
+                    sqlite_fk=True)
+    return _context_manager
+
+
+def _reset_context_manager():
+    global _context_manager
+    with _LOCK:
+        _context_manager = None
 
 
 def get_engine():
-    facade = _create_facade_lazily()
-    return facade.get_engine()
+    return _create_context_manager().writer.get_engine()
 
 
 def get_session(autocommit=True, expire_on_commit=False):
-    facade = _create_facade_lazily()
-    return facade.get_session(autocommit=autocommit,
-                              expire_on_commit=expire_on_commit)
+    return _create_context_manager().writer.get_sessionmaker()(
+        expire_on_commit=expire_on_commit)
+
+
+@contextlib.contextmanager
+def _session_begin(session):
+    """Start a new transaction or join the existing one.
+
+    In SQLAlchemy 2.0, sessions auto-begin on first use. Calling begin()
+    a second time raises InvalidRequestError. This helper avoids that.
+    """
+    if session.in_transaction():
+        yield
+    else:
+        with session.begin():
+            yield
 
 
 def drop_db():
-    models.unregister_models(get_engine())
+    engine = get_engine()
+    models.unregister_models(engine)
+    engine.dispose()
 
 
 def setup_db(connection_string, create_tables=False):
+    if _context_manager is not None:
+        try:
+            _context_manager.writer.get_engine().dispose()
+        except Exception:
+            LOG.debug('Failed to dispose existing DB engine', exc_info=True)
+    _reset_context_manager()
     models.register_models(get_engine(), connection_string)
     if create_tables:
         models.create_tables(get_engine())
@@ -90,7 +119,10 @@ def raw_query(query, **kwargs):
 
     stmt = text(query)
     stmt = stmt.bindparams(**kwargs)
-    return get_engine().execute(stmt)
+    with get_engine().connect() as conn:
+        result = conn.execute(stmt)
+        conn.commit()
+        return result
 
 
 def require_unique_document_schema(schema=None):
@@ -161,7 +193,7 @@ def documents_create(bucket_name, documents, session=None):
     session = session or get_session()
     resp = []
 
-    with session.begin():
+    with _session_begin(session):
         documents_to_create = _documents_create(bucket_name, documents,
                                                 session=session)
 
@@ -273,7 +305,7 @@ def documents_delete_from_buckets_list(bucket_names, session=None):
     """
     session = session or get_session()
 
-    with session.begin():
+    with _session_begin(session):
         # Create a new revision
         revision = models.Revision()
         revision.save(session=session)
@@ -321,6 +353,7 @@ def _documents_create(bucket_name, documents, session=None):
 
         try:
             existing_document = document_get(
+                session=session,
                 raw_dict=True, deleted=False, revision_id='latest',
                 **{x: document[x] for x in filters})
         except errors.DocumentNotFound:
@@ -400,40 +433,46 @@ def document_get(session=None, raw_dict=False, revision_id=None, **filters):
     :returns: Dictionary representation of retrieved document.
     :raises: DocumentNotFound if the document wasn't found.
     """
+    own_session = session is None
     session = session or get_session()
 
-    if revision_id == 'latest':
-        revision = session.query(models.Revision)\
-            .order_by(models.Revision.created_at.desc())\
-            .first()
-        if revision:
-            filters['revision_id'] = revision.id
-    elif revision_id:
-        filters['revision_id'] = revision_id
+    try:
+        if revision_id == 'latest':
+            revision = session.query(models.Revision)\
+                .order_by(models.Revision.created_at.desc())\
+                .first()
+            if revision:
+                filters['revision_id'] = revision.id
+        elif revision_id:
+            filters['revision_id'] = revision_id
 
-    # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
-    # JSON fields via sqlalchemy. For now, filter the documents using all
-    # "regular" filters via sqlalchemy and all nested filters via Python.
-    nested_filters = {}
-    for f in filters.copy():
-        if any([x in f for x in ('.', 'schema')]):
-            nested_filters.setdefault(f, filters.pop(f))
+        # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
+        # JSON fields via sqlalchemy. For now, filter the documents using all
+        # "regular" filters via sqlalchemy and all nested filters via Python.
+        nested_filters = {}
+        for f in filters.copy():
+            if any([x in f for x in ('.', 'schema')]):
+                nested_filters.setdefault(f, filters.pop(f))
 
-    # Documents with the same metadata.name and schema can exist across
-    # different revisions, so it is necessary to order documents by creation
-    # date, then return the first document that matches all desired filters.
-    documents = session.query(models.Document)\
-        .filter_by(**filters)\
-        .order_by(models.Document.created_at.desc())\
-        .all()
+        # Documents with the same metadata.name and schema can exist across
+        # different revisions, so it is necessary to order documents by
+        # creation date, then return the first document that matches all
+        # desired filters.
+        documents = session.query(models.Document)\
+            .filter_by(**filters)\
+            .order_by(models.Document.created_at.desc())\
+            .all()
 
-    for doc in documents:
-        d = doc.to_dict(raw_dict=raw_dict)
-        if utils.deepfilter(d, **nested_filters):
-            return d
+        for doc in documents:
+            d = doc.to_dict(raw_dict=raw_dict)
+            if utils.deepfilter(d, **nested_filters):
+                return d
 
-    filters.update(nested_filters)
-    raise errors.DocumentNotFound(filters=filters)
+        filters.update(nested_filters)
+        raise errors.DocumentNotFound(filters=filters)
+    finally:
+        if own_session:
+            session.close()
 
 
 def document_get_all(session=None, raw_dict=False, revision_id=None,
@@ -449,40 +488,45 @@ def document_get_all(session=None, raw_dict=False, revision_id=None,
         out revision documents.
     :returns: Dictionary representation of each retrieved document.
     """
+    own_session = session is None
     session = session or get_session()
 
-    if revision_id == 'latest':
-        revision = session.query(models.Revision)\
-            .order_by(models.Revision.created_at.desc())\
-            .first()
-        if revision:
-            filters['revision_id'] = revision.id
-    elif revision_id:
-        filters['revision_id'] = revision_id
+    try:
+        if revision_id == 'latest':
+            revision = session.query(models.Revision)\
+                .order_by(models.Revision.created_at.desc())\
+                .first()
+            if revision:
+                filters['revision_id'] = revision.id
+        elif revision_id:
+            filters['revision_id'] = revision_id
 
-    # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
-    # JSON fields via sqlalchemy. For now, filter the documents using all
-    # "regular" filters via sqlalchemy and all nested filters via Python.
-    nested_filters = {}
-    for f in filters.copy():
-        if any([x in f for x in ('.', 'schema')]):
-            nested_filters.setdefault(f, filters.pop(f))
+        # TODO(fmontei): Currently Deckhand doesn't support filtering by nested
+        # JSON fields via sqlalchemy. For now, filter the documents using all
+        # "regular" filters via sqlalchemy and all nested filters via Python.
+        nested_filters = {}
+        for f in filters.copy():
+            if any([x in f for x in ('.', 'schema')]):
+                nested_filters.setdefault(f, filters.pop(f))
 
-    # Retrieve the most recently created documents for the revision, because
-    # documents with the same metadata.name and schema can exist across
-    # different revisions.
-    documents = session.query(models.Document)\
-        .filter_by(**filters)\
-        .order_by(models.Document.created_at.desc())\
-        .all()
+        # Retrieve the most recently created documents for the revision,
+        # because documents with the same metadata.name and schema can exist
+        # across different revisions.
+        documents = session.query(models.Document)\
+            .filter_by(**filters)\
+            .order_by(models.Document.created_at.desc())\
+            .all()
 
-    final_documents = []
-    for doc in documents:
-        d = doc.to_dict(raw_dict=raw_dict)
-        if utils.deepfilter(d, **nested_filters):
-            final_documents.append(d)
+        final_documents = []
+        for doc in documents:
+            d = doc.to_dict(raw_dict=raw_dict)
+            if utils.deepfilter(d, **nested_filters):
+                final_documents.append(d)
 
-    return final_documents
+        return final_documents
+    finally:
+        if own_session:
+            session.close()
 
 
 ####################
@@ -521,17 +565,22 @@ def bucket_get_all(session=None, **filters):
     :param session: Database session object.
     :returns: List of dictionary representations of retrieved buckets.
     """
+    own_session = session is None
     session = session or get_session()
 
-    buckets = session.query(models.Bucket)\
-        .all()
-    result = []
-    for bucket in buckets:
-        revision_dict = bucket.to_dict()
-        if utils.deepfilter(revision_dict, **filters):
-            result.append(bucket)
+    try:
+        buckets = session.query(models.Bucket)\
+            .all()
+        result = []
+        for bucket in buckets:
+            revision_dict = bucket.to_dict()
+            if utils.deepfilter(revision_dict, **filters):
+                result.append(bucket)
 
-    return result
+        return result
+    finally:
+        if own_session:
+            session.close()
 
 
 def revision_create(session=None):
@@ -556,19 +605,24 @@ def revision_get(revision_id=None, session=None):
     :returns: Dictionary representation of retrieved revision.
     :raises RevisionNotFound: if the revision was not found.
     """
+    own_session = session is None
     session = session or get_session()
 
     try:
-        revision = session.query(models.Revision)\
-            .filter_by(id=revision_id)\
-            .one()\
-            .to_dict()
-    except sa_orm.exc.NoResultFound:
-        raise errors.RevisionNotFound(revision_id=revision_id)
+        try:
+            revision = session.query(models.Revision)\
+                .filter_by(id=revision_id)\
+                .one()\
+                .to_dict()
+        except sa_orm.exc.NoResultFound:
+            raise errors.RevisionNotFound(revision_id=revision_id)
 
-    revision['documents'] = _update_revision_history(revision['documents'])
+        revision['documents'] = _update_revision_history(revision['documents'])
 
-    return revision
+        return revision
+    finally:
+        if own_session:
+            session.close()
 
 
 def revision_get_latest(session=None):
@@ -577,23 +631,28 @@ def revision_get_latest(session=None):
     :param session: Database session object.
     :returns: Dictionary representation of latest revision.
     """
+    own_session = session is None
     session = session or get_session()
 
-    latest_revision = session.query(models.Revision)\
-        .order_by(models.Revision.created_at.desc())\
-        .first()
+    try:
+        latest_revision = session.query(models.Revision)\
+            .order_by(models.Revision.created_at.desc())\
+            .first()
 
-    if latest_revision:
-        latest_revision = latest_revision.to_dict()
-        latest_revision['documents'] = _update_revision_history(
-            latest_revision['documents'])
-    else:
-        # If the latest revision doesn't exist, assume an empty revision
-        # history and return a dummy revision instead for the purposes of
-        # revision rollback.
-        latest_revision = {'documents': [], 'id': 0}
+        if latest_revision:
+            latest_revision = latest_revision.to_dict()
+            latest_revision['documents'] = _update_revision_history(
+                latest_revision['documents'])
+        else:
+            # If the latest revision doesn't exist, assume an empty revision
+            # history and return a dummy revision instead for the purposes of
+            # revision rollback.
+            latest_revision = {'documents': [], 'id': 0}
 
-    return latest_revision
+        return latest_revision
+    finally:
+        if own_session:
+            session.close()
 
 
 def require_revision_exists(f):
@@ -605,7 +664,7 @@ def require_revision_exists(f):
     @functools.wraps(f)
     def wrapper(revision_id=None, *args, **kwargs):
         if revision_id:
-            revision_get(revision_id)
+            revision_get(revision_id, session=kwargs.get('session'))
         return f(revision_id, *args, **kwargs)
     return wrapper
 
@@ -627,19 +686,25 @@ def revision_get_all(session=None, **filters):
     :param session: Database session object.
     :returns: List of dictionary representations of retrieved revisions.
     """
+    own_session = session is None
     session = session or get_session()
-    revisions = session.query(models.Revision)\
-        .all()
 
-    result = []
-    for revision in revisions:
-        revision_dict = revision.to_dict()
-        if utils.deepfilter(revision_dict, **filters):
-            revision_dict['documents'] = _update_revision_history(
-                revision_dict['documents'])
-            result.append(revision_dict)
+    try:
+        revisions = session.query(models.Revision)\
+            .all()
 
-    return result
+        result = []
+        for revision in revisions:
+            revision_dict = revision.to_dict()
+            if utils.deepfilter(revision_dict, **filters):
+                revision_dict['documents'] = _update_revision_history(
+                    revision_dict['documents'])
+                result.append(revision_dict)
+
+        return result
+    finally:
+        if own_session:
+            session.close()
 
 
 def revision_delete_all():
@@ -660,9 +725,12 @@ def revision_delete_all():
         # we also need to reset the index to 1 for each table.
         for table in ['buckets', 'revisions', 'revision_tags', 'documents',
                       'validations']:
-            engine.execute(
-                text("TRUNCATE TABLE %s RESTART IDENTITY CASCADE;" % table)
-                .execution_options(autocommit=True))
+            with engine.connect() as conn:
+                conn.execute(
+                    text(
+                        "TRUNCATE TABLE %s RESTART IDENTITY CASCADE;"
+                        % table))
+                conn.commit()
     else:
         raw_query("DELETE FROM revisions;")
 
@@ -684,40 +752,47 @@ def revision_documents_get(revision_id=None, include_history=True,
         ``filters``, including document revision history if applicable.
     :raises RevisionNotFound: if the revision was not found.
     """
+    own_session = session is None
     session = session or get_session()
     revision_documents = []
 
     try:
-        if revision_id:
-            revision = session.query(models.Revision)\
-                .filter_by(id=revision_id)\
-                .one()
-        else:
-            # If no revision_id is specified, grab the latest one.
-            revision = session.query(models.Revision)\
-                .order_by(models.Revision.created_at.desc())\
-                .first()
+        try:
+            if revision_id:
+                revision = session.query(models.Revision)\
+                    .filter_by(id=revision_id)\
+                    .one()
+            else:
+                # If no revision_id is specified, grab the latest one.
+                revision = session.query(models.Revision)\
+                    .order_by(models.Revision.created_at.desc())\
+                    .first()
 
-        if revision:
-            revision_documents = revision.to_dict()['documents']
-            if include_history:
-                relevant_revisions = session.query(models.Revision)\
-                    .filter(models.Revision.created_at < revision.created_at)\
-                    .order_by(models.Revision.created_at)\
-                    .all()
-                # Include documents from older revisions in response body.
-                for relevant_revision in relevant_revisions:
-                    revision_documents.extend(
-                        relevant_revision.to_dict()['documents'])
-    except sa_orm.exc.NoResultFound:
-        raise errors.RevisionNotFound(revision_id=revision_id)
+            if revision:
+                revision_documents = revision.to_dict()['documents']
+                if include_history:
+                    relevant_revisions = session.query(models.Revision)\
+                        .filter(
+                            models.Revision.created_at <
+                            revision.created_at)\
+                        .order_by(models.Revision.created_at)\
+                        .all()
+                    # Include documents from older revisions in response body.
+                    for relevant_revision in relevant_revisions:
+                        revision_documents.extend(
+                            relevant_revision.to_dict()['documents'])
+        except sa_orm.exc.NoResultFound:
+            raise errors.RevisionNotFound(revision_id=revision_id)
 
-    revision_documents = _update_revision_history(revision_documents)
+        revision_documents = _update_revision_history(revision_documents)
 
-    filtered_documents = eng_utils.filter_revision_documents(
-        revision_documents, unique_only, **filters)
+        filtered_documents = eng_utils.filter_revision_documents(
+            revision_documents, unique_only, **filters)
 
-    return filtered_documents
+        return filtered_documents
+    finally:
+        if own_session:
+            session.close()
 
 
 ####################
@@ -747,7 +822,7 @@ def revision_tag_create(revision_id, tag, data=None, session=None):
         raise errors.RevisionTagBadFormat(data=data)
 
     try:
-        with session.begin():
+        with _session_begin(session):
             tag_model.update(
                 {'tag': tag, 'data': data, 'revision_id': revision_id})
             tag_model.save(session=session)
@@ -762,8 +837,9 @@ def revision_tag_create(revision_id, tag, data=None, session=None):
                 .one()
         except sa_orm.exc.NoResultFound:
             raise errors.RevisionTagNotFound(tag=tag, revision=revision_id)
-        tag_to_update.update({'data': data})
-        tag_to_update.save(session=session)
+        with _session_begin(session):
+            tag_to_update.update({'data': data})
+            tag_to_update.save(session=session)
         resp = tag_to_update.to_dict()
 
     return resp
@@ -779,16 +855,21 @@ def revision_tag_get(revision_id, tag, session=None):
     :returns: None
     :raises RevisionTagNotFound: If ``tag`` for ``revision_id`` was not found.
     """
+    own_session = session is None
     session = session or get_session()
 
     try:
-        tag = session.query(models.RevisionTag)\
-            .filter_by(tag=tag, revision_id=revision_id)\
-            .one()
-    except sa_orm.exc.NoResultFound:
-        raise errors.RevisionTagNotFound(tag=tag, revision=revision_id)
+        try:
+            tag = session.query(models.RevisionTag)\
+                .filter_by(tag=tag, revision_id=revision_id)\
+                .one()
+        except sa_orm.exc.NoResultFound:
+            raise errors.RevisionTagNotFound(tag=tag, revision=revision_id)
 
-    return tag.to_dict()
+        return tag.to_dict()
+    finally:
+        if own_session:
+            session.close()
 
 
 @require_revision_exists
@@ -801,12 +882,18 @@ def revision_tag_get_all(revision_id, session=None):
     :returns: List of tags for ``revision_id``, ordered by the tag name by
         default.
     """
+    own_session = session is None
     session = session or get_session()
-    tags = session.query(models.RevisionTag)\
-        .filter_by(revision_id=revision_id)\
-        .order_by(models.RevisionTag.tag)\
-        .all()
-    return [t.to_dict() for t in tags]
+
+    try:
+        tags = session.query(models.RevisionTag)\
+            .filter_by(revision_id=revision_id)\
+            .order_by(models.RevisionTag.tag)\
+            .all()
+        return [t.to_dict() for t in tags]
+    finally:
+        if own_session:
+            session.close()
 
 
 @require_revision_exists
@@ -834,9 +921,10 @@ def revision_tag_delete_all(revision_id, session=None):
     :returns: None
     """
     session = session or get_session()
-    session.query(models.RevisionTag)\
-        .filter_by(revision_id=revision_id)\
-        .delete(synchronize_session=False)
+    with _session_begin(session):
+        session.query(models.RevisionTag)\
+            .filter_by(revision_id=revision_id)\
+            .delete(synchronize_session=False)
 
 
 ####################
@@ -854,116 +942,120 @@ def revision_rollback(revision_id, latest_revision, session=None):
     :returns: The newly created revision.
     """
     session = session or get_session()
-    latest_revision_docs = revision_documents_get(latest_revision['id'],
-                                                  session=session)
-    latest_revision_hashes = [
-        (d['data_hash'], d['metadata_hash']) for d in latest_revision_docs
-    ]
-
-    if latest_revision['id'] == revision_id:
-        LOG.debug('The revision being rolled back to is the current revision.'
-                  'Expect no meaningful changes.')
-
-    if revision_id == 0:
-        # Delete all existing documents in all buckets
-        all_buckets = bucket_get_all(deleted=False)
-        bucket_names = [six.text_type(b['name']) for b in all_buckets]
-        revision = documents_delete_from_buckets_list(bucket_names,
+    with _session_begin(session):
+        latest_revision_docs = revision_documents_get(latest_revision['id'],
                                                       session=session)
+        latest_revision_hashes = [
+            (d['data_hash'], d['metadata_hash']) for d in latest_revision_docs
+        ]
 
-        return revision.to_dict()
-    else:
-        # Sorting the documents so the documents in the new revision are in
-        # the same order as the previous revision to support stable testing
-        orig_revision_docs = sorted(revision_documents_get(revision_id,
-                                                           session=session),
-                                    key=lambda d: d['id'])
+        if latest_revision['id'] == revision_id:
+            LOG.debug('The revision being rolled back to is the current '
+                      'revision. Expect no meaningful changes.')
 
-    # A mechanism for determining whether a particular document has changed
-    # between revisions. Keyed with the document_id, the value is True if
-    # it has changed, else False.
-    doc_diff = {}
-    # List of unique buckets that exist in this revision
-    unique_buckets = []
-    for orig_doc in orig_revision_docs:
-        if ((orig_doc['data_hash'], orig_doc['metadata_hash'])
-                not in latest_revision_hashes):
-            doc_diff[orig_doc['id']] = True
-        else:
-            doc_diff[orig_doc['id']] = False
-        if orig_doc['bucket_id'] not in unique_buckets:
-            unique_buckets.append(orig_doc['bucket_id'])
-
-    # We need to find which buckets did not exist at this revision
-    buckets_to_delete = []
-    all_buckets = bucket_get_all(deleted=False)
-    for bucket in all_buckets:
-        if bucket['id'] not in unique_buckets:
-            buckets_to_delete.append(six.text_type(bucket['name']))
-
-    # Create the new revision,
-    if len(buckets_to_delete) > 0:
-        new_revision = documents_delete_from_buckets_list(buckets_to_delete,
+        if revision_id == 0:
+            # Delete all existing documents in all buckets
+            all_buckets = bucket_get_all(deleted=False, session=session)
+            bucket_names = [six.text_type(b['name']) for b in all_buckets]
+            revision = documents_delete_from_buckets_list(bucket_names,
                                                           session=session)
-    else:
-        new_revision = models.Revision()
-        with session.begin():
+            return revision.to_dict()
+        else:
+            # Sorting the documents so the documents in the new revision are in
+            # the same order as the previous revision to support stable testing
+            orig_revision_docs = sorted(
+                revision_documents_get(revision_id, session=session),
+                key=lambda d: d['id'])
+
+        # A mechanism for determining whether a particular document has changed
+        # between revisions. Keyed with the document_id, the value is True if
+        # it has changed, else False.
+        doc_diff = {}
+        # List of unique buckets that exist in this revision
+        unique_buckets = []
+        for orig_doc in orig_revision_docs:
+            if ((orig_doc['data_hash'], orig_doc['metadata_hash'])
+                    not in latest_revision_hashes):
+                doc_diff[orig_doc['id']] = True
+            else:
+                doc_diff[orig_doc['id']] = False
+            if orig_doc['bucket_id'] not in unique_buckets:
+                unique_buckets.append(orig_doc['bucket_id'])
+
+        # We need to find which buckets did not exist at this revision
+        buckets_to_delete = []
+        all_buckets = bucket_get_all(deleted=False, session=session)
+        for bucket in all_buckets:
+            if bucket['id'] not in unique_buckets:
+                buckets_to_delete.append(six.text_type(bucket['name']))
+
+        # Create the new revision,
+        if len(buckets_to_delete) > 0:
+            new_revision = documents_delete_from_buckets_list(
+                buckets_to_delete, session=session)
+        else:
+            new_revision = models.Revision()
             new_revision.save(session=session)
 
-    # No changes have been made between the target revision to rollback to
-    # and the latest revision.
-    if set(doc_diff.values()) == set([False]):
-        LOG.debug('The revision being rolled back to has the same documents '
-                  'as that of the current revision. Expect no meaningful '
-                  'changes.')
+        # No changes have been made between the target revision to rollback to
+        # and the latest revision.
+        if set(doc_diff.values()) == set([False]):
+            LOG.debug('The revision being rolled back to has the same '
+                      'documents as that of the current revision. Expect no '
+                      'meaningful changes.')
 
-    # Create the documents for the revision.
-    for orig_document in orig_revision_docs:
-        orig_document['revision_id'] = new_revision['id']
-        orig_document['meta'] = orig_document.pop('metadata')
+        # Create the documents for the revision.
+        for orig_document in orig_revision_docs:
+            orig_document['revision_id'] = new_revision['id']
+            orig_document['meta'] = orig_document.pop('metadata')
 
-        new_document = models.Document()
-        new_document.update({x: orig_document[x] for x in (
-            'name', 'meta', 'layer', 'data', 'data_hash', 'metadata_hash',
-            'schema', 'bucket_id')})
-        new_document['revision_id'] = new_revision['id']
+            new_document = models.Document()
+            new_document.update({x: orig_document[x] for x in (
+                'name', 'meta', 'layer', 'data', 'data_hash', 'metadata_hash',
+                'schema', 'bucket_id')})
+            new_document['revision_id'] = new_revision['id']
 
-        # If the document has changed, then use the revision_id of the new
-        # revision, otherwise use the original revision_id to preserve the
-        # revision history.
-        if doc_diff[orig_document['id']]:
-            new_document['orig_revision_id'] = new_revision['id']
-        else:
-            new_document['orig_revision_id'] = revision_id
+            # If the document has changed, then use the revision_id of the new
+            # revision, otherwise use the original revision_id to preserve the
+            # revision history.
+            if doc_diff[orig_document['id']]:
+                new_document['orig_revision_id'] = new_revision['id']
+            else:
+                new_document['orig_revision_id'] = revision_id
 
-        with session.begin():
             new_document.save(session=session)
 
-    new_revision = new_revision.to_dict()
-    new_revision['documents'] = _update_revision_history(
-        new_revision['documents'])
+        new_revision = new_revision.to_dict()
+        new_revision['documents'] = _update_revision_history(
+            new_revision['documents'])
 
-    return new_revision
+        return new_revision
 
 
 ####################
 
 
 def _get_validation_policies_for_revision(revision_id, session=None):
+    own_session = session is None
     session = session or get_session()
 
-    # Check if a ValidationPolicy for the revision exists.
-    validation_policies = document_get_all(
-        session, revision_id=revision_id, deleted=False,
-        schema=types.VALIDATION_POLICY_SCHEMA)
-    if not validation_policies:
-        # Otherwise return early.
-        LOG.debug('Failed to find a ValidationPolicy for revision ID %s. '
-                  'Only the "%s" results will be included in the response.',
-                  revision_id, types.DECKHAND_SCHEMA_VALIDATION)
-        validation_policies = []
+    try:
+        # Check if a ValidationPolicy for the revision exists.
+        validation_policies = document_get_all(
+            session, revision_id=revision_id, deleted=False,
+            schema=types.VALIDATION_POLICY_SCHEMA)
+        if not validation_policies:
+            # Otherwise return early.
+            LOG.debug('Failed to find a ValidationPolicy for revision ID %s. '
+                      'Only the "%s" results will be included in the '
+                      'response.',
+                      revision_id, types.DECKHAND_SCHEMA_VALIDATION)
+            validation_policies = []
 
-    return validation_policies
+        return validation_policies
+    finally:
+        if own_session:
+            session.close()
 
 
 @require_revision_exists
@@ -980,7 +1072,7 @@ def validation_create(revision_id, val_name, val_data, session=None):
 
     validation = models.Validation()
 
-    with session.begin():
+    with _session_begin(session):
         validation.update(validation_kwargs)
         validation.save(session=session)
 
@@ -995,142 +1087,165 @@ def validation_get_all(revision_id, session=None):
     # has its own validation but for this query we want to return the result
     # of the overall validation for the revision. If just 1 document failed
     # validation, we regard the validation for the whole revision as 'failure'.
+    own_session = session is None
     session = session or get_session()
 
-    query = raw_query("""
-        SELECT DISTINCT name, status FROM validations as v1
-            WHERE revision_id=:revision_id AND status = (
-                SELECT status FROM validations as v2
-                    WHERE v2.name = v1.name
-                    ORDER BY status
-                    LIMIT 1
-            )
-            GROUP BY name, status
-            ORDER BY name, status;
-    """, revision_id=revision_id)
+    try:
+        query = raw_query("""
+            SELECT DISTINCT name, status FROM validations as v1
+                WHERE revision_id=:revision_id AND status = (
+                    SELECT status FROM validations as v2
+                        WHERE v2.name = v1.name
+                        ORDER BY status
+                        LIMIT 1
+                )
+                GROUP BY name, status
+                ORDER BY name, status;
+        """, revision_id=revision_id)
 
-    result = {v[0]: v for v in query.fetchall()}
-    actual_validations = set(v[0] for v in result.values())
+        result = {v[0]: v for v in query.fetchall()}
+        actual_validations = set(v[0] for v in result.values())
 
-    validation_policies = _get_validation_policies_for_revision(revision_id)
-    if not validation_policies:
+        validation_policies = _get_validation_policies_for_revision(
+            revision_id, session=session)
+        if not validation_policies:
+            return result.values()
+
+        # TODO(fmontei): Raise error for expiresAfter conflicts for duplicate
+        # validations across ValidationPolicy documents.
+        expected_validations = set()
+        for vp in validation_policies:
+            expected_validations = expected_validations.union(
+                list(v['name'] for v in vp['data'].get('validations', [])))
+
+        missing_validations = expected_validations - actual_validations
+        extra_validations = actual_validations - expected_validations
+
+        # If an entry in the ValidationPolicy was never POSTed, set its status
+        # to failure.
+        for missing_validation in missing_validations:
+            result[missing_validation] = (missing_validation, 'failure')
+
+        # If an entry is not in the ValidationPolicy but was externally
+        # registered, override its status to "ignored [{original_status}]".
+        for extra_validation in extra_validations:
+            result[extra_validation] = (
+                extra_validation,
+                'ignored [%s]' % result[extra_validation][1])
+
         return result.values()
-
-    # TODO(fmontei): Raise error for expiresAfter conflicts for duplicate
-    # validations across ValidationPolicy documents.
-    expected_validations = set()
-    for vp in validation_policies:
-        expected_validations = expected_validations.union(
-            list(v['name'] for v in vp['data'].get('validations', [])))
-
-    missing_validations = expected_validations - actual_validations
-    extra_validations = actual_validations - expected_validations
-
-    # If an entry in the ValidationPolicy was never POSTed, set its status
-    # to failure.
-    for missing_validation in missing_validations:
-        result[missing_validation] = (missing_validation, 'failure')
-
-    # If an entry is not in the ValidationPolicy but was externally registered,
-    # then override its status to "ignored [{original_status}]".
-    for extra_validation in extra_validations:
-        result[extra_validation] = (
-            extra_validation, 'ignored [%s]' % result[extra_validation][1])
-
-    return result.values()
+    finally:
+        if own_session:
+            session.close()
 
 
 def _check_validation_entries_against_validation_policies(
         revision_id, entries, val_name=None, session=None):
+    own_session = session is None
     session = session or get_session()
 
-    result = [e.to_dict() for e in entries]
-    result_map = {}
-    for r in result:
-        result_map.setdefault(r['name'], [])
-        result_map[r['name']].append(r)
-    actual_validations = set(v['name'] for v in result)
+    try:
+        result = [e.to_dict() for e in entries]
+        result_map = {}
+        for r in result:
+            result_map.setdefault(r['name'], [])
+            result_map[r['name']].append(r)
+        actual_validations = set(v['name'] for v in result)
 
-    validation_policies = _get_validation_policies_for_revision(revision_id)
-    if not validation_policies:
-        return result
+        validation_policies = _get_validation_policies_for_revision(
+            revision_id, session=session)
+        if not validation_policies:
+            return result
 
-    # TODO(fmontei): Raise error for expiresAfter conflicts for duplicate
-    # validations across ValidationPolicy documents.
-    expected_validations = set()
-    for vp in validation_policies:
-        expected_validations |= set(
-            v['name'] for v in vp['data'].get('validations', []))
+        # TODO(fmontei): Raise error for expiresAfter conflicts for duplicate
+        # validations across ValidationPolicy documents.
+        expected_validations = set()
+        for vp in validation_policies:
+            expected_validations |= set(
+                v['name'] for v in vp['data'].get('validations', []))
 
-    missing_validations = expected_validations - actual_validations
-    extra_validations = actual_validations - expected_validations
+        missing_validations = expected_validations - actual_validations
+        extra_validations = actual_validations - expected_validations
 
-    # If an entry in the ValidationPolicy was never POSTed, set its status
-    # to failure.
-    for missing_name in missing_validations:
-        if val_name is None or missing_name == val_name:
-            result.append({
-                'id': len(result),
-                'name': val_name,
-                'status': 'failure',
-                'errors': [{
-                    'message': 'The result for this validation was never '
-                               'externally registered so its status defaulted '
-                               'to "failure".'
-                }]
-            })
-            break
-
-    # If an entry is not in the ValidationPolicy but was externally registered,
-    # then override its status to "ignored [{original_status}]".
-    for extra_name in extra_validations:
-        for entry in result_map[extra_name]:
-            original_status = entry['status']
-            entry['status'] = 'ignored [%s]' % original_status
-            entry.setdefault('errors', [])
-
-            msg_args = eng_utils.meta(vp) + (
-                ', '.join(v['name'] for v in vp['data'].get(
-                    'validations', [])),
-            )
-            for vp in validation_policies:
-                entry['errors'].append({
-                    'message': (
-                        'The result for this validation was externally '
-                        'registered but has been ignored because it is not '
-                        'found in the validations for ValidationPolicy '
-                        '[%s, %s] %s: %s.' % msg_args
-                    )
+        # If an entry in the ValidationPolicy was never POSTed, set its status
+        # to failure.
+        for missing_name in missing_validations:
+            if val_name is None or missing_name == val_name:
+                result.append({
+                    'id': len(result),
+                    'name': val_name,
+                    'status': 'failure',
+                    'errors': [{
+                        'message': 'The result for this validation was '
+                                   'never externally registered so its '
+                                   'status defaulted to "failure".'
+                    }]
                 })
+                break
 
-    return result
+        # If an entry is not in the ValidationPolicy but was externally
+        # registered, override its status to "ignored [{original_status}]".
+        for extra_name in extra_validations:
+            for entry in result_map[extra_name]:
+                original_status = entry['status']
+                entry['status'] = 'ignored [%s]' % original_status
+                entry.setdefault('errors', [])
+
+                msg_args = eng_utils.meta(vp) + (
+                    ', '.join(v['name'] for v in vp['data'].get(
+                        'validations', [])),
+                )
+                for vp in validation_policies:
+                    entry['errors'].append({
+                        'message': (
+                            'The result for this validation was externally '
+                            'registered but has been ignored because it '
+                            'is not found in the validations for '
+                            'ValidationPolicy '
+                            '[%s, %s] %s: %s.' % msg_args
+                        )
+                    })
+
+        return result
+    finally:
+        if own_session:
+            session.close()
 
 
 @require_revision_exists
 def validation_get_all_entries(revision_id, val_name=None, session=None):
+    own_session = session is None
     session = session or get_session()
 
-    entries = session.query(models.Validation)\
-        .filter_by(revision_id=revision_id)
-    if val_name:
-        entries = entries.filter_by(name=val_name)
-    entries.order_by(models.Validation.created_at.asc())\
-        .all()
+    try:
+        entries = session.query(models.Validation)\
+            .filter_by(revision_id=revision_id)
+        if val_name:
+            entries = entries.filter_by(name=val_name)
+        entries = entries.order_by(models.Validation.created_at.asc()).all()
 
-    return _check_validation_entries_against_validation_policies(
-        revision_id, entries, val_name=val_name, session=session)
+        return _check_validation_entries_against_validation_policies(
+            revision_id, entries, val_name=val_name, session=session)
+    finally:
+        if own_session:
+            session.close()
 
 
 @require_revision_exists
 def validation_get_entry(revision_id, val_name, entry_id, session=None):
+    own_session = session is None
     session = session or get_session()
 
-    entries = validation_get_all_entries(
-        revision_id, val_name, session=session)
-
     try:
-        return entries[entry_id]
-    except IndexError:
-        raise errors.ValidationNotFound(
-            revision_id=revision_id, validation_name=val_name,
-            entry_id=entry_id)
+        entries = validation_get_all_entries(
+            revision_id, val_name, session=session)
+
+        try:
+            return entries[entry_id]
+        except IndexError:
+            raise errors.ValidationNotFound(
+                revision_id=revision_id, validation_name=val_name,
+                entry_id=entry_id)
+    finally:
+        if own_session:
+            session.close()

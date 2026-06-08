@@ -1,7 +1,9 @@
 CHANGES
 =======
 
-* add extraObjects to prepare for gateway api
+* Upgrade Helm to v4.2.0
+* Inherit playbooks from treasuremap
+* Add extraObjects to prepare for gateway api
 * Deckhand gates update
 * Fix docker images
 * Noble image update

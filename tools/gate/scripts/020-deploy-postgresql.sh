@@ -23,7 +23,7 @@ POSTGRES_ID=$(
         -e POSTGRES_DB=deckhand \
         -e POSTGRES_USER=deckhand \
         -e POSTGRES_PASSWORD=password \
-            postgres:17.5
+            quay.io/airshipit/postgres:17.5
 )
 
 POSTGRES_IP=$(

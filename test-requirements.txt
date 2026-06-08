@@ -1,29 +1,17 @@
 
 
-# amqp
-bandit==1.6.0
-# chardet==3.0.4
-# fixtures==3.0.0
+
+bandit
+
 flake8
 gabbi==2.8.0
-# jsonpickle==1.4.1
-# openstacksdk==0.36.5
-openstacksdk==0.36.5
-# os-testr==2.0.1
-os-testr==2.0.1
+openstacksdk==4.10.0
+os-testr
 oslotest==4.5.0
-# packaging==21.3
-pifpaf==3.1.5
-# pylibyaml==0.1.0
-# pyparsing==2.4.7
+pifpaf
 pytest >= 3.0
 pytest-cov
-python-subunit==1.4.0
-# requests==2.23.0
-# six==1.16.0
-stestr==4.1.0
-testrepository==0.0.20
-# testtools==2.5.0
-tox>=3.28.0
-# urllib3==1.25.11
-# yq==3.2.1
+python-subunit
+stestr
+testrepository
+tox

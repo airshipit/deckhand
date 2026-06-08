@@ -294,7 +294,7 @@
           commit: true
         static:
           - latest
-          - airflow_3.1.5
+          - airflow_3.2.2
 
 - secret:
     name: airship_deckhand_quay_creds_2026
