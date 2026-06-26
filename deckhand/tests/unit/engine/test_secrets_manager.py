@@ -935,6 +935,121 @@ data:
             documents))
         self.assertEqual(expected, substituted_docs[0])
 
+    def test_doc_substitution_src_deepcopy(self):
+        test_yaml = """
+---
+# Source document 1.
+schema: pegleg/AccountCatalogue/v1
+metadata:
+  schema: metadata/Document/v1
+  name: osh_service_accounts
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+data:
+  osh:
+    client01: client01-data
+    client02: client02-data
+---
+# Source document.
+schema: pegleg/EndpointCatalogue/v1
+metadata:
+  schema: metadata/Document/v1
+  name: osh_endpoints
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+data:
+  osh:
+    oslo_db:
+      client: maria-client
+---
+# Destination document 1.
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-01
+  schema: metadata/Document/v1
+  layeringDefinition:
+    abstract: false
+    layer: global
+  substitutions:
+    - src:
+        schema: pegleg/EndpointCatalogue/v1
+        name: osh_endpoints
+        path: .osh
+        deepcopy: true
+      dest:
+        path: .values.endpoints
+    - src:
+        schema: pegleg/AccountCatalogue/v1
+        name: osh_service_accounts
+        path: .osh.client01
+      dest:
+        path: .values.endpoints.oslo_db.client
+data:
+  values:
+    endpoints:
+---
+# Destination document 2.
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-02
+  schema: metadata/Document/v1
+  layeringDefinition:
+    abstract: false
+    layer: global
+  substitutions:
+    - src:
+        schema: pegleg/EndpointCatalogue/v1
+        name: osh_endpoints
+        path: .osh
+        deepcopy: true
+      dest:
+        path: .values.endpoints
+    - src:
+        schema: pegleg/AccountCatalogue/v1
+        name: osh_service_accounts
+        path: .osh.client02
+      dest:
+        path: .values.endpoints.oslo_db.client
+data:
+  values:
+    endpoints:
+---
+# Destination document 3 - with default value.
+schema: armada/Chart/v1
+metadata:
+  name: example-chart-03
+  schema: metadata/Document/v1
+  layeringDefinition:
+    abstract: false
+    layer: global
+  substitutions:
+    - src:
+        schema: pegleg/EndpointCatalogue/v1
+        name: osh_endpoints
+        path: .osh
+      dest:
+        path: .values.endpoints
+data:
+  values:
+    endpoints:
+"""
+        documents = list(yaml.safe_load_all(test_yaml))
+        secret_substitution = secrets_manager.SecretsSubstitution(
+            documents)
+        list(secret_substitution.substitute_all(
+            documents))
+        for idx, expected in [
+            (2, 'client01-data'),
+            (3, 'client02-data'),
+            (4, 'maria-client'),
+        ]:
+            val = documents[idx]['data']['values']
+            self.assertEqual(val['endpoints']['oslo_db']['client'], expected)
+
 
 class TestSecretsSubstitutionNegative(test_base.DeckhandWithDBTestCase):
 

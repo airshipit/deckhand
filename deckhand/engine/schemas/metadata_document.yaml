@@ -111,6 +111,8 @@ data:
                 type: string
               match_group:
                 type: integer
+              deepcopy:
+                type: boolean
             additionalProperties: false
             required:
               - schema

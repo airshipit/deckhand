@@ -458,6 +458,25 @@ For example, given the following source documents, the distinct values for
           repo:  # docker.io/library/hello-world
           tag:   # latest
 
+Substitution inside substitution
+------------------------------
+
+The original design of deckhand uses O(1) shallow copy of source data.
+That causes a situation that when someone tries to make
+a substitution inside the path which was created by another substitution
+this also modifies the original document (this is how Python works).
+
+In order to avoid this side-effect, but make things backward compatible
+the new boolean field ``src.deepcopy`` which is False by default.
+In case it is set True deckhand creates a full copy of the source tree at
+the current moment.
+
+Note that if this part of the document was modified the similar way later
+the one can get unexpected result because the order in which documents are
+handled may affect the data. Anyway for some cases it isn't important, but
+this flag allows to change substitutions independently without affecting
+other places.
+
 Substitution of Encrypted Data
 ------------------------------
 

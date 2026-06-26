@@ -247,6 +247,29 @@ class TestJSONPathReplace(test_base.DeckhandTestCase):
                                         src_match_group=src_match_group)
         self.assertEqual(expected, result)
 
+    def test_jsonpath_replace_with_no_src_deepcopy(self):
+        src = {"images": {"image": 'repo.com/image:v1.2.3'}}
+        path = ".values"
+        body = {"values": {}}
+        expected = {"values": {"images": {"image": 'repo.com/image:v4.5.6'}}}
+        result = utils.jsonpath_replace(body, src, jsonpath=path)
+        # NOTE: we're updating src AFTER we did replacement and expecting
+        # to see the change
+        src['images']['image'] = 'repo.com/image:v4.5.6'
+        self.assertEqual(expected, result)
+
+    def test_jsonpath_replace_with_src_deepcopy(self):
+        src = {"images": {"image": 'repo.com/image:v1.2.3'}}
+        path = ".values"
+        body = {"values": {}}
+        expected = {"values": {"images": {"image": 'repo.com/image:v1.2.3'}}}
+        result = utils.jsonpath_replace(body, src, jsonpath=path,
+                                        src_deepcopy=True)
+        # NOTE: we're updating src AFTER we did replacement and NOT expecting
+        # to see the change
+        src['images']['image'] = 'repo.com/image:v4.5.6'
+        self.assertEqual(expected, result)
+
 
 class TestJSONPathReplaceNegative(test_base.DeckhandTestCase):
     """Validate JSONPath replace negative scenarios."""

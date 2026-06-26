@@ -224,7 +224,7 @@ def _execute_data_expansion(data, jsonpath):
 
 
 def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None,
-                     src_pattern=None, src_match_group=0):
+                     src_pattern=None, src_match_group=0, src_deepcopy=None):
     """Update value in ``data`` at the path specified by ``jsonpath``.
 
     If the nested path corresponding to ``jsonpath`` isn't found in ``data``,
@@ -267,6 +267,9 @@ def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None,
     :param src_match_group: The numbered subgroup of the ``src_pattern`` match
         to use as the substitution source, where 0 (the default) represents the
         entire match, 1 is the first parenthesized subgroup, etc.
+    :param src_deepcopy: Create a completely independent copy of source value
+        which allows to make changes where by applying more substitutions.
+        It is set to False by default for backward compatibility.
     :returns: Updated value at ``data[jsonpath]``.
     :raises: MissingDocumentPattern if ``pattern`` is not None and
         ``data[jsonpath]`` doesn't exist.
@@ -276,8 +279,12 @@ def jsonpath_replace(data, value, jsonpath, pattern=None, recurse=None,
 
     # These are O(1) reference copies to avoid accidentally modifying source
     # data. We only want to update destination data.
+    # Deepcopy isn't O(1), so use it wizely, only when it's needed.
     data_copy = copy.copy(data)
-    value_copy = copy.copy(value)
+    if src_deepcopy:
+        value_copy = copy.deepcopy(value)
+    else:
+        value_copy = copy.copy(value)
 
     # If a src_pattern is specified, attempt a regex match.
     if src_pattern:
