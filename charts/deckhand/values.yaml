@@ -46,13 +46,6 @@ release_group: null
 
 network:
   api:
-    ingress:
-      public: true
-      classes:
-        namespace: "nginx"
-        cluster: "nginx-cluster"
-      annotations:
-        nginx.ingress.kubernetes.io/rewrite-target: /
     node_port:
       enabled: false
       port: 301902
@@ -436,7 +429,7 @@ manifests:
   configmap_bin: true
   configmap_etc: true
   deployment: true
-  ingress_api: true
+  ingress_api: false
   job_db_init: true
   job_db_sync: true
   job_image_repo_sync: true
@@ -444,9 +437,9 @@ manifests:
   job_ks_service: true
   job_ks_user: true
   secret_db: true
-  secret_ingress_tls: true
+  secret_ingress_tls: false
   secret_keystone: true
   service_api: true
-  service_ingress_api: true
+  service_ingress_api: false
   test_deckhand_api: true
   network_policy: false
