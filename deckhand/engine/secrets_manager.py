@@ -323,87 +323,139 @@ class SecretsSubstitution(object):
             for sub in document.substitutions:
                 src_schema = sub['src']['schema']
                 src_name = sub['src']['name']
+                src_name_is_regex = sub['src'].get('name_is_regex', None)
                 src_path = sub['src']['path']
                 src_pattern = sub['src'].get('pattern', None)
                 src_match_group = sub['src'].get('match_group', 0)
                 src_deepcopy = sub['src'].get('deepcopy', None)
 
-                if (src_schema, src_name) in self._substitution_sources:
-                    src_doc = self._substitution_sources[
-                        (src_schema, src_name)]
+                matched_sources = []
+
+                if src_name_is_regex:  # name contains a pattern
+                    pattern_re = re.compile(src_name)
+                    sources = self._substitution_sources.items()
+                    for (s_schema, s_name), s_doc in sources:
+                        if s_schema == src_schema:
+                            match = pattern_re.search(s_name)
+                            if match:
+                                matched_sources.append((s_doc, match))
                 else:
-                    message = ('Could not find substitution source document '
-                               '[%s] %s among the provided substitution '
-                               'sources.' % (src_schema, src_name))
-                    if self._fail_on_missing_sub_src:
-                        LOG.error(message)
-                        raise errors.SubstitutionSourceNotFound(
-                            src_schema=src_schema, src_name=src_name,
-                            document_schema=document.schema,
-                            document_name=document.name)
+                    if (src_schema, src_name) in self._substitution_sources:
+                        src_doc = self._substitution_sources[
+                            (src_schema, src_name)]
+                        matched_sources.append((src_doc, None))
                     else:
-                        LOG.warning(message)
-                        continue
-
-                if src_doc.is_encrypted:
-                    redact_dest = True
-
-                # If the data is a dictionary, retrieve the nested secret
-                # via jsonpath_parse, else the secret is the primitive/string
-                # stored in the data section itself.
-                if isinstance(src_doc.get('data'), dict):
-                    src_secret = utils.jsonpath_parse(src_doc.get('data', {}),
-                                                      src_path)
-                else:
-                    src_secret = src_doc.get('data')
-
-                self._check_src_secret_is_not_none(src_secret, src_path,
-                                                   src_doc, document)
-
-                # If the document has storagePolicy == encrypted then resolve
-                # the Barbican reference into the actual secret.
-                if src_doc.is_encrypted and src_doc.has_barbican_ref:
-                    src_secret = self.get_unencrypted_data(src_secret, src_doc,
-                                                           document)
-
-                if not isinstance(sub['dest'], list):
-                    dest_array = [sub['dest']]
-                    dest_is_list = False
-                else:
-                    dest_array = sub['dest']
-                    dest_is_list = True
-
-                for i, each_dest_path in enumerate(dest_array):
-                    dest_path = each_dest_path['path']
-                    dest_pattern = each_dest_path.get('pattern', None)
-                    dest_recurse = each_dest_path.get('recurse', {})
-
-                    # If the source document is encrypted and cleartext_secrets
-                    # is False, then redact the substitution metadata in the
-                    # destination document to prevent reverse-engineering of
-                    # where the sensitive data came from.
-                    if src_doc.is_encrypted and not self._cleartext_secrets:
-                        sub['src']['path'] = dd.redact(src_path)
-                        if dest_is_list:
-                            sub['dest'][i]['path'] = dd.redact(dest_path)
+                        message = ('Could not find substitution '
+                                   'source document '
+                                   '[%s] %s among the provided substitution '
+                                   'sources.' % (src_schema, src_name))
+                        if self._fail_on_missing_sub_src:
+                            LOG.error(message)
+                            raise errors.SubstitutionSourceNotFound(
+                                src_schema=src_schema, src_name=src_name,
+                                document_schema=document.schema,
+                                document_name=document.name)
                         else:
-                            sub['dest']['path'] = dd.redact(dest_path)
+                            LOG.warning(message)
+                            continue
 
-                    LOG.debug('Substituting from schema=%s layer=%s name=%s '
-                              'src_path=%s into dest_path=%s, dest_pattern=%s',
-                              src_schema, src_doc.layer, src_name, src_path,
-                              dest_path, dest_pattern)
+                for src_doc, match_obj in matched_sources:
+                    curr_src_name = src_doc.name
 
-                    document = self._substitute_one(
-                        document,
-                        src_doc=src_doc,
-                        src_secret=src_secret,
-                        src_pattern=src_pattern,
-                        src_match_group=src_match_group,
-                        src_deepcopy=src_deepcopy,
-                        dest_path=dest_path,
-                        dest_pattern=dest_pattern,
-                        dest_recurse=dest_recurse)
+                    if src_doc.is_encrypted:
+                        redact_dest = True
+
+                    # If the data is a dictionary, retrieve the nested secret
+                    # via jsonpath_parse, else the secret is the
+                    # primitive/string stored in the data section itself.
+                    if isinstance(src_doc.get('data'), dict):
+                        src_secret = utils.jsonpath_parse(
+                            src_doc.get('data', {}), src_path)
+                    else:
+                        src_secret = src_doc.get('data')
+
+                    self._check_src_secret_is_not_none(src_secret, src_path,
+                                                       src_doc, document)
+
+                    # If the document has storagePolicy == encrypted then
+                    # resolve the Barbican reference into the actual secret.
+                    if src_doc.is_encrypted and src_doc.has_barbican_ref:
+                        src_secret = self.get_unencrypted_data(src_secret,
+                                                               src_doc,
+                                                               document)
+
+                    if not isinstance(sub['dest'], list):
+                        dest_array = [sub['dest']]
+                        dest_is_list = False
+                    else:
+                        dest_array = sub['dest']
+                        dest_is_list = True
+
+                    for i, each_dest_path in enumerate(dest_array):
+                        base_dest_path = each_dest_path['path']
+                        dest_pattern = each_dest_path.get('pattern', None)
+                        dest_recurse = each_dest_path.get('recurse', {})
+
+                        if src_name_is_regex and match_obj:
+                            if base_dest_path:
+                                try:
+                                    dest_path = match_obj.expand(
+                                        base_dest_path)
+                                except re.error as e:
+                                    LOG.error('Failed to expand path [%s] '
+                                              'on src_name [%s]: %s',
+                                              base_dest_path,
+                                              curr_src_name, e)
+                                    msg = (f"Invalid regex group reference "
+                                           f"in dest path "
+                                           f"'{base_dest_path}': {e}")
+                                    raise errors.SubstitutionError(msg)
+
+                                if (len(matched_sources) > 1 and
+                                        base_dest_path == dest_path):
+                                    LOG.error(
+                                        'Dest path [%s] must be regex '
+                                        'pattern', base_dest_path)
+                                    msg = ("Destination path '%s' must "
+                                           "contain regex group "
+                                           "references when multiple "
+                                           "sources match regex" %
+                                           base_dest_path)
+                                    raise errors.SubstitutionError(msg)
+                            else:
+                                dest_path = base_dest_path
+                        else:
+                            dest_path = base_dest_path
+
+                        # If the source document is encrypted and
+                        # cleartext_secrets is False, then redact the
+                        # substitution metadata in the destination document
+                        # to prevent reverse-engineering of
+                        # where the sensitive data came from.
+                        if (src_doc.is_encrypted and
+                                not self._cleartext_secrets):
+                            sub['src']['path'] = dd.redact(src_path)
+                            if dest_is_list:
+                                sub['dest'][i]['path'] = dd.redact(dest_path)
+                            else:
+                                sub['dest']['path'] = dd.redact(dest_path)
+
+                        LOG.debug(
+                            'Substituting from schema=%s layer=%s name=%s '
+                            'src_path=%s into dest_path=%s, dest_pattern=%s',
+                            src_schema, src_doc.layer, src_name, src_path,
+                            dest_path, dest_pattern)
+
+                        document = self._substitute_one(
+                            document,
+                            src_doc=src_doc,
+                            src_secret=src_secret,
+                            src_pattern=src_pattern,
+                            src_match_group=src_match_group,
+                            src_deepcopy=src_deepcopy,
+                            dest_path=dest_path,
+                            dest_pattern=dest_pattern,
+                            dest_recurse=dest_recurse)
 
             # If we just substituted from an encrypted document
             # into a cleartext document, we need to redact the

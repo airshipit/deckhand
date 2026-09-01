@@ -1050,6 +1050,61 @@ data:
             val = documents[idx]['data']['values']
             self.assertEqual(val['endpoints']['oslo_db']['client'], expected)
 
+    def test_doc_substitution_name_is_regex(self):
+        test_yaml = r"""
+---
+# Source document 1
+schema: pegleg/NodeDefinition/v1
+metadata:
+  schema: metadata/Document/v1
+  name: compute-node-01
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+data:
+  ip: 192.168.0.1
+---
+# Source document 2
+schema: pegleg/NodeDefinition/v1
+metadata:
+  schema: metadata/Document/v1
+  name: compute-node-02
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+data:
+  ip: 192.168.0.2
+---
+# Destination document
+schema: armada/Chart/v1
+metadata:
+  name: cluster-config
+  schema: metadata/Document/v1
+  layeringDefinition:
+    abstract: false
+    layer: global
+  substitutions:
+    - src:
+        schema: pegleg/NodeDefinition/v1
+        name: "^compute-node-(\\d+)"
+        name_is_regex: true
+        path: .ip
+      dest:
+        path: .values.nodes.node_\1.ip
+data:
+  values:
+    nodes: {}
+"""
+        documents = list(yaml.safe_load_all(test_yaml))
+        secret_substitution = secrets_manager.SecretsSubstitution(documents)
+        list(secret_substitution.substitute_all(documents))
+
+        nodes = documents[2]['data']['values']['nodes']
+        self.assertEqual(nodes['node_01']['ip'], '192.168.0.1')
+        self.assertEqual(nodes['node_02']['ip'], '192.168.0.2')
+
 
 class TestSecretsSubstitutionNegative(test_base.DeckhandWithDBTestCase):
 

@@ -477,6 +477,24 @@ handled may affect the data. Anyway for some cases it isn't important, but
 this flag allows to change substitutions independently without affecting
 other places.
 
+Substitution regex matching for document names
+----------------------------------------------
+
+The original design of deckhand required exact name matching for source
+documents during substitutions. This makes referencing multiple structured
+documents (such as numbered node definitions) verbose and repetitive.
+
+To simplify bulk substitutions, a new boolean field ``src.name_is_regex``
+is introduced (False by default). When set to True, ``src.name`` is
+treated as a regular expression, matching all substitution sources with the same
+schema that satisfy the pattern. Group references (e.g. ``\1``) in
+``dest.path`` are expanded dynamically based on the regex matches.
+
+Note that when multiple source documents match the regex, ``dest.path`` must
+contain group references to avoid overwriting the same target location.
+Additionally, regular expression group references must be valid for all
+matched source names.
+
 Substitution of Encrypted Data
 ------------------------------
 

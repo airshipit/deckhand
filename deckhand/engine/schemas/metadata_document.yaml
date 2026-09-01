@@ -105,6 +105,8 @@ data:
                 pattern: ^[A-Za-z]+/[A-Za-z]+/v\d+$
               name:
                 type: string
+              name_is_regex:
+                type: boolean
               path:
                 type: string
               pattern:
