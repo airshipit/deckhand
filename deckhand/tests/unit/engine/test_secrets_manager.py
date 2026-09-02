@@ -1061,7 +1061,7 @@ metadata:
   layeringDefinition:
     abstract: false
     layer: global
-  storagePolicy: cleartext
+  storagePolicy: encrypted
 data:
   ip: 192.168.0.1
 ---
@@ -1073,7 +1073,7 @@ metadata:
   layeringDefinition:
     abstract: false
     layer: global
-  storagePolicy: cleartext
+  storagePolicy: encrypted
 data:
   ip: 192.168.0.2
 ---

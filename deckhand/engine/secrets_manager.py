@@ -359,6 +359,17 @@ class SecretsSubstitution(object):
                             LOG.warning(message)
                             continue
 
+                if not isinstance(sub['dest'], list):
+                    dest_array = [sub['dest']]
+                    dest_is_list = False
+                else:
+                    dest_array = sub['dest']
+                    dest_is_list = True
+
+                # Copy dest paths BEFORE they were redacted
+                orig_dest_paths = [d['path'] for d in dest_array]
+
+                redact_is_done = False
                 for src_doc, match_obj in matched_sources:
                     curr_src_name = src_doc.name
 
@@ -384,15 +395,8 @@ class SecretsSubstitution(object):
                                                                src_doc,
                                                                document)
 
-                    if not isinstance(sub['dest'], list):
-                        dest_array = [sub['dest']]
-                        dest_is_list = False
-                    else:
-                        dest_array = sub['dest']
-                        dest_is_list = True
-
                     for i, each_dest_path in enumerate(dest_array):
-                        base_dest_path = each_dest_path['path']
+                        base_dest_path = orig_dest_paths[i]
                         dest_pattern = each_dest_path.get('pattern', None)
                         dest_recurse = each_dest_path.get('recurse', {})
 
@@ -409,7 +413,8 @@ class SecretsSubstitution(object):
                                     msg = (f"Invalid regex group reference "
                                            f"in dest path "
                                            f"'{base_dest_path}': {e}")
-                                    raise errors.SubstitutionError(msg)
+                                    self._handle_unknown_substitution_exc(
+                                        msg, src_doc, document)
 
                                 if (len(matched_sources) > 1 and
                                         base_dest_path == dest_path):
@@ -421,7 +426,8 @@ class SecretsSubstitution(object):
                                            "references when multiple "
                                            "sources match regex" %
                                            base_dest_path)
-                                    raise errors.SubstitutionError(msg)
+                                    self._handle_unknown_substitution_exc(
+                                        msg, src_doc, document)
                             else:
                                 dest_path = base_dest_path
                         else:
@@ -433,12 +439,17 @@ class SecretsSubstitution(object):
                         # to prevent reverse-engineering of
                         # where the sensitive data came from.
                         if (src_doc.is_encrypted and
-                                not self._cleartext_secrets):
+                                not self._cleartext_secrets and
+                                not redact_is_done):
                             sub['src']['path'] = dd.redact(src_path)
                             if dest_is_list:
                                 sub['dest'][i]['path'] = dd.redact(dest_path)
                             else:
                                 sub['dest']['path'] = dd.redact(dest_path)
+
+                            # reached out to the last dest for 1st doc
+                            if i == len(dest_array) - 1:
+                                redact_is_done = True
 
                         LOG.debug(
                             'Substituting from schema=%s layer=%s name=%s '
