@@ -1,0 +1,14 @@
+---
+fixes:
+  - |
+    Fixed substitution ordering for "globbing" substitutions (those whose
+    source ``name`` is a regular expression, i.e. ``name_is_regex: true``).
+    Previously such substitutions did not contribute to the topological sort
+    of documents, so a globbing consumer could be rendered before the
+    documents it collects had finished layering. As a result, sources that
+    obtain data through layering (for example a child document that merges an
+    abstract parent) could be captured as a pre-merge delta rather than their
+    fully rendered form. Deckhand now adds a dependency edge from a globbing
+    consumer to every substitution source whose schema and name match the
+    regex, ensuring the consumer is rendered only after those sources are
+    fully layered and substituted.

@@ -15,6 +15,7 @@
 import collections
 
 import copy
+import re
 
 import networkx
 from networkx.algorithms.cycles import find_cycle
@@ -295,6 +296,30 @@ class DocumentLayering(object):
                 # 1) It accounts for document replacements.
                 # 2) It effectively maps a 2-tuple key to a 3-tuple document
                 #    unique identifier (meta).
+                if sub['src'].get('name_is_regex', False):
+                    # A "globbing" substitution whose source name is a regex
+                    # matches many sources dynamically. These sources are not
+                    # discoverable via a direct ``(schema, name)`` lookup, so
+                    # add a dependency edge to every substitution source whose
+                    # schema matches and whose name matches the regex (as in
+                    # ``SecretsSubstitution.substitute_all``). Without these
+                    # edges the globbing consumer would not be ordered after
+                    # the documents it collects and could snapshot source data
+                    # before those documents finish layering.
+                    src_schema = sub['src']['schema']
+                    try:
+                        pattern_re = re.compile(sub['src']['name'])
+                    except re.error:
+                        pattern_re = None
+                    if pattern_re is not None:
+                        for (s_schema, s_name), src in \
+                                substitution_sources.items():
+                            if (s_schema == src_schema and
+                                    pattern_re.search(s_name) and
+                                    src.meta != document.meta):
+                                g.add_edge(document.meta, src.meta)
+                    continue
+
                 src = substitution_sources.get(
                     (sub['src']['schema'], sub['src']['name']))
                 if src:

@@ -18,6 +18,7 @@ from unittest import mock
 import yaml
 
 from deckhand import factories
+from deckhand.engine import layering
 from deckhand.tests.unit.engine import test_document_layering
 
 
@@ -962,3 +963,112 @@ data: password15
         docs = list(yaml.safe_load_all(documents))
         self._test_layering(docs, site_expected=site_expected,
                             global_expected=global_expected)
+
+    def test_globbing_substitution_ordered_after_layering_merge(self):
+        # A globbing (name_is_regex) substitution must be topologically
+        # ordered after every document it collects, so that sources which
+        # obtain data through layering (e.g. a child that merges an abstract
+        # parent) are captured post-merge rather than as a pre-merge delta.
+        #
+        # The consumer also has an ordinary (non-regex) substitution: this
+        # gives it a dependency edge that would otherwise place it *before* the
+        # site child in the topological sort (rather than in the edge-less
+        # fallback bucket that is appended last), reproducing the ordering that
+        # previously captured the child pre-merge.
+        test_yaml = r"""
+---
+schema: deckhand/LayeringPolicy/v1
+metadata:
+  schema: metadata/Control/v1
+  name: layering-policy
+data:
+  layerOrder:
+    - global
+    - site
+---
+# Ordinary global source for the consumer's non-regex substitution.
+schema: example/Addr/v1
+metadata:
+  schema: metadata/Document/v1
+  name: common-addresses
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+data:
+  api: 10.0.0.1
+---
+# Abstract global parent carrying the interfaces (excluded as a sub source).
+schema: example/HostProfile/v1
+metadata:
+  schema: metadata/Document/v1
+  name: hp-parent
+  labels:
+    hosttype: cp
+  layeringDefinition:
+    abstract: true
+    layer: global
+  storagePolicy: cleartext
+data:
+  interfaces:
+    eth0:
+      id: 0
+---
+# Concrete site child that merges the parent, gaining ``interfaces``.
+schema: example/HostProfile/v1
+metadata:
+  schema: metadata/Document/v1
+  name: hp-child
+  layeringDefinition:
+    abstract: false
+    layer: site
+    parentSelector:
+      hosttype: cp
+    actions:
+      - method: merge
+        path: .
+  storagePolicy: cleartext
+data:
+  role: cp
+---
+# Global consumer globbing all HostProfiles into a name-keyed map.
+schema: armada/Chart/v1
+metadata:
+  schema: metadata/Document/v1
+  name: cluster-config
+  layeringDefinition:
+    abstract: false
+    layer: global
+  storagePolicy: cleartext
+  substitutions:
+    - src:
+        schema: example/Addr/v1
+        name: common-addresses
+        path: .api
+      dest:
+        path: .values.api
+    - src:
+        schema: example/HostProfile/v1
+        name: "^(.*)$"
+        name_is_regex: true
+        path: .
+      dest:
+        path: .values.profiles.\1
+data:
+  values:
+    api: null
+    profiles: {}
+...
+"""
+        documents = list(yaml.safe_load_all(test_yaml))
+        expected_child = {'interfaces': {'eth0': {'id': 0}}, 'role': 'cp'}
+
+        # Render in both orders to prove the ordering is edge-driven, not
+        # incidental to input order.
+        for docs in (documents, list(reversed(documents))):
+            engine = layering.DocumentLayering(docs)
+            rendered = engine.render()
+            consumer = next(
+                d for d in rendered if d['schema'] == 'armada/Chart/v1')
+            profiles = consumer['data']['values']['profiles']
+            self.assertEqual(expected_child, profiles.get('hp-child'))
