@@ -151,24 +151,12 @@
       - zuul: airship/treasuremap
     vars:
       treasuremap_ref: v1.9
-      osh_params:
-        openstack_release: 2025.1
-        container_distro_name: ubuntu
-        container_distro_version: noble
-        feature_gates: gateway
-      osh_values_overrides_path: ../../openstack/openstack-helm/values_overrides
-      gate_scripts_relative_path: ../../openstack/openstack-helm
-      gate_scripts:
-        - ./tools/deployment/common/prepare-k8s.sh
-        - ./tools/deployment/common/prepare-charts.sh
-        - ./tools/deployment/common/setup-client.sh
-        - ./tools/deployment/ceph/ceph-rook.sh
-        - ./tools/deployment/ceph/ceph-adapter-rook.sh
-        - ./tools/deployment/db/mariadb.sh
-        - ./tools/deployment/component/common/memcached.sh
-        - ./tools/deployment/component/common/rabbitmq.sh
-        - ./tools/deployment/component/keystone/keystone.sh
-        - ./tools/deployment/component/barbican/barbican.sh
+      zuul_treasuremap_relative_path: ../../airship/treasuremap
+      osh_git_repo: "{{ ansible_user_dir }}/{{ zuul.project.src_dir }}/../../openstack/openstack-helm"
+      osh_helm_repo: "{{ ansible_user_dir }}/{{ zuul.project.src_dir }}/../../openstack/openstack-helm"
+      osh_values_overrides:
+        - "2026.1-ubuntu_noble.yaml"
+        - "gateway.yaml"
     irrelevant-files: *irrelevant-files
 
 - job:
@@ -180,7 +168,7 @@
     nodeset: treasuremap-airskiff-5nodes-ubuntu_noble
     parent: deckhand-integration-base
     run:
-      - tools/gate/playbooks/airship-run-scripts.yaml
+      - tools/gate/playbooks/deploy-osh-dependencies.yaml
       - tools/gate/playbooks/run-integration-tests-uwsgi.yaml
     vars:
       disable_keystone: true
@@ -193,7 +181,7 @@
     nodeset: treasuremap-airskiff-5nodes-ubuntu_noble
     parent: deckhand-integration-base
     run:
-      - tools/gate/playbooks/airship-run-scripts.yaml
+      - tools/gate/playbooks/deploy-osh-dependencies.yaml
       - tools/gate/playbooks/run-integration-tests-docker.yaml
     vars:
       disable_keystone: false
@@ -240,14 +228,14 @@
     roles:
       - zuul: airship/treasuremap
     vars:
+      treasuremap_ref: v1.9
       CLONE_DECKHAND: false
       MAKE_DECKHAND_IMAGES: true
       USE_ARMADA_GO: true
-      helm_version: 4.2.0
+      helm_version: 4.2.2
       HELM_ARTIFACT_URL: https://get.helm.sh/helm-v4.2.2-linux-amd64.tar.gz
       DISTRO: ubuntu_noble
-      DOCKER_REGISTRY: "control-plane.minikube.internal:5000"
-      overlay_network_setup: true
+      zuul_treasuremap_relative_path: ../../airship/treasuremap
       gate_scripts_relative_path: ../../airship/treasuremap
 
 - job:
